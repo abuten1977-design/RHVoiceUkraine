@@ -1,0 +1,56 @@
+<state_snapshot>
+    <overall_goal>
+        Integrate the RHVoice speech synthesizer into an iOS application and successfully commit the initial project setup to Git.
+    </overall_goal>
+
+    <key_knowledge>
+        - The project involves integrating the RHVoice speech synthesizer into an iOS application.
+        - Previous build issues included missing iOS Simulator Runtimes, code signing requirements, and incorrect header file paths (`utf8.h`, `rapidxml/rapidxml.hpp`).
+        - These issues were resolved by installing necessary runtimes, copying missing header files, and correcting `HEADER_SEARCH_PATHS` in `Project.yml`.
+        - Nested Git repositories within `RHVoice/` and `RHVoiceSpeechProject/` caused initial commit failures.
+        - The `.git` directories within `RHVoice/` and `RHVoiceSpeechProject/` were removed to allow the main repository to track their contents.
+        - The project now successfully builds for the iOS simulator.
+        - Verification of the voice ("Natalia (RHVoice)") should be done in iOS simulator settings (Settings -> Accessibility -> Spoken Content -> Voices -> Ukrainian).
+        - The current audio handling in `SpeechSynthesizer.swift` is a placeholder and does not yet produce sound.
+        - `RHVoiceWrapper.mm` was updated to use the RHVoice C API for initialization and synthesis.
+        - `libRHVoice.dylib` was successfully built for iOS Simulator (arm64) using CMake and a custom toolchain file.
+        - `project.pbxproj` was modified to correctly link `libRHVoice.dylib`.
+        - The `RHVoiceSpeechProject` now builds successfully.
+    </key_knowledge>
+
+    <file_system_state>
+        - CWD: `/Users/m1/rhvoice/`
+        - READ: `20092025rhvoice.txt`, `20092025rhvoice2.txt`, `20092025rhvoice3.txt` (for context restoration)
+        - DELETED: `.git` directories from `RHVoice/` and `RHVoiceSpeechProject/` (to resolve nested repository issues).
+        - CREATED/TRACKED: All project files and directories under `/Users/m1/rhvoice/` are now tracked by Git.
+        - MODIFIED: `RHVoiceSpeechProject/RHVoiceSpeechExtension/SpeechSynthesizer.swift` to handle audio data.
+        - MODIFIED: `RHVoiceSpeechProject/RHVoiceEngine/src/RHVoiceWrapper.mm` for RHVoice C API integration.
+        - MODIFIED: `RHVoice/CMakeLists.txt` to conditionally disable Git versioning for iOS builds.
+        - MODIFIED: `RHVoice/src/utils/CMakeLists.txt` to conditionally disable installation of executables and sanitizers for iOS builds.
+        - MODIFIED: `RHVoice/src/test/CMakeLists.txt` to conditionally disable installation of test executable and sanitizers for iOS builds.
+        - MODIFIED: `RHVoice/src/audio/CMakeLists.txt` to conditionally disable sanitizers for iOS builds.
+        - MODIFIED: `RHVoice/src/lib/CMakeLists.txt` to conditionally disable sanitizers for iOS builds.
+        - CREATED: `/Users/m1/rhvoice/ios-arm64-simulator.cmake` for CMake toolchain.
+        - CREATED: `/Users/m1/rhvoice/RHVoice/build_ios_simulator` directory.
+        - COPIED: `libRHVoice.dylib` (iOS Simulator version) to `/Users/m1/rhvoice/RHVoiceSpeechProject/RHVoiceEngine/src/`.
+        - MODIFIED: `RHVoiceSpeechProject/RHVoiceSpeechProject.xcodeproj/project.pbxproj` to correctly link `libRHVoice.dylib`.
+    </file_system_state>
+
+    <recent_actions>
+        - Read previous conversation context from specified files.
+        - Attempted to stage all files for commit, which failed due to nested repository issues.
+        - Identified and removed the `.git` directories from `RHVoice/` and `RHVoiceSpeechProject/`.
+        - Configured global Git user email (`abuten1977@gmail.com`) and name (`butenko`).
+        - Successfully performed the initial Git commit of the project setup.
+        - Modified `SpeechSynthesizer.swift` to handle audio data.
+        - Identified and fixed multiple CMake errors related to iOS cross-compilation.
+        - Successfully built `libRHVoice.dylib` for iOS Simulator.
+        - Copied the correct `libRHVoice.dylib` to the project.
+        - Successfully rebuilt `RHVoiceSpeechProject`.
+    </recent_actions>
+
+    <current_plan>
+        1. Verify the presence of the "Anatol (RHVoice)" voice in the iOS simulator settings.
+        2. Test speech synthesis with the "Anatol (RHVoice)" voice.
+    </current_plan>
+</state_snapshot>

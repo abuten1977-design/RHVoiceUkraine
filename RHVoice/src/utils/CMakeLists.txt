@@ -19,21 +19,27 @@ add_executable("RHVoice-transcribe-sentences" "${CMAKE_CURRENT_SOURCE_DIR}/trans
 target_include_directories("RHVoice-transcribe-sentences" PRIVATE "${TCLAP_INCLUDE_DIR}" "${HTS_LABELS_KIT_INCLUDES}" )
 target_link_libraries("RHVoice-transcribe-sentences" "RHVoice_core")
 harden("RHVoice-transcribe-sentences")
-add_sanitizers("RHVoice-transcribe-sentences")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	add_sanitizers("RHVoice-transcribe-sentences")
+endif()
 
 if(NOT (MINGW AND CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 11))
 	add_executable("RHVoice-make-hts-labels" "${CMAKE_CURRENT_SOURCE_DIR}/make-hts-labels.cpp")
+	if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	add_sanitizers("RHVoice-make-hts-labels")
+endif()
 	target_include_directories("RHVoice-make-hts-labels" PRIVATE "${TCLAP_INCLUDE_DIR}" "${HTS_LABELS_KIT_INCLUDES}" )
 	target_link_libraries("RHVoice-make-hts-labels" "RHVoice_core" "libhts_engine")
 	harden("RHVoice-make-hts-labels")
 	if(WITH_CLI11)
 		target_compile_definitions(RHVoice-make-hts-labels PRIVATE WITH_CLI11)
 	endif(WITH_CLI11)
+	if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	install(TARGETS "RHVoice-transcribe-sentences" "RHVoice-make-hts-labels"
 		RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
 		COMPONENT "utils"
 	)
+endif()
 else()
 	message(WARNING "RHVoice-make-hts-labels building fails on MinGW + Clang 11 with `undefined symbol: __Unwind_Resume` IDK why (even if exceptions model is set right). So we don't compile it for now. Please fix this issue, if you can.")
 endif()

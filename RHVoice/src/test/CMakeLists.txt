@@ -18,7 +18,9 @@ add_executable("RHVoice-test" "${CMAKE_CURRENT_SOURCE_DIR}/test.cpp")
 target_link_libraries("RHVoice-test" "RHVoice" "RHVoice_audio")
 target_include_directories("RHVoice-test" PRIVATE "${TCLAP_INCLUDE_DIR}" "${HTS_LABELS_KIT_INCLUDES}")
 harden("RHVoice-test")
-add_sanitizers("RHVoice-test")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	add_sanitizers("RHVoice-test")
+endif()
 
 if(WITH_CLI11)
 	target_compile_definitions(RHVoice-test PRIVATE WITH_CLI11)
@@ -32,10 +34,12 @@ cpack_add_component(test
 )
 list(APPEND CPACK_COMPONENTS_ALL "test")
 
-install(TARGETS "RHVoice-test"
-	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-	COMPONENT "test"
-)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	install(TARGETS "RHVoice-test"
+		RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+		COMPONENT "test"
+	)
+endif()
 set("CPACK_DEBIAN_TEST_PACKAGE_NAME" "rhvoice-test")
 set(CPACK_DEBIAN_TEST_PACKAGE_DEPENDS "${CPACK_DEBIAN_CORE_PACKAGE_NAME}, ${CPACK_DEBIAN_AUDIO_PACKAGE_NAME}")
 

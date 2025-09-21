@@ -38,7 +38,9 @@ if(NOT MSVC)
 	target_link_libraries(libhts_engine PUBLIC m)
 endif()
 harden(libhts_engine)
-add_sanitizers(libhts_engine)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	add_sanitizers(libhts_engine)
+endif()
 set_target_properties("libhts_engine" PROPERTIES PREFIX "")
 
 

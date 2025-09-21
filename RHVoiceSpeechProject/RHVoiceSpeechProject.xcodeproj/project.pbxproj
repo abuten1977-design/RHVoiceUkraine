@@ -10,7 +10,6 @@
 		206AE72D702396AE44A420F5 /* rapidxml_print.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		3044FBB6A116EAB87A0C222B /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
 		455566F792846E7D01C51BE7 /* rapidxml.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 52D288B22AF25E69538F2F64 /* rapidxml.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
-		497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 705077891DDDC64180422100 /* libRHVoice.dylib */; };
 		57126DDCC19FEFD018E03017 /* rapidxml_iterators.hpp in Headers */ = {isa = PBXBuildFile; fileRef = D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		7544C0A54FB4244AB8D03CE4 /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */; };
 		ACBF080FDD14EDB624ECD732 /* rapidxml_utils.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -20,6 +19,7 @@
 		CEA011EB900621C4C394A166 /* include in Headers */ = {isa = PBXBuildFile; fileRef = 1A956A0237E36EFCE501D40F /* include */; settings = {ATTRIBUTES = (Public, ); }; };
 		DF96E415A69D57E607FB8145 /* license.txt in Resources */ = {isa = PBXBuildFile; fileRef = 91F16F293ED0BBED63C69386 /* license.txt */; };
 		EABC0D8FAE69F956058EDA9B /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		BEEFCAFE1234567890ABCDEF /* libRHVoice.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 705077891DDDC64180422100 /* libRHVoice.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -275,6 +275,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F00DCAFE1234567890ABCDEF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BEEFCAFE1234567890ABCDEF /* libRHVoice.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -374,7 +382,7 @@
 				E48BD21E7952EA1B3548B473 /* bap.win2 */,
 				92C9A37051B11906979A9A17 /* bap.win3 */,
 				0481E74A9C650898B0C00FE0 /* bpf.txt */,
-				E5DC0FA34A1FCC57638D103B /* dur.pdf */,
+				B0F9913A7E2F1FC5A6F5BEEA /* dur.pdf */,
 				EC1816F44709EC78E36AF7E0 /* lf0.pdf */,
 				F72725D27E4E960440C5F829 /* lf0.win1 */,
 				46942DC4362CEDE6902A4C33 /* lf0.win2 */,
@@ -661,8 +669,6 @@
 				C7F7D62C3E6FA9ABB8DC566B /* Frameworks */,
 				C89E4E589BB8784630D0D204 /* Embed Frameworks */,
 			);
-			buildRules = (
-			);
 			dependencies = (
 				93A2C2CC72DD1EFC0C6EB949 /* PBXTargetDependency */,
 			);
@@ -681,8 +687,6 @@
 				E67AE1CCE14732F3C74BCE19 /* Frameworks */,
 				9934C64B5BF48F638DCFABB3 /* Embed Frameworks */,
 			);
-			buildRules = (
-			);
 			dependencies = (
 				D369406189FEF4B46BF435E1 /* PBXTargetDependency */,
 			);
@@ -700,6 +704,7 @@
 				43B282726BF21514EDDB3288 /* Headers */,
 				19C170784906CE34A6A1E6CE /* Sources */,
 				C83D35F01911653FE8F0E7F6 /* Resources */,
+				F00DCAFE1234567890ABCDEF /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -747,7 +752,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */,
 				DF96E415A69D57E607FB8145 /* license.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

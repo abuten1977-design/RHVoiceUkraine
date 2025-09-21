@@ -50,7 +50,9 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/config.h.in" "${CMAKE_CURRENT_SOURCE
 
 target_link_libraries(RHVoice_core "${libs2link}")
 harden("RHVoice_core")
-add_sanitizers("RHVoice_core")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	add_sanitizers("RHVoice_core")
+endif()
 
 cpack_add_component(core
 	DISPLAY_NAME "Synthesis core"

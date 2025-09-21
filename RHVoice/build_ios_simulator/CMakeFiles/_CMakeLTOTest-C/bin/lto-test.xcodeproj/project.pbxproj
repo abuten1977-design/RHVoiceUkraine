@@ -1,0 +1,985 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXAggregateTarget section */
+		84C34DFDDDCDB42E389851AB /* ALL_BUILD */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 5E2C1A6347314D2388C9D49D /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */;
+			buildPhases = (
+				6801559CD485443AD3AF097E /* Generate CMakeFiles/ALL_BUILD */,
+			);
+			dependencies = (
+				90F2BBC6AAE94D8791861678 /* PBXTargetDependency */,
+				2B1D265B0E6242FFA0EA80EA /* PBXTargetDependency */,
+				20D94AEA705B4937A40A6169 /* PBXTargetDependency */,
+			);
+			name = ALL_BUILD;
+			productName = ALL_BUILD;
+		};
+		AE260A2F35E902721A833673 /* ZERO_CHECK */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = CD6854D1CB804118AD9EF142 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */;
+			buildPhases = (
+				FB2768F61C73E1D8CCE97AB3 /* Generate CMakeFiles/ZERO_CHECK */,
+			);
+			dependencies = (
+			);
+			name = ZERO_CHECK;
+			productName = ZERO_CHECK;
+		};
+/* End PBXAggregateTarget section */
+
+/* Begin PBXBuildFile section */
+		14B87FAD547E448D82DB81E7 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/foo.dir/Info.plist */ = {isa = PBXBuildFile; fileRef = 0E84F4264D0F4A87BFBA919C /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/foo.dir/Info.plist */; };
+		15AEC9D83A1A45F6901FC37F /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 55BCB040A0EB47A2ADE4FD93 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */; };
+		1BB560317F194D8E9D1C94F9 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/foo.c */ = {isa = PBXBuildFile; fileRef = 35EA7DF7CCF6468AA449A222 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/foo.c */; };
+		42442D3B04A7459E8D7FF437 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/main.c */ = {isa = PBXBuildFile; fileRef = 302C1C63E3494167A3018E77 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/main.c */; };
+		454BF52FAFB84430B755262C /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */ = {isa = PBXBuildFile; fileRef = 3F14943E48EE4793A7653508 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */; };
+		7DEB149DA65741C6AC1DFF17 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist */ = {isa = PBXBuildFile; fileRef = B55A5A4F3DC9465F8067A4D9 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildStyle section */
+		47242847D28B43A89E45AC08 /* Debug */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Debug;
+		};
+		4A4AF01E766D4FE6B978CD84 /* MinSizeRel */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = MinSizeRel;
+		};
+		84C920255D5B46618DF0B3E6 /* Release */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = Release;
+		};
+		CCAC51BCC5C542A3BE63571E /* RelWithDebInfo */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+			};
+			name = RelWithDebInfo;
+		};
+/* End PBXBuildStyle section */
+
+/* Begin PBXContainerItemProxy section */
+		01C2190EAB8C418AB36192E5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 283D45AD35244189ACB7B2E8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7A9DD540B4DA2E4137D495C0;
+			remoteInfo = boo;
+		};
+		1FB430FBEC2D439FA99CC085 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 283D45AD35244189ACB7B2E8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AE260A2F35E902721A833673;
+			remoteInfo = ZERO_CHECK;
+		};
+		5B973B6F2F0C4163B07CB9AE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 283D45AD35244189ACB7B2E8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AE260A2F35E902721A833673;
+			remoteInfo = ZERO_CHECK;
+		};
+		71EB0C7C978042EBB3578050 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 283D45AD35244189ACB7B2E8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 005A735EEF736C69F8E972B4;
+			remoteInfo = foo;
+		};
+		A009DCD545EF4A809B520072 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 283D45AD35244189ACB7B2E8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AE260A2F35E902721A833673;
+			remoteInfo = ZERO_CHECK;
+		};
+		F2FF98CDD6A14AEC8770D010 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 283D45AD35244189ACB7B2E8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 005A735EEF736C69F8E972B4;
+			remoteInfo = foo;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0E84F4264D0F4A87BFBA919C /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/foo.dir/Info.plist */ = {isa = PBXFileReference; explicitFileType = sourcecode.text.plist; fileEncoding = 4; name = Info.plist; path = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/foo.dir/Info.plist"; sourceTree = "<absolute>"; };
+		302C1C63E3494167A3018E77 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/main.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.c; fileEncoding = 4; name = main.c; path = main.c; sourceTree = SOURCE_ROOT; };
+		35EA7DF7CCF6468AA449A222 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/foo.c */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.c; fileEncoding = 4; name = foo.c; path = foo.c; sourceTree = SOURCE_ROOT; };
+		3F14943E48EE4793A7653508 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		55BCB040A0EB47A2ADE4FD93 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		68FA4DAD644C4D2CB3CE534D /* boo */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; path = boo; sourceTree = BUILT_PRODUCTS_DIR; };
+		7F0DE4479A2944599BF63A5B /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */ = {isa = PBXFileReference; explicitFileType = sourcecode.text; fileEncoding = 4; name = CMakeLists.txt; path = CMakeLists.txt; sourceTree = SOURCE_ROOT; };
+		B55A5A4F3DC9465F8067A4D9 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist */ = {isa = PBXFileReference; explicitFileType = sourcecode.text.plist; fileEncoding = 4; name = Info.plist; path = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist"; sourceTree = "<absolute>"; };
+		FF7798B760F040E3A86B73C0 /* foo */ = {isa = PBXFileReference; explicitFileType = archive.ar; path = libfoo.a; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0EFD712CEC8641CABF9716A0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D48DC8DEB4774AA88D8C4A2B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0AB4343687E240CCA3794CA7 /* foo */ = {
+			isa = PBXGroup;
+			children = (
+				DB8D364D13E344A09A89E4EA /* Source Files */,
+				4CB23C33B3FD48C7B3AE00C0 /* Resources */,
+				55BCB040A0EB47A2ADE4FD93 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */,
+			);
+			name = foo;
+			sourceTree = "<group>";
+		};
+		12E301BCD88E4785A5A1BA81 /* boo */ = {
+			isa = PBXGroup;
+			children = (
+				C33F0AAA2E364176A42DEA40 /* Source Files */,
+				30F41786130D48FF858387E3 /* Resources */,
+				3F14943E48EE4793A7653508 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */,
+			);
+			name = boo;
+			sourceTree = "<group>";
+		};
+		1CDD9DB9887F45739BE6FCF6 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		30F41786130D48FF858387E3 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B55A5A4F3DC9465F8067A4D9 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		4CB23C33B3FD48C7B3AE00C0 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				0E84F4264D0F4A87BFBA919C /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/foo.dir/Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		66E22BD3DA0A4A9C980D3A9A /* ALL_BUILD */ = {
+			isa = PBXGroup;
+			children = (
+				D9F0071CF1B5481EB3B385FB /* CMake Rules */,
+				7F0DE4479A2944599BF63A5B /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/CMakeLists.txt */,
+			);
+			name = ALL_BUILD;
+			sourceTree = "<group>";
+		};
+		78AA28E0DCF144ADAD677CE8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A253792A054B4F8DA4FBE07C = {
+			isa = PBXGroup;
+			children = (
+				0AB4343687E240CCA3794CA7 /* foo */,
+				12E301BCD88E4785A5A1BA81 /* boo */,
+				66E22BD3DA0A4A9C980D3A9A /* ALL_BUILD */,
+				A614E08CB57F459BB299E3D0 /* Products */,
+				78AA28E0DCF144ADAD677CE8 /* Frameworks */,
+				1CDD9DB9887F45739BE6FCF6 /* Resources */,
+			);
+			sourceTree = "<group>";
+		};
+		A614E08CB57F459BB299E3D0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				68FA4DAD644C4D2CB3CE534D /* boo */,
+				FF7798B760F040E3A86B73C0 /* foo */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		C33F0AAA2E364176A42DEA40 /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				302C1C63E3494167A3018E77 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/main.c */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+		D9F0071CF1B5481EB3B385FB /* CMake Rules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = "CMake Rules";
+			sourceTree = "<group>";
+		};
+		DB8D364D13E344A09A89E4EA /* Source Files */ = {
+			isa = PBXGroup;
+			children = (
+				35EA7DF7CCF6468AA449A222 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/foo.c */,
+			);
+			name = "Source Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		005A735EEF736C69F8E972B4 /* foo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 68F5C444B6654E4782658569 /* Build configuration list for PBXNativeTarget "foo" */;
+			buildPhases = (
+				EBB49D0779FC47A392EEA16C /* Sources */,
+				0EFD712CEC8641CABF9716A0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				318E697F645A4F82B91D0F3E /* PBXTargetDependency */,
+			);
+			name = foo;
+			productName = foo;
+			productReference = FF7798B760F040E3A86B73C0 /* foo */;
+			productType = "com.apple.product-type.library.static";
+		};
+		7A9DD540B4DA2E4137D495C0 /* boo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3D194314766F450EB4BE50C4 /* Build configuration list for PBXNativeTarget "boo" */;
+			buildPhases = (
+				8E4FCCDA6BA34D9FBB17E084 /* Sources */,
+				D48DC8DEB4774AA88D8C4A2B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				86CD6CA3012C4A118A24DB6B /* PBXTargetDependency */,
+				9DBCE972601C4C0F8FF60E9D /* PBXTargetDependency */,
+			);
+			name = boo;
+			productName = boo;
+			productReference = 68FA4DAD644C4D2CB3CE534D /* boo */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		283D45AD35244189ACB7B2E8 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1630;
+			};
+			buildConfigurationList = 97BA33E9DF7240C6974EFBFA /* Build configuration list for PBXProject "lto-test" */;
+			buildSettings = {
+			};
+			buildStyles = (
+				47242847D28B43A89E45AC08 /* Debug */,
+				84C920255D5B46618DF0B3E6 /* Release */,
+				4A4AF01E766D4FE6B978CD84 /* MinSizeRel */,
+				CCAC51BCC5C542A3BE63571E /* RelWithDebInfo */,
+			);
+			compatibilityVersion = "Xcode 3.2";
+			hasScannedForEncodings = 0;
+			mainGroup = A253792A054B4F8DA4FBE07C;
+			projectDirPath = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src";
+			projectRoot = "";
+			targets = (
+				84C34DFDDDCDB42E389851AB /* ALL_BUILD */,
+				7A9DD540B4DA2E4137D495C0 /* boo */,
+				005A735EEF736C69F8E972B4 /* foo */,
+				AE260A2F35E902721A833673 /* ZERO_CHECK */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3C0110FC8322DE7E50886E21 = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		6801559CD485443AD3AF097E /* Generate CMakeFiles/ALL_BUILD */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ALL_BUILD";
+			outputPaths = (
+"/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/ALL_BUILD"			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  echo Build\\ all\\ projects
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  echo Build\\ all\\ projects
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+		9B50530E35CC49C82C2FACCF = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here
+exit 0";
+			showEnvVarsInLog = 0;
+		};
+		FB2768F61C73E1D8CCE97AB3 /* Generate CMakeFiles/ZERO_CHECK */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate CMakeFiles/ZERO_CHECK";
+			outputPaths = (
+"/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/ZERO_CHECK"			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e
+if test \"$CONFIGURATION\" = \"Debug\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  make -f /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"Release\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  make -f /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"MinSizeRel\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  make -f /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeScripts/ReRunCMake.make
+fi
+if test \"$CONFIGURATION\" = \"RelWithDebInfo\"; then :
+  cd /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin
+  make -f /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeScripts/ReRunCMake.make
+fi
+";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8E4FCCDA6BA34D9FBB17E084 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				42442D3B04A7459E8D7FF437 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/main.c */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EBB49D0779FC47A392EEA16C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1BB560317F194D8E9D1C94F9 /* /Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/src/foo.c */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		20D94AEA705B4937A40A6169 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AE260A2F35E902721A833673 /* ZERO_CHECK */;
+			targetProxy = 5B973B6F2F0C4163B07CB9AE /* PBXContainerItemProxy */;
+		};
+		2B1D265B0E6242FFA0EA80EA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7A9DD540B4DA2E4137D495C0 /* boo */;
+			targetProxy = 01C2190EAB8C418AB36192E5 /* PBXContainerItemProxy */;
+		};
+		318E697F645A4F82B91D0F3E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AE260A2F35E902721A833673 /* ZERO_CHECK */;
+			targetProxy = A009DCD545EF4A809B520072 /* PBXContainerItemProxy */;
+		};
+		86CD6CA3012C4A118A24DB6B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 005A735EEF736C69F8E972B4 /* foo */;
+			targetProxy = F2FF98CDD6A14AEC8770D010 /* PBXContainerItemProxy */;
+		};
+		90F2BBC6AAE94D8791861678 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 005A735EEF736C69F8E972B4 /* foo */;
+			targetProxy = 71EB0C7C978042EBB3578050 /* PBXContainerItemProxy */;
+		};
+		9DBCE972601C4C0F8FF60E9D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AE260A2F35E902721A833673 /* ZERO_CHECK */;
+			targetProxy = 1FB430FBEC2D439FA99CC085 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		077D5E676D6B4009BF454F06 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		13113E0ACEC747209F2B8DCD /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/RelWithDebInfo${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0        -DNDEBUG '-flto=thin' ","$(inherited)");
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = foo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/foo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		2E2C3A5E01EE4D109AF6080C /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		2EB1EBD0879E448BA3D5CB2E /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		4AA827F7CE77452F93FE8F6C /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/RelWithDebInfo${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 2;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INFOPLIST_FILE = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist";
+				INSTALL_PATH = "";
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0        -DNDEBUG '-flto=thin' ","$(inherited)");
+				OTHER_LDFLAGS = ("'-mios-simulator-version-min=13.0' '-Wl,-headerpad_max_install_names'","/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/RelWithDebInfo${EFFECTIVE_PLATFORM_NAME}/libfoo.a","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = boo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/boo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = RelWithDebInfo;
+		};
+		4C1E2BD672D143C2BEACC260 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		5376DAC62F414E729EA5E052 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SYMROOT = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build";
+			};
+			name = Debug;
+		};
+		66FE577BFF994B1AA944E041 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/MinSizeRel${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INFOPLIST_FILE = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist";
+				INSTALL_PATH = "";
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0     -DNDEBUG '-flto=thin' ","$(inherited)");
+				OTHER_LDFLAGS = ("'-mios-simulator-version-min=13.0' '-Wl,-headerpad_max_install_names'","/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/MinSizeRel${EFFECTIVE_PLATFORM_NAME}/libfoo.a","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = boo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/boo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		742636F017694D1F81830D03 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build";
+			};
+			name = Release;
+		};
+		7B768DCA75AD43078B4C0153 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		8ACFD62D20434BFB801539D9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ALL_BUILD;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		8E754BAEA5994C9FAB855483 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/Release${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INFOPLIST_FILE = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist";
+				INSTALL_PATH = "";
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0     -DNDEBUG '-flto=thin' ","$(inherited)");
+				OTHER_LDFLAGS = ("'-mios-simulator-version-min=13.0' '-Wl,-headerpad_max_install_names'","/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/Release${EFFECTIVE_PLATFORM_NAME}/libfoo.a","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = boo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/boo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		8E9A2183A0024D18AF13ED1E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		9071C2C02BA74D53BD8094F6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/Debug${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = "";
+				EXECUTABLE_SUFFIX = "";
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INFOPLIST_FILE = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/CMakeFiles/boo.dir/Info.plist";
+				INSTALL_PATH = "";
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0    '-flto=thin' ","$(inherited)");
+				OTHER_LDFLAGS = ("'-mios-simulator-version-min=13.0' '-Wl,-headerpad_max_install_names'","/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/Debug${EFFECTIVE_PLATFORM_NAME}/libfoo.a","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = boo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/boo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		A9C3DD20436143ABAD41C639 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/Debug${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0    '-flto=thin' ","$(inherited)");
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = foo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/foo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+		BC53ADCC7FD74E9E81F2B1AD /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build";
+			};
+			name = MinSizeRel;
+		};
+		CCFE0CB7E6A143B5981CCED7 /* MinSizeRel */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/MinSizeRel${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0     -DNDEBUG '-flto=thin' ","$(inherited)");
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = foo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/foo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = MinSizeRel;
+		};
+		E961FB32D0EB4CD6A04E3AFE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				COMBINE_HIDPI_IMAGES = YES;
+				CONFIGURATION_BUILD_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/Release${EFFECTIVE_PLATFORM_NAME}";
+				EXECUTABLE_PREFIX = lib;
+				EXECUTABLE_SUFFIX = .a;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 3;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				LIBRARY_STYLE = STATIC;
+				LLVM_LTO = YES_THIN;
+				ONLY_ACTIVE_ARCH = NO;
+				OTHER_CFLAGS = (" -fembed-bitcode -mios-simulator-version-min=13.0     -DNDEBUG '-flto=thin' ","$(inherited)");
+				OTHER_LIBTOOLFLAGS = ("");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = foo;
+				SECTORDER_FLAGS = "";
+				TARGET_TEMP_DIR = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build/foo.build/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Release;
+		};
+		EB93AD10D752404AB5150A74 /* RelWithDebInfo */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "";
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SYMROOT = "/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-C/bin/build";
+			};
+			name = RelWithDebInfo;
+		};
+		F706301BC0494DE9AC678116 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				COMBINE_HIDPI_IMAGES = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = ("'CMAKE_INTDIR=\"$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)\"'","$(inherited)");
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				INSTALL_PATH = "";
+				OTHER_LDFLAGS = ("","$(inherited)");
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ZERO_CHECK;
+				SECTORDER_FLAGS = "";
+				USE_HEADERMAP = NO;
+				WARNING_CFLAGS = ("$(inherited)");
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3D194314766F450EB4BE50C4 /* Build configuration list for PBXNativeTarget "boo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9071C2C02BA74D53BD8094F6 /* Debug */,
+				8E754BAEA5994C9FAB855483 /* Release */,
+				66FE577BFF994B1AA944E041 /* MinSizeRel */,
+				4AA827F7CE77452F93FE8F6C /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5E2C1A6347314D2388C9D49D /* Build configuration list for PBXAggregateTarget "ALL_BUILD" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7B768DCA75AD43078B4C0153 /* Debug */,
+				8ACFD62D20434BFB801539D9 /* Release */,
+				4C1E2BD672D143C2BEACC260 /* MinSizeRel */,
+				2EB1EBD0879E448BA3D5CB2E /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		68F5C444B6654E4782658569 /* Build configuration list for PBXNativeTarget "foo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A9C3DD20436143ABAD41C639 /* Debug */,
+				E961FB32D0EB4CD6A04E3AFE /* Release */,
+				CCFE0CB7E6A143B5981CCED7 /* MinSizeRel */,
+				13113E0ACEC747209F2B8DCD /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		97BA33E9DF7240C6974EFBFA /* Build configuration list for PBXProject "lto-test" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5376DAC62F414E729EA5E052 /* Debug */,
+				742636F017694D1F81830D03 /* Release */,
+				BC53ADCC7FD74E9E81F2B1AD /* MinSizeRel */,
+				EB93AD10D752404AB5150A74 /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CD6854D1CB804118AD9EF142 /* Build configuration list for PBXAggregateTarget "ZERO_CHECK" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F706301BC0494DE9AC678116 /* Debug */,
+				8E9A2183A0024D18AF13ED1E /* Release */,
+				077D5E676D6B4009BF454F06 /* MinSizeRel */,
+				2E2C3A5E01EE4D109AF6080C /* RelWithDebInfo */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 283D45AD35244189ACB7B2E8 /* Project object */;
+}

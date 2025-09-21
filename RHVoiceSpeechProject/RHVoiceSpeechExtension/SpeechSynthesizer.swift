@@ -16,13 +16,16 @@ class SpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             return
         }
 
-        // Здесь будет вызов RHVoiceWrapper для синтеза текста
-        // Пока возвращаем пустой фрейм, чтобы не блокировать
-        let audioData = RHVoiceWrapper.synthesizeText(text, withVoice: "uk-natalia") // Пример вызова
+        // Call RHVoiceWrapper to synthesize text
+        let audioData = RHVoiceWrapper.synthesizeText(text, withVoice: "uk-natalia")
 
-        // В реальной реализации нужно будет разбить audioData на фреймы
-        // и отправлять их через completion
-        // For now, just complete with nil to avoid crashing
+        if let audioData = audioData, audioData.count > 0 {
+            // Create an AVSpeechSynthesisProviderSpeechFrame with the audio data
+            // Assuming audioData is a single block of uncompressed PCM audio
+            let audioFrame = AVSpeechSynthesisProviderSpeechFrame(audioBytes: audioData, packetCount: 1, packetDescriptions: nil)
+            completion(audioFrame)
+        }
+        // Signal the end of speech by sending a nil frame
         completion(nil)
     }
 

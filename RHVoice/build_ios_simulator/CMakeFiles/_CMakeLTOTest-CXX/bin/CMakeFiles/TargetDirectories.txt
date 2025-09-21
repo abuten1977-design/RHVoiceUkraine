@@ -1,0 +1,4 @@
+/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/foo.dir
+/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/boo.dir
+/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/ALL_BUILD.dir
+/Users/m1/rhvoice/RHVoice/build_ios_simulator/CMakeFiles/_CMakeLTOTest-CXX/bin/CMakeFiles/ZERO_CHECK.dir
