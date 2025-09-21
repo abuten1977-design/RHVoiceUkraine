@@ -1,0 +1,62 @@
+# Copyright (C) 2024-2025  Mateo Cedillo <angelitomateocedillo@gmail.com>, Zvonimir stanecic <zvonimirek222@yandex.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define BelLatin2Cyrillic [
+a:а|
+b:б|
+[c|{ts}]:ц|
+[ć|č|{cz}]:ч|
+{ch}:х|
+d:д|
+[{dž}|{dż}]:{дж}|
+[dź]:{дзь}|
+e:э|
+f:ф|
+g:г|
+h:х|
+i:і|
+j:й|
+[{ja}|{ya}]:я|
+[{je}|{ye}]:е|
+[{jo}|{io}]:ё|
+[{ju}|{yu}]:ю|
+[k|q]:к|
+l:л|
+ł:л|
+m:м|
+n:н|
+ń:{нь}|
+o:о|
+ó:у|
+p:п|
+r:р|
+{rz}:ж|
+s:с|
+ś:{шч}|
+{sh}:ш|
+{sz}:ш|
+{szcz}:{шч}|
+t:т|
+u:у|
+v:в|
+w:в|
+x:{кс}|
+y:ы|
+z:з|
+[ź|ż|ž]:ж
+] @-> ; 
+
+#regex 
+#BelLatin2Cyrillic ; 

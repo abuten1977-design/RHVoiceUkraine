@@ -1,0 +1,96 @@
+# Copyright (C) 2024-2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define DefiniteArticle 
+el | la | los | las ; 
+
+define IndefiniteArticle 
+un | una | unos | unas ; 
+
+define PersonalPronoun 
+yo | tú | vos | usted | ustedes | él | ella | ellos | ellas | nosotros | nosotras | vosotros | vosotras ; 
+
+define PersonalReflexivePronoun 
+me | mí | se | te | ti | os | nos ; 
+
+define DemonstrativePronoun 
+ese | esa | este | esto | esta | eso | esos | esas | estos | estas | aquel | aquella | aquello | aquellos | aquellas ; 
+
+define PossessiveAdjective 
+mi | mis | tu | tus | su | sus | nuestro | nuestra | nuestros | nuestras | vuestro | vuestra | vuestros | vuestras ; 
+
+define Preposition 
+a | ante | bajo | cabe | con | contra | de | desde | durante | en | entre | hacia | hasta | lo | mediante | no | para | por | según | si | sin | so | sobre | tras | versus | vía ; 
+
+define UnstressedConjunction 
+del | y | ni | e | o | u | tu | sí | como | cuando | porque | pero | pues | que | quien | donde | aunque | mas | sino ; 
+
+define Conjunction 
+más | todavía | asimismo | entonces | caso | apenas | excepto ; 
+
+define Ser 
+ser | soy | es | somos | sois | son | era | érase | éramos | érais | eran | fui | fuiste | fue | fuimos | fuistes | fueron | será | serás | serán | seremos | sereis | sería | serías | seríamos | seríais | serían ;
+
+define Estar 
+estar | estoy | estás | está | estamos | estáis | estado | estaba | estabas | estábamos | estaban | estuve | estuvo | estuvimos | estuviéramos | estuvieran | estaré | estarás | estará | estaremos | estarán ; 
+
+define Tener 
+tener | tengo | tienes | tiene | tenemos | tiendes | tienen | tenía | tenías | teníamos | tenéis | tenían | tuve | tenido | tuvo | tuvimos | tuviste | tuviera | tuvieran | tuviéramos | tendré | tendrás | tendrá | tendremos | tendráis | tendrán | tendría | tendrías | tendríamos | tendrían ; 
+
+define Hacer 
+harán | hicieron | haciendo | hazer | hago | haz | hacemos | hacen ; 
+
+define Poder 
+poder | puedo | puedes | puede | podemos | podéis | pueden | podía | podías | podíamos | podíais | podían | pude | pudo | pudimos | pudiera | pudieran | pudieras | podré | podrás | podrá | podremos | podreis | podrán | podría | podrías | podríamos | podrían ; 
+
+define Ir 
+ir | voy | vas | va | vamos | van | iba | ibas | íbamos | iban | iré | irás | irá | iremos | irán ; 
+
+define Haber 
+haber | oye | deberíamos | habrán | había | habían | havíamos | habré | habrá | habrás | habremos | habrán | habría | habríamos | habrían ; 
+
+define AuxiliaryVerb 
+Ser | Estar | Tener | Haber ; 
+
+define WhWord 
+qué | quién | quiénes | cuándo | dónde | adónde | cuánto | cuánta | cuántos | cuántas | cuán | cuál | cuáles | cómo ; 
+
+define FunctionWord 
+DefiniteArticle | 
+IndefiniteArticle | 
+PersonalPronoun | 
+PersonalReflexivePronoun | 
+DemonstrativePronoun | 
+PossessiveAdjective | 
+Preposition | 
+UnstressedConjunction | 
+Conjunction | 
+AuxiliaryVerb ; 
+
+regex 
+DefiniteArticle -> def ,, 
+IndefiniteArticle -> indef ,, 
+PersonalPronoun -> pp ,, 
+PersonalReflexivePronoun -> prp ,, 
+DemonstrativePronoun -> dp ,, 
+PossessiveAdjective -> pos ,, 
+Preposition -> prep ,, 
+[UnstressedConjunction - se] -> uconj ,, 
+Conjunction -> conj ,, 
+Ser -> cop ,, 
+Estar -> cop ,, 
+Tener -> aux ,, 
+Haber -> aux ,, 
+\FunctionWord -> content ; 

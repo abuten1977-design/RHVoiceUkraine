@@ -1,0 +1,91 @@
+
+name: RHVoiceSpeechProject
+options:
+  bundleIdPrefix: com.yourcompany # Замените на ваш префикс Bundle ID
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+targets:
+  RHVoiceFramework:
+    type: framework
+    platform: iOS
+    sources:
+      - path: RHVoiceEngine/src
+        excludes:
+          - RHVoiceWrapper.mm
+      - path: RHVoiceEngine/include
+        type: file
+        buildPhase: headers
+        public: true
+      - path: RHVoiceEngine/src/RHVoiceWrapper.mm
+        type: file
+        compilerFlags: -x objective-c++
+    scheme:
+      build:
+        targets:
+          RHVoiceFramework: all
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(bundleIdPrefix).RHVoiceFramework
+        SWIFT_VERSION: 5
+        CURRENT_PROJECT_VERSION: 1
+        VERSIONING_SYSTEM: "apple-generic"
+        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party"
+        LIBRARY_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/src"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++14"
+        CLANG_CXX_LIBRARY: "libc++"
+        INSTALL_PATH: "@rpath/Frameworks"
+        INFOPLIST_FILE: RHVoiceEngine/Info.plist
+
+  RHVoiceApp:
+    type: application
+    platform: iOS
+    sources:
+      - RHVoiceApp
+    scheme:
+      build:
+        targets:
+          RHVoiceApp: all
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(bundleIdPrefix).RHVoiceApp
+        SWIFT_VERSION: 5
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
+        INFOPLIST_FILE: RHVoiceApp/Info.plist
+    dependencies:
+      - target: RHVoiceFramework
+        embed: true # Встраиваем фреймворк в приложение
+
+  RHVoiceSpeechExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - RHVoiceSpeechExtension
+    scheme:
+      build:
+        targets:
+          RHVoiceSpeechExtension: all
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(bundleIdPrefix).RHVoiceApp.RHVoiceSpeechExtension
+        SWIFT_VERSION: 5
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks @loader_path/Frameworks"
+        EXTENSION_POINT_IDENTIFIER: com.apple.speech.speech-provider
+        BUNDLE_LOADER: $(BUILT_PRODUCTS_DIR)/RHVoiceApp.app
+        WRAPPER_EXTENSION: appex
+        EMBEDDED_CONTENT_CONTAINS_SWIFT: YES
+        INFOPLIST_FILE: RHVoiceSpeechExtension/Info.plist
+        OTHER_LDFLAGS: $(inherited) -lc++
+        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party/rapidxml"
+        LIBRARY_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/src"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++14"
+        CLANG_CXX_LIBRARY: "libc++"
+    dependencies:
+      - target: RHVoiceFramework
+        embed: true # Встраиваем фреймворк в Extension
+
+fileGroups:
+  - RHVoiceModels # Добавляем группу для голосовых моделей

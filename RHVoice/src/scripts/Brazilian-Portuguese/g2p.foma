@@ -1,0 +1,872 @@
+# Copyright (C) 2018, 2019, 2020  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define FunctionWord 
+{o} | {a} | {os} | {as} | 
+{um} | {uma} | {uns} | {umas} | 
+{eu} | {tu} | {você} | {ele} | {ela} | {nós} | {vós} | {vocês} | {eles} | {elas} | {lhe} | 
+{me} | {te} | {nos} | {vos} | {la} | {lo} | {las} | {los} | {se} | 
+{este} | {esta} | {estes} | {estas} | {neste} | {nesta} | {nestes} | {nestas} | {deste} | {desta} | {destes} | {destas} | {esse} | {essa} | {esses} | {essas} | {desse} | {dessa} | {desses} | {dessas} | {nesse} | {nessa} | {nesses} | {nessas} | {aquele} | {aquela} | {aqueles} | {aquelas} | {daquele} | {daquela} | {daqueles} | {daquelas} | {naquele} | {naquela} | {naqueles} | {naquelas} | {que} | 
+{meu} | {minha} | {meus} | {minhas} | {teu} | {tua} | {teus} | {tuas} | {seu} | {sua} | {seus} | {suas} | {nosso} | {nossa} | {nossos} | {nossas} | {vosso} | {vossa} | {vossos} | {vossas} | {dele} | {dela} | {deles} | {delas} | {nele} | {nela} | {neles} | {nelas} | 
+{de} | {do} | {da} | {dos} | {das} | {dum} | {duma} | {duns} | {dumas} | {em} | {no} | {na} | {nos} | {nas} | {num} | {numa} | {nuns} | {numas} | {por} | {pelo} | {pela} | {pelos} | {pelas} | {ao} | {à} | {aos} | {às} | {para} | {pro} | {pra} | {pros} | {pras} | {com} | {sem} | {até} | {desde} | {entre} | {sobre} | {sob} | 
+{e} | {ou} | {se} | {mas} | {como} ; 
+
+define StressTag OX|PAR|PRO ; 
+define LowerMidTag LM3 | LM4 | LM5 ; 
+define Tag StressTag | FUNC | CLOSE | LowerMidTag ; 
+
+define RemoveTags Tag -> 0 ; 
+
+define EndOfWord .#. | Tag ; 
+define StartOfWord .#. ; 
+
+define VowelLetterA a|à|á|â|ã ; 
+define VowelLetterE e|é|ê ; 
+define VowelLetterI i|í ; 
+define VowelLetterO o|ó|ô|õ ;
+define VowelLetterU u|ú|ü ; 
+define VowelLetterEOrI VowelLetterE|VowelLetterI ; 
+define VowelLetter VowelLetterA|VowelLetterEOrI|VowelLetterO|VowelLetterU; 
+define AccentedVowelLetter á|â|é|ê|í|ó|ô|ú ; 
+define ConsonantLetter b|c|ç|d|f|g|h|j|k|l|m|n|p|q|r|s|t|v|w|x|y|z|ñ ; 
+define Letter VowelLetter | ConsonantLetter ; 
+define Word [Letter|ñ|%']+ ; 
+
+ define StressedVowel a1|aN1|E1|e1|"e1?"|eN1|i1|iN1|O1|o1|"o1?"|oN1|u1|uN1 ; 
+ define UnstressedVowel a|aN|e|E|eN|i|iN|o|O|oN|u|uN ; 
+ define Vowel StressedVowel | UnstressedVowel  ; 
+define NasalVowel aN|aN1|eN|eN1|iN|iN1|oN|oN1|uN|uN1 ; 
+define OralVowel Vowel - NasalVowel ; 
+define NotIVowel OralVowel - [i|i1] ; 
+define NotUVowel OralVowel - [u|u1] ; 
+define Stop b|p|d|t|g|k ; 
+define Fricative v|f|z|s|S|Z ; 
+define Affricate dZ|tS ; 
+define Nasal m|n|J|Js ; 
+define Liquid l|L|r|R ; 
+define Glide j|w|jN|wN ; 
+ define Consonant Stop|Fricative|Affricate|Nasal|Liquid|Glide ; 
+define VoicedConsonant b|d|g|v|z|Z|dZ|Nasal|Liquid ; 
+
+define FirstConsonantInCluster Stop|f|v ; 
+
+define UnstressedEnding [[a|e|o] (s)] | {am} | {em} | {ens} ; 
+
+define NotAccentedPrefix [\AccentedVowelLetter]* ; 
+
+define CloseWordEnding 
+# Words ending in "ele(s)"
+[{ele}(s)] | 
+# Words ending in "er"
+{er} | 
+# Words ending in "oa(s), oam"
+[{oa}(s|m)] | 
+# Words ending in "eiro(s), eira(s)"
+[{eir}[o|a](s)] | 
+# Words ending in "dora(s), tora(s)"
+[[d|t]{ora}(s)] | 
+# Words ending in "ei(s)"
+[{ei}(s)] | 
+# Words ending in "or, ores"
+[{or}({es})] | 
+# Words ending in "teve"
+{teve} | 
+# Words ending in "esa(s), eso(s)"
+[{es}[a|o](s)] | 
+# Words ending in "resse"
+{resse} | 
+# Words ending in "oito(s)"
+[{oito}(s)] | 
+# Words ending in "ovo"
+{ovo} | 
+# Words ending in "ez"
+{ez} | 
+# Words ending in "eses"
+{eses} | 
+# Words ending in "eito(s), eita(s), eitam, eite(s)"
+[{eit} [[[a|e|o] (s)] | {am}]] | 
+# Words ending in "eço(s), eça(s)"
+[{eç}[o|a](s)] | 
+# Words ending in "ceram", "beram"
+[[c|b]{eram}] | 
+# Words ending in "eza(s)"
+[{eza}(s)] | 
+# Words ending in "orto"
+{orto} | 
+# Words ending in "edo(s)"
+[{edo}(s)] | 
+# Words ending in "osto"
+{osto} | 
+# Words ending in "ejam"
+{ejam} | 
+# Words ending in "ermo(s)"
+[{ermo}(s)] | 
+# Words ending in "eçam"
+{eçam} | 
+# Words ending in "erdo(s), erda(s)"
+[{erd}[o|a](s)] | 
+# Words ending in "ejo(s)"
+[{ejo}(s)] | 
+# Words ending in "orro"
+{orro} | 
+# Words ending in "echo(s)"
+[{echo}(s)] | 
+# Words ending in "obo"
+{obo} | 
+# Words ending in "orra, orram"
+[{orra}(m)] | 
+# Words ending in "oxo(s), oxa(s)"
+[{ox}[o|a](s)] | 
+# Words ending in "eba(s), ebam"
+[{eba}(s|m)] | 
+# Words ending in "ojo"
+{ojo} | 
+# Words ending in "esco(s), esca(s)"
+[{esc}[o|a](s)] | 
+# words ending in "ebo"
+{ebo} | 
+# Words with the combination "erç"
+[{erç} UnstressedEnding] | 
+# Words with the combination "eim"
+[{eim} UnstressedEnding] | 
+# Words with the combination "eix"
+[{eix} UnstressedEnding] | 
+# Words with the combination "elh"
+[{elh} UnstressedEnding] | 
+# Words with the combination "eij"
+[{eij} UnstressedEnding] | 
+{oso} | 
+{bera} | 
+[{oir} ({os} | {as})] | 
+[{ssora} (s)] | 
+[{oço} (s)] | 
+[{evo} (s)] | 
+[{ete} (s)] | 
+{ova} | 
+{esse} ; 
+
+define OpenWord 
+# Words ending in "ele(s)"
+{pele} | 
+# Words ending in "er"
+{qualquer} | 
+{quer} | 
+{mulher} | 
+{tiver} | 
+{quiser} | 
+{Xavier} | 
+{puder} | 
+{houver} | 
+{fizer} | 
+{requer} | 
+{chanceler} | 
+{sequer} | 
+{quaisquer} | 
+# Words ending in "ei(s)"
+{pasteis} | 
+{pinceis} | 
+{corseis} | 
+# Words ending in "or, ores"
+{melhor} | 
+{melhores} | 
+{pior} | 
+{piores} | 
+{maior} | 
+{maiores} | 
+{menor} | 
+{menores} | 
+{suor} | 
+{arredor} | 
+{arredores} | 
+# Words ending in "resse"
+{estresse} | 
+# Words ending in "ez"
+{dez} | 
+# Words ending in "eses"
+{teses} | 
+# Words ending in "eço(s)"
+{meço} | 
+{peço} | 
+# Words ending in "eça(s)"
+[{peça}(s)] | 
+[{autopeça}(s)] | 
+[{meça}(s)] | 
+[{tropeça}(s)] | 
+[{começa}(s)] | 
+# Words ending in "orto"
+{comporto} | 
+{suporto} | 
+# Words ending in "ermo(s)"
+{tivermos} | 
+{dissermos} | 
+{estivermos} | 
+{quisermos} | 
+{pudermos} | 
+# Words ending in "eçam"
+{começam} | 
+{peçam} | 
+{meçam} | 
+# Words ending in "orra, orram"
+{forra} | 
+{desforra} | 
+# Words ending in "esco(s), esca(s)"
+{refresca} | 
+[{pesca}(s)] | 
+# Words with the combination "elh"
+[{velho}(s)] | 
+[{evangelho}(s)] | 
+[{velha}(s)] | 
+{peles} | 
+[{tora} (s)] | 
+{basquete} | 
+{cova} | 
+{sova} | 
+{acesse} | 
+{comesse} | 
+{confesse} | 
+{coubesse} | 
+{dissesse} | 
+{estresse} | 
+{fizesse} | 
+{houvesse} | 
+{processe} | 
+{professe} | 
+{pudesse} | 
+{pusesse} | 
+{quisesse} | 
+{soubesse} | 
+{tivesse} | 
+{trouxesse} | 
+{viesse} | 
+{abstivesse} | 
+{adviesse} | 
+{arremesse} | 
+{ativesse} | 
+{atravesse} | 
+{bendissesse} | 
+{compusesse} | 
+{condissesse} | 
+{conviesse} | 
+{depusesse} | 
+{desdissesse} | 
+{desfizesse} | 
+{detivesse} | 
+{dispusesse} | 
+{estivesse} | 
+{expusesse} | 
+{impusesse} | 
+{maldissesse} | 
+{mantivesse} | 
+{obtivesse} | 
+{opusesse} | 
+{predissesse} | 
+{preprocesse} | 
+{propusesse} | 
+{proviesse} | 
+{refizesse} | 
+{reouvesse} | 
+{reprocesse} | 
+{repusesse} | 
+{requisesse} | 
+{retivesse} | 
+{supusesse} | 
+{transpusesse} | 
+{antepusesse} | 
+{contradissesse} | 
+{contrafizesse} | 
+{contrapusesse} | 
+{decompusesse} | 
+{indispusesse} | 
+{interpusesse} | 
+{interviesse} | 
+{liquefizesse} | 
+{multiprocesse} | 
+{satisfizesse} | 
+[{ador} UnstressedEnding] | 
+{sete} | 
+{nova} ; 
+
+define CloseWordPattern 
+NotAccentedPrefix CloseWordEnding ; 
+
+define OpenWordEnding 
+# Words ending in "oxo(s), oxa(s)"
+[{dox}[o|a](s)] | 
+{redor} ; 
+
+define OpenWordPattern 
+NotAccentedPrefix OpenWordEnding ; 
+
+define CloseWord 
+[CloseWordPattern - [OpenWordPattern | OpenWord]] | 
+[{alqueire}(s)] | 
+[{foi}] | 
+[{dois}] | 
+[{pois}] | 
+[{depois}] | 
+[{foram}] | 
+[{pelo}(s)] | 
+[{cabelo}(s)] | 
+[{camelo}(s)] | 
+[{pesadelo}(s)] | 
+[{modelo}(s)] | 
+[{pela}(s)] | 
+[{sobre}] | 
+[{mesmo}] | 
+[{mesma}] | 
+[{mesmo}] | 
+[{mesmas}] | 
+[{porque}] | 
+[{hoje}] | 
+[{sorvete}(s)] | 
+[{gabinete}(s)] | 
+[{colete}(s)] | 
+[{foguete}(s)] | 
+[{sabonete}(s)] | 
+[{cavalete}(s)] | 
+[{todo}(s)] | 
+[{esse}(s)] | 
+[{nesse}(s)] | 
+[{desse}(s)] | 
+[{este}(s)] | 
+[{deste}(s)] | 
+[{neste}(s)] | 
+[{perdeste}(s)] | 
+[{leste}(s)] | 
+[{sofreste}(s)] | 
+[{desde}] | 
+[{sopa}] | 
+[{gol}] | 
+[{preto}(s)] | 
+[{boleto}(s)] | 
+[{prometo}] | 
+[{folheto}(s)] | 
+[{libreto}(s)] | 
+[{panfleto}(s)] | 
+[{esqueleto}(s)] | 
+[{noite}(s)] | 
+[{vezes}] | 
+[{osso}] | 
+[{grosso}] | 
+[{morreram}] | 
+[{leram}] | 
+[{ocorreram}] | 
+[{sofreram}] | 
+[{resolveram}] | 
+[{treze}] | 
+[{pela}(s)] | 
+[{estrela}(s)] | 
+[{escreveram}] | 
+[{encheram}] | 
+[{colheram}] | 
+[{perderam}] | 
+[{toda}(s)] | 
+[{escolheram}] | 
+[{defenderam}] | 
+[{entenderam}] | 
+[{abateram}] | 
+[{sobreviveram}] | 
+[{envolveram}] | 
+[{correram}] | 
+[{avesso}(s)] | 
+[{folha}(s)] | 
+[{gols}] | 
+[{bolsa}(s)] | 
+[{bolso}(s)] | 
+[{escolha}(s)] | 
+[{bolo}(s)] | 
+[{golfo}] | 
+[{toldo}(s)] | 
+[{reembolso}] | 
+[{labareda}(s)] | 
+[{poderes}] | 
+[{seres}] | 
+[{prazeres}] | 
+[{pareceres}] | 
+[{corpo}] | 
+[{anticorpo}] | 
+[{coisa}(s)] | 
+[{texto}(s)] | 
+[{sob}] | 
+[{chega}(s)] | 
+[{doze}] | 
+[{gostos}] | 
+[{rosto}] | 
+[{sexta}(s)] | 
+[{concerto}(s)] | 
+[{exageros}] | 
+[{bezerra}(s)] | 
+[{desemprego}] | 
+[{chego}] | 
+[{sossego}] | 
+[{empregos}] | 
+[{piloto}(s)] | 
+[{garoto}(s)] | 
+[{catorze}] | 
+[{quatorze}] | 
+[{fogo}] | 
+[{fosse}] | 
+[{fossem}] | 
+[{reino}(s)] | 
+[{treino}(s)] | 
+[{escreva}(s)] | 
+[{escrevam}] | 
+[{arroz}] | 
+[{chegue}(s)] | 
+[{cheguem}] | 
+[{garota}(s)] | 
+[{serem}] | 
+[{dizerem}] | 
+[{reverem}] | 
+[{quererem}] | 
+[{terem}] | 
+[{erros}] | 
+[{chegam}] | 
+[{temperos}] | 
+[{boca}(s)] | 
+[{governos}] | 
+[{esposa}(s)] | 
+[{negro}(s)] | 
+[{negra}(s)] | 
+[{preta}(s)] | 
+[{planeta}(s)] | 
+[{caderneta}(s)] | 
+[{borboleta}(s)] | 
+[{etiqueta}(s)] | 
+[{carreta}(s)] | 
+[{marreta}(s)] | 
+[{caneta}(s)] | 
+[{comprometa}(s)] | 
+[{comprometam}] | 
+[{acervo}(s)] | 
+[{nervo}(s)] | 
+[{verde}(s)] | 
+[{alviverde}(s)] | 
+[{cachorros}] | 
+[{rede}(s)] | 
+[{parede}(s)] | 
+[{acordos}] | 
+[{forem}] | 
+[{retornos}] | 
+[{torres}] | 
+[{dobros}] | 
+[{relevos}] | 
+[{contexto}(s)] | 
+[{almoços}] | 
+[{zebra}(s)] | 
+[{secos}] | 
+[{doce}(s)] | 
+[{gota}(s)] | 
+[{sexto}(s)] | 
+[{letra}(s)] | 
+[{erga}(s)] | 
+[{ergam}] | 
+[{moço}(s)] | 
+[{moça}(s)] | 
+[{namoros}] | 
+[{podre}(s)] | 
+[{aterros}] | 
+[{transtorno}(s)] | 
+[{devam}] | 
+[{coro}] | 
+[{porco}] | 
+[{formos}] | 
+[{Pedro}] | 
+[{ceifa}(s)] | 
+[{ceifam}] | 
+[{noivo}(s)] | 
+[{noiva}(s)] | 
+[{heroi}] | 
+[{heroico}(s)] | 
+[{heroica}(s)] | 
+[{forno}(s)] | 
+[{oco}(s)] | 
+[{oca}(s)] | 
+[{bobhecha}(s)] | 
+[{arroba}] | 
+[{escopo}(s)] | 
+{poderoso} | 
+[{planeja}(s)] | 
+{oi} | 
+{pedro} | 
+[{colchete} (s)] | 
+{escolho} | 
+{generoso} | 
+{gaveta} | 
+{leia} | 
+{veio} | 
+[ConsonantLetter [e|o]] | 
+{bandeja} | 
+{chamego} | 
+{boi} | 
+{cocho} | 
+#[{professora} (s)] | 
+#[{impressora} (s)] | 
+{conosco} | 
+{dorso} | 
+[{pescoço} (s)] | 
+{teres} | 
+[{mancebo} (s)] | 
+{afazeres} | 
+[{tolo} (s)] | 
+[{galego} (s)] | 
+{prometeste} | 
+{viveram} | 
+[{ostra} (s)] | 
+{lobos} | 
+[{morcego} (s)] | 
+[{cebola} (s)] | 
+[{violeta} (s)] | 
+[{grega} (s)] | 
+[{grego} (s)] | 
+[{bochecha} (s)] | 
+[{bolha} (s)] | 
+{desassossego} | 
+{espessa} | 
+{espessas} | 
+{deva} | 
+{mexeram} | 
+{remexeram} | 
+{selos} | 
+{percorreram} | 
+{intrometa} | 
+{intrometam} | 
+{intrometas} | 
+{teta} | 
+{desgostos} | 
+{maroto} | 
+{marotos} | 
+{moita} | 
+{moitas} | 
+{perdoe} | 
+{raposa} | 
+{raposas} | 
+{seda} | 
+{sedas} | 
+[{doid} [o|a] (s)] ; 
+
+define TagCloseWord 
+[..] -> CLOSE || StartOfWord CloseWord _ EndOfWord ; 
+
+define BasicUnaccentedParoxytone [Letter - AccentedVowelLetter]* [VowelLetter - AccentedVowelLetter] [Letter - AccentedVowelLetter]* UnstressedEnding ; 
+define UnaccentedParoxytoneException [ConsonantLetter* [g|q] [u|ü] UnstressedEnding] | [?* [{ãe}|{ão}|{õe}] (s)] | [{ao} (s)] ; 
+define UnaccentedParoxytone BasicUnaccentedParoxytone - UnaccentedParoxytoneException ; 
+
+define TagUnaccentedParoxytone [..] -> PAR || StartOfWord UnaccentedParoxytone _ [Tag - StressTag]* .#. ; 
+
+define MenteSuffix {mente} ; 
+
+define ProparoxytoneBase [?* [
+{orica} 
+]] ; 
+
+define AddLowerMidTag3 
+[..] -> LM5 || StartOfWord ProparoxytoneBase MenteSuffix _ [Tag - LowerMidTag]* .#. ; 
+
+define AddLowerMidTag2 
+[..] -> LM4 || StartOfWord [UnaccentedParoxytone - CloseWord] MenteSuffix _ [Tag - LowerMidTag]* .#. ; 
+
+define AddLowerMidTag1 
+[..] -> LM3 || StartOfWord [[[[[Letter - AccentedVowelLetter]*] - CloseWord] MenteSuffix] | [{sozinh} [a|o] (s)]] _ [Tag - LowerMidTag]* .#. ; 
+
+
+define TagFunctionWord 
+[..] -> FUNC || StartOfWord FunctionWord _ EndOfWord ; 
+
+define GuQuExceptionsRule 
+u -> ü || 
+StartOfWord {freq} _ VowelLetterE , 
+StartOfWord {seq} _ VowelLetterE {str} , 
+{cinq} _ {enta} EndOfWord , 
+{tranq} _ {il} , 
+StartOfWord {seq} _ {ela} (s) EndOfWord , 
+StartOfWord {delinq} _ VowelLetterEOrI , 
+StartOfWord {ag} _ {ent} , 
+StartOfWord {eq} _ {estre} (s) EndOfWord , 
+StartOfWord {antig} _ {idade} (s) EndOfWord , 
+StartOfWord {antiq} _ {íssim} [o|a] (s) EndOfWord , 
+StartOfWord {ling} _ VowelLetterEOrI , 
+StartOfWord  {quinq} _ {ênio} EndOfWord , 
+{seq} _ VowelLetterE n ; 
+
+define SHRule 
+{sh} -> {ch} ; 
+
+define IntervocalicSRule s -> z || VowelLetter _ VowelLetter ;
+
+define TransRule 
+{tr} VowelLetterA n [s:z] -> || StartOfWord _ VowelLetter ; 
+
+define InitialEXVowelRule 
+x -> z || 
+StartOfWord VowelLetterE _ VowelLetter , 
+e _ {ist} ; 
+
+define XAfterDiphthongRule 
+x @-> S || [[[VowelLetterA|VowelLetterE] i] | [VowelLetterO u]] _ VowelLetter ,, 
+x @-> s || StartOfWord {au} _ ,, 
+{trou} [x:s] @-> || StartOfWord _ VowelLetterE ; 
+
+define XBeforeVowelExceptionRule 
+x -> ks || 
+StartOfWord {ma} _ {imiz} ; 
+
+define RestoreXRule ks -> x ; 
+
+define XBeforeVowelRule 
+x -> S || 
+m VowelLetterE _ VowelLetter , 
+VowelLetterE n _ VowelLetter , 
+StartOfWord _ VowelLetter , 
+StartOfWord {ta} _ a (s) EndOfWord , 
+StartOfWord {ale} _ {andre} EndOfWord , 
+{li} _ VowelLetter , 
+{co} _ VowelLetter , 
+{ve} _ VowelLetter , 
+StartOfWord {almo} _ {arifado} (s) EndOfWord , 
+StartOfWord {lu} _ VowelLetter , 
+{la} _ VowelLetter , 
+StartOfWord {ca} _ {ias} EndOfWord , 
+StartOfWord {ro} _ VowelLetter , 
+StartOfWord {fa} _ {ina} (s) EndOfWord , 
+{pu} _ VowelLetter , 
+StartOfWord {sobreta} _ a (s) EndOfWord , 
+StartOfWord {po} _ a EndOfWord , 
+{gra} _ VowelLetter , 
+StartOfWord {xi} _ i EndOfWord , 
+StartOfWord {bru} _ a ({ria}) EndOfWord ,, 
+x -> s || 
+StartOfWord m [a|á] _ VowelLetter , 
+{pr} [o|ó] _ VowelLetter ; 
+
+define XBeforeConsonantRule 
+x -> s || _ ConsonantLetter ; 
+
+define CRule 
+{tch} @-> tS ,, 
+{ch} @-> S || _ ,, 
+[c:s] VowelLetterEOrI @-> || _ ,, 
+c @-> k || _ ,, 
+ç @-> s || _ ; 
+
+define DoubleSRule 
+{ss} @-> s ; 
+
+define YAsIRule 
+y -> i || StartOfWord | ConsonantLetter _ EndOfWord | ConsonantLetter ; 
+
+define GRule 
+g -> Z || _ VowelLetterEOrI ; 
+
+define UAsWRule 
+ü -> w || [g|q] _ VowelLetter ,, 
+u -> w || [g|q] _ VowelLetterA | VowelLetterO ,, 
+u -> 0 || [g|q] _ VowelLetterEOrI ; 
+
+define QRule 
+q -> k ; 
+
+define DefaultRRule 
+r -> R ; 
+
+define DoubleRRule 
+{RR} @-> R ; 
+
+define RAsTapRule 
+R -> r || VowelLetter | FirstConsonantInCluster _ VowelLetter ; 
+
+define JRule 
+j -> Z ; 
+
+define YRule 
+y -> j ; 
+
+define HRule 
+([n:J]|[l:L]) [h:0] @-> ; 
+
+define VowelWithDiacriticRule 
+á|â -> a1 || _ ,, 
+à -> a || _ ,, 
+ã -> aN || _ ,, 
+é -> E1 || _ ,, 
+ê -> e1 || _ ,, 
+í -> i1 || _ ,, 
+ó -> O1 || _ ,, 
+ô -> o1 || _ ,, 
+õ -> oN || _ ,, 
+ú -> u1 || _ ,, 
+ü -> u || _ ; 
+
+define AAsNasal a:aN|a1:aN1; 
+define EAsNasal e:eN|e1:eN1|E1:eN1; 
+define IAsNasal i:iN|i1:iN1 ; 
+define OAsNasal o:oN|o1:oN1|O1:oN1 ; 
+define UAsNasal u:uN|u1:uN1 ; 
+define VowelAsNasal AAsNasal| EAsNasal | IAsNasal | OAsNasal | UAsNasal ; 
+
+define NasalDiphthongRule1 
+AAsNasal [m:wN] -> || _ EndOfWord ,, 
+EAsNasal [m:jN] -> || _ EndOfWord ,, 
+EAsNasal [n:jN] -> || _ s EndOfWord ; 
+
+define NasalDiphthongRule2 
+e -> jN || [aN|oN] _ ,, 
+o -> wN || aN _ ,, 
+{ui} -> [uN jN] || StartOfWord m _ (t [o|a] (s)) EndOfWord ; 
+
+define NasalVowelRule 
+VowelAsNasal [[m|n]:0] -> || _ Consonant | x | EndOfWord ; 
+
+define DoubleConsonantAsSingle 
+b b:0 | d d:0 | f f:0 | g g:0 | k k:0 | l l:0 | m m:0 | n n:0 | p p:0 | t t:0 | v v:0 | z z:0 ; 
+
+define DoubleConsonantRule 
+DoubleConsonantAsSingle @-> ; 
+
+define Onset 0|Consonant | [FirstConsonantInCluster [l|r]] | [[g|k] w] | x ; 
+
+define DiphthongRule 
+[[a|a1] i [u:w]] | [NotIVowel [i:j]] | [NotUVowel [u:w]] @-> || _ EndOfWord | s | [(Onset - J) Vowel] ,, 
+a [o:w] (s) @-> || StartOfWord _ EndOfWord ; 
+
+define StressVowel a:a1|aN:aN1|e:"e1?"|eN:eN1|i:i1|iN:iN1|o:"o1?"|oN:oN1|u:u1|uN:uN1 ; 
+define UnstressVowel a1:a | aN1:aN | [e1|"e1?"]:e | E1:E | eN1:eN | i1:i | iN1:iN | [o1|"o1?"]:o | O1:O | oN1:oN | u1:u | uN1:uN ; 
+
+define StressParoxytone StressVowel -> || _ [\Vowel]* Vowel [\Vowel]* PAR ; 
+
+define StressOxytone StressVowel -> || .#. [\StressedVowel]* _ [\Vowel]* .#. ; 
+
+define UnstressFunctionWord 
+UnstressVowel -> || StartOfWord [\Vowel]* _ [\Vowel]* FUNC ; 
+
+define StressedCloseMidVowelRule 
+"e1?" : e1 | "o1?" : o1 -> || 
+ _ ?* CLOSE , 
+ _ Nasal|w ,, 
+"e1?" -> e1 || _ e|eN ,, 
+"o1?" -> o1 || _ o|oN ; 
+
+define DefaultStressedMidVowelRule 
+"e1?" -> E1 , "o1?" -> O1 ; 
+
+define RisingDiphthongContext [a|e|o] (s) EndOfWord ; 
+
+define RisingDiphthongRule 
+i -> j || \[t|d] _ RisingDiphthongContext ,, 
+u -> w || _ RisingDiphthongContext ; 
+
+define VowelRaisingRule 
+e -> i , o -> u || _ (s) EndOfWord ; 
+
+define LVocalizationRule 
+l -> w || NotUVowel _ [\Vowel] | EndOfWord ; 
+
+define PalatalizationRule 
+d -> dZ , t -> tS || _ i|i1|iN|iN1 ; 
+
+define SVoicingRule 
+s -> z || _ VoicedConsonant ; 
+
+define ZDevoicingRule 
+z -> s || _ EndOfWord ; 
+
+define XRule 
+x -> {ks} ; 
+
+define NTildeRule ñ -> Js ; 
+
+define AposRule %' -> 0 ; 
+
+define ApplyLowerMidTag3 [e:E|o:O] -> || _ [Consonant* Vowel]^2 Consonant* Tag* LM3 Tag* .#. ; 
+define ApplyLowerMidTag4 [e:E|o:O] -> || _ [Consonant* Vowel]^3 Consonant* Tag* LM4 Tag* .#. ; 
+define ApplyLowerMidTag5 [e:E|o:O] -> || _ [Consonant* Vowel]^4 Consonant* Tag* LM5 Tag* .#. ; 
+
+define Rules 
+Word .o. 
+AposRule .o. 
+TagFunctionWord .o. 
+TagCloseWord .o. 
+GuQuExceptionsRule .o. 
+SHRule .o. 
+YAsIRule .o.
+TagUnaccentedParoxytone .o. 
+AddLowerMidTag3 .o. 
+AddLowerMidTag2 .o. 
+AddLowerMidTag1 .o. 
+IntervocalicSRule .o. 
+TransRule .o. 
+InitialEXVowelRule .o. 
+XBeforeConsonantRule .o. 
+XAfterDiphthongRule .o. 
+XBeforeVowelExceptionRule .o. 
+XBeforeVowelRule .o. 
+RestoreXRule .o. 
+CRule .o. 
+GRule .o. 
+UAsWRule .o. 
+QRule .o. 
+DefaultRRule .o. 
+RAsTapRule .o. 
+DoubleRRule .o. 
+JRule .o. 
+YRule .o. 
+HRule .o. 
+NTildeRule .o. 
+VowelWithDiacriticRule .o. 
+NasalDiphthongRule1 .o. 
+NasalDiphthongRule2 .o. 
+DoubleConsonantRule .o. 
+NasalVowelRule .o. 
+DiphthongRule .o. 
+StressParoxytone .o. 
+StressOxytone .o. 
+UnstressFunctionWord .o. 
+StressedCloseMidVowelRule .o. 
+DefaultStressedMidVowelRule .o. 
+LVocalizationRule .o. 
+RisingDiphthongRule .o. 
+VowelRaisingRule .o. 
+PalatalizationRule .o. 
+DoubleSRule .o. 
+SVoicingRule .o. 
+ZDevoicingRule .o. 
+XRule .o. 
+ApplyLowerMidTag3 .o. 
+ApplyLowerMidTag4 .o. 
+ApplyLowerMidTag5 .o. 
+RemoveTags ; 
+
+define Mapping 
+aN:an | aN1:an1 | 
+E:ee | E1:ee1 | eN:en | eN1:en1 | 
+iN:in | iN1:in1 | 
+O:oo | O1:oo1 | oN:on | oN1:on1 | 
+uN:un | uN1:un1 | 
+jN:jn | wN:wn | 
+R:rh | 
+L:lj | J:nj | [Js:[n i]] | 
+S:sh | Z:zh | 
+tS:tj | dZ:dj ; 
+
+define Rename Mapping -> ; 
+
+define Exceptions 
+[{setecentos}:[s E tS i s eN1 t u s]] | 
+[{dosvox} : [d O z v O1 k s ]] | 
+[{etc.} : [e t s E1 t e r a]] | 
+[[{wi} (%-) {fi}] : [u a j f a1 j]] ; 
+
+regex 
+[Exceptions .P. Rules] .o. Rename ; 

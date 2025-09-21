@@ -1,0 +1,24 @@
+## RHVoice iOS Build Log - 20.09.2025
+
+**Overall Goal:** Successfully build the `RHVoiceSpeechProject` for the iOS Simulator.
+
+**Initial Problem:** The build was failing with the error `fatal error: 'rapidxml/rapidxml.hpp' file not found` specifically when targeting the iOS Simulator. The build for a physical device did not show this error, indicating a configuration mismatch.
+
+**Investigation & Resolution:**
+
+1.  **Configuration Discrepancy:** We correctly deduced that the Xcode project settings (`HEADER_SEARCH_PATHS`) were different for the simulator and physical device build configurations.
+
+2.  **Project.yml Analysis:** We inspected the `Project.yml` file, which is the source of truth for the Xcode project's structure and settings.
+
+3.  **Root Cause Identified:** We found that the `RHVoiceSpeechExtension` target was missing the necessary header search path for the `rapidxml` library. The path was present for the `RHVoiceFramework` target but not for the extension that depended on it.
+
+4.  **Fixing Project.yml:**
+    *   I added the missing path `$(SRCROOT)/RHVoiceEngine/src/third-party/rapidxml` to the `HEADER_SEARCH_PATHS` of the `RHVoiceSpeechExtension` target.
+    *   I initially introduced a YAML syntax error (incorrect indentation) during this edit, which caused the `xcodegen` tool to fail.
+    *   I corrected the indentation error in `Project.yml`.
+
+5.  **Project Regeneration:** After fixing the YAML file, I successfully ran `xcodegen generate` to apply the corrected settings to the `RHVoiceSpeechProject.xcodeproj` file.
+
+6.  **Final Verification:** I ran the `xcodebuild` command again, explicitly targeting an iOS Simulator (`iPhone 16 Pro`).
+
+**Final Outcome:** The build completed successfully (`** BUILD SUCCEEDED **`). The issue is resolved, and the project is now buildable for the iOS Simulator.

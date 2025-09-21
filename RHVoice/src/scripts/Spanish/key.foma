@@ -1,0 +1,74 @@
+# Copyright (C) 2024  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+source variables.foma
+
+define Number 
+Unit | 
+[[1:diez|2:veinti] [%0:0|Unit]] ;
+
+define Plus %+ : más;
+define Minus %- : menos;
+define Slash %/ : barra;
+define BackSlash %\ : [barra invertida];
+define Star %* : asterisco;
+define Dot %. : punto;
+define SpecialChar Plus | Minus | Slash | BackSlash | Star | Dot;
+
+define Enter {enter} : enter;
+
+define OtherKey 
+{underscore} : subrayado | 
+{double-quote} : comillas dobles | 
+{alt} : alt | 
+{control} : control | 
+{hyper} : hyper | 
+{meta} : meta | 
+{shift} : shift | 
+{super} : super | 
+{backspace} : [retroceso] | 
+{break} : pausa | 
+{delete} : borrar | 
+{down} : abajo | 
+{end} : fin | 
+Enter | 
+{escape} : escape | 
+{home} : inicio | 
+{insert} : insertar | 
+{left} : izquierda | 
+{menu} : menú | 
+{next} : siguiente | 
+{num-lock} : [bloqueo numérico] | 
+{pause} : pausa | 
+{print} : imprimir | 
+{prior} : prior | 
+{return} : retornar | 
+{right} : derecha | 
+{scroll-lock} : [bloqueo de desplazamiento] | 
+{space} : espacio | 
+{tab} : tab | 
+{up} : arriba | 
+{window} : windows ; 
+
+define KPKey 
+[{kp-} : 0] [Digit | Plus | Minus | Star | Slash | Dot | Enter];
+
+define FKey 
+f:efe Number ;
+
+define Key 
+KPKey | FKey | SpecialChar | OtherKey;
+
+regex Key;

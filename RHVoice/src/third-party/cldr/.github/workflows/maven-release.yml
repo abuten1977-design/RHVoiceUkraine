@@ -1,0 +1,56 @@
+name: cldr-mvn-deploy
+
+on:
+  release:
+    types: [created]
+jobs:
+  mvn-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # since we have to checkout all branches, cache here
+      - name: Cache .git
+        uses: actions/cache@v4
+        with:
+          path: .git
+          key: git-${{ github.base_ref }}-${{ github.sha }}
+          restore-keys: |
+            git-${{ github.base_ref }}-${{ github.sha }}
+            git-${{ github.base_ref }}
+            git-
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+          fetch-depth: 0 # for cldr-archive
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 11
+          distribution: 'temurin'
+      - name: Cache local Maven repository
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('tools/**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Build with Maven
+        run: >
+          mvn -s .github/workflows/mvn-settings.xml -B compile install package --file tools/pom.xml
+          -DskipTests=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout CLDR archive
+        run: >
+          mkdir -v ../cldr-archive && java -jar tools/cldr-code/target/cldr-code.jar checkout-archive
+      - name: set version to generic number
+        run: |
+          mvn -s .github/workflows/mvn-settings.xml --file tools/pom.xml versions:set -DnewVersion=0.0.0-SNAPSHOT-$(echo ${GITHUB_SHA} | cut -c1-10)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload to GitHub maven
+        # only for head fork
+        if: github.repository == 'unicode-org/cldr'
+        run: |
+          mvn -s .github/workflows/mvn-settings.xml  --file tools/pom.xml source:jar deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

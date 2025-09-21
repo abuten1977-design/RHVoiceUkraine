@@ -1,0 +1,61 @@
+# Copyright (C) 2024-2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define LetterLseq [
+a:a1 |
+á:a1 | 
+b:[b e1] |
+c:[c e1] |
+d:[d e1] |
+e:e1 |
+é:e1 |
+f:[e1 f e] |
+g:[x e1] |
+h:[a1 ts e] |
+i:i1 |
+í:i1 |
+j:[x o1 t a] |
+k:[k a1] |
+l:[e1 l e] |
+m:[e1 m e] |
+n:[e1 n e] |
+ñ:[e1 ni e] |
+o:o1 |
+ó:o1 |
+p:[p e1] |
+q:[k u1] |
+r:[e1 rr e] |
+s:[e1 s e] |
+t:[t e1] |
+u:u1 |
+ú:u1 |
+ü:u1 |
+v:[u1 vh e] |
+w:[u vh e dh o1 b l e] |
+x:[e1 k i s] |
+y:[i1 g r j e1 gh a] |
+z:[c e1 t a]] ;
+
+define SingleLseq 
+{ch}:[ts e1] | 
+{ll}:[e1 ll e0] ; 
+
+source special_chars.foma
+
+define TranscribeLetterSequence 
+SingleLseq -> || .#. _ .#. ,, 
+LetterLseq|NormalizeCharactersLseq -> || _ ;
+
+regex TranscribeLetterSequence ; 

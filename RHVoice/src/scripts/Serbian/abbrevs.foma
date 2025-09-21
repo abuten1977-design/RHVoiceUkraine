@@ -1,0 +1,61 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+define AbbrevTranslation 
+[{chrome}|{Chrome}|{цхроме}|{Цхроме}] : {кром} | 
+[{RHVoice}|{rhvoice}|{рхвоице}|{РХВоице}] : {`ерх`ав`ојс} | 
+[{http}|{HTTP}] : {х`ат`ет`еп`е} | 
+[{https}|{HTTPS}] : {х`ат`ет`еп`е`ес} | 
+[{FTP}|{ftp}] : {`ефт`еп`е} | 
+[{SFTP}|{sftp}] : {`ес`ефт`еп`е} | 
+[{google}|{Google}] : {г`угл} | 
+[{htm}|{HTM}] : {х`ат`е`ем} | 
+[{html}|{HTML}] : {х`ат`е`ем`ел} | 
+[{EXE}|{exe}] : {`егзе} | 
+[{DLL}|{dll}] : {д`еелел} | 
+[{TXT}|{txt}] : {т`е`икст`е} | 
+[{bbc}|{BBC}] : {б`иб`ис`и} | 
+[{cnn}|{CNN}] : {с`и`ен`ен} | 
+[{microsoft}|{Microsoft}] : {м`ајкрософт} | 
+[{microsofta}|{Microsofta}] : {м`ајкрософта} | 
+[{microsoftom}|{Microsoftom}] : {м`ајкрософтом} | 
+[{microsoftov}|{Microsoftov}] : {м`ајкрософтов} | 
+[{microsoftova}|{Microsoftova}] : {м`ајкрософтова} | 
+[{microsoftove}|{Microsoftove}] : {м`ајкрософтове} | 
+[{microsoftovi}|{Microsoftovi}] : {м`ајкрософтови} | 
+[{microsoftovih}|{Microsoftovih}] : {м`ајкрософтових} | 
+[{microsoftovim}|{Microsoftovim}] : {м`ајкрософтовим} | 
+[{microsoftovo}|{Microsoftovo}] : {м`ајкрософтово} | 
+[{microsoftovog}|{Microsoftovog}] : {м`ајкрософтовог} | 
+[{microsoftovom}|{Microsoftovom}] : {м`ајкрософтовом} | 
+[{microsoftovu}|{Microsoftovu}] : {м`ајкрософтову} | 
+[{microsoftu}|{Microsoftu}] : {м`ајкрософту} | 
+[{esc}|{ESC}] : {иск`ејп} | 
+[{facebooka}|{Facebooka}] : {ф`ејзбука} | 
+[{facebookom}|{Facebookom}] : {ф`ејзбуком} | 
+[{facebookov}|{Facebookov}] : {ф`ејзбуков} | 
+[{facebookova}|{Facebookova}] : {ф`ејзбукова} | 
+[{facebookove}|{Facebookove}] : {ф`ејзбукове} | 
+[{facebookovi}|{Facebookovi}] : {ф`ејзбукови} | 
+[{facebookovim}|{Facebookovim}] : {ф`ејзбуковим} | 
+[{facebookovih}|{Facebookovih}] : {ф`ејзбукових} | 
+[{facebookovo}|{Facebookovo}] : {ф`ејзбуково} | 
+[{facebookovu}|{Facebookovu}] : {ф`ејзбукову} | 
+[{facebookovog}|{Facebookovog}] : {ф`ејзбуковог} | 
+[{facebooku}|{Facebooku}] : {ф`ејзбуку} | 
+[{facebook}|{Facebook}] : {ф`ејзбук} ; 
+
+define Abbreviation AbbrevTranslation.u ;   

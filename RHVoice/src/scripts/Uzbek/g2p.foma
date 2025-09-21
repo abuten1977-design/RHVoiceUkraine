@@ -1,0 +1,144 @@
+# Copyright (C) 2023 Non-Routine LLC.  <lp@louderpages.org>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+source g2pMap.foma
+source fricativeJWords.foma
+source phonemes.foma
+
+define specialSymbol "~" | "^" ; 
+
+define Word [lGrapheme | specialSymbol]+ ; 
+
+define markYVowelLetters 
+[..] -> "_y" || .#. | vLetter _ е , _ [ё|ю|я] ; 
+
+define insertFricativeJMark [\gJ]* gJ [0:"_zh"] ?* ; 
+define markFricativeJGrapheme 
+[FricativeJWord .o. insertFricativeJMark] -> || .#. _ ; 
+
+define mapGraphemes 
+g2pMap @-> ; 
+
+define CleanupSpecialSymbols 
+specialSymbol -> 0 ; 
+
+define checkGlottalStops 
+"/gs" -> 0 || 
+[.#. | [\Consonant] | "/gs"] _ , 
+  _ [.#. | [\Vowel]] ; 
+
+define BackToFrontI 
+["/i?" : "/i0"] | ["/ii?" : "/ii0"] ; 
+
+define DefaultIRule 
+["/i?" : "/iy0" | "/ii?" : "/iiy0"] -> ; 
+
+define InitialIRule 
+BackToFrontI -> || .#. | "/gs" _ ; 
+
+define IWithVowelRule 
+BackToFrontI -> || Vowel _ , _ Vowel ; 
+
+define IKRule 
+BackToFrontI -> || _ pK ; 
+
+define IYRule 
+BackToFrontI -> || _ "/y" ; 
+
+define SameConsonantsRule 
+BackToFrontI -> || 
+"/b" _ "/b", 
+"/ch" _ "/ch", 
+"/d" _ "/d", 
+"/f" _ "/f", 
+pG _ pG, 
+"/gh" _ "/gh", 
+"/h" _ "/h", 
+"/j" _ "/j", 
+pK _ pK, 
+"/l" _ "/l", 
+"/m" _ "/m", 
+"/n" _ "/n", 
+"/ng" _ "/ng", 
+"/p" _ "/p", 
+"/q" _ "/q", 
+"/r" _ "/r", 
+"/s" _ "/s", 
+"/sh" _ "/sh", 
+"/t" _ "/t", 
+"/ts" _ "/ts", 
+"/v" _ "/v", 
+"/xh" _ "/xh", 
+"/y" _ "/y", 
+"/zh" _ "/zh" ; 
+
+define IngRule 
+BackToFrontI -> || _ "/ng" ; 
+
+define HRule 
+BackToFrontI -> || 
+.#. [\Vowel]* "/h" _ ?* Vowel , 
+.#. [\Vowel]* Vowel [\Vowel]* "/h" _ ?* Vowel ; 
+
+define TaMaRule 
+BackToFrontI -> 
+|| .#. ["/t" | "/m"] "/a0" Consonant Consonant _ Consonant ; 
+
+define GinaRule 
+BackToFrontI -> || 
+pG _ "/n" "/a0" .#. ; 
+
+define YigRule 
+BackToFrontI -> || 
+"/y" _ pG ; 
+
+define IRules 
+InitialIRule 
+.o. IWithVowelRule 
+.o.  IKRule 
+.o. IngRule 
+.o. IYRule  
+.o. HRule 
+.o. SameConsonantsRule 
+.o. TaMaRule  
+.o. GinaRule  
+.o. YigRule  
+.o. DefaultIRule ; 
+
+define MarkJFromDict 
+"~" -> "_zh" || gJ _ ; 
+
+define DefaultKGRule 
+["/g?": "/g" | "/k?": "/k"] -> ; 
+
+define FrontKGRule 
+["/g?": "/gj" | "/k?": "/kj"] -> || _ FrontVowel | .#. ; 
+
+define KGRules 
+FrontKGRule 
+.o. DefaultKGRule ; 
+
+define g2pRules 
+Word 
+.o. MarkJFromDict 
+.o. markFricativeJGrapheme 
+.o. markYVowelLetters 
+.o. mapGraphemes 
+.o. CleanupSpecialSymbols 
+.o. checkGlottalStops  
+.o. IRules 
+.o. KGRules ; 
+
+regex g2pRules ; 

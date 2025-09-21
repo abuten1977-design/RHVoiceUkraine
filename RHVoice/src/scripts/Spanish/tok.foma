@@ -1,0 +1,140 @@
+# Copyright (C) 2024-2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+source romans.foma
+
+define Apos %'|%‘|%’ ; 
+define CaseVariants 
+a -> a|A , 
+á -> á|Á , 
+b -> b|B , 
+c -> c|C , 
+d -> d|D , 
+e -> e|E , 
+é -> é|É , 
+f -> f|F , 
+g -> g|G , 
+h -> h|H , 
+i -> i|I , 
+í -> í|Í , 
+j -> j|J , 
+k -> k|K , 
+l -> l|L , 
+m -> m|M , 
+n -> n|N , 
+ñ -> ñ|Ñ , 
+o -> o|O , 
+ó -> ó|Ó , 
+p -> p|P , 
+q -> q|Q , 
+r -> r|R , 
+s -> s|S , 
+t -> t|T , 
+u -> u|U , 
+ú -> ú|Ú , 
+ü -> ü|Ü , 
+v -> v|V , 
+w -> w|W , 
+x -> x|X , 
+y -> y|Y , 
+z -> z|Z ; 
+
+define ConsonantLetterSequence 
+[b|c|d|f|g|h|j|k|l|m|n|ñ|p|q|r|s|t|v|w|x|z]+ ; 
+
+define LetterSequence 
+[ConsonantLetterSequence .o. CaseVariants].l ; 
+
+define SmallLetter b|c|d|f|g|h|j|k|l|m|n|ñ|p|q|r|s|t|v|w|x|y|z;
+define CapitalLetter B|C|D|F|G|H|J|K|L|M|N|Ñ|P|Q|R|S|T|V|W|X|Y|Z;
+define SmallVowel a|á|e|é|i|í|o|ó|u|ú|ü|y|ý ; 
+define CapitalVowel A|Á|E|É|I|Í|O|Ó|U|Ú|Ü|Y|Ý ; 
+define Letter SmallLetter | SmallVowel | CapitalLetter | CapitalVowel;
+define ExceptionalWord 
+[[a|A] %. [m|M] %.] | 
+[[p|P] %. [m|M] %.] | 
+[[a|A] %. [c|C] %.] | 
+[[d|D] %. [c|C] %.] | 
+[L u n %.] | [M a r %.] | [M i é %.] | [J u e %.] | [V i e %.] | [S á b %.] | [D o m %.] | 
+[e n e %.] | [f e b %.] | [a b r %.] | [m a y %.] | [j u n %.] | [j u l %.] | [a g o %.] | [s e p %.] | [o c t %.] | [n o v %.] | [d i c %.] | 
+[[e|E] [t|T] [c|C] %.] | 
+[[w|W] [i|I] %- [f|F] [i|I]] ; 
+define NZDigit 1|2|3|4|5|6|7|8|9;
+define Digit %0|NZDigit;
+#define year Digit^<4 ; 
+#define DayOrMonth Digit^<2 ; 
+#define dateSep %/ ; 
+define Number  %0 | [NZDigit Digit*];
+define DecimalSeparator %.|%,;
+define Word [Letter+ [Apos Letter+]*] | ExceptionalWord ;
+define Symbol \[Letter | Digit] ; 
+#define Date [Digit^2 dateSep Digit^2 dateSep Digit^4] ; 
+
+define Stage1 
+Word @-> ... word || _ .#. | \Letter ,, 
+NZDigit Digit* @-> ... num ,, 
+%0 Digit+ @-> ... dig ,, 
+%0 @-> ... num ,, 
+# We will apply this future new token for Spanish, called date, when someone helps me with cpp code for it.
+# We did an experimental approach by adding date support in number processing. However, I have concluded that the best option is that date support must have its own token type, because. a) we can create a switcher in the configuration file easily to enable or disable if the user wants date reading, and b) it is more easy to control because it is a separated way, outside numbers.
+#Date @-> ... date || _ ,, 
+Symbol @-> ... sym || _ ; 
+
+define Stage2 
+# SplitWordsWhenCamelCase, so voices canInterpretAsSeparateWords InsteadOfOnlyOne
+[..] -> word || [CapitalLetter|CapitalVowel] [SmallLetter|SmallVowel]+ _ [CapitalLetter|CapitalVowel] [SmallLetter|SmallVowel]+ ,, 
+word -> num || [.#.|sym] ESRomanNumeral _ [.#.|[? sym]] ; 
+
+define Stage3 
+# Custom LSeq handling:
+[..] -> lseq || [CapitalLetter|CapitalVowel] _ [CapitalLetter|CapitalVowel] [SmallLetter|SmallVowel] ,, 
+word -> lseq || 
+.#. (Symbol sym) CapitalLetter^2 CapitalVowel _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter^3 CapitalVowel _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter^4 CapitalVowel _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter^5 CapitalVowel _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalVowel CapitalLetter^2 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalVowel CapitalLetter^3 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalVowel CapitalLetter^4 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalVowel CapitalLetter^5 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter CapitalVowel CapitalLetter^2 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter CapitalVowel CapitalLetter^3 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter CapitalVowel CapitalLetter^4 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter^2 CapitalVowel CapitalLetter^2 _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) X CapitalVowel CapitalLetter _ (Symbol sym) (Symbol sym) (Symbol sym) .#. , 
+.#. (Symbol sym) CapitalLetter CapitalVowel W _ (Symbol sym) (Symbol sym) (Symbol sym) .#. ; 
+
+define Stage4 
+word -> lseq || [.#.|word|num|dig|sym] LetterSequence _ ,, 
+sym -> num || [sym|.#.] %- _ Digit,
+sym -> num || [sym|.#.] %+ _ Digit,
+num DecimalSeparator _ Digit+,,
+num -> dig || Digit^16 _ ,, 
+[num:0] [%º|%ª] [sym:num] -> ; 
+
+define Stage5 
+word -> lseq || .#. _ ;
+#num -> sym || DecimalSeparator _ Digit+ num DecimalSeparator num,
+# DecimalSeparator num Digit+ num DecimalSeparator _ ; 
+
+source special_chars.foma
+
+regex 
+NormalizeCharacters.o. 
+Stage1 .o. 
+Stage2 .o. 
+Stage3 .o. 
+Stage4 .o. 
+Stage5 ; 

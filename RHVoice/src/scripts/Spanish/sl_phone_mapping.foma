@@ -1,0 +1,92 @@
+# Copyright (C) 2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+define Mapping 
+aa -> a ,, 
+aa0 -> a ,, 
+aa1 -> a1 ,, 
+ae -> e ,, 
+ae0 -> e ,, 
+ae1 -> e1 ,, 
+ah -> a ,, 
+ah0 -> a ,, 
+ah1 -> a1 ,, 
+ao -> o ,, 
+ao0 -> o ,, 
+ao1 -> o1 ,, 
+aw -> a u ,, 
+aw0 -> a u ,, 
+aw1 -> a1 u ,, 
+ax -> e ,, 
+ax0 -> e ,, 
+ax1 -> e1 ,, 
+ay -> a j ,, 
+ay0 -> a j ,, 
+ay1 -> a1 j ,, 
+eh -> e ,, 
+eh0 -> e ,, 
+eh1 -> e1 ,, 
+er -> e r ,, 
+er0 -> e r ,, 
+er1 -> e1 r ,, 
+ey -> e i ,, 
+ey0 -> e i ,, 
+ey1 -> e1 i ,, 
+ih -> i ,, 
+ih0 -> i ,, 
+ih1 -> i1 ,, 
+iy -> i ,, 
+iy0 -> i ,, 
+iy1 -> i1 ,, 
+ow -> o u ,, 
+ow0 -> o u ,, 
+ow1 -> o1 u ,, 
+oy -> o i ,, 
+oy0 -> o i ,, 
+oy1 -> o1 i ,, 
+uh -> u ,, 
+uh0 -> u ,, 
+uh1 -> u1 ,, 
+uw -> u ,, 
+uw0 -> u ,, 
+uw1 -> u1 ,, 
+b -> b ,, 
+ch -> ts ,, 
+d -> d ,, 
+dh -> d ,, 
+f -> f ,, 
+g -> g ,, 
+hh -> x ,, 
+jh -> ll ,, 
+k -> k ,, 
+l -> l ,, 
+m -> m ,, 
+n -> n ,, 
+ng -> n ,, 
+p -> p ,, 
+r -> r ,, 
+s -> s ,, 
+sh -> sh ,, 
+t -> t ,, 
+th -> c ,, 
+v -> v ,, 
+w -> w ,, 
+y -> i ,, 
+z -> zh ,, 
+zh -> sh ; 
+
+regex 
+Mapping ;

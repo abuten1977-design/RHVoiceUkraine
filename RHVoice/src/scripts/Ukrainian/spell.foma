@@ -1,0 +1,128 @@
+# Copyright (C) 2016, 2020  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define UkrainianLetter 
+[[а|А]:а] | 
+[[б|Б]:бе] | 
+[[в|В]:ве] | 
+[[г|Г]:ге] | 
+[[Ґ|ґ]:ґе] | 
+[[д|Д]:де] | 
+[[е|Е]:е] | 
+[[э|Э] : [російска е]] | 
+[[Є|є]:є] | [[ё|Ё]:ё] | 
+[[ж|Ж]:же] | 
+[[з|З]:зе] | 
+[[и|И]:и] | 
+[[ы|Ы] : [російска и]] | 
+[[І|і]:і] | 
+[[Ї|ї]:ї] | 
+[[й|Й]:йот] | 
+[[к|К]:ка] | 
+[[л|Л]:ел] | 
+[[м|М]:ем] | 
+[[н|Н]:ен] | 
+[[о|О]:о] | 
+[[п|П]:пе] | 
+[[р|Р]:ер] | 
+[[с|С]:ес] | 
+[[т|Т]:те] | 
+[[у|У]:у] | 
+[[ф|Ф]:еф] | 
+[[х|Х]:ха] | 
+[[ц|Ц]:це] | 
+[[ч|Ч]:че] | 
+[[ш|Ш]:ша] | 
+[[щ|Щ]:ща] | 
+[[ь|Ь]:["м'який" знак]] | 
+[[ъ|Ъ] : [твердий знак]] | 
+[[ю|Ю]:ю] | 
+[[я|Я]:я] ; 
+
+define EnglishLetter 
+[[a|A]:а] | 
+[[b|B]:бе] | 
+[[c|C]:це] | 
+[[d|D]:де] | 
+[[e|E]:е] | 
+[[f|F]:еф] | 
+[[g|G]:ґе] | 
+[[h|H]:га] | 
+[[i|I]:і] | 
+[[j|J]:йот] | 
+[[k|K]:ка] | 
+[[l|L]:ель] | 
+[[m|M]:ем] | 
+[[n|N]:ен] | 
+[[o|O]:о] | 
+[[p|P]:пе] | 
+[[q|Q]:ку] | 
+[[r|R]:ер] | 
+[[s|S]:ес] | 
+[[t|T]:те] | 
+[[u|U]:у] | 
+[[v|V]:ве] | 
+[[w|W]:[дубль ве]] | 
+[[x|X]:ікс] | 
+[[y|Y]:ігрек] | 
+[[z|Z]:зет] ; 
+
+
+define Digit 
+%0:нуль|1:один|2:два|3:три|4:чотири|5:"п'ять"|6:шість|7:сім|8:вісім|9:"дев'ять";
+
+define Whitespace 
+tab:таб | 
+sp:пробіл ; 
+
+define Punctuation 
+%,: кома | 
+%.: крапка | 
+%?:[знак питання] | 
+%!:[знак оклику] | 
+%::двокрапка | 
+%;:[крапка з комою] | 
+%":лапки | 
+%':апостроф | 
+%(:[ліва дужка] | 
+%):[права дужка] | 
+%-:мінус | 
+%[:[ліва квадратна дужка] | 
+%]:[права квадратна дужка] | 
+%{:[ліва фігурна дужка] | 
+%}:[права фігурна дужка] ; 
+
+define Symbol 
+%$:долар | 
+%%:відсоток | 
+%#:решітка | 
+%&:амперсанд | 
+%*:зірочка | 
+%+:плюс | 
+%/:слеш | 
+%<:менше | 
+%=:дорівнює | 
+%>:більше | 
+%@:ет | 
+%\:бекслеш | 
+%^:дашок | 
+%_:підкреслення | 
+%`:[зворотний апостроф] | 
+%|:[вертикальна риска] | 
+%~:тільда | 
+%№:номер ; 
+
+regex 
+UkrainianLetter|EnglishLetter|Digit | Whitespace | Punctuation | Symbol;

@@ -1,0 +1,81 @@
+kon&juk*/2
+in&jek*/2
+nvda/i
+nad&živ{e,i,eo,ela,eli,elo,ele,io,ila,ile,ili,ilo,eti,iti,je,jeo,jela,jele,jeli,jelo,jet,jeti}/2
+apostrof*/1
+апостроф*/1
+zagreb{a,e,i,u,om,ačka,ačko,ački,ačkog,ačkomu,ačkoga}/1
+загреб{а,е,и,у,ом,ачка,ачко,ачки,ачког,ачкому,ачкога}/1
+ravnotež{a,e,i,u,o,ом}/3
+равнотеж{а,е,и,у,о,ом}/3
+visin{a,e,i,u,o,ом}/2
+висин{а,е,и,у,о,ом}/2
+glasnoć{a,e,i,o,u,om}/2
+гласноћ{а,е,и,о,у,ом}/2
+amss/i
+амсс/i
+atp/i
+атп/i
+hbo/i
+хбо/i
+Jaws=Džoz
+Јаwс=Џоз
+mma/i
+мма/i
+nba/i
+нба/i
+nvda/i
+нвда/i
+podataka/&1
+података/&1
+rfzo/i
+рфзо/i
+sfrj/i
+сфрј/i
+un/i
+ун/i
+usb/i
+усб/i
+vba/i
+вба/i
+vma/i
+вма/i
+messages=mesidžiz/1
+мессагес=месиџиз/1
+rhvoice=erhavojs/2
+рхвоице=ерхавојс/2
+viber=vajber/1
+вибер=вајбер/1
+facebook=fejsbuk
+(what=wot)sa(pp=p)/1
+(mess=mes)(enger=indžer)/1
+(xiao=šao)mi/2
+jaws=džoz
+{ne}/u vol{im,iš,i,imo,ite,e}/u
+{не}/u вол{им,иш,и,имо,ите,е}/u
+{ne}/u mo{gu,že,žeš,žemo,žete,gavši,gaše}/u
+{не}/u мо{гу,же,жеш,жемо,жете,гавши,гаше}/u
+{ne}/u zn{am,aš,a,amo,ate,aju,ajući,avši,ati}/u
+{не}/u зн{ам,аш,а,амо,ате,ају,ајући,авши,ати}/u
+{ne}/u treb{am,aš,a,amo,ate,aju,ujem,uješ,uje,ujemo,ujete,uju}/u
+{не}/u треб{ам,аш,а,амо,ате,ају,ујем,ујеш,ује,ујемо,ујете,ују}/u
+{ne}/u misl{im,iš,i,imo,ite,e,eći,ivši}/u
+{не}/u мисл{им,иш,и,имо,ите,е,ећи,ивши}/u
+{ne}/u sanj{am,aš,a,amo,ate,aju,ajući,avši}/1
+{не}/u сањ{ам,аш,а,амо,ате,ају,ајући,авши}/1
+{ne}/u rad{im,iš,i,imo,ite,e,eći,ivši}/1
+{не}/u рад{им,иш,и,имо,ите,е,ећи,ивши}/1
+{ne}/u kreć{em,eš,e,emo,ete,u,ući}/1
+{не}/u крећ{ем,еш,е,емо,ете,у,ући}/1
+{ne}/u id{em,eš,e,emo,ete,u}/u
+{не}/u ид{ем,еш,е,емо,ете,у}/u
+{ne}/u vid{im,iš,i,imo,ite,e,eti,evši,eći,iti,ivši,io,eo,ela,eli,elo,jela,jeli,jelo,ila,ili,ilo}/u
+{не}/u вид{им,иш,и,имо,ите,е,ети,евши,ећи,ити,ивши,ио,ео,ела,ели,ело,јела,јели,јело,ила,или,ило}/u
+{ne}/u čuj{em,eš,e,emo,ete,u,uvši}/u
+{не}/u чуј{ем,еш,е,емо,ете,у,увши}/u
+{ne}/u plač{em,eš,e,emo,ete,u}/u
+{не}/u плач{ем,еш,е,емо,ете,у}/u
+{ne}/u prič{a,am,aš,amo,ate}/1
+{не}/u прич{а,ам,аш,амо,ате}/1
+{Slobodan}/2
+{Слободан}/2

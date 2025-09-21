@@ -1,0 +1,205 @@
+#!/usr/bin/python2
+# -*- coding: utf-8; mode: Python; indent-tabs-mode: t; tab-width: 4; python-indent: 4 -*-
+
+# Copyright (C) 2012, 2014, 2015  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import os.path
+import argparse
+import re
+import codecs
+import collections
+import json
+import regex
+
+tag_regex=re.compile("<[^<]+>")
+
+class base(object):
+	def __init__(self,conf):
+		self.replacements=conf["replace"]
+		self.alphabet=set(conf["alphabet"])
+
+	def replace(self,text):
+		res=text
+		for k,v in self.replacements.iteritems():
+			res=res.replace(k,v)
+		return res
+
+class word_extractor(base):
+	def __init__(self,conf):
+		base.__init__(self,conf)
+		alphabet_string=u"".join(sorted(self.alphabet))
+		self.word_regex=re.compile(ur"(?ui)\b[{a}]+(-[{a}]+)*\b".format(a=alphabet_string))
+		self.words=collections.Counter()
+
+	def __call__(self,arg,dirname,filenames):
+		for filename in filenames:
+			path=os.path.join(dirname,filename)
+			if os.path.isfile(path):
+				with codecs.open(path,"r","utf-8") as f:
+					for word in (m.group(0).lower() for m in self.word_regex.finditer(tag_regex.sub(" ",f.read()))):
+#						letters=set(c for c in word if c.isalpha())
+#						if letters.issubset(self.alphabet):
+						self.words[self.replace(word)]+=1
+
+def words(conf):
+	ext=word_extractor(conf)
+	os.path.walk(conf["source"],ext,None)
+	with codecs.open("words","w","utf-8") as f:
+		for w,c in ext.words.most_common():
+			f.write(u"{} {}\n".format(w,c))
+
+class sentence_selector(base):
+	def __init__(self,conf):
+		base.__init__(self,conf)
+		self.count=0
+		self.sentences=dict()
+		self.words=set()
+		with codecs.open("words","r","utf-8") as f:
+			for line in f:
+				w,n=line.split()
+				if int(n)<conf["min_word_frequency"]:
+					break
+				self.words.add(w)
+			self.min_length=conf["min_length"]
+			self.max_length=conf["max_length"]
+			self.vowels=set(conf["vowels"])
+			self.ignore_case=conf["ignore_case"]
+			self.allow_initialisms=conf["allow_initialisms"]
+			self.exclude_capitalized=conf["exclude_capitalized_words"]
+			self.plain=conf["plain"]
+			self.wp_delim_regex=re.compile(u"(?u)\s*(?:</?doc(?:\s+[^<>]+)?>\s*)+")
+			self.tok_delim_regex=re.compile(r"\s+")
+			self.par_delim_regex=re.compile(r"(\r?\n){2,}")
+			self.tok_parse_regex=regex.compile(u"(?V1i)^(?:(\\p{{P}}*)([{a}]+(?:-[{a}]+)*)(\\p{{P}}*)|(\\p{{Pd}}))$".format(a=u"".join(self.alphabet)))
+
+	def add_paragraph(self,paragraph):
+		remaining_tokens=collections.deque(self.tok_delim_regex.split(self.replace(paragraph.strip())))
+		if not remaining_tokens:
+			return
+		sentence_tokens=list()
+		while remaining_tokens:
+			sentence_tokens.append(remaining_tokens.popleft())
+			if self.is_sentence_boundary(sentence_tokens,remaining_tokens):
+				if self.is_nice_sentence(sentence_tokens):
+					sentence=u" ".join(sentence_tokens)
+					if sentence not in self.sentences:
+						self.sentences[sentence]=self.count
+						self.count+=1
+				sentence_tokens=list()
+
+	def is_sentence_boundary(self,sentence_tokens,remaining_tokens):
+		if not sentence_tokens:
+			return False
+		if not remaining_tokens:
+			return True
+		if not self.ignore_case:
+			for c in remaining_tokens[0]:
+				if c.isalpha():
+					if not c.isupper():
+						return False
+					break
+		last_token=sentence_tokens[-1]
+		if (last_token[-1]==".") and (len(last_token)>1) and last_token[-2].isalpha() and ((len(last_token)==2) or (not last_token[-3].isalpha())):
+			return False
+		for c in reversed(last_token):
+			if c in [".","?","!"]:
+				return True
+			elif c.isalpha() or c.isdigit():
+				return False
+		return False
+
+	def check_token(self,token,first,last):
+		match=self.tok_parse_regex.match(token)
+		if not match:
+			return 0
+		if match.group(4):
+			return 1
+		word=match.group(2)
+		lword=word.lower()
+		if (not lword in self.words):
+			return 0
+		punc=match.group(3)
+		if "!" in punc:
+			return 0
+		if last and ("." not in punc) and ("?" not in punc):
+			return 0
+		if (not self.ignore_case) and first and (not word[0].isupper()):
+			return 0
+		if self.exclude_capitalized and (not first) and word[0].isupper():
+			return 0
+		if (not last) and (punc=="."):
+			return 0
+		if (not self.allow_initialisms) and (len(lword)>1) and (not self.vowels.intersection(lword)):
+			return 0
+		return 2
+
+	def is_nice_sentence(self,tokens):
+		num_tokens=len(tokens)
+		num_words=0
+		for i,token in enumerate(tokens):
+			n=self.check_token(token,i==0,i==(num_tokens-1))
+			if n==0:
+				return False
+			if n==2:
+				num_words+=1
+		if num_words < self.min_length:
+			return False
+		if num_words > self.max_length:
+			return False
+		return True
+
+	def process_wikipedia_text(self,text):
+		for article_text in self.wp_delim_regex.split(text):
+			if article_text:
+				clean_article_text=tag_regex.sub(u" ",article_text).replace("()","")
+				for paragraph in self.par_delim_regex.split(clean_article_text):
+					self.add_paragraph(paragraph)
+
+	def process_plain_text(self,text):
+		for paragraph in self.par_delim_regex.split(text):
+			self.add_paragraph(paragraph)
+
+	def __call__(self,arg,dirname,filenames):
+		for filename in sorted(filenames):
+			path=os.path.join(dirname,filename)
+			if os.path.isfile(path):
+				with codecs.open(path,"r","utf-8") as f:
+					contents=f.read()
+					if self.plain:
+						self.process_plain_text(contents)
+					else:
+						self.process_wikipedia_text(contents)
+
+def sentences(conf):
+	sel=sentence_selector(conf)
+	os.path.walk(conf["source"],sel,None)
+	with codecs.open("sentences","w","utf-8") as f:
+		for sentence,id in sorted(sel.sentences.iteritems(),key=lambda p: p[1]):
+			f.write(sentence)
+			f.write("\n")
+
+if __name__=="__main__":
+	parser=argparse.ArgumentParser(description="Select nice sentences for recording")
+	parser.add_argument("--config",required=True,help="the path to the configuration file")
+	subparsers=parser.add_subparsers()
+	words_parser=subparsers.add_parser("words")
+	words_parser.set_defaults(func=words)
+	sentences_parser=subparsers.add_parser("sentences")
+	sentences_parser.set_defaults(func=sentences)
+	args=parser.parse_args()
+	with open(args.config,"r") as f:
+		conf=json.load(f)
+	args.func(conf)

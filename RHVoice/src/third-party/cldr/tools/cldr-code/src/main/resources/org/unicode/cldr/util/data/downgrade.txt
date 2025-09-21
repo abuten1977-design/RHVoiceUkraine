@@ -1,0 +1,8 @@
+# Format is 
+#    locale-regex ; path-regex ; value-regex
+# Where a field is missing, it matches all values
+# The match uses 'looking at', equivalent to starting with ^ — so don't start with that
+# If you need to match to the end, follow with $
+# For the path, [@ is automatically escaped
+
+# For v46 and later, currently there are no paths to be downgraded

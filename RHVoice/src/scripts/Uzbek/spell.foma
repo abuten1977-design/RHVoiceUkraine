@@ -1,0 +1,124 @@
+# Copyright (C) 2023 Non-Routine LLC.  <lp@louderpages.org>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+source digits.foma
+source graphemes.foma
+
+define Whitespace 
+tab:таб | 
+sp:пробел ; 
+
+define Symbol 
+%! : [undov belgisi] | 
+%# : [panjara belgisi] | 
+%% : [foiz] | 
+%& : [ampersand] | 
+%' : [yozuv mashinkasi apostrofi] | 
+%) : [yopiluvchi qavs] | 
+%* : [yulduzcha] | 
+%, : [vergul] | 
+%- : [minus-chiziqcha] | 
+%. : [nuqta] | 
+%/ : [qiya chiziq] | 
+%: : [ikki nuqta] | 
+%; : [nuqtali vergul] | 
+%? : [soʻroq belgisi] | 
+%@ : [at belgisi] | 
+%[ : [ochiluvchi kvadrat qavs] | 
+%\ : [teskari qiya chiziq] | 
+%] : [yopiluvchi kvadrat qavs] | 
+%_ : [pastki chiziqcha] | 
+%{ : [ochiluvchi figurali qavs] | 
+%} : [yopiluvchi figurali qavs] | 
+%$ : [dollar] | 
+%+ : [plus belgisi] | 
+%< : [kichik] | 
+%= : [teng] | 
+%> : [katta] | 
+%^ : [simkumfleks] | 
+%` : [gravis] | 
+%| : [vertikal chiziq] | 
+%~ : [tilda] | 
+%’ : [oʻng apostrof] | 
+%` : [gravis] | 
+%‘ : [chap apostrof] ; 
+
+define VowelName vLetter .o. [downcase ->] ; 
+
+define lcConsonantName 
+[b: "be"] | 
+[p: "pe"] | 
+[v: "ve"] | 
+[w: "we"] | 
+[g: "ge"] | 
+[d: "de"] | 
+[j: "je"] | 
+[z: "ze"] | 
+[k: "ke"] | 
+[l: "le"] | 
+[m: "me"] | 
+[n: "ne"] | 
+[r: "re"] | 
+[s: "se"] | 
+[t: "te"] | 
+[f: "fe"] | 
+[h: "he"] | 
+[q: "qe"] | 
+[x: "xe"] | 
+[y: "ye"] | 
+[c: "ce"] | 
+[б: "бe"] | 
+[п: "пe"] | 
+[в: "вe"] | 
+[г: "гe"] | 
+[ғ: "ғe"] | 
+[д: "дe"] | 
+[ж: "жe"] | 
+[з: "зe"] | 
+[к: "кe"] | 
+[л: "лe"] | 
+[м: "мe"] | 
+[н: "нe"] | 
+[р: "рe"] | 
+[с: "сe"] | 
+[т: "тe"] | 
+[ф: "фe"] | 
+[ҳ: "ҳe"] | 
+[қ: "қe"] | 
+[х: "хe"] | 
+[й: "йe"] | 
+[ц: "цe"] | 
+[ч: "чe"] | 
+[ш: "шe"] | 
+[щ: "щe"] ; 
+
+define ConsonantName 
+cLetter .o. 
+[downcase ->] .o. 
+[lcConsonantName -> ] ; 
+
+
+define SignName 
+[ъ|Ъ] : [ayirish belgisi] | 
+[ʼ%: [tutuq belgisi]] ; 
+
+define LetterName 
+VowelName | 
+ConsonantName | 
+SignName ; 
+
+regex 
+LetterName | DigitName | Whitespace | Symbol ; 
+

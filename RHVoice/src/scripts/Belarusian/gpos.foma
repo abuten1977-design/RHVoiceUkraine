@@ -1,0 +1,144 @@
+# Copyright (C) 2025 Zvonimir Stanecic <zvonimirek222@yandex.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define Preposition 
+без | 
+блізка | 
+побач | 
+ў | 
+падчас | 
+насуперак | 
+ад | 
+для | 
+да | 
+з | 
+за | 
+дзякуючы | 
+замест | 
+з | 
+каля | 
+праз | 
+акрамя | 
+паміж | 
+на | 
+вакол | 
+над | 
+нягледзячы на | 
+а | 
+аб | 
+апроч | 
+перад | 
+па | 
+побач | 
+паза | 
+помеж | 
+панад | 
+насуперак | 
+сярод | 
+пры | 
+пра | 
+насупраць | 
+на працягу | 
+пад | 
+апасля | 
+сяррод | 
+цераз | 
+адносна | 
+з | 
+да ; 
+
+
+define Conjunction 
+а | 
+абы | 
+або | 
+але | 
+чым | 
+бо | 
+затое | 
+і | 
+кем | 
+каго | 
+каму | 
+якая | 
+якое | 
+які | 
+якія | 
+наўзамен | 
+незважаючы | 
+нібы | 
+быццам | 
+няхай | 
+не | 
+ніж | 
+аднак | 
+паколькі | 
+прычым | 
+алеж | 
+колькі | 
+колькам | 
+колькіх | 
+гэта | 
+таму | 
+хай | 
+хоц | 
+хаця | 
+хто | 
+ці | 
+чый | 
+чым | 
+чыя | 
+чые | 
+чыі | 
+чаму | 
+чым | 
+што | 
+каб | 
+абы | 
+як | 
+якая | 
+якое | 
+калі | 
+які | 
+ды ; 
+
+define Particle 
+вядома | 
+у рэшце рэшт | 
+аж | 
+б | 
+бы | 
+ж | 
+жа | 
+толькі | 
+амаль | 
+навад | 
+няўжо | 
+не | 
+вось | 
+прыблізна | 
+саме | 
+так | 
+таксама | 
+хіба | 
+проста ; 
+
+define FunctionWord Conjunction | Preposition | Particle ; 
+
+regex 
+Conjunction -> conj || _ ,, 
+Preposition -> prep || _ ,, 
+Particle -> part || _ ,, 
+\FunctionWord -> content || _ ; 

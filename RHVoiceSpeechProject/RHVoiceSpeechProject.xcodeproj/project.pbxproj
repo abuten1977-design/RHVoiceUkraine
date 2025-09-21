@@ -1,0 +1,1086 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		206AE72D702396AE44A420F5 /* rapidxml_print.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		3044FBB6A116EAB87A0C222B /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
+		455566F792846E7D01C51BE7 /* rapidxml.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 52D288B22AF25E69538F2F64 /* rapidxml.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 705077891DDDC64180422100 /* libRHVoice.dylib */; };
+		57126DDCC19FEFD018E03017 /* rapidxml_iterators.hpp in Headers */ = {isa = PBXBuildFile; fileRef = D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		7544C0A54FB4244AB8D03CE4 /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */; };
+		ACBF080FDD14EDB624ECD732 /* rapidxml_utils.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		B27A9AE53352541658F4AAD2 /* RHVoiceWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9200BA9820874C39B6FF50E5 /* RHVoiceWrapper.mm */; settings = {COMPILER_FLAGS = "-x objective-c++"; }; };
+		BB87468CBDA4E10E7DBF7152 /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
+		BE22E5A6FACBD1EE531F7DBD /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CEA011EB900621C4C394A166 /* include in Headers */ = {isa = PBXBuildFile; fileRef = 1A956A0237E36EFCE501D40F /* include */; settings = {ATTRIBUTES = (Public, ); }; };
+		DF96E415A69D57E607FB8145 /* license.txt in Resources */ = {isa = PBXBuildFile; fileRef = 91F16F293ED0BBED63C69386 /* license.txt */; };
+		EABC0D8FAE69F956058EDA9B /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3BDE92136AE4B8472548AE1A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BC38E1521A42ACC747513C1A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB88F570E5BD1B3AFCBFC48C;
+			remoteInfo = RHVoiceFramework;
+		};
+		F326310370F70D0985DEBF78 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BC38E1521A42ACC747513C1A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB88F570E5BD1B3AFCBFC48C;
+			remoteInfo = RHVoiceFramework;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		9934C64B5BF48F638DCFABB3 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				BE22E5A6FACBD1EE531F7DBD /* RHVoiceFramework.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C89E4E589BB8784630D0D204 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				EABC0D8FAE69F956058EDA9B /* RHVoiceFramework.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		003026D41D585477C8DC9902 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		00D2F093DDA0DFF5B860BE80 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		00D89CC9DD9E20C1B31C5AB4 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		01A16412D0A02B7CF1672C28 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		01F2FA83A78086A80441F3F1 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
+		0481E74A9C650898B0C00FE0 /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		0518665B9CE0B0A63246B50E /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		059A46C9387FB60358C43F24 /* readme.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = readme.md; sourceTree = "<group>"; };
+		05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSynthesizer.swift; sourceTree = "<group>"; };
+		06729ADFB11901D11107D761 /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		0B880A47F9A3106DB02C01FF /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
+		0E0397B7EC4DF8B8C1525D45 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		0F1D1DEEAF1CFA4DED68ABF7 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		0F32B8FC32004CF2F208C4AF /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		0FA1AF4574A57BBEED6B9E0B /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		11278D442773A9C445520CD9 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		116F066A556BB21AE5F99361 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		12C86FD956B2060DF9F5FFFE /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		155A897CC6178871E2A12A1B /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		15E2C9BA123CEFE94177AE45 /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
+		161CB2C95B06DDFB0705021D /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		170F6C1AA3BD6CFDBB2DC0E7 /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		173C70A6B6F977F7BE18E57D /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		176D7CBFDED76FFA079464B5 /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
+		179B19CA6BE3E6F091D9EA84 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
+		1A0506A92E91FF57F37BF919 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
+		1A956A0237E36EFCE501D40F /* include */ = {isa = PBXFileReference; path = include; sourceTree = "<group>"; };
+		1B93F062AAB8A4C975586D02 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		1CD67B8CA04BB106761800E0 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		1CF8069B069DC080BA81DB31 /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		1E897074B9CB8A347279B44E /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		1F15682DEF3A29271ED7AE90 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		1FC33D61FC47965112B17E19 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		20E1D1F1B23DD00CE509C74D /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		21D47218054507B000A54856 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		220DD71684A1CB9F3FD3A243 /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
+		2289BAC93C26756528111047 /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RHVoiceFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		261479D233F6E06040E028F2 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		266B9A1DF01D218AE24ED335 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		26A108252A9EB9FEFEFEC51C /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		290C3F6CBF673D206015F546 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		2A1260EBEEAE25F6F355849F /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		2D59853AF90D5962486477D0 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		2DA146017195F56B7C893E7F /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		2E08129BB49955B596AE155C /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		2F555E3D92683B7D0C222B4C /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		2FC319A51906E8A039DE7FA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		30BE9118B60E89D66D986CA2 /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
+		31E9F4A2AF56E45E7C9C434C /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		34DB7C3917B8F8CDDDDB1F55 /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		3598BF6347CF3007449BA5FC /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
+		35BAD2D1716FE0A78991293A /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		37C1ACDA2656D2D16FEFA81D /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		3831825C6BCAA3950EED09CD /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		38B7990894CEF210E8F11E93 /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		392207DAAF43F0B1A3BCB33A /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		39B3EFD13D0CC8DB4E09B2A4 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		3CE56EF7ECE7BE04C16938E4 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		3DAB76366B1A62CDD8E5EACF /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		3FCAD9DD5775D3C9ECD04BCC /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		409C1913715FF9F8206AA0D8 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		41664B8109C948DED061275A /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		456BFFBD5BB08833D6C71BD1 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		46942DC4362CEDE6902A4C33 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		47BD6B314B72273455553D98 /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		494BB5792F1BA46FCF42467A /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_utils.hpp; sourceTree = "<group>"; };
+		4AFB711C1BB2B2DD0FF2E9B0 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		4BFF526A0D474631928FE70F /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		4CC99507E502B522308952DE /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
+		4D97C92DC783BE731D331717 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		52D288B22AF25E69538F2F64 /* rapidxml.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml.hpp; sourceTree = "<group>"; };
+		53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_print.hpp; sourceTree = "<group>"; };
+		596379E570A76B15B4A7DF6A /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		5BC056950FE464C93B704BBF /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
+		5C1BF866865F5469F29DB28F /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		5C45C1159DBA055CA0ED2659 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		5DCEE8B25AE84BFAF3F011DD /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		6505FACB5E8D03C78A513643 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		673E7203A5F7B1D7392B5E81 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
+		6A62B8CD6AF3C1C03A71DBC4 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		6E06F2C2030004A7FF5F995E /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		705077891DDDC64180422100 /* libRHVoice.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libRHVoice.dylib; sourceTree = "<group>"; };
+		70F8BF8690546DC63005149C /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		71F85CB19EED2B86D60AF1F3 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
+		72C41E2904FFE55094C85EB4 /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		7481217F060BA018E26F65C4 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		74FF582A0CEE27C80678EFE5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		7570416D8367938A21093C6F /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		7579FA9884C0CEBD33394EA2 /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
+		786390235D45A9DEDDEF75EA /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		7B4350373A57D9C7B1994928 /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
+		7C055EBE41C807832D3366C7 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		7C214CF780D7E0CE8AEDFB28 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		7C8C67C6772BD776349992BF /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
+		7DD9447428B21CEA252855EA /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		7F7C22A2C3947BE6AE6FC970 /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		82006DF9362CB55CE4C26E5B /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		82CCC1565CBE8EDE17CC604E /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		830BCC4C4EFA698B08DADFD3 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		84781062369377F264E298C5 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		851AD990A14F66410A77C531 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		858EA50A1A5AF1174220523D /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		8595DE6A56A765696ACDE8D7 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
+		8925840A38A6540387F57762 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		8AE12BEF020A07E5FE282049 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		8B42308D3F3FE997B7AF3723 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		8FB0A1BCD77B68FA3BDCF9E1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		91F16F293ED0BBED63C69386 /* license.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = license.txt; sourceTree = "<group>"; };
+		9200BA9820874C39B6FF50E5 /* RHVoiceWrapper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RHVoiceWrapper.mm; sourceTree = "<group>"; };
+		9214222471F83DC815D9BF51 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		9224A77A4E7174CCCD403A47 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		92C9A37051B11906979A9A17 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		94E20B391A643A4C9CB4600B /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		94EEE4A9002A6B2D2A986D1E /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		956070E28DE440C59209F85B /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		95B0581EB39D5BF337456EE5 /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		96838DDF2D81A59E65AC20FE /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		9726E9E34BE736CB8E8DDE17 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		97637009FC634D29721DF9BD /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		9B6D37B54816ADAB05F86C54 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		9D9DB7BB7C8229488D4694F9 /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
+		9F9F00DFE1799946658F8994 /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		A01EF279691726A5617542FA /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		A0421D3DDD1BE66FE0AE4C32 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		A1046F077B993EA2A6B0FB0E /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		A30C1BFDA62FB368C447F50C /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		A3D047A46665313458CEE11E /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		A42F948E58E78198E24AA844 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A6251EB5B3FCE16E43929BC9 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		A8918B17F2D9E5D12ED0B7F1 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		A896E514F3BFE296342DE02A /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		A8D562025DBE990C9A48AD53 /* RHVoiceSpeechExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RHVoiceSpeechExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A991BD0AB5D7AA62F8E50EB4 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		AC5204231FE0DACBBCA062B9 /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		ACAF1D4918853A336F0C166D /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		ADF2990B2BDDA23D276E706C /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		AE9C128C903A120A03C7F115 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		AF3EECB74D3F86D331601AF2 /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		B0187BDE8832D903076AA580 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		B0B668C86700C34483AF1198 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		B0F9913A7E2F1FC5A6F5BEEA /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		B82F478126121B43EF5AA173 /* RHVoiceApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RHVoiceApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B8C3202E14E3092F0192CE6B /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		BA35697FD340F11FC24ACCDE /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		BB37D1DC5C1F1C22EDCEBF65 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		BECEE2655DAB5BBE4D52D954 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		C1CB44EC371EA302C51620DE /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		C204627F3FE65E2B6612C8BC /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		C465E43A457E361BF47293D7 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		C5E4333F3D67F1915DCE23E1 /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
+		C73D1B76C967A434E3825360 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		D22153705EEBA4F2AAFFC86F /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
+		D23D15D2E922E669CD011C84 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		D2A369E755249D12FCEB7426 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		D2E2927CB56A71D543C8D04B /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		D4AF9B5C436402566B98DDAE /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		D54FCA10786141506A87EFB9 /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_iterators.hpp; sourceTree = "<group>"; };
+		D7A83B36BB2D8B679B6E2CBA /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		D832BF22FE27015BC995ACC4 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		D86CB974F2A2FE5BA2CCCC4E /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		DC226B2524E8E276906E3F9E /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		DCC1138933AFDAE037694E2A /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		DCC79D82C7C92399287C130A /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		DDF65473A2BB88E19E9257A7 /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		DE721E53FB66F03E2A6A6EEB /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		DF01DA3A0C1B73770C632ABD /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		DF26E2B7A8A1F06AB08E93B2 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		E0F82B7DC4DD975B105C3714 /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		E1B49CA6059A835B6816E89D /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		E4560E268FDC278798E36404 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
+		E48BD21E7952EA1B3548B473 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		E5BE339D6313769883FDF197 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		E5DC0FA34A1FCC57638D103B /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		E7EE089A84671F0575A04072 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		E858514C33037C1238BCE8AA /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		EC1816F44709EC78E36AF7E0 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		EC44577E94FFE24F18C0DAA2 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		EE5D02AE83F2B4D4D7081693 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		F2080F946EB14D13A2546A68 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		F4AD3F13806BB3F883134BA2 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		F72725D27E4E960440C5F829 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		F98E569F13DEE70E88AA8B28 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		FB84537DD9F1C955FF094D04 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		FBA487B967E0A6AE05218FF9 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		FC57925192F3BBB95ACC02B6 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		FD80D35323AAD2C277E3914D /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		FD8B98EF3459EBA786461699 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		FFC9078A2B81622AA816498F /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C7F7D62C3E6FA9ABB8DC566B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3044FBB6A116EAB87A0C222B /* RHVoiceFramework.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E67AE1CCE14732F3C74BCE19 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB87468CBDA4E10E7DBF7152 /* RHVoiceFramework.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		196A3EA88324492E8B6B815C = {
+			isa = PBXGroup;
+			children = (
+				CA206FBFFD2FE3D96E851DE7 /* RHVoiceApp */,
+				F18E308DFF704926ECB1CB3C /* RHVoiceEngine */,
+				77AB19C41A7162D46F74CF77 /* RHVoiceModels */,
+				DF7F66221F761DD855D57762 /* RHVoiceSpeechExtension */,
+				70E7D3EEB3928EC37CD2D8FB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3D479D92C46062C35A4787B3 /* 24000 */ = {
+			isa = PBXGroup;
+			children = (
+				35BAD2D1716FE0A78991293A /* bap.pdf */,
+				003026D41D585477C8DC9902 /* bap.win1 */,
+				DE721E53FB66F03E2A6A6EEB /* bap.win2 */,
+				8B42308D3F3FE997B7AF3723 /* bap.win3 */,
+				12C86FD956B2060DF9F5FFFE /* bpf.txt */,
+				AC5204231FE0DACBBCA062B9 /* dur.pdf */,
+				290C3F6CBF673D206015F546 /* lf0.pdf */,
+				7C214CF780D7E0CE8AEDFB28 /* lf0.win1 */,
+				41664B8109C948DED061275A /* lf0.win2 */,
+				2F555E3D92683B7D0C222B4C /* lf0.win3 */,
+				170F6C1AA3BD6CFDBB2DC0E7 /* mgc.pdf */,
+				00D2F093DDA0DFF5B860BE80 /* mgc.win1 */,
+				A0421D3DDD1BE66FE0AE4C32 /* mgc.win2 */,
+				3831825C6BCAA3950EED09CD /* mgc.win3 */,
+				5C45C1159DBA055CA0ED2659 /* tree-bap.inf */,
+				70F8BF8690546DC63005149C /* tree-dur.inf */,
+				2289BAC93C26756528111047 /* tree-lf0.inf */,
+				C465E43A457E361BF47293D7 /* tree-mgc.inf */,
+				266B9A1DF01D218AE24ED335 /* voice.data */,
+			);
+			path = 24000;
+			sourceTree = "<group>";
+		};
+		434B2CA6B3094959E8C5D9AC /* src */ = {
+			isa = PBXGroup;
+			children = (
+				705077891DDDC64180422100 /* libRHVoice.dylib */,
+				9200BA9820874C39B6FF50E5 /* RHVoiceWrapper.mm */,
+				A6D10B50F4557908DE2F428C /* third-party */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		5088D3F9AD902778AFC62A7E /* marianna */ = {
+			isa = PBXGroup;
+			children = (
+				3598BF6347CF3007449BA5FC /* .git */,
+				4CC99507E502B522308952DE /* Readme-ru.txt */,
+				01F2FA83A78086A80441F3F1 /* Readme-ua.txt */,
+				059A46C9387FB60358C43F24 /* readme.md */,
+				15E2C9BA123CEFE94177AE45 /* voice.info */,
+				0B880A47F9A3106DB02C01FF /* voice.params */,
+				517A46A4F9E0C2C06B9956F3 /* 16000 */,
+				70382E9622032A2BC6F2712C /* 24000 */,
+			);
+			path = marianna;
+			sourceTree = "<group>";
+		};
+		517A46A4F9E0C2C06B9956F3 /* 16000 */ = {
+			isa = PBXGroup;
+			children = (
+				858EA50A1A5AF1174220523D /* bap.pdf */,
+				94EEE4A9002A6B2D2A986D1E /* bap.win1 */,
+				8925840A38A6540387F57762 /* bap.win2 */,
+				A30C1BFDA62FB368C447F50C /* bap.win3 */,
+				0518665B9CE0B0A63246B50E /* bpf.txt */,
+				B0F9913A7E2F1FC5A6F5BEEA /* dur.pdf */,
+				9B6D37B54816ADAB05F86C54 /* lf0.pdf */,
+				A3D047A46665313458CEE11E /* lf0.win1 */,
+				DC226B2524E8E276906E3F9E /* lf0.win2 */,
+				851AD990A14F66410A77C531 /* lf0.win3 */,
+				6E06F2C2030004A7FF5F995E /* mgc.pdf */,
+				0E0397B7EC4DF8B8C1525D45 /* mgc.win1 */,
+				7481217F060BA018E26F65C4 /* mgc.win2 */,
+				E0F82B7DC4DD975B105C3714 /* mgc.win3 */,
+				DCC1138933AFDAE037694E2A /* tree-bap.inf */,
+				AE9C128C903A120A03C7F115 /* tree-dur.inf */,
+				DDF65473A2BB88E19E9257A7 /* tree-lf0.inf */,
+				4AFB711C1BB2B2DD0FF2E9B0 /* tree-mgc.inf */,
+				FC57925192F3BBB95ACC02B6 /* voice.data */,
+			);
+			path = 16000;
+			sourceTree = "<group>";
+		};
+		57E87F358D99F12B9F2FBBFC /* 16000 */ = {
+			isa = PBXGroup;
+			children = (
+				4BFF526A0D474631928FE70F /* bap.pdf */,
+				FBA487B967E0A6AE05218FF9 /* bap.win1 */,
+				E48BD21E7952EA1B3548B473 /* bap.win2 */,
+				92C9A37051B11906979A9A17 /* bap.win3 */,
+				0481E74A9C650898B0C00FE0 /* bpf.txt */,
+				E5DC0FA34A1FCC57638D103B /* dur.pdf */,
+				EC1816F44709EC78E36AF7E0 /* lf0.pdf */,
+				F72725D27E4E960440C5F829 /* lf0.win1 */,
+				46942DC4362CEDE6902A4C33 /* lf0.win2 */,
+				00D89CC9DD9E20C1B31C5AB4 /* lf0.win3 */,
+				DF01DA3A0C1B73770C632ABD /* mgc.pdf */,
+				01A16412D0A02B7CF1672C28 /* mgc.win1 */,
+				409C1913715FF9F8206AA0D8 /* mgc.win2 */,
+				72C41E2904FFE55094C85EB4 /* mgc.win3 */,
+				20E1D1F1B23DD00CE509C74D /* tree-bap.inf */,
+				D4AF9B5C436402566B98DDAE /* tree-dur.inf */,
+				D7A83B36BB2D8B679B6E2CBA /* tree-lf0.inf */,
+				B0187BDE8832D903076AA580 /* tree-mgc.inf */,
+				4D97C92DC783BE731D331717 /* voice.data */,
+			);
+			path = 16000;
+			sourceTree = "<group>";
+		};
+		5D92FD2C675B0997F6803275 /* 24000 */ = {
+			isa = PBXGroup;
+			children = (
+				1CF8069B069DC080BA81DB31 /* bap.pdf */,
+				31E9F4A2AF56E45E7C9C434C /* bap.win1 */,
+				9214222471F83DC815D9BF51 /* bap.win2 */,
+				1F15682DEF3A29271ED7AE90 /* bap.win3 */,
+				C204627F3FE65E2B6612C8BC /* bpf.txt */,
+				7F7C22A2C3947BE6AE6FC970 /* dur.pdf */,
+				ADF2990B2BDDA23D276E706C /* lf0.pdf */,
+				FD8B98EF3459EBA786461699 /* lf0.win1 */,
+				7C055EBE41C807832D3366C7 /* lf0.win2 */,
+				D23D15D2E922E669CD011C84 /* lf0.win3 */,
+				97637009FC634D29721DF9BD /* mgc.pdf */,
+				D2E2927CB56A71D543C8D04B /* mgc.win1 */,
+				A991BD0AB5D7AA62F8E50EB4 /* mgc.win2 */,
+				173C70A6B6F977F7BE18E57D /* mgc.win3 */,
+				11278D442773A9C445520CD9 /* tree-bap.inf */,
+				A6251EB5B3FCE16E43929BC9 /* tree-dur.inf */,
+				A1046F077B993EA2A6B0FB0E /* tree-lf0.inf */,
+				8AE12BEF020A07E5FE282049 /* tree-mgc.inf */,
+				6A62B8CD6AF3C1C03A71DBC4 /* voice.data */,
+			);
+			path = 24000;
+			sourceTree = "<group>";
+		};
+		5E26995643209481A5471DBB /* rapidxml */ = {
+			isa = PBXGroup;
+			children = (
+				D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */,
+				53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */,
+				4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */,
+				52D288B22AF25E69538F2F64 /* rapidxml.hpp */,
+			);
+			path = rapidxml;
+			sourceTree = "<group>";
+		};
+		70382E9622032A2BC6F2712C /* 24000 */ = {
+			isa = PBXGroup;
+			children = (
+				47BD6B314B72273455553D98 /* bap.pdf */,
+				F4AD3F13806BB3F883134BA2 /* bap.win1 */,
+				7570416D8367938A21093C6F /* bap.win2 */,
+				E5BE339D6313769883FDF197 /* bap.win3 */,
+				9F9F00DFE1799946658F8994 /* bpf.txt */,
+				E858514C33037C1238BCE8AA /* dur.pdf */,
+				D832BF22FE27015BC995ACC4 /* lf0.pdf */,
+				9224A77A4E7174CCCD403A47 /* lf0.win1 */,
+				3DAB76366B1A62CDD8E5EACF /* lf0.win2 */,
+				26A108252A9EB9FEFEFEC51C /* lf0.win3 */,
+				0F32B8FC32004CF2F208C4AF /* mgc.pdf */,
+				B0B668C86700C34483AF1198 /* mgc.win1 */,
+				82006DF9362CB55CE4C26E5B /* mgc.win2 */,
+				494BB5792F1BA46FCF42467A /* mgc.win3 */,
+				2A1260EBEEAE25F6F355849F /* tree-bap.inf */,
+				ACAF1D4918853A336F0C166D /* tree-dur.inf */,
+				A01EF279691726A5617542FA /* tree-lf0.inf */,
+				EC44577E94FFE24F18C0DAA2 /* tree-mgc.inf */,
+				84781062369377F264E298C5 /* voice.data */,
+			);
+			path = 24000;
+			sourceTree = "<group>";
+		};
+		70E7D3EEB3928EC37CD2D8FB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B82F478126121B43EF5AA173 /* RHVoiceApp.app */,
+				239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */,
+				A8D562025DBE990C9A48AD53 /* RHVoiceSpeechExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		757C1AA34CDE72763E4C4E97 /* 16000 */ = {
+			isa = PBXGroup;
+			children = (
+				34DB7C3917B8F8CDDDDB1F55 /* bap.pdf */,
+				6505FACB5E8D03C78A513643 /* bap.win1 */,
+				F98E569F13DEE70E88AA8B28 /* bap.win2 */,
+				0FA1AF4574A57BBEED6B9E0B /* bap.win3 */,
+				392207DAAF43F0B1A3BCB33A /* bpf.txt */,
+				C1CB44EC371EA302C51620DE /* dur.pdf */,
+				37C1ACDA2656D2D16FEFA81D /* lf0.pdf */,
+				FD80D35323AAD2C277E3914D /* lf0.win1 */,
+				0F1D1DEEAF1CFA4DED68ABF7 /* lf0.win2 */,
+				116F066A556BB21AE5F99361 /* lf0.win3 */,
+				D54FCA10786141506A87EFB9 /* mgc.pdf */,
+				830BCC4C4EFA698B08DADFD3 /* mgc.win1 */,
+				155A897CC6178871E2A12A1B /* mgc.win2 */,
+				3FCAD9DD5775D3C9ECD04BCC /* mgc.win3 */,
+				456BFFBD5BB08833D6C71BD1 /* tree-bap.inf */,
+				F2080F946EB14D13A2546A68 /* tree-dur.inf */,
+				06729ADFB11901D11107D761 /* tree-lf0.inf */,
+				BB37D1DC5C1F1C22EDCEBF65 /* tree-mgc.inf */,
+				21D47218054507B000A54856 /* voice.data */,
+			);
+			path = 16000;
+			sourceTree = "<group>";
+		};
+		763F9F6A9A0A31A9746598DF /* 16000 */ = {
+			isa = PBXGroup;
+			children = (
+				BA35697FD340F11FC24ACCDE /* bap.pdf */,
+				E1B49CA6059A835B6816E89D /* bap.win1 */,
+				C73D1B76C967A434E3825360 /* bap.win2 */,
+				596379E570A76B15B4A7DF6A /* bap.win3 */,
+				AF3EECB74D3F86D331601AF2 /* bpf.txt */,
+				96838DDF2D81A59E65AC20FE /* dur.pdf */,
+				2D59853AF90D5962486477D0 /* lf0.pdf */,
+				D2A369E755249D12FCEB7426 /* lf0.win1 */,
+				DCC79D82C7C92399287C130A /* lf0.win2 */,
+				E7EE089A84671F0575A04072 /* lf0.win3 */,
+				95B0581EB39D5BF337456EE5 /* mgc.pdf */,
+				DF26E2B7A8A1F06AB08E93B2 /* mgc.win1 */,
+				2E08129BB49955B596AE155C /* mgc.win2 */,
+				2DA146017195F56B7C893E7F /* mgc.win3 */,
+				9726E9E34BE736CB8E8DDE17 /* tree-bap.inf */,
+				B8C3202E14E3092F0192CE6B /* tree-dur.inf */,
+				161CB2C95B06DDFB0705021D /* tree-lf0.inf */,
+				956070E28DE440C59209F85B /* tree-mgc.inf */,
+				A896E514F3BFE296342DE02A /* voice.data */,
+			);
+			path = 16000;
+			sourceTree = "<group>";
+		};
+		77AB19C41A7162D46F74CF77 /* RHVoiceModels */ = {
+			isa = PBXGroup;
+			children = (
+				71F85CB19EED2B86D60AF1F3 /* CMakeLists.txt */,
+				942A4C3D111F941C2B291D25 /* anatol */,
+				5088D3F9AD902778AFC62A7E /* marianna */,
+				C7E1C23B4625AE5A647C63EC /* natalia */,
+				C0934F434A49C8F9116F2EA7 /* volodymyr */,
+			);
+			path = RHVoiceModels;
+			sourceTree = "<group>";
+		};
+		942A4C3D111F941C2B291D25 /* anatol */ = {
+			isa = PBXGroup;
+			children = (
+				176D7CBFDED76FFA079464B5 /* .git */,
+				1A0506A92E91FF57F37BF919 /* Readme-ru.txt */,
+				7C8C67C6772BD776349992BF /* Readme-ua.txt */,
+				A42F948E58E78198E24AA844 /* README.md */,
+				C5E4333F3D67F1915DCE23E1 /* voice.info */,
+				D22153705EEBA4F2AAFFC86F /* voice.params */,
+				763F9F6A9A0A31A9746598DF /* 16000 */,
+				5D92FD2C675B0997F6803275 /* 24000 */,
+			);
+			path = anatol;
+			sourceTree = "<group>";
+		};
+		A6D10B50F4557908DE2F428C /* third-party */ = {
+			isa = PBXGroup;
+			children = (
+				91F16F293ED0BBED63C69386 /* license.txt */,
+				5E26995643209481A5471DBB /* rapidxml */,
+			);
+			path = "third-party";
+			sourceTree = "<group>";
+		};
+		B66A19D82FA2DE06656E4067 /* 24000 */ = {
+			isa = PBXGroup;
+			children = (
+				7DD9447428B21CEA252855EA /* bap.pdf */,
+				39B3EFD13D0CC8DB4E09B2A4 /* bap.win1 */,
+				3CE56EF7ECE7BE04C16938E4 /* bap.win2 */,
+				82CCC1565CBE8EDE17CC604E /* bap.win3 */,
+				D86CB974F2A2FE5BA2CCCC4E /* bpf.txt */,
+				38B7990894CEF210E8F11E93 /* dur.pdf */,
+				FFC9078A2B81622AA816498F /* lf0.pdf */,
+				5DCEE8B25AE84BFAF3F011DD /* lf0.win1 */,
+				EE5D02AE83F2B4D4D7081693 /* lf0.win2 */,
+				FB84537DD9F1C955FF094D04 /* lf0.win3 */,
+				94E20B391A643A4C9CB4600B /* mgc.pdf */,
+				5C1BF866865F5469F29DB28F /* mgc.win1 */,
+				A8918B17F2D9E5D12ED0B7F1 /* mgc.win2 */,
+				786390235D45A9DEDDEF75EA /* mgc.win3 */,
+				BECEE2655DAB5BBE4D52D954 /* tree-bap.inf */,
+				1FC33D61FC47965112B17E19 /* tree-dur.inf */,
+				1E897074B9CB8A347279B44E /* tree-lf0.inf */,
+				1B93F062AAB8A4C975586D02 /* tree-mgc.inf */,
+				261479D233F6E06040E028F2 /* voice.data */,
+			);
+			path = 24000;
+			sourceTree = "<group>";
+		};
+		C0934F434A49C8F9116F2EA7 /* volodymyr */ = {
+			isa = PBXGroup;
+			children = (
+				7579FA9884C0CEBD33394EA2 /* .git */,
+				E4560E268FDC278798E36404 /* Readme-ru.txt */,
+				673E7203A5F7B1D7392B5E81 /* Readme-ua.txt */,
+				1CD67B8CA04BB106761800E0 /* README.md */,
+				9D9DB7BB7C8229488D4694F9 /* voice.info */,
+				30BE9118B60E89D66D986CA2 /* voice.params */,
+				57E87F358D99F12B9F2FBBFC /* 16000 */,
+				3D479D92C46062C35A4787B3 /* 24000 */,
+			);
+			path = volodymyr;
+			sourceTree = "<group>";
+		};
+		C7E1C23B4625AE5A647C63EC /* natalia */ = {
+			isa = PBXGroup;
+			children = (
+				7B4350373A57D9C7B1994928 /* .git */,
+				179B19CA6BE3E6F091D9EA84 /* Readme-ru.txt */,
+				8595DE6A56A765696ACDE8D7 /* Readme-ua.txt */,
+				8FB0A1BCD77B68FA3BDCF9E1 /* README.md */,
+				5BC056950FE464C93B704BBF /* voice.info */,
+				220DD71684A1CB9F3FD3A243 /* voice.params */,
+				757C1AA34CDE72763E4C4E97 /* 16000 */,
+				B66A19D82FA2DE06656E4067 /* 24000 */,
+			);
+			path = natalia;
+			sourceTree = "<group>";
+		};
+		CA206FBFFD2FE3D96E851DE7 /* RHVoiceApp */ = {
+			isa = PBXGroup;
+			children = (
+				2FC319A51906E8A039DE7FA3 /* Info.plist */,
+			);
+			path = RHVoiceApp;
+			sourceTree = "<group>";
+		};
+		DF7F66221F761DD855D57762 /* RHVoiceSpeechExtension */ = {
+			isa = PBXGroup;
+			children = (
+				74FF582A0CEE27C80678EFE5 /* Info.plist */,
+				05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */,
+			);
+			path = RHVoiceSpeechExtension;
+			sourceTree = "<group>";
+		};
+		F18E308DFF704926ECB1CB3C /* RHVoiceEngine */ = {
+			isa = PBXGroup;
+			children = (
+				1A956A0237E36EFCE501D40F /* include */,
+				434B2CA6B3094959E8C5D9AC /* src */,
+			);
+			path = RHVoiceEngine;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		43B282726BF21514EDDB3288 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CEA011EB900621C4C394A166 /* include in Headers */,
+				455566F792846E7D01C51BE7 /* rapidxml.hpp in Headers */,
+				57126DDCC19FEFD018E03017 /* rapidxml_iterators.hpp in Headers */,
+				206AE72D702396AE44A420F5 /* rapidxml_print.hpp in Headers */,
+				ACBF080FDD14EDB624ECD732 /* rapidxml_utils.hpp in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		12B7536DE0A654948FA11EC3 /* RHVoiceSpeechExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B4A0B6991E4FF2B48A81B7BB /* Build configuration list for PBXNativeTarget "RHVoiceSpeechExtension" */;
+			buildPhases = (
+				F154859DF16C5F5DE2606857 /* Sources */,
+				C7F7D62C3E6FA9ABB8DC566B /* Frameworks */,
+				C89E4E589BB8784630D0D204 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				93A2C2CC72DD1EFC0C6EB949 /* PBXTargetDependency */,
+			);
+			name = RHVoiceSpeechExtension;
+			packageProductDependencies = (
+			);
+			productName = RHVoiceSpeechExtension;
+			productReference = A8D562025DBE990C9A48AD53 /* RHVoiceSpeechExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		51D96254F86778A775295ED8 /* RHVoiceApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 86722F2E1D1A552B155B4F34 /* Build configuration list for PBXNativeTarget "RHVoiceApp" */;
+			buildPhases = (
+				B771DE166A67F3F2FB2D016C /* Sources */,
+				E67AE1CCE14732F3C74BCE19 /* Frameworks */,
+				9934C64B5BF48F638DCFABB3 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D369406189FEF4B46BF435E1 /* PBXTargetDependency */,
+			);
+			name = RHVoiceApp;
+			packageProductDependencies = (
+			);
+			productName = RHVoiceApp;
+			productReference = B82F478126121B43EF5AA173 /* RHVoiceApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		AB88F570E5BD1B3AFCBFC48C /* RHVoiceFramework */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C535D55992A8182870B934A1 /* Build configuration list for PBXNativeTarget "RHVoiceFramework" */;
+			buildPhases = (
+				43B282726BF21514EDDB3288 /* Headers */,
+				19C170784906CE34A6A1E6CE /* Sources */,
+				C83D35F01911653FE8F0E7F6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = RHVoiceFramework;
+			packageProductDependencies = (
+			);
+			productName = RHVoiceFramework;
+			productReference = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BC38E1521A42ACC747513C1A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 2197C75B318C487820543DA1 /* Build configuration list for PBXProject "RHVoiceSpeechProject" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 196A3EA88324492E8B6B815C;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				51D96254F86778A775295ED8 /* RHVoiceApp */,
+				AB88F570E5BD1B3AFCBFC48C /* RHVoiceFramework */,
+				12B7536DE0A654948FA11EC3 /* RHVoiceSpeechExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C83D35F01911653FE8F0E7F6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */,
+				DF96E415A69D57E607FB8145 /* license.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		19C170784906CE34A6A1E6CE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B27A9AE53352541658F4AAD2 /* RHVoiceWrapper.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B771DE166A67F3F2FB2D016C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F154859DF16C5F5DE2606857 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7544C0A54FB4244AB8D03CE4 /* SpeechSynthesizer.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		93A2C2CC72DD1EFC0C6EB949 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB88F570E5BD1B3AFCBFC48C /* RHVoiceFramework */;
+			targetProxy = 3BDE92136AE4B8472548AE1A /* PBXContainerItemProxy */;
+		};
+		D369406189FEF4B46BF435E1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB88F570E5BD1B3AFCBFC48C /* RHVoiceFramework */;
+			targetProxy = F326310370F70D0985DEBF78 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		4C8B299124BAA4EDFC09F3A6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = RHVoiceApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceApp";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5A50DAE6BE1F888651A738C9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party";
+				INFOPLIST_FILE = RHVoiceEngine/Info.plist;
+				INSTALL_PATH = "@rpath/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceFramework";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		68F20A0611E1C892F6C26D51 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6914B75834B1850EAC12DB84 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/RHVoiceApp.app";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				EXTENSION_POINT_IDENTIFIER = "com.apple.speech.speech-provider";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party/rapidxml";
+				INFOPLIST_FILE = RHVoiceSpeechExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
+				OTHER_LDFLAGS = "$(inherited) -lc++";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceApp.RHVoiceSpeechExtension";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = appex;
+			};
+			name = Release;
+		};
+		6D395181EA1DDAAEB23A438D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = RHVoiceApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceApp";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7C0DDA264CC32C205EB92116 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A10B1EEE63A6298AA3B1FEA3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/RHVoiceApp.app";
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
+				EXTENSION_POINT_IDENTIFIER = "com.apple.speech.speech-provider";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party/rapidxml";
+				INFOPLIST_FILE = RHVoiceSpeechExtension/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @loader_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
+				OTHER_LDFLAGS = "$(inherited) -lc++";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceApp.RHVoiceSpeechExtension";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				WRAPPER_EXTENSION = appex;
+			};
+			name = Debug;
+		};
+		AC424E1AB56D890F441FDD6A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party";
+				INFOPLIST_FILE = RHVoiceEngine/Info.plist;
+				INSTALL_PATH = "@rpath/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceFramework";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2197C75B318C487820543DA1 /* Build configuration list for PBXProject "RHVoiceSpeechProject" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				68F20A0611E1C892F6C26D51 /* Debug */,
+				7C0DDA264CC32C205EB92116 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		86722F2E1D1A552B155B4F34 /* Build configuration list for PBXNativeTarget "RHVoiceApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6D395181EA1DDAAEB23A438D /* Debug */,
+				4C8B299124BAA4EDFC09F3A6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B4A0B6991E4FF2B48A81B7BB /* Build configuration list for PBXNativeTarget "RHVoiceSpeechExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10B1EEE63A6298AA3B1FEA3 /* Debug */,
+				6914B75834B1850EAC12DB84 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C535D55992A8182870B934A1 /* Build configuration list for PBXNativeTarget "RHVoiceFramework" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5A50DAE6BE1F888651A738C9 /* Debug */,
+				AC424E1AB56D890F441FDD6A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BC38E1521A42ACC747513C1A /* Project object */;
+}

@@ -1,0 +1,32 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+# Cyrillic alphabet
+
+define lcCVowelLetter а|е|и|о|у|ë ; 
+define ucCVowelLetter А|Е|И|О|У|ë ; 
+define lcCConsonantLetter б|в|г|д|ђ|ж|з|ј|к|л|љ|м|н|њ|п|р|с|т|ћ|ф|х|ц|ѕ|ч|џ|ш ; 
+define ucCConsonantLetter Б|В|Г|Д|Ђ|Ж|З|Ј|К|Л|Љ|М|Н|Њ|П|Р|С|Т|Ћ|Ф|Х|Ц|Ѕ|Ч|Џ|Ш ; 
+define lcCLetter lcCVowelLetter | lcCConsonantLetter ;
+define ucCLetter ucCVowelLetter | ucCConsonantLetter ;
+define CVowelLetter lcCVowelLetter | ucCVowelLetter ; 
+define CConsonantLetter lcCConsonantLetter | ucCConsonantLetter ; 
+define CLetter  lcCLetter | ucCLetter ;
+define StressMark %` ;
+
+#define isLetter 
+# CLetter @-> ... yes || .#. _ .#. ;
+# regex isLetter ;

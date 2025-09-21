@@ -1,0 +1,73 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+define SimpleLatinSrp 
+a : а | 
+b : б | 
+v : в | 
+g : г | 
+d : д | 
+đ : ђ | 
+e : е | 
+ž : ж | 
+z : з | 
+i : и | 
+j : ј | 
+k : к | 
+l : л | 
+m : м | 
+n : н | 
+o : о | 
+p : п | 
+r : р | 
+s : с | 
+t : т | 
+ć : ћ | 
+u : у | 
+f : ф | 
+h : х | 
+c : ц | 
+č : ч | 
+š : ш -> || _;
+
+# digraph system
+define DigraphLatinSrp 
+{lj} : љ |
+{nj} : њ |
+{dž} : џ @-> || _;
+
+
+define OtherEnglishLatinSrp 
+q : [кв] | 
+x : {кс} |
+y : ј |
+w : в -> || _; 
+
+define MontenegrinLatin 
+ź : [з ј] |
+ś : [с ј] -> || _; 
+
+#  LatinConvertLSeq  omits specially named English latin letters.
+# THis will be usd in Letter sequence. Other latin letters will be given cyrillic names
+define LatinConvertLSeq  
+DigraphLatinSrp 
+ .o. SimpleLatinSrp 
+; 
+# This rule adds in phonetic transcription for word speech
+define LatinConvert  
+  LatinConvertLSeq
+ .o.  OtherEnglishLatinSrp
+ .o.  MontenegrinLatin
+; 
+

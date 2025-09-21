@@ -1,0 +1,103 @@
+# -*- coding: utf-8; mode: Python; indent-tabs-mode: t -*-
+
+import sys
+import os
+import os.path
+from RHVoicePackaging.archiving import archiver
+if sys.platform=="win32":
+	import RHVoicePackaging.nvda
+	import RHVoicePackaging.windows
+import RHVoiceInfoParser
+
+Import("env")
+local_env=env.Clone()
+
+nvda_addon_build_number=".11"
+
+def list_files(dir):
+	files=[]
+	for name in sorted(os.listdir(dir.abspath)):
+		if name[0]==".":
+			continue
+		node_path=os.path.join(dir.abspath,name)
+		if os.path.isfile(node_path):
+			files.append(dir.File(name))
+		elif os.path.isdir(node_path):
+			files.extend(list_files(dir.Dir(name)))
+	return files
+
+root_dir=Dir(".").srcnode()
+
+lang_msis=dict()
+lang_files=dict()
+lang_ver_ids=dict()
+
+msi_build_number=".2"
+exe_build_number=".21"
+
+for dir_name in ["languages","voices"]:
+	type=dir_name[:-1]
+	dir=root_dir.Dir(dir_name)
+	for subdir_name in os.listdir(dir.abspath):
+		if not os.path.isdir(os.path.join(dir.abspath, subdir_name)):
+			continue
+		subdir=dir.Dir(subdir_name)
+		info_path=subdir.File(type+".info").abspath
+		if not os.path.isfile(info_path):
+			continue
+		data_files=list_files(subdir)
+		props=RHVoiceInfoParser.parse(info_path)
+		if type=="language":
+			props["language"]=props["name"]
+		if props["language"].lower() not in local_env["languages"]:
+			continue
+		if type=="language":
+			lang_ver_ids[props["name"]]=str(1000*int(props["format"])+int(props["revision"]))
+			lang_files[props["name"]]=data_files
+		props["display_language"]=props["language"].replace("-"," ")
+		props["type"]=type
+		if "file_name" not in props:
+			props["file_name"]=props["name"]
+		version="{format}.{revision}".format(**props)
+		full_version=version
+		if type=="voice":
+			full_version=version+"."+lang_ver_ids[props["language"]]
+		name_format_string="RHVoice-voice-{language}-{file_name}" if type=="voice" else "RHVoice-language-{language}"
+		name=name_format_string.format(**props)
+		package_name=props.get("package_name",name)
+		description_format_string=u"RHVoice {name}, {display_language} voice" if type=="voice" else "RHVoice {display_language} language pack"
+		description=description_format_string.format(**props)
+		if sys.platform!="win32" and not local_env["dev"]:
+			for f in data_files:
+				local_env.InstallData(f,os.path.relpath(f.Dir(".").abspath,root_dir.abspath))
+		packagers=dict()
+		pkgdir=Dir("..").Dir("packages")
+		packagers["zip"]=archiver(package_name+"-v"+version,pkgdir.Dir("zip"), local_env)
+		for f in data_files:
+			outdir=os.path.normpath(os.path.relpath(f.Dir(".").abspath,subdir.abspath))
+			packagers["zip"].add(f, outdir)
+		if sys.platform=="win32":
+			packagers["nvda"]=RHVoicePackaging.nvda.addon_packager(package_name,pkgdir.Dir("nvda"),local_env,package_name,description,description,full_version+nvda_addon_build_number,True)
+			packagers["msi"]=RHVoicePackaging.windows.data_packager(props["msi_upgrade_code"],package_name,pkgdir.Dir("sapi"),local_env,description,version+msi_build_number)
+			for f in data_files:
+				packagers["nvda"].add(f,os.path.normpath(os.path.join("data",os.path.relpath(f.Dir(".").abspath,subdir.abspath))))
+				packagers["msi"].add(f,os.path.normpath(os.path.join("data",type+"s",props["file_name"],os.path.relpath(f.Dir(".").abspath,subdir.abspath))))
+			if type=="language":
+				lang_msis[props["name"]]=packagers["msi"]
+				lang_files[props["name"]]=data_files
+			else:
+				packagers["msi"].visible="no"
+				for lang_key, lang_dir_name in [("language", "langdata"), ("language2", "lang2data")]:
+					if lang_key in props:
+						for f in lang_files[props[lang_key]]:
+							packagers["nvda"].add(f,os.path.normpath(os.path.join(lang_dir_name,os.path.relpath(f.Dir(".").abspath,root_dir.Dir("languages").Dir(props[lang_key]).abspath))))
+				packagers["exe"]=RHVoicePackaging.windows.nsis_bootstrapper_packager(package_name,pkgdir.Dir("sapi"),local_env,description,full_version+exe_build_number)
+				if env["enable_x64"]:
+					packagers["exe"].msis.append(local_env["WindowsInstallers_core_64"])
+				packagers["exe"].msis.append(local_env["WindowsInstallers_core_32"])
+				packagers["exe"].msis.append(lang_msis[props["language"]])
+				if "language2" in props:
+					packagers["exe"].msis.append(lang_msis[props["language2"]])
+				packagers["exe"].msis.append(packagers["msi"])
+		for p in packagers.values():
+			p.package()

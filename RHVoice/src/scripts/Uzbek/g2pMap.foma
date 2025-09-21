@@ -1,0 +1,65 @@
+# Copyright (C) 2023 Non-Routine LLC.  <lp@louderpages.org>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+source graphemes.foma
+
+define g2pMap 
+[a|а|я]: "/a0" | 
+[a gVowelLengthSign | [а|я] gVowelLengthSign]: "/aa0" | 
+[e|е|э]: "/e0" | 
+[e gVowelLengthSign | е gVowelLengthSign]: "/ee0" | 
+[[i | и] "~"] : "/i0" | 
+[[i | и] "^"] : "/iy0" | 
+[i|и|ы]: "/i?" | 
+[i gVowelLengthSign | и gVowelLengthSign]: "/ii?" | 
+[o|о|ё]: "/oa0" | 
+[[о|ё] gVowelLengthSign]: "/ooa0" | 
+[u|у|ю]: "/u0" | 
+[u gVowelLengthSign | [у|ю] gVowelLengthSign]: "/uu0" | 
+[o gGOMod|ў]: "/ou0" | 
+[ў gVowelLengthSign]: "/oou0" | 
+[b|б]: "/b" | 
+[p|п]: "/p" | 
+[v|w|в]: "/v" | 
+[g gGOMod | ғ]: "/gh" | 
+[gG "~"]: "/gj" | 
+[gG "^"]: "/g" | 
+gG: "/g?" | 
+[d|д]: "/d" | 
+gJ: "/j" | 
+[gJ "_zh"]: "/zh" | 
+[z|з]: "/z" | 
+[gK "~"]: "/kj" | 
+[gK "^"]: "/k" | 
+gK: "/k?" | 
+[l|л]: "/l" | 
+[m|м]: "/m" | 
+[n|н]: "/n" | 
+[{ng}|{нг}]: "/ng" | 
+[r|р]: "/r" | 
+[s|с]: "/s" | 
+[t|т]: "/t" | 
+[f|ф]: "/f" | 
+[h|ҳ]: "/h" | 
+[q|қ]: "/q" | 
+[x|х]: "/xh" | 
+[y|й|"_y"]: "/y" | 
+{tsh}: ["/t" "/sh"] | 
+[{ts}|c|ц]: "/ts" | 
+[{ch}|ч]: "/ch" | 
+[{sh}|ш|щ]: "/sh" | 
+[ь] : 0 | 
+gGlottalStop: "/gs" ; 
+

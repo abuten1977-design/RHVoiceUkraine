@@ -1,0 +1,396 @@
+[submodule "cmake/thirdParty/sanitizers"]
+	path = cmake/thirdParty/sanitizers
+	url = https://github.com/arsenm/sanitizers-cmake.git
+[submodule "src/third-party/cldr"]
+	path = src/third-party/cldr
+	url = https://github.com/unicode-org/cldr.git
+[submodule "data/voices/victoria"]
+	path = data/voices/victoria
+	url = https://github.com/rhvoice/victoria-rus.git
+[submodule "data/voices/evgeniy-rus"]
+	path = data/voices/evgeniy-rus
+	url = https://github.com/rhvoice/evgeniy-rus.git
+[submodule "data/voices/evgeniy-eng"]
+	path = data/voices/evgeniy-eng
+	url = https://github.com/rhvoice/evgeniy-eng.git
+[submodule "external/libs/sonic"]
+	path = external/libs/sonic
+	url = https://github.com/waywardgeek/sonic.git
+[submodule "data/voices/aleksandr-hq"]
+	path = data/voices/aleksandr-hq
+	url = https://github.com/rhvoice/aleksandr-hq-rus.git
+[submodule "data/voices/yuriy"]
+	path = data/voices/yuriy
+	url = https://github.com/rhvoice/yuriy-rus.git
+[submodule "data/voices/volodymyr"]
+	path = data/voices/volodymyr
+	url = https://github.com/rhvoice/volodymyr-ukr.git
+[submodule "data/voices/tatiana"]
+	path = data/voices/tatiana
+	url = https://github.com/rhvoice/tatiana-rus.git
+[submodule "data/voices/mikhail"]
+	path = data/voices/mikhail
+	url = https://github.com/rhvoice/mikhail-rus.git
+[submodule "data/voices/marianna"]
+	path = data/voices/marianna
+	url = https://github.com/rhvoice/marianna-ukr.git
+[submodule "data/voices/lyubov"]
+	path = data/voices/lyubov
+	url = https://github.com/rhvoice/lyubov-eng.git
+[submodule "data/voices/vitaliy"]
+	path = data/voices/vitaliy
+	url = https://github.com/rhvoice/vitaliy-rus.git
+[submodule "data/languages/Polish"]
+	path = data/languages/Polish
+	url = https://github.com/RHVoice/Polish.git
+[submodule "data/voices/magda"]
+	path = data/voices/magda
+	url = https://github.com/RHVoice/magda-pol.git
+[submodule "external/libs/boost/libs/align"]
+	path = external/libs/boost/libs/align
+	url = https://github.com/boostorg/align.git
+[submodule "external/libs/boost/libs/assert"]
+	path = external/libs/boost/libs/assert
+	url = https://github.com/boostorg/assert.git
+[submodule "external/libs/boost/libs/config"]
+	path = external/libs/boost/libs/config
+	url = https://github.com/boostorg/config.git
+[submodule "external/libs/boost/libs/container"]
+	path = external/libs/boost/libs/container
+	url = https://github.com/boostorg/container.git
+[submodule "external/libs/boost/libs/container_hash"]
+	path = external/libs/boost/libs/container_hash
+	url = https://github.com/boostorg/container_hash.git
+[submodule "external/libs/boost/libs/core"]
+	path = external/libs/boost/libs/core
+	url = https://github.com/boostorg/core.git
+[submodule "external/libs/boost/libs/detail"]
+	path = external/libs/boost/libs/detail
+	url = https://github.com/boostorg/detail.git
+[submodule "external/libs/boost/libs/exception"]
+	path = external/libs/boost/libs/exception
+	url = https://github.com/boostorg/exception.git
+[submodule "external/libs/boost/libs/integer"]
+	path = external/libs/boost/libs/integer
+	url = https://github.com/boostorg/integer.git
+[submodule "external/libs/boost/libs/interprocess"]
+	path = external/libs/boost/libs/interprocess
+	url = https://github.com/boostorg/interprocess.git
+[submodule "external/libs/boost/libs/intrusive"]
+	path = external/libs/boost/libs/intrusive
+	url = https://github.com/boostorg/intrusive.git
+[submodule "external/libs/boost/libs/io"]
+	path = external/libs/boost/libs/io
+	url = https://github.com/boostorg/io.git
+[submodule "external/libs/boost/libs/json"]
+	path = external/libs/boost/libs/json
+	url = https://github.com/boostorg/json.git
+[submodule "external/libs/boost/libs/move"]
+	path = external/libs/boost/libs/move
+	url = https://github.com/boostorg/move.git
+[submodule "external/libs/boost/libs/mp11"]
+	path = external/libs/boost/libs/mp11
+	url = https://github.com/boostorg/mp11.git
+[submodule "external/libs/boost/libs/predef"]
+	path = external/libs/boost/libs/predef
+	url = https://github.com/boostorg/predef.git
+[submodule "external/libs/boost/libs/preprocessor"]
+	path = external/libs/boost/libs/preprocessor
+	url = https://github.com/boostorg/preprocessor.git
+[submodule "external/libs/boost/libs/smart_ptr"]
+	path = external/libs/boost/libs/smart_ptr
+	url = https://github.com/boostorg/smart_ptr.git
+[submodule "external/libs/boost/libs/static_assert"]
+	path = external/libs/boost/libs/static_assert
+	url = https://github.com/boostorg/static_assert.git
+[submodule "external/libs/boost/libs/system"]
+	path = external/libs/boost/libs/system
+	url = https://github.com/boostorg/system.git
+[submodule "external/libs/boost/libs/throw_exception"]
+	path = external/libs/boost/libs/throw_exception
+	url = https://github.com/boostorg/throw_exception.git
+[submodule "external/libs/boost/libs/tuple"]
+	path = external/libs/boost/libs/tuple
+	url = https://github.com/boostorg/tuple.git
+[submodule "external/libs/boost/libs/type_traits"]
+	path = external/libs/boost/libs/type_traits
+	url = https://github.com/boostorg/type_traits.git
+[submodule "external/libs/boost/libs/unordered"]
+	path = external/libs/boost/libs/unordered
+	url = https://github.com/boostorg/unordered.git
+[submodule "external/libs/boost/libs/utility"]
+	path = external/libs/boost/libs/utility
+	url = https://github.com/boostorg/utility.git
+[submodule "external/libs/boost/libs/variant2"]
+	path = external/libs/boost/libs/variant2
+	url = https://github.com/boostorg/variant2.git
+[submodule "external/libs/boost/libs/winapi"]
+	path = external/libs/boost/libs/winapi
+	url = https://github.com/boostorg/winapi.git
+[submodule "external/libs/boost/libs/tokenizer"]
+	path = external/libs/boost/libs/tokenizer
+	url = https://github.com/boostorg/tokenizer.git
+[submodule "external/libs/boost/libs/lexical_cast"]
+	path = external/libs/boost/libs/lexical_cast
+	url = https://github.com/boostorg/lexical_cast.git
+[submodule "external/libs/boost/libs/algorithm"]
+	path = external/libs/boost/libs/algorithm
+	url = https://github.com/boostorg/algorithm.git
+[submodule "external/libs/boost/libs/nowide"]
+	path = external/libs/boost/libs/nowide
+	url = https://github.com/boostorg/nowide.git
+[submodule "external/libs/boost/libs/optional"]
+	path = external/libs/boost/libs/optional
+	url = https://github.com/boostorg/optional.git
+[submodule "external/libs/boost/libs/date_time"]
+	path = external/libs/boost/libs/date_time
+	url = https://github.com/boostorg/date_time.git
+[submodule "external/libs/boost/libs/range"]
+	path = external/libs/boost/libs/range
+	url = https://github.com/boostorg/range.git
+[submodule "external/libs/boost/libs/iterator"]
+	path = external/libs/boost/libs/iterator
+	url = https://github.com/boostorg/iterator.git
+[submodule "external/libs/boost/libs/mpl"]
+	path = external/libs/boost/libs/mpl
+	url = https://github.com/boostorg/mpl.git
+[submodule "external/libs/boost/libs/concept_check"]
+	path = external/libs/boost/libs/concept_check
+	url = https://github.com/boostorg/concept_check.git
+[submodule "external/libs/boost/libs/numeric_conversion"]
+	path = external/libs/boost/libs/numeric_conversion
+	url = https://github.com/boostorg/numeric_conversion.git
+[submodule "external/libs/boost/libs/array"]
+	path = external/libs/boost/libs/array
+	url = https://github.com/boostorg/array.git
+[submodule "external/libs/boost/libs/bind"]
+	path = external/libs/boost/libs/bind
+	url = https://github.com/boostorg/bind.git
+[submodule "external/libs/boost/libs/function"]
+	path = external/libs/boost/libs/function
+	url = https://github.com/boostorg/function.git
+[submodule "external/libs/boost/libs/type_index"]
+	path = external/libs/boost/libs/type_index
+	url = https://github.com/boostorg/type_index.git
+[submodule "data/voices/natan"]
+	path = data/voices/natan
+	url = https://github.com/RHVoice/natan-pol.git
+[submodule "bin/msi"]
+	path = bin/msi
+	url = https://github.com/RHVoice/msi.git
+[submodule "data/voices/suze"]
+	path = data/voices/suze
+	url = https://github.com/RHVoice/suze-mkd.git
+[submodule "cmake/thirdParty/CCache"]
+	path = cmake/thirdParty/CCache
+	url = https://github.com/TheLartians/Ccache.cmake.git
+[submodule "data/languages/Albanian"]
+	path = data/languages/Albanian
+	url = https://github.com/RHVoice/Albanian.git
+[submodule "data/languages/Brazilian-Portuguese"]
+	path = data/languages/Brazilian-Portuguese
+	url = https://github.com/RHVoice/Brazilian-Portuguese.git
+[submodule "data/languages/English"]
+	path = data/languages/English
+	url = https://github.com/RHVoice/English.git
+[submodule "data/languages/Esperanto"]
+	path = data/languages/Esperanto
+	url = https://github.com/RHVoice/Esperanto.git
+[submodule "data/languages/Georgian"]
+	path = data/languages/Georgian
+	url = https://github.com/RHVoice/Georgian.git
+[submodule "data/languages/Kyrgyz"]
+	path = data/languages/Kyrgyz
+	url = https://github.com/RHVoice/Kyrgyz.git
+[submodule "data/languages/Macedonian"]
+	path = data/languages/Macedonian
+	url = https://github.com/RHVoice/Macedonian.git
+[submodule "data/languages/Russian"]
+	path = data/languages/Russian
+	url = https://github.com/RHVoice/Russian.git
+[submodule "data/languages/Tatar"]
+	path = data/languages/Tatar
+	url = https://github.com/RHVoice/Tatar.git
+[submodule "data/languages/Ukrainian"]
+	path = data/languages/Ukrainian
+	url = https://github.com/RHVoice/Ukrainian.git
+[submodule "data/voices/alan"]
+	path = data/voices/alan
+	url = https://github.com/RHVoice/alan-eng.git
+[submodule "data/voices/aleksandr"]
+	path = data/voices/aleksandr
+	url = https://github.com/RHVoice/aleksandr-rus.git
+[submodule "data/voices/anatol"]
+	path = data/voices/anatol
+	url = https://github.com/RHVoice/anatol-ukr.git
+[submodule "data/voices/anna"]
+	path = data/voices/anna
+	url = https://github.com/RHVoice/anna-rus.git
+[submodule "data/voices/azamat"]
+	path = data/voices/azamat
+	url = https://github.com/RHVoice/azamat-kir.git
+[submodule "data/voices/bdl"]
+	path = data/voices/bdl
+	url = https://github.com/RHVoice/bdl-eng.git
+[submodule "data/voices/clb"]
+	path = data/voices/clb
+	url = https://github.com/RHVoice/clb-eng.git
+[submodule "data/voices/elena"]
+	path = data/voices/elena
+	url = https://github.com/RHVoice/elena-rus.git
+[submodule "data/voices/hana"]
+	path = data/voices/hana
+	url = https://github.com/RHVoice/hana-sqi.git
+[submodule "data/voices/irina"]
+	path = data/voices/irina
+	url = https://github.com/RHVoice/irina-rus.git
+[submodule "data/voices/kiko"]
+	path = data/voices/kiko
+	url = https://github.com/RHVoice/kiko-mkd.git
+[submodule "data/voices/Leticia-F123"]
+	path = data/voices/Leticia-F123
+	url = https://github.com/RHVoice/leticia-f123-pt-br.git
+[submodule "data/voices/natalia"]
+	path = data/voices/natalia
+	url = https://github.com/RHVoice/natalia-ukr.git
+[submodule "data/voices/natia"]
+	path = data/voices/natia
+	url = https://github.com/RHVoice/natia-kat.git
+[submodule "data/voices/nazgul"]
+	path = data/voices/nazgul
+	url = https://github.com/RHVoice/nazgul-kir.git
+[submodule "data/voices/slt"]
+	path = data/voices/slt
+	url = https://github.com/RHVoice/slt-eng.git
+[submodule "data/voices/spomenka"]
+	path = data/voices/spomenka
+	url = https://github.com/RHVoice/spomenka-epo.git
+[submodule "data/voices/talgat"]
+	path = data/voices/talgat
+	url = https://github.com/RHVoice/talgat-tat.git
+[submodule "data/voices/arina"]
+	path = data/voices/arina
+	url = https://github.com/RHVoice/arina-rus.git
+[submodule "data/voices/artemiy"]
+	path = data/voices/artemiy
+	url = https://github.com/RHVoice/artemiy-rus.git
+[submodule "data/voices/pavel"]
+	path = data/voices/pavel
+	url = https://github.com/RHVoice/pavel-rus.git
+[submodule "data/voices/vitaliy-ng"]
+	path = data/voices/vitaliy-ng
+	url = https://github.com/rhvoice/vitaliy-ng-rus
+[submodule "data/voices/umka"]
+	path = data/voices/umka
+	url = https://github.com/rhvoice/umka-rus
+[submodule "data/voices/timofey"]
+	path = data/voices/timofey
+	url = https://github.com/rhvoice/timofey-rus
+[submodule "data/voices/michal"]
+	path = data/voices/michal
+	url = https://github.com/RHVoice/michal-pol.git
+[submodule "data/voices/alicja"]
+	path = data/voices/alicja
+	url = https://github.com/RHVoice/alicja-pol.git
+[submodule "data/voices/cezary"]
+	path = data/voices/cezary
+	url = https://github.com/RHVoice/cezary-pol.git
+[submodule "data/voices/vsevolod"]
+	path = data/voices/vsevolod
+	url = https://github.com/RHVoice/vsevolod-rus.git
+[submodule "data/languages/Czech"]
+	path = data/languages/Czech
+	url = https://github.com/RHVoice/Czech.git
+[submodule "data/voices/zdenek"]
+	path = data/voices/zdenek
+	url = https://github.com/RHVoice/zdenek-cze.git
+[submodule "data/languages/Uzbek"]
+	path = data/languages/Uzbek
+	url = https://github.com/RHVoice/Uzbek-bin.git
+[submodule "src/scripts/Uzbek"]
+	path = src/scripts/Uzbek
+	url = https://github.com/RHVoice/Uzbek-src.git
+[submodule "data/voices/sevinch"]
+	path = data/voices/sevinch
+	url = https://github.com/RHVoice/Sevinch-uzb.git
+[submodule "data/languages/Slovak"]
+	path = data/languages/Slovak
+	url = https://github.com/RHVoice/Slovak.git
+[submodule "data/voices/ondro"]
+	path = data/voices/ondro
+	url = https://github.com/RHVoice/ondro-slk.git
+[submodule "data/languages/Serbian"]
+	path = data/languages/Serbian
+	url = https://github.com/RHVoice/Serbian-bin
+[submodule "src/scripts/Serbian"]
+	path = src/scripts/Serbian
+	url = https://github.com/RHVoice/Serbian-src
+[submodule "data/voices/dragana"]
+	path = data/voices/dragana
+	url = https://github.com/RHVoice/dragana-srp.git
+[submodule "data/voices/islom"]
+	path = data/voices/islom
+	url = https://github.com/RHVoice/islom-uzb.git
+[submodule "data/voices/dilnavoz"]
+	path = data/voices/dilnavoz
+	url = https://github.com/RHVoice/dilnavoz-uzb.git
+[submodule "data/voices/ksp"]
+	path = data/voices/ksp
+	url = https://github.com/RHVoice/ksp-eng.git
+[submodule "data/voices/radek"]
+	path = data/voices/radek
+	url = https://github.com/RHVoice/radek-cze.git
+[submodule "data/voices/jasietka"]
+	path = data/voices/jasietka
+	url = https://github.com/RHVoice/jasietka-slk.git
+[submodule "data/languages/Croatian"]
+	path = data/languages/Croatian
+	url = https://github.com/RHVoice/croatian-bin.git
+[submodule "src/scripts/Croatian"]
+	path = src/scripts/Croatian
+	url = https://github.com/RHVoice/croatian-src.git
+[submodule "data/voices/karmela"]
+	path = data/voices/karmela
+	url = https://github.com/RHVoice/karmela-hrv.git
+[submodule "data/voices/seva"]
+	path = data/voices/seva
+	url = https://github.com/RHVoice/seva-rus.git
+[submodule "data/languages/Spanish"]
+	path = data/languages/Spanish
+	url = https://github.com/rhvoice/spanish-bin
+[submodule "src/scripts/Spanish"]
+	path = src/scripts/Spanish
+	url = https://github.com/RHVoice/spanish-src
+[submodule "data/voices/Mateo"]
+	path = data/voices/Mateo
+	url = https://github.com/RHVoice/mateo-spa
+[submodule "data/languages/Belarusian"]
+	path = data/languages/Belarusian
+	url = https://github.com/RHVoice/bel-bin.git
+[submodule "src/scripts/Belarusian"]
+	path = src/scripts/Belarusian
+	url = https://github.com/RHVoice/bel-src.git
+[submodule "data/voices/dasha-blr"]
+	path = data/voices/dasha-blr
+	url = https://github.com/RHVoice/dasha-blr.git
+[submodule "data/voices/dasha-rus"]
+	path = data/voices/dasha-rus
+	url = https://github.com/RHVoice/dasha-rus.git
+[submodule "data/voices/lyudmila-rus"]
+	path = data/voices/lyudmila-rus
+	url = https://github.com/RHVoice/lyudmila-rus.git
+[submodule "data/voices/lyudmila-blr"]
+	path = data/voices/lyudmila-blr
+	url = https://github.com/RHVoice/lyudmila-blr.git
+[submodule "data/voices/michal-blr"]
+	path = data/voices/michal-blr
+	url = https://github.com/RHVoice/michal-blr.git
+[submodule "data/voices/michal-rus"]
+	path = data/voices/michal-rus
+	url = https://github.com/RHVoice/michal-rus.git
+[submodule "data/voices/ryhor-blr"]
+	path = data/voices/ryhor-blr
+	url = https://github.com/RHVoice/ryhor-blr.git
+[submodule "data/voices/alena-blr"]
+	path = data/voices/alena-blr
+	url = https://github.com/RHVoice/alena-blr.git

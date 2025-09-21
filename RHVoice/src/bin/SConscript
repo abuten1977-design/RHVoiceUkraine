@@ -1,0 +1,38 @@
+# Copyright (C) 2010, 2011  Olga Yakovleva <yakovleva.o.v@gmail.com>
+# Copyright (C) 2011  Dmitri Paduchikh <dpaduchikh@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import os.path
+Import("env")
+
+if env["PLATFORM"]!="win32":
+    client_env = env.Clone()
+    client_env["LIBS"] = []
+    client = client_env.Program("RHVoice-client", ["rhvoice-client.c"])
+    client_env.InstallProgram(client)
+
+local_env=env.Clone()
+if local_env["PLATFORM"]!="win32" and env["enable_shared"]=="yes":
+    local_env["LIBS"]=[]
+local_env.Prepend(LIBS="RHVoice")
+local_env.Prepend(LIBPATH=os.path.join("..","lib"))
+if local_env["PLATFORM"]=="win32":
+    local_env.Append(LINKFLAGS="-static-libgcc")
+    local_env.Append(LINKFLAGS="-static-libstdc++")
+program=local_env.Program("RHVoice",["main.cpp"])
+if local_env["PLATFORM"]!="win32":
+    local_env.InstallProgram(program)
+else:
+    local_env.Install(os.path.join("..","..","install"),program)

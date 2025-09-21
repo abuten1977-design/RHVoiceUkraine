@@ -1,0 +1,170 @@
+# Copyright (C) 2017, 2018  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+read spaced-text dict-prefixes.txt
+define PrefixDict0
+clear
+
+read spaced-text dict-words.txt
+define WordDict0
+clear
+
+define RussianVTranscription в -> v ; 
+
+define PrefixDict PrefixDict0 .o. RussianVTranscription ; 
+define WordDict WordDict0 .o. RussianVTranscription ; 
+
+define TatarVowelLetter а|ә|е|ё|и|о|ө|у|ү|ы|э|ю|я|і ; 
+define TatarConsonantLetter б|в|г|д|ж|җ|з|й|к|л|м|н|ң|п|р|с|т|ф|х|һ|ц|ч|ш|щ|ğ|q|w|ғ|қ ; 
+define TatarLetter TatarVowelLetter | TatarConsonantLetter | ь | ъ ; 
+
+define Prefix0 PrefixDict.u ; 
+define Prefix(x) [x .o. [x [TatarLetter+]:0]].l ; 
+define Prefix1 Prefix(Prefix0) ; 
+define UnambigPrefix1 Prefix0 - Prefix1 ; 
+define PrefixRule1 [UnambigPrefix1 .o. PrefixDict] TatarLetter* ; 
+define Prefix2 Prefix(Prefix1) ; 
+define UnambigPrefix2 Prefix1 - Prefix2 ; 
+define PrefixRule2 [UnambigPrefix2 .o. PrefixDict] TatarLetter* ; 
+define Prefix3 Prefix(Prefix2) ; 
+define UnambigPrefix3 Prefix2 - Prefix3 ; 
+define PrefixRule3 [UnambigPrefix3 .o. PrefixDict] TatarLetter* ; 
+define Prefix4 Prefix(Prefix3) ; 
+define UnambigPrefix4 Prefix3 - Prefix4 ; 
+define PrefixRule4 [UnambigPrefix4 .o. PrefixDict] TatarLetter* ; 
+define Prefix5 Prefix(Prefix4) ; 
+define UnambigPrefix5 Prefix4 - Prefix5 ; 
+define PrefixRule5 [UnambigPrefix5 .o. PrefixDict] TatarLetter* ; 
+define Prefix6 Prefix(Prefix5) ; 
+define UnambigPrefix6 Prefix5 - Prefix6 ; 
+define PrefixRule6 [UnambigPrefix6 .o. PrefixDict] TatarLetter* ; 
+
+define PrefixRule PrefixRule1 .P. PrefixRule2 .P. PrefixRule3 .P. PrefixRule4 .P. PrefixRule5 .P. PrefixRule6 ; 
+
+define LatinVowelLetter a|e|i|o|u ; 
+define LatinConsonantLetter b|v|w|g|ğ|d|j|c|z|y|k|q|l|m|n|p|r|s|t|f|x|h ; 
+define LatinLetter LatinVowelLetter | LatinConsonantLetter ; 
+
+define TatarWord WordDict .P. PrefixRule .P. [[TatarLetter|LatinLetter]+] ; 
+
+define TatarConsonant b|v|g|d|zh|zhj|z|j|k|l|m|n|ng|p|r|s|t|f|hh|h|shj|sh|w ; 
+define TatarVowel a|af|e|i|y|o|of|u|uf ; 
+
+define TatarBasicConsonantTranscription б:b|в:w|[г|ғ]:g|д:d|[ж|j]:zh|җ:zhj|з:z|й:j|к:k|л:l|м:m|н:n|ң:ng|п:p|р:r|с:s|т:t|ф:f|х:hh|һ:h|ц:c|ч:shj|ш:sh|щ:shj|ğ:gh|[q|қ]:kh|w:w|x:{ks}|c:{ts} ; 
+define TatarBasicConsonantsTranscription TatarBasicConsonantTranscription -> ; 
+
+define TatarIntervocalicCTranscription c -> {ts} || TatarVowelLetter _ TatarVowelLetter ; 
+define TatarDefaultCTranscription c -> s ; 
+
+define TatarBasicVowelTranscription а:a|ә:af|е:je|ё:jo|[и|і]:i|о:o|ө:of|у:u|ү:uf|ы:y|э:e|ю:ju|я:ja|y:i ; 
+define TatarBasicVowelsTranscription TatarBasicVowelTranscription -> ; 
+
+define TatarIntervocalicWInsertion 
+[..] -> w || u|uf _ TatarVowel ; 
+
+define TatarJVowelAsFront [0:jj] [je:e|jo:of|ju:uf|ja:af] ; 
+
+define TatarJVowelAsBack [0:jj] [je:y|jo:o|ju:u|ja:a] ; 
+
+define TatarJVowelsAfterConsonants je:e|ju:uf|ja:af|jo:of -> || TatarConsonant _ ; 
+
+define TatarFrontVowel af|e|i|of|uf ;
+
+define TatarBackVowel a|o|u|y ; 
+
+define TatarJVowelsBeforeSoftSignTranscription 
+TatarJVowelAsFront -> || _ TatarConsonant* ь ; 
+
+define TatarJVowelsForwardSearchTranscription 
+TatarJVowelAsFront -> || _ [\TatarBackVowel]* TatarFrontVowel ,, 
+TatarJVowelAsBack -> || _ [\TatarFrontVowel]* TatarBackVowel ; 
+
+define TatarJVowelsBackwardSearchTranscription 
+TatarJVowelAsFront -> || TatarFrontVowel [\TatarBackVowel]* _ ,, 
+TatarJVowelAsBack -> || TatarBackVowel [\TatarFrontVowel]* _ ; 
+
+define TatarJVowelSequenceTranscription 
+TatarJVowelAsFront^>1 @-> ; 
+
+define TatarJVowelsDefaultTranscription 
+TatarJVowelAsBack -> ; 
+
+define TatarUjeException 
+jj -> w || uf _ e ; 
+
+define TatarJBeforeJVowels 
+jj -> j ; 
+
+define TatarUvularStopsTranscription 
+k:kh|g:gh -> || _ ъ|TatarBackVowel , TatarBackVowel _ TatarConsonant+ TatarBackVowel | .#. ; 
+
+define TatarSoftAndHardSignsRemoval ь|ъ -> 0 || _ ; 
+
+define TatarNonSyllabicUToW 
+[u|uf] -> w || TatarVowel _ ; 
+
+define TatarVInSurnameLeftContext ? ? ? [о|е] ; 
+
+define TatarVInSurnamesOfWomen 
+в -> v || TatarVInSurnameLeftContext _ (н) а [[н|г|д|л|м|ң|с]|.#.] ; 
+
+define TatarVInSurnamesOfMen 
+в -> v || TatarVInSurnameLeftContext _ [ы] | [{ич}] ,, 
+в -> f || TatarVInSurnameLeftContext _ [[н|к|т|л] | .#.] ; 
+
+define TatarTranscription 
+TatarWord .o. 
+TatarVInSurnamesOfWomen .o. 
+TatarVInSurnamesOfMen .o. 
+TatarBasicConsonantsTranscription .o. 
+TatarIntervocalicCTranscription .o. 
+TatarDefaultCTranscription .o. 
+TatarBasicVowelsTranscription .o. 
+TatarJVowelsAfterConsonants .o. 
+TatarJVowelsBeforeSoftSignTranscription .o. 
+TatarJVowelsForwardSearchTranscription .o. 
+TatarJVowelsBackwardSearchTranscription .o. 
+TatarJVowelSequenceTranscription .o. 
+TatarJVowelsDefaultTranscription .o. 
+TatarUjeException .o. 
+TatarIntervocalicWInsertion .o. 
+TatarJBeforeJVowels .o. 
+TatarUvularStopsTranscription .o. 
+TatarNonSyllabicUToW .o. 
+TatarSoftAndHardSignsRemoval ; 
+
+define TatarBasicPromptConsonantTranscription  [в:v] .P. TatarBasicConsonantTranscription ; 
+define TatarBasicPromptConsonantsTranscription TatarBasicPromptConsonantTranscription -> ; 
+
+define TatarPromptTranscription 
+[TatarLetter+] .o. 
+TatarBasicPromptConsonantsTranscription .o. 
+TatarIntervocalicCTranscription .o. 
+TatarDefaultCTranscription .o. 
+TatarBasicVowelsTranscription .o. 
+TatarJVowelsAfterConsonants .o. 
+TatarJVowelsBeforeSoftSignTranscription .o. 
+TatarJVowelsForwardSearchTranscription .o. 
+TatarJVowelsBackwardSearchTranscription .o. 
+TatarJVowelSequenceTranscription .o. 
+TatarJVowelsDefaultTranscription .o. 
+TatarUjeException .o. 
+TatarIntervocalicWInsertion .o. 
+TatarJBeforeJVowels .o. 
+TatarUvularStopsTranscription .o. 
+TatarNonSyllabicUToW .o. 
+TatarSoftAndHardSignsRemoval ; 
+
+regex TatarTranscription ; 

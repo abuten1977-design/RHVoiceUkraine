@@ -1,0 +1,138 @@
+# Copyright (C) 2025  Zvonimir Stanecic <zvonimirek222@yandex.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define MultiChars 
+[и:TagRuskaja] @-> || .#. _ .#. ; 
+
+define BelRuleMap 
+и:і ; 
+
+define SoftConsonant 
+bb | vv | gg | dd | zz | j | kk | ll | lj | mm | nn | pp | rr | ss | tt | ff | hh | ch | sch;
+define HardConsonant 
+b | w | d | zh | z | j | k | l | m | n | p | r | s | t | f | h | ts | tsh|sh|sch|ws;
+
+define YVowelLetter 
+е | Е | ё | Ё | ю | Ю | я | Я;
+define VowelLetter 
+а | А | и | И | о | О | у | У | ы | Ы | э | Э | YVowelLetter;
+
+define TranscribeI и:i0 | И:i1;
+define TranscribeYVowel 
+е:e0 | Е:e1 | 
+ё:o0 | Ё:o1 | 
+ю:u0 | Ю:u1 | 
+# to ae (a separate phoneme before consonant).
+я:ae0 | Я:ae1;
+define TranscribeHardVowel 
+а:a0 | А:a1 | 
+о:o0 | О:o1 | 
+у:u0 | У:u1 | 
+ы:y0 | Ы:y1 | 
+э:e0 | Э:e1;
+define TranscribeBelVowel і:ii0 | І:ii1 ; 
+define TranscribeVowel 
+TranscribeHardVowel | TranscribeI | TranscribeYVowel | TranscribeBelVowel;
+
+define TranscribeBelConsonant 
+{дж}:dj | 
+{дз}:dz | 
+{дзь}:dd | 
+ґ:gh | 
+{ль}:lj | 
+{нь}:nn | 
+{сь}:ss | 
+[ц]:ts | 
+{ць}:tt | 
+{цц}:ts | # Double to single phoneme.
+{цць}:tt ; # Double to single phoneme.
+
+define TranscribeAsHardConsonant 
+б:b | 
+в:w | 
+г:g | 
+д:d | 
+ж:zh | 
+з:z | 
+й:j | 
+к:k | 
+л:l | 
+м:m | 
+н:n | 
+п:p | 
+р:r | 
+с:s | 
+т:t | 
+ф:f | 
+х:h | 
+ч:tsh | 
+ш:sh | 
+щ:[sh tsh] | 
+ў:ws;
+
+define TranscribeAsSoftConsonant 
+б:bb | 
+в:vv | 
+г:gg | 
+д:dd | 
+ж:zh | 
+з:zz | 
+й:j | 
+к:kk | 
+л:ll | 
+м:mm | 
+н:nn | 
+п:pp | 
+р:rr | 
+с:ss | 
+т:tt | 
+ф:ff | 
+х:hh | 
+ч:tsh | 
+ш:sh ; 
+
+define Apos [%' | ’ | ʼ | ‘ | ъ]; 
+
+define Transcribe 
+TranscribeBelConsonant @-> || _ ,, 
+#TranscribeAsSoftConsonant [ь|Ь]:0 @-> || _ ,, 
+TranscribeAsSoftConsonant TranscribeYVowel @-> || _ ,, 
+TranscribeAsSoftConsonant TranscribeI @-> || _ ,, 
+TranscribeAsSoftConsonant ь:j TranscribeVowel @-> || _ ,, 
+TranscribeAsHardConsonant ъ:%' TranscribeVowel @-> || _ ,, 
+TranscribeAsHardConsonant @-> || Apos _ ,, 
+TranscribeAsHardConsonant @-> || _ ,, 
+0:j TranscribeYVowel @-> || _ ,, 
+TranscribeI @-> || _ ,, 
+TranscribeHardVowel @-> || _ ,, 
+TranscribeBelVowel @-> || _ ,, 
+ь @-> 0 || _ ,, 
+ъ @-> 0 || _ ; 
+
+define SpecialBelRules 
+ae0:a0|ae1:a1 -> || \[m|mm] _ ; 
+
+source stress_in_text.foma
+source Latin2Cyrillic.foma
+
+regex 
+MultiChars .o. 
+BelLatin2Cyrillic .o. 
+[BelRuleMap ->] .o. 
+[[%- | WrittenStressMark] -> 0] .o. 
+#ApplyOrthoepicRules .o. 
+Transcribe .o. 
+[Apos -> 0] .o. 
+SpecialBelRules ; 

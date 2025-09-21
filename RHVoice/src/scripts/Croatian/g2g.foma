@@ -1,0 +1,4 @@
+read spaced-text srp.txt
+define MyDict;
+
+regex MyDict -> || .#. _ .#. ;

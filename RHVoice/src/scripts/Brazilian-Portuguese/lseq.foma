@@ -1,0 +1,69 @@
+# Copyright (C) 2019  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define UnstressVowel a1:a|an1:an|e1:e|ee1:ee|en1:en|i1:i|in1:in|o1:o|oo1:oo|on1:on|u1:u|un1:un ; 
+
+define Letter 
+a:a1 | 
+á:a1| 
+â:a1| 
+à:a1 | 
+ã:an1 | 
+b:[b e1] | 
+c:[s e1] | 
+ç:[s e1] | 
+d:[d e1] | 
+e:e1 | 
+é:ee1 | 
+ê:e1 | 
+f:[ee1 f i] | 
+g:[zh e1] | 
+h:[a g a1] | 
+i:i1 | 
+í:i1 | 
+j:[zh oo1 t a] | 
+k:[k a1] | 
+l:[ee1 l i] | 
+m:[e1 m i] | 
+n:[e1 n i] | 
+ñ:[e n i tj i1 w] | 
+o:o1 | 
+ó:oo1 | 
+ô:o1 | 
+õ:on1 | 
+p:[p e1] | 
+q:[k e1] | 
+r:[ee1 rh i] | 
+s:[ee1 s i] | 
+t:[t e1] | 
+u:u1 | 
+ú:u1 | 
+ü:u1 | 
+v:[v e1] | 
+w:[d a1 b l i u] | 
+x:[sh i1 s] | 
+y:[i1 p s i l on] | 
+z:[z e1] | 
+%':0 ; 
+
+define LetterSequence Letter+ ; 
+
+define Unstress 
+UnstressVowel -> ; 
+
+define Rules 
+(LetterSequence .o. Unstress) Letter ; 
+
+regex Rules ; 

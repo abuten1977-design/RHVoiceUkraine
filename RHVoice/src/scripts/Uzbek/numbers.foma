@@ -1,0 +1,214 @@
+# Copyright (C) 2023 Non-Routine LLC.  <lp@louderpages.org>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+source graphemes.foma
+define Unit 
+%0:"nol" |
+1:"bir" |
+2:"ikki" |
+3:"uch" |
+4:"to'rt" |
+5:"besh" |
+6:"olti" |
+7:"yetti" |
+8:"sakkiz" |
+9:"to'qqiz" ;
+
+define Teen 
+1:["o'n" "bir"] |
+2:["o'n" "ikki"] |
+3:["o'n" "uch"] |
+4:["o'n" "to'rt"] |
+5:["o'n" "besh"] |
+6:["o'n" "olti"] |
+7:["o'n" "yetti"] |
+8:["o'n" "sakkiz"] |
+9:["o'n" "to'qqiz"];
+
+define Ten 
+1:"o'n" |
+2:"yigirma" |
+3:"o'ttiz" |
+4:"qirq" |
+5:"ellik" |
+6:"oltmish" |
+7:"yetmish" |
+8:"sakson" |
+9:"to'qson" ;
+
+define OrdUnit 
+%0:"nolinchi" |
+1:"birinchi" |
+2:"ikkinchi" |
+3:"uchinchi" |
+4:"to'rtinchi" |
+5:"beshinchi" |
+6:"oltinchi" |
+7:"yettinchi" |
+8:"sakkizinchi" |
+9:"to'qqizinchi" ;
+
+define OrdTeen 
+1:["o'n" "birinchi"] |
+2:["o'n" "ikkinchi"] |
+3:["o'n" "uchinchi"] |
+4:["o'n" "to'rtinchi"] |
+5:["o'n" "beshinchi"] |
+6:["o'n" "oltinchi"] |
+7:["o'n" "yettinchi"] |
+8:["o'n" "sakkizinchi"] |
+9:["o'n" "to'qqizinchi"] ;
+
+define OrdTen 
+1:"o'ninchi" |
+2:"yigirmanchi" |
+3:"o'ttizinchi" |
+4:"qirqinchi" |
+5:"ellikinchi" |
+6:"oltmishinchi" |
+7:"yetmishinchi" |
+8:"saksoninchi" |
+9:"to'qsoninchi" ;
+
+define TenOrHundredSymbol ten|hnd ; 
+
+
+# ----------------------------
+define NZDigit 1|2|3|4|5|6|7|8|9 ; 
+define Digit %0|NZDigit ; 
+
+
+define UnformattedNumber %0 | [NZDigit Digit^<15] ; 
+define FormattedNumber NZDigit Digit^<3 [%. Digit^3]^{1,4} ; 
+define RegularDecimal [FormattedNumber|UnformattedNumber] %, Digit+;   #  3.000.320(,022)
+define ForeignDecimal UnformattedNumber %. [Digit^<3 | Digit^>3];   # foreign DP 1.02
+define Ordinal	[FormattedNumber|UnformattedNumber]  OrdSuffix ;   #  number (has to be without commas) followed by ordinal marker
+define ArabicNumber UnformattedNumber | FormattedNumber | RegularDecimal | ForeignDecimal | Ordinal;
+
+# tag valid numbers
+define tagNumberTypes 
+  [FormattedNumber|UnformattedNumber] @-> ... wnum || .#. _ (%, Digit+)  .#. ,,  #  3.000.320(,022)
+  # UnformattedNumber @-> ... wnum || .#. _ (%. Digit+)  .#.  ,,   # foreign DP 1.02
+  UnformattedNumber @-> ... wnum || .#. _ (%. [Digit^{1,2} | Digit^>3])  .#. ,,     # foreign DP 1.02
+  [FormattedNumber|UnformattedNumber] @-> ... wnum ord || .#. _  OrdSuffix .#. ;   #  number (has to be without commas) followed by ordinal marker
+
+# We expect this code to be protected from strings contain other than digits, commas and periods.
+# We will, however, catch non-numbers which has slipped through, like  20.0.1  or 20,11,111
+define tagCascade [  
+	[%,|%.] @->  [hndths dp] || wnum  _ Digit Digit .#. ,,    # place decimal point after whole numbers
+	[%,|%.] @->  [tenths dp] || wnum  _ Digit .#.  ,, 
+	[%,|%.] @-> ...  dp || wnum  _ Digit^>2 .#. ]    
+   .o. [ [%.]:0  -> || _ ?* wnum ]  #  get rid of the thousands dividers
+  .o. [ Digit -> ... dec  || dp Digit* _ .#. ]  # mark decimal
+  .o. [ dec -> wnum || dp NZDigit Digit^<3 _ .#. ]  # See (1) below, "Un-Decimalize"
+  .o. [ Digit -> ... wnum || [.#. | \Digit] Digit* _ [ .#. | %. | %, ]];    #  not a whole number, or decimal
+
+
+define tagRules  tagNumberTypes .o. tagCascade; 
+
+# For whole numbers change the markers for singles
+define preTranslate [1 thns] -> [1 thn] || _ ,,
+  [1 mlns] -> [1 mln] || _ ,,
+  [1 blns] -> [1 bln] || _ ,,
+  [1 tlns] -> [1 tln] || _ ;
+#----------------------------
+
+define PowerOfThousandSymbol thns|mlns|blns|tlns|thn|mln|bln|tln ; 
+define PowerOfTenSymbol TenOrHundredSymbol|PowerOfThousandSymbol ; 
+
+# define SeparatePowerOfThousand(s) [..] -> s || Digit _ Digit^3 wnum  ; 
+ define SeparatePowerOfThousand(s) [..] -> s || Digit _ Digit^3 [\dec & \Digit]  ; 
+
+define PowerOfThousandSymbolsToSingular [mlns:mln|blns:bln|tlns:tln] -> || [[PowerOfThousandSymbol (and)]|wnum] 1 _ ; 
+
+define RemoveSilentGroups %0^3 (PowerOfThousandSymbol) @-> 0 || _ ?* wnum ; 
+
+define SeparateHundreds [..] -> hnd ||  Digit _ Digit^2 ?* wnum; 
+
+define Mark100s hnd -> hnd0 || 1 _ {00} ; 
+
+define SeparateTens [..] -> ten ||  Digit _ Digit ?* wnum; 
+
+
+define RemoveZeros %0  (TenOrHundredSymbol) @-> 0 || _ ?* wnum |.#.; 
+
+define MarkTeens [[1 ten]:0] NZDigit [0:[teen %0]] -> ; 
+
+define InsertAnds [..] -> and || 
+ [.#.|dp] \dp+ _ NZDigit [ [PowerOfThousandSymbol|hnd|teen|ten] %0]* [PowerOfThousandSymbol|hnd|teen|ten|wnum]  ; # puts a single 'and', before the last non-zero element
+
+define RemoveBirMing 1 -> 0 || .#. _ thn wnum ; 
+
+define processOrdinals 
+ [
+ OrdUnit ->  ||  _ wnum ord OrdSuffix .#. ,,
+ [OrdTeen teen:0] ->  ||  _ wnum ord OrdSuffix .#. ,,
+ [OrdTen ten:0] ->  ||  _ wnum ord OrdSuffix .#. 
+  ];
+
+
+define processFinalOrdinals 
+ [yuz:yuzinchi | ming:minginchi | million:millioninchi | milliard:milliarininchi | trilliard:trilliarininchi] ->  ||  _ wnum ord OrdSuffix .#. 
+	.o.  [ord OrdSuffix]:0 -> || _ .#.; 
+
+
+
+
+define Translate [ 
+ Unit -> || _ wnum | dec | PowerOfThousandSymbol  ,, 
+ Unit -> || dp Digit* _ Digit* dec ,,   # right of decimal point
+ Teen [teen:0] -> || _ ,, 
+ Ten [ten:0] -> || _ ,, 
+	Unit [hnd:yuz] -> || _  wnum ,, 
+	Unit [hnd:yuzi] -> || _ \wnum  ,, 
+	and:0 ->   || _ ,, 
+	tenths -> ["butun" "o'ndan"]  || _  ,, 
+	hndths ->  ["butun" "yuzdan"]  || _  ,, 
+	%, @->  ["o'nlik" "vergul"]  || _ ?+ .#. ,, 
+	%. ->  ["kasr" "nuqtazi"] || _ ?+ .#.  
+ ]
+ .o. [ 
+  bir:0 -> || .#. _ yuz ,,
+	[thn:ming | mln:million | bln:milliard | tln:trillion] -> || _    ,, 
+	[thns:ming | mlns:million | blns:milliard | tlns:trillion] ->  || _  
+	]; 
+
+define NumberRules SeparatePowerOfThousand(thns)  .o. 
+ SeparatePowerOfThousand(mlns) .o. 
+SeparatePowerOfThousand(blns) .o. 
+SeparatePowerOfThousand(tlns)  .o. 
+RemoveSilentGroups .o. 
+SeparateHundreds  .o. 
+SeparateTens  .o. 
+ MarkTeens  
+ .o. InsertAnds 
+   .o.  RemoveZeros  .o. 
+ PowerOfThousandSymbolsToSingular .o. 
+ preTranslate
+ .o. RemoveBirMing   
+ .o. processOrdinals
+ .o.  [%.|%,|wnum] -> nol ... || .#. _   # hack to replace lost zero in front of dec. point
+ .o. Translate   
+.o. processFinalOrdinals
+ .o. 	[dp:0|dec:0|wnum:0] -> || _ 
+ ;
+	
+
+
+source romans.foma
+regex ConvertRomanToDecimal .o. ArabicNumber  .o. tagRules  .o. NumberRules 
+ ; 
+
+#source test.data

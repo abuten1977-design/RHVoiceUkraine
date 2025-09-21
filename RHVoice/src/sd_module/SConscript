@@ -1,0 +1,55 @@
+# -*- mode: Python; indent-tabs-mode: t; tab-width: 4 -*-
+# Copyright (C) 2012, 2018  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import os.path
+import re
+
+Import("env","libcore","libaudio")
+
+local_env=env.Clone()
+local_env.Prepend(LIBS=[local_env["libcore"],local_env["libaudio"]])
+ver=local_env.get("spd_version","0.9")
+m=re.match(r"^(\d+)\.(\d+)\D?",ver)
+major=m.group(1)
+minor=m.group(2)
+local_env.Append(CPPDEFINES=("SPD_MAJOR",major))
+local_env.Append(CPPDEFINES=("SPD_MINOR",minor))
+src=["main.cpp",
+	 "base.cpp",
+	 "state.cpp",
+	 "io.cpp",
+	 "command.cpp",
+	 "module.cpp",
+	 "init.cpp",
+	 "config_command.cpp",
+	 "config_audio.cpp",
+	 "config_tts.cpp",
+	 "config_logger.cpp",
+	 "list_voices.cpp",
+	 "speak.cpp",
+	 "stop.cpp",
+	 "pause.cpp",
+	 "quit.cpp",
+	 "speech_synthesizer.cpp",
+	 "speech_player.cpp"]
+module=local_env.Program("sd_rhvoice",src)
+local_env.Depends(module,libcore)
+local_env.Depends(module,libaudio)
+if local_env["PLATFORM"]!="win32":
+	if bool(local_env["spd_module_dir"]):
+		local_env.InstallSpdModule(module)
+	else:
+		local_env.InstallProgram(module)

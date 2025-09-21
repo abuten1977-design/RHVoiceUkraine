@@ -1,0 +1,9 @@
+local.properties
+.gradle/
+.cxx
+.idea
+.externalNativeBuild/
+build/
+binary_cache/
+perf.data
+*.iml

@@ -1,0 +1,274 @@
+# Copyright (C) 2024-2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+source romans.foma
+source variables.foma
+
+define MapRomanNumeral 
+ESRomanMapping -> || .#. _ .#. ; 
+
+define SpanishRoman 
+[{II}:segundo|{III}:tercero|{IV}:cuarto|{VI}:sexto|{VII}:séptimo|{VIII}:octavo|{IX}:noveno] @-> || .#. _ .#. ; 
+
+define MaleOrdChar %º ; 
+define FemaleOrdChar %ª ; 
+define OrdChar MaleOrdChar | FemaleOrdChar ; 
+#define Separator %/ ; 
+define ProcNumChar [ %-:menos |
+%+: más |
+%$: dólares |
+%.: punto |
+%,: coma ] ;
+
+define NZDigit 1|2|3|4|5|6|7|8|9 ; 
+define Digit %0|NZDigit ; 
+
+define UnformattedNumber [NZDigit Digit^<16] ; 
+#define Year [Digit^<5] ; 
+#define DayOrMonth [Digit^<3] ; 
+#define FormatedDate [DayOrMonth Separator DayOrMonth Separator Year] ; 
+#define Number FormatedDate | [UnformattedNumber (OrdChar)] | ESRomanNumeral ; 
+define Number [UnformattedNumber (OrdChar)] | ESRomanNumeral ; 
+
+define MaleOrdUnit 
+1:primero | 
+2:segundo | 
+3:tercero | 
+4:cuarto | 
+5:quinto | 
+6:sexto | 
+7:séptimo | 
+8:octavo | 
+9:noveno ; 
+
+define FemaleOrdUnit 
+1:primera | 
+2:segunda | 
+3:tercera | 
+4:cuarta | 
+5:quinta | 
+6:sexta | 
+7:séptima | 
+8:octava | 
+9:novena ; 
+
+
+define Teen 
+1:once | 
+2:doce | 
+3:trece | 
+4:catorce | 
+5:quince | 
+6:dieciseis | 
+7:diecisiete | 
+8:dieciocho | 
+9:diecinueve ; 
+
+define Twenti 
+1:veintiuno | 
+2:veintidós | 
+3:veintitrés | 
+4:veinticuatro | 
+5:veinticinco | 
+6:veintiseis | 
+7:veintisiete | 
+8:veintiocho | 
+9:veintinueve ; 
+
+define Ten 
+1:diez | 
+2:veinte | 
+3:treinta | 
+4:cuarenta | 
+5:cincuenta | 
+6:sesenta | 
+7:setenta | 
+8:ochenta | 
+9:noventa ; 
+
+define MaleOrdTen 
+1:décimo | 
+2:vigésimo | 
+3:trigésimo | 
+4:cuadragésimo | 
+5:quincuagésimo | 
+6:sexagésimo | 
+7:septagésimo | 
+8:octogésimo | 
+9:nonagésimo ; 
+
+define FemaleOrdTen 
+1:décima | 
+2:vigésima | 
+3:trigésima | 
+4:cuadragésima | 
+5:quincuagésima | 
+6:sexagésima | 
+7:septagésima | 
+8:octogésima | 
+9:nonagésima ; 
+
+
+define Hundred 
+1:ciento | 
+2:doscientos | 
+3:trescientos | 
+4:cuatrocientos | 
+5:quinientos | 
+6:seiscientos | 
+7:setecientos | 
+8:ochocientos | 
+9:novecientos ; 
+
+define MaleOrdHundred 
+1:centésimo | 
+2:docentésimo | 
+3:trecentésimo | 
+4:cuatringentésimo | 
+5:quingentésimo | 
+6:sessentésimo | 
+7:setingentésimo | 
+8:octocentésimo | 
+9:noningentésimo ; 
+
+define FemaleOrdHundred 
+1:centésima | 
+2:docentésima | 
+3:trecentésima | 
+4:quatringentésima | 
+5:quingentésima | 
+6:sessentésima | 
+7:setingentésima | 
+8:octocentésima | 
+9:noningentésima ; 
+
+define PowerOfThousandSymbol ths|mlns|blns|tlns|mln|bln|tln ; 
+define TenOrHundredSymbol ten|hnd0|hnd ; 
+define PowerOfTenSymbol TenOrHundredSymbol|PowerOfThousandSymbol ; 
+
+define OrdPowerOfThousandSymbol thth|mlnth|blnth|tlnth ; 
+define OrdTenOrHundredSymbol tenth|hndth ; 
+define OrdPowerOfTenSymbol OrdTenOrHundredSymbol|OrdPowerOfThousandSymbol ; 
+
+define SeparatePowerOfThousand(s) [..] -> s || Digit _ Digit^3 [.#.|\Digit] ; 
+
+define RemoveSilentGroups 
+%0^3 (PowerOfThousandSymbol) @-> 0 ; 
+
+define SeparateHundreds 
+[..] -> hnd || Digit _ Digit^2 ; 
+
+define Mark100s 
+hnd -> hnd0 || 1 _ {00} ; 
+
+define SeparateTens 
+[..] -> ten || Digit _ Digit ; 
+
+define MarkTenth 
+ten -> tenth || Digit _ Digit OrdChar ; 
+
+define MarkHundredth 
+[hnd|hnd0] -> hndth || Digit _ Digit tenth ; 
+
+define MarkThousandth 
+ths -> thth || Digit _ [Digit hndth] | OrdChar ; 
+
+define MarkOrdPowerOfThousand 
+mlns:mlnth | blns:blnth | tlns:tlnth -> || _ OrdChar ; 
+
+define RemoveZeros 
+%0 ([TenOrHundredSymbol | OrdTenOrHundredSymbol]) @-> 0 ; 
+
+define MarkTeens 
+[[1 ten]:0] NZDigit [0:teen] -> ; 
+
+define MarkTwenties 
+[[2 ten]:0] NZDigit [0:twenti] -> ; 
+
+define InsertAnds 
+[..] -> and || 
+NZDigit ten _ NZDigit ; 
+#NZDigit hnd _ (%0 ten) NZDigit , 
+#PowerOfThousandSymbol _ [[NZDigit [hnd|hnd0] %0 ten %0] | [%0 hnd (%0 ten) NZDigit]] .#. ; 
+
+define RemoveOnes 
+1 -> 0 || .#. _ ths | OrdPowerOfThousandSymbol ; 
+
+define PowerOfThousandSymbolsToSingular 
+[mlns:mln|blns:bln|tlns:tln] -> || [[PowerOfThousandSymbol (and)]|.#.] 1 _ ; 
+
+define Translate 
+OrdChar -> 0 ,, 
+Unit -> || _ .#. | PowerOfThousandSymbol | OrdPowerOfThousandSymbol ,, 
+MaleOrdUnit -> || _ MaleOrdChar .#. ,, 
+FemaleOrdUnit -> || _ FemaleOrdChar .#. ,, 
+Teen [teen:0] -> || _ ,, 
+Twenti [twenti:0] -> || _ ,, 
+Ten [ten:0] -> || _ ,, 
+MaleOrdTen [tenth:0] -> || _ ?* MaleOrdChar .#. ,, 
+FemaleOrdTen [tenth:0] -> || _ ?* FemaleOrdChar .#. ,, 
+Hundred [hnd:0] -> || _ ,, 
+1 hnd0 -> cien || _ ,, 
+MaleOrdHundred [hndth:0] -> || _ ?* MaleOrdChar .#. ,, 
+FemaleOrdHundred [hndth:0] -> || _ ?* FemaleOrdChar .#. ,, 
+ths -> mil || _ ,, 
+and -> y || _ ,, 
+[mln:millón | bln:billón | tln:trillón] -> || _ ,, 
+[mlns:millones | blns:billones | tlns:trillones] -> || _ ,, 
+[thth:milésimo | mlnth:millonésimo | blnth:billonésimo | tlnth:trillonésimo] -> || _ ?* MaleOrdChar .#. ,, 
+[thth:milésima | mlnth:millonésima | blnth:billonésima | tlnth:trillonésima] -> || _ ?* FemaleOrdChar .#. ; 
+
+define RemoveThousandsSeparators 
+%. -> 0 ; 
+
+define fixes2 
+[uno:un | veintiuno:veintiún] -> || _ [mil|millón|billón|trillón] ; 
+
+define NumberRules 
+Number .o. 
+SpanishRoman .o. 
+MapRomanNumeral .o. 
+RemoveThousandsSeparators .o. 
+SeparatePowerOfThousand(ths) .o. 
+SeparatePowerOfThousand(mlns) .o. 
+SeparatePowerOfThousand(blns) .o. 
+SeparatePowerOfThousand(tlns) .o. 
+RemoveSilentGroups .o. 
+SeparateHundreds .o. 
+Mark100s .o. 
+SeparateTens .o. 
+MarkTenth .o. 
+MarkHundredth .o. 
+MarkThousandth .o. 
+MarkOrdPowerOfThousand .o. 
+MarkTeens .o. 
+MarkTwenties .o. 
+InsertAnds .o. 
+RemoveZeros .o. 
+PowerOfThousandSymbolsToSingular .o. 
+RemoveOnes .o. 
+Translate .o. 
+#fixes .o. 
+fixes2 ; 
+#fixes3 ; 
+
+define ZeroRule 
+%0 : cero | 
+[%0 MaleOrdChar] : cerésimo | 
+[%0 FemaleOrdChar] : cerésima ; 
+
+
+regex 
+ProcNumChar | ZeroRule | NumberRules ; 

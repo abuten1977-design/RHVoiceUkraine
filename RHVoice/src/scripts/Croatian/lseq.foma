@@ -1,0 +1,110 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+define Letter  # Latin letters on left of |
+î : i1 |  # debug schwa !
+[a|а] : a1 |
+[e|е] : e1 | 
+[i|и] : ii1 | 
+[o|о] : o1 | 
+[u|у] : u1 | 
+[j|ј]  :  [j ax0] |
+[b|б] : [b ax0] | 
+[ђ|đ|ѓ] : [dj ax0] | 
+[g|г]: [g ax0] | 
+[d|д] : [d ax0] | 
+[dž|џ] : [dzh ax0] | 
+ѕ : [dz ax0] | 
+[ž|ж] : [zh ax0] | 
+[z|з] : [z ax0] | 
+ź : [z j ax0] | 
+[k|к] : [k ax0] | 
+[l|л] : [l ax0] | 
+[m|м] : [m ax0] | 
+[n|н] : [n ax0] | 
+[nj|њ] : [nj ax0] |
+[p|п] : [p ax0] | 
+[р|r] : [r ax0] | 
+[s|с] : [s ax0] | 
+ś : [s j ax0] | 
+[t|т] : [t ax0] | 
+[f|ф] : [f ax0] | 
+[h|х] : [h ax0] | 
+[c|ц] : [ts ax0] | 
+[č|ч] : [tsh ax0] | 
+[š|ш] : [sh ax0] | 
+[v|в] : [v ax0] |
+[lj|љ] : [lj ax0] |
+[ć|ћ] : [tj ax0] |
+q : [k v ax0] |
+w : [d v o1 s t r u k o0 v ax0] |
+x : [ii1 k s] |
+y : [ii1 p s ii0 l o0 n];
+
+define SpecialSingles 
+
+# latin for when Android is spelling letter by letter.
+a : [a1] |
+b : [b ax0] | 
+c : [ts ax0] |
+d : [d ax0] |
+e : [e1] |
+f : [f ax0] |
+g : [g ax0] |
+h : [h ax0] |
+i : [ii1] |
+j : [j ax0] |
+k : [k ax0] |
+l : [l ax0] |
+m : [m ax0] |
+n : [n ax0] |
+o : [o1]  |
+p : [p ax0] |
+q : [k v ax0] |
+r : [r ax0] |
+s : [s ax0] |
+ś : [s j ax0] | 
+t : [t ax0] |
+u : [u1] |
+v : [v ax0] |
+w : [d v o1 s t r u k o0 v ax0] |
+x : [ii1 k s] |
+y : [ii1 p s ii0 l o0 n] |
+z : [z ax0] |
+ź : [s j ax0] | 
+ć : [tj ax0] | 
+đ : [dj ax0] | 
+ž : [zh ax0] |
+š : [sh ax0] |
+č : [tsh ax0]
+;
+
+
+
+defin LetterSequence Letter+ ; 
+
+# not all vowels used, but map them all anyway
+define stress 
+ [a0:a1 | ax0:ax1 | e0:e1 | i0:i1 | ii0:ii1 | o0:o1 | u0:u1] -> ||  _  .#. ;
+
+  
+
+source downcase.foma
+
+define Rules  
+ 	Downcase .o. # LatinConvertLSeq .o. 
+#	LatinSingle .P.
+ [[LetterSequence @-> || _]   .o. [ stress]] ; 
+
+regex Rules ; 

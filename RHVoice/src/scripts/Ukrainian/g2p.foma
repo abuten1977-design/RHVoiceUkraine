@@ -1,0 +1,111 @@
+# Copyright (C) 2015  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define Letter б|г|ґ|д|ж|з|к|л|м|н|п|р|с|т|ф|х|ц|ч|ш|щ|а|е|э|є|и|ы|і|ї|о|у|ю|я|ё|А|Е|Э|Є|И|Ы|І|Ї|О|У|Ю|Я|Ё|й|в|ь|ъ|%'|’|‘|ʼ ; 
+
+define Word Letter + ; 
+
+define InitialLetterMapping 
+а : a0 | 
+[е|э] : e0 | 
+є : [J e0] | 
+[и|ы] : i0 | 
+і : ii0 | 
+ї : [j ii0] | 
+о : o0 | 
+у : u0 | 
+ю : [J u0] | 
+я : [J a0] |
+ё : [J o0] | 
+А : a1 | 
+[Е|Э] : e1 | 
+Є : [J e1] | 
+[И|Ы] : i1 | 
+І : ii1 | 
+Ї : [j ii1] | 
+О : o1 | 
+У : u1 | 
+Ю : [J u1] | 
+Я : [J a1] |
+Ё : [J o1] | 
+б : b | 
+г : gh | 
+ґ : g | 
+д : d | 
+{дж} : dzh | 
+{дз} : dz | 
+ж : zh | 
+з : z | 
+к : k | 
+л : l | 
+м : m | 
+н : n | 
+п : p | 
+р : r | 
+с : s | 
+т : t | 
+ф : f | 
+х : h | 
+ц : ts | 
+ч : tsh | 
+ш : sh | 
+щ : sch | 
+й : j | 
+в : w |
+ь : softSign | 
+[%' | ’ | ʼ | ‘ | ъ] : apos ; 
+
+define InitialTranscription InitialLetterMapping @-> ; 
+
+define PalatalizationMapping 
+b : bj | 
+g : gj | 
+gh : ghj | 
+d : dj | 
+dzh : dzhj | 
+dz : dzj | 
+zh : zhj | 
+z : zj | 
+k : kj | 
+l : lj | 
+m : mj | 
+n : nj | 
+p : pj | 
+r : rj | 
+s : sj | 
+t : tj | 
+f : fj | 
+h : hj | 
+ts : tsj | 
+sh : shj | 
+tsh : tshj | 
+sch : [shj tshj] | 
+w : wj ; 
+
+define Palatalization 
+[PalatalizationMapping [[softSign | J] : 0 | ii0 | ii1] | 
+softSign : 0 | 
+J : j | 
+apos : 0 | 
+sch : [sh tsh]] @-> ; 
+
+source stress_in_text.foma
+
+regex 
+[WrittenStressMark -> 0] .o. 
+Word .o. 
+InitialTranscription .o. 
+Palatalization ; 
+

@@ -1,0 +1,78 @@
+# Copyright (C) 2025  Zvonimir Stanecic <zvonimirek222@yandex.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define NZDigit 1|2|3|4|5|6|7|8|9;
+define Digit %0|NZDigit;
+define Number (%+|%-) [%0|[NZDigit Digit^<16]] (%%|%°);
+
+define RB (%%|%°) .#. ; 
+
+define InsertThousands 
+[..] -> тЫсяч || Digit _ Digit^3 RB ; 
+
+define InsertMillions 
+[..] -> мільЁнаў || Digit _ Digit^3 тЫсяч ;
+
+define InsertBillions 
+[..] -> мільЯрдаў || Digit _ Digit^3 мільЁнаў;
+
+define InsertTrillions 
+[..] -> трыльЁнаў || Digit _ Digit^3 мільЯрдаў;
+
+define RemoveSkippedParts 
+%0 %0 %0 [тЫсяч|мільЁнаў|мільЯрдаў|трыльЁнаў] -> 0 ;
+
+define Units %0:0|1:адзІн|2:двА|3:трЫ|4:чатЫры|5:пЯць|6:шЭсць|7:сЕм|8:вОсем|9:дзЕвяць;
+
+define Teens 1:0 [%0:дзЕсяць|1:адзінАццаць|2:дванАццаць|3:трынАццаць|4:чатырнАццаць|5:пятнАццаць|6:шаснАццаць|7:сямнАццаць|8:васямнАццаць|9:дзевятнАццаць];
+
+define Tens %0:0|2:двАццаць|3:трЫццаць|4:сОрак|5:пяцьдзясЯт|6:шЭсцьдзесят|7:сЕмдзесят|8:вОсемдзесят|9:дзевянОста;
+
+define Hundreds %0:0|1:стО|2:дзьвЕсце|3:трЫста|4:чатЫрыста|5:пяцьсОт|6:шэсцьсОт|7:семсОт|8:восемсОт|9:дзевяцьсОт;
+
+define UpToThousand %0:нУль .P. [[(Hundreds) Teens] | [((Hundreds) Tens) Units]];
+
+define DigitsToWords 
+UpToThousand @-> ,, 
+%+ @-> плЮс ,, 
+%- @-> мІнус ,, 
+%% @-> адсОткаў ,, 
+%° @-> грАдусаў ; 
+
+define FixCase 
+тЫсяч:тЫсяча|мільЁнаў:мільЁн|мільЯрдаў:мільЯрд|трыльЁнаў:трыльЁн|адсОткаў:адсОтак|грАдусаў:грАдус -> || адзІн _ ,, 
+тЫсяч:тЫсячы|мільЁнаў:мільЁны|мільЯрдаў:мільЯрды|трыльЁнаў:трыльЁны|адсОткаў:адсОтка|грАдусаў:грАдуса -> || двА|трЫ|чатЫры _ ;
+
+define FixGender 
+адзІн -> аднА || _ тЫсяча ,, 
+двА -> дзьвЕ || _ тЫсячы ; 
+
+define RemoveOne 
+аднА -> 0 || .#. | GroupName _ тЫсяча,, 
+адзІн -> 0 || .#. | GroupName _ мільЁн,, 
+адзІн -> 0 || .#.  | GroupName _ мільЯрд,, 
+адзІн -> 0 || .#. | GroupName _ трыльЁн ; 
+
+regex 
+Number .o. 
+InsertThousands .o. 
+InsertMillions .o. 
+InsertBillions .o. 
+InsertTrillions .o.
+RemoveSkippedParts .o. 
+DigitsToWords .o. 
+FixCase .o. 
+FixGender .o.
+RemoveOne;

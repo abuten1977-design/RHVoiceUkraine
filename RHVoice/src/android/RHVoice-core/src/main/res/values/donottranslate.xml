@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name">RHVoice</string>
+  <string-array name="quality_values">
+    <item>min</item>
+    <item>std</item>
+    <item>max</item>
+  </string-array>
+</resources>

@@ -1,0 +1,31 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+
+ # These will be pronounced as letter sequences. 
+define Acronym {СПЦ} | {SPC} |  #  Српска Православна Црква
+{РТС} | {RTS} |  # Радио Телевизија Србије
+{ПГП} | {PGP} | # Продукција Грамофонских Плоча
+{ПЦ} | {PC} |  # Personal Computer (Персонални рачунар
+{СЗО} | {SZO} |  # Светска здравствена организација
+{УНДП} | {UNDP} |  # United Nation Development Program
+{НВДА} | {NVDA} | 
+{RTCG} | {РТЦГ} |  # Радио Телевизија Црне Горе
+{RSD} | {РСД} |  # Српски динар
+{TTS} | {ТТС} |  # Text to speech
+{SRC} | {СРЦ} |  # Source
+{JPG} | {ЈПГ} |  # Join Picture Graphic
+{ХРТ} | {HRT} ;  # Хрватска Радио Телевизија
+

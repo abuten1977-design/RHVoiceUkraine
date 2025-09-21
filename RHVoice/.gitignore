@@ -1,0 +1,7 @@
+build/
+local/
+*.pyc
+/src/include/core/config.h
+/CMakeLists.txt.user
+external/libs/boost/include/boost/
+

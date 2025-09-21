@@ -1,0 +1,136 @@
+# -*- mode: Python; indent-tabs-mode: t; tab-width: 4 -*-
+# Copyright (C) 2012, 2018, 2019, 2022  Olga Yakovleva <olga@rhvoice.org>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import os
+import os.path
+import sys
+import codecs
+
+try:
+	basestring
+except NameError:
+	basestring = str
+
+Import("env", "libhts_engine", "boost_headers")
+if env["enable_sonic"]:
+	Import("libsonic")
+if env["enable_pkg"]:
+	Import("libpkg")
+extern_libs_dir=Dir("#external").Dir("libs")
+local_env=env.Clone()
+local_env.Prepend(CPPPATH=os.path.join("#src", "hts_engine"))
+if env["enable_sonic"]:
+		local_env.Append(CPPPATH=[extern_libs_dir.Dir("sonic")])
+local_env["libversion"]="10.1.0"
+local_env["liblevel"]=1
+
+coreConfig = {
+	"DATA_PATH": 'data' if local_env["PLATFORM"]=="win32" else (local_env.Dir("#data").abspath if local_env["dev"] else local_env.subst('$datadir/$package_name')),
+	"CONFIG_PATH": 'config' if local_env["PLATFORM"]=="win32" else local_env.subst('$sysconfdir/$package_name')
+}
+
+globalConfig = {
+	"VERSION": local_env["package_version"],
+	"ENABLE_PKG": bool(local_env["enable_pkg"]),
+	"ENABLE_SONIC": bool(local_env["enable_sonic"])
+}
+
+def getVarTextRepr(v):
+	if isinstance(v, basestring):
+		return v
+	if isinstance(v, bool):
+		v = int(v)
+	if isinstance(v, int):
+		return str(v)
+
+def processConfig(env, inFName, outFName, configToGen):
+	print("Configuring ", inFName, "into", outFName, "...")
+	with codecs.open(inFName, "r", encoding = "utf-8") as f:
+		cfgText = f.read()
+		for k, v in configToGen.items():
+			cfgText = cfgText.replace("@" + k + "@", getVarTextRepr(v))
+			cfgText = cfgText.replace("#cmakedefine01 " + k, "#define " + k +" " + str(int(bool(v))))
+			cfgText = cfgText.replace("#cmakedefine " + k,  "#define " if v else "#undef " + k)
+
+	env.Textfile(target=outFName, source=["#pragma once"]+cfgText.splitlines())
+
+if sys.platform!="win32" or local_env["TARGET_ARCH"]!="x86_64":
+		processConfig(local_env, Dir(".").srcnode().File("config.h.in").abspath, Dir(".").srcnode().File("config.h").abspath, coreConfig)
+		includedir=Dir("#src").Dir("include").Dir("core").srcnode()
+		processConfig(local_env, includedir.File("config.h.in").abspath, includedir.File("config.h").abspath, globalConfig)
+
+src=["unicode.cpp",
+	 "io.cpp",
+	 "path.cpp",
+	 "fst.cpp",
+	 "dtree.cpp",
+	 "lts.cpp",
+	 "item.cpp",
+	 "relation.cpp",
+	 "utterance.cpp",
+	 "document.cpp",
+	 "ini_parser.cpp",
+	 "config.cpp",
+	 "engine.cpp",
+	 "params.cpp",
+	 "phoneme_set.cpp",
+	 "language.cpp",
+	 "data_only_language.cpp",
+	 "russian.cpp",
+	 "english.cpp",
+	 "esperanto.cpp",
+	 "georgian.cpp",
+	 "ukrainian.cpp",
+	 "macedonian.cpp",
+	 "kyrgyz.cpp",
+	 "tatar.cpp",
+	 "brazilian_portuguese.cpp",
+	 "userdict.cpp",
+	 "voice.cpp",
+	 "hts_engine_impl.cpp",
+	 "hts_vocoder_wrapper.cpp",
+	 "model_answer_cache.cpp",
+	 "str_hts_engine_impl.cpp",
+	 "hts_engine_call.cpp",
+	 "hts_label.cpp",
+	 "hts_labeller.cpp",
+	 "speech_processor.cpp",
+	 "limiter.cpp",
+		 "bpf.cpp",
+	 "equalizer.cpp",
+	 "unit_db.cpp",
+		 "question_matcher.cpp",
+		 "emoji.cpp",
+		 "pitch.cpp",
+	 "english_id.cpp",
+	 "vietnamese.cpp"]
+for lib in [libhts_engine]:
+	src.extend(lib)
+if local_env["enable_sonic"]:
+	src.extend(libsonic)
+
+if local_env["enable_pkg"]:
+	src.extend(libpkg)
+	local_env.Append(LIBS=["curl"])
+
+if sys.platform.startswith("linux"):
+    local_env.Append(LIBS=["rt"])
+
+libcore=local_env.BuildLibrary(local_env["libcore"],src)
+local_env.Depends(src, boost_headers)
+if env["PLATFORM"]!="win32":
+	local_env.InstallLibrary(libcore)
+Export("libcore")

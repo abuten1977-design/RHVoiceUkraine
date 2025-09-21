@@ -1,0 +1,5 @@
+RHVoice - синтезатор для русского и других языков
+Разработчик: Ольга Яковлева <yakovleva.o.v@gmail.com>
+Лицензия: GNU General Public License (версия 3)
+Страничка проекта: https://github.com/RHVoice/RHVoice
+Список рассылки: https://groups.io/g/RHVoice-rus

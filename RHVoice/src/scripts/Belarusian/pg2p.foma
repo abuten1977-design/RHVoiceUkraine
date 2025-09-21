@@ -1,0 +1,37 @@
+# Copyright (C) 2025  Mateo Cedillo <angelitomateocedillo@gmail.com>,Zvonimir Stanecic <zvonimirek222@yandex.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# Post G2p
+# In Belarussian, single letters are words when they are not alone, acompanied in another word to form the sentence.
+# However, if these are alone, we could output the phonetic transcription of the letter.
+# We could also use Sentence level tokenization,, but it is a bit tricky. But, we could do that in the future.
+
+define WordToLetter 
+b:[b e1] | 
+w:[w e1] | 
+zh:[zh e1] | 
+TagRuskaja:[i1 r u0 s s k a0 j e0] | 
+j:[ii1 nn e0 s k l a0 d o0 w a0 j e0] | 
+z:[z e1] | 
+k:[k a1] | 
+ws:[u0 nn e0 s k l a0 d o0 w a0 j e] ; 
+
+define PhonemeToSpelling 
+# Tokenizer treat these characters as words. As a consequence, the issue comes when spelling. Since treat unique character as word, we can take advantage of this.
+WordToLetter @-> || .#. _ .#. ; 
+
+regex 
+PhonemeToSpelling .o. 
+[TagRuskaja @-> ii0] ; 

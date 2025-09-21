@@ -1,0 +1,272 @@
+# Copyright (C) 2024-2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# Spanish Post g2p with documentation. Important things to consider:
+# Phrase Boundary.
+define PB %- | .#. ; 
+# Word boundary (words of the utterance)
+define WB %# | PB ; 
+source variables.foma
+# Here, we apply approximants through the whole utterance, same that we did in g2p but with word boundaries between vowels.
+# For example, el dado de Dabid. Between o (dado) and d (de) and "de" and "David" are the intervocalic d.
+# So, as a result, it sould be "el daDo De DaVid". The mayus d is the aproximant.
+define RemainingApproximants 
+b @-> bh || vocal %# _ vocal ,, 
+d @-> dh || vocal %# _ vocal ,, 
+g @-> gh || vocal %# _ vocal ,, 
+v @-> vh || vocal %# _ vocal ; 
+
+# Here is a contextual character, y. That must be y griega when alone.
+define PhonemeToSpelling 
+TagYgriega @-> [i1 g r j e1 gh a0] || .#. _ .#. ; 
+
+# Here, to get a better prosody of the voice and phonetic transcription, we unstress the "enta y" prefix. For example, a speaker doesn't say tréinta y cinco, but treinta y cinco, withouth stressing in the e. So, we will fix this behavior in RHVoice Spanish phonetics.
+define StressedNumber 
+[v e1 yc n t e0]:[v e0 yc n t e0]|
+# Veinte in approximant (example: ciento veinte mil. O, V, e).
+[vh e1 yc n t e0]:[vh e0 yc n t e0]|
+[t r e1 yc n t a0]:[t r e0 yc n t a0]|
+[k w a0 r e1 n t a0]:[k w a0 r e0 n t a0]|
+[c i0 n k w e1 n t a0]:[c i0 n k w e0 n t a0]|
+[s e0 s e1 n t a0]:[s e0 s e0 n t a0]|
+[s e0 t e1 n t a0]:[s e0 t e0 n t a0]|
+[o0 ts e1 n t a0]:[o0 ts e0 n t a0]|
+[n o0 vh e1 n t a0]:[n o0 vh e0 n t a0] ; 
+# We will do the same, but for digits and teens.
+define StressedDigit 
+[u1 n]:[u0 n] | 
+[d o1 s]:[d o0 s] | 
+[dh o1 s]:[dh o0 s] | 
+[t r e1 s]:[t r e0 s] | 
+[k w a1 t r o0]:[k w a0 t r o0] | 
+[c i1 n k o0]:[c i0 n k o0] | 
+[s e1 yc s]:[s e0 yc s] | 
+[s j e1 t e0]:[s j e0 t e0] | 
+[o1 ts o0]:[o0 ts o0] | 
+[n w e1 vh e0]:[n w e0 vh e0] ; 
+
+define StressedTeen 
+[d j e1 zh]:[d j e0 zh] | 
+[dh j e1 zh]:[dh j e0 zh] | 
+[o1 n c e0]:[o0 n c e0] | 
+[d o1 c e0]:[d o0 c e0] | 
+[dh o1 c e0]:[dh o0 c e0] | 
+[t r e1 c e0]:[t r e0 c e0] | 
+[k a0 t o1 r c e0]:[k a0 t o0 r c e0] | 
+[k i1 n c e0]:[k i0 n c e0] | 
+[d j e0 c i0 s e1 yc s]:[d j e0 c i0 s e0 yc s] | 
+[dh j e0 c i0 s e1 yc s]:[dh j e0 c i0 s e0 yc s] | 
+[d j e0 c i0 s j e1 t e0]:[d j e0 c i0 s j e0 t e0] | 
+[dh j e0 c i0 s j e1 t e0]:[dh j e0 c i0 s j e0 t e0] | 
+[d j e0 c j o1 ts o0]:[d j e0 c j o0 ts o0] | 
+[dh j e0 c j o1 ts o0]:[dh j e0 c j o0 ts o0] | 
+[d j e0 c i0 n w e1 vh e0]:[d j e0 c i0 n w e0 vh e0] | 
+[dh j e0 c i0 n w e1 vh e0]:[dh j e0 c i0 n w e0 vh e0] ; 
+
+define PhoneticedDigit 
+[[u0|u1] n (o0)] | [[d|dh] o1 s] | [t r e1 s] | [k w a1 t r o0] | [c i1 n k o0] | [s e1 yc s] | [s j e1 t e0] | [o1 ts o0] | [n w e1 vh e0] ; 
+
+define unstressNumber 
+# When treinta, cuarenta, cincuenta, etc... is in the word, accompanied by i (y) and digit (sesenta y cinco), or mil, remove the stress. For example, cuarénta y... = cuarenta y... sesénta mil... = sesenta mil...
+# Note, the acute vowel it is written on purpose to show the illustration of the stress / unstress.
+StressedNumber @-> || WB _ %# i0 %# PhoneticedDigit WB , WB _ %# [m i1 l] WB ,, 
+# When (digit or then) mil is available, such as cinco mil, the speaker doesn't say cínco mil, but cinco mil or cincomil (unstressing 5).
+[StressedDigit|StressedTeen] @-> || WB _ %# [m i1 l] WB ,, 
+# And, there is a special case for 20x numbers, for example "veintidós mil". We will make possible to interpret as "veintidosmíl" instead, the natural way of Spanish speakers.
+StressedDigit @-> || WB [[v|vh] e1 yc n t e0] | [[v|vh] e0 yc n t [i0|j]] _ %# [m i1 l] WB ; 
+
+
+# Contextual accentuation, AKA Sentence-Aware Prosody Modelling (SAPM) #
+
+source imperverbs.foma
+
+define MaleObjectPronoun 
+# connectors: Un, el, ese, este, aquel. We will use these to conjugate and modifying stress according to word context. see below.
+[[u0 n] | [e0 l] | [e0 s (t) e0] | [a0 k e1 l]] ; 
+# Conjugate with "Hace" (ago) as a reference to something that happened in the past, a time gramaticalization.
+define HaceFemeninoSingular 
+[u0 n a0] ; 
+
+define HaceFemeninoSingularAction 
+# Hora, semana, década.
+[o1 r a0] | [s e0 m a1 n a0] | [d e1 k a0 dh a0] ; 
+
+define HaceFemeninoPlural 
+# Unas, algunas, muchas, pocas, tantas
+# Example: hace unas horas.
+[u0 n a0 s] | [a0 l g u1 n a0 s] | [m u1 ts a0 s] | [p o1 k a0 s] | [t a1 n t a0 s] ; 
+
+define HaceFemeninoPluralAction 
+# Horas, semanas, décadas.
+[o1 r a0 s] | [s e0 m a1 n a0 s] | [d e1 k a0 dh a0 s] ; 
+
+define HaceMasculinoSingular 
+# Same as female.
+[u0 n] | [a0 l g u1 n] | [m u1 ts o0] | [p o1 k o0] | [t a1 n t o0] ; 
+
+define HaceMasculinoSingularAction 
+# Segundo, minuto, día, mes, año, siglo, tiempo, instante, momento, rato.
+# Example: hace un instante.
+[s e0 gh u1 n d o0] | [m i0 n u1 t o0] | [[d|dh] i1 a0] | [m e1 s] | [a1 ni o0] | [s i1 g l o0] | [t j e1 m p o0] | [i0 n s t a1 n t e0] | [m o0 m e1 n t o0] | [rr a1 t o0] ; 
+
+define HaceMasculinoPlural 
+[u0 n o0 s] | [a0 l g u1 n o0 s] | [m u1 ts o0 s] | [p o1 k o0 s] | [t a1 n t o0 s] ; 
+
+define HaceMasculinoPluralAction 
+# To avoid confusion. This is the action that accompanies to complement.
+[t j e1 m p o0 s] | [i0 n s t a1 n t e0 s] ; 
+
+define HaceMasculinoPluralActionNumber 
+# In the female context, time specifications only are definned, so has only one definition. However, in the male context, a specific definition of time indicators like these are required to follow the correct context. And the most important, I can notice gender inequality, even in the morphosyntactic aspect, not only in society.
+[s e0 gh u1 n d o0 s] | [m i0 n u1 t o0 s] | [[d|dh] i1 a0 s] | [m e1 s e0 s] | [a1 ni o0 s] | [s i1 g l o0 s] ; 
+
+define PhoneticedNumber 
+[[d|dh] j e1 zh] | [o1 n c e0] | [[d|dh] o1 c e0] | [t r e1 c e0] | [k a0 t o1 r c e0] | [k i1 n c e0] | [[d|dh] j e0 c i0 s e1 i0 s] | [[d|dh] j e0 c i0 s j e1 t e0] | [[d|dh] j e0 c j o1 ts o0] | [[d|dh] j e0 c i0 n w e1 vh e0] | 
+[[v|vh] e1 yc n t e0] | [[v|vh] e0 yc n t [i0|j] PhoneticedDigit] ; 
+
+define PhoneticedNumber2 
+[t r e0 yc n t a0]|[k w a0 r e0 n t a0]|[c i0 n k w e0 n t a0]|[s e0 s e0 n t a0]|[s e0 t e0 n t a0]|[o0 ts e0 n t a0]|[n o0 vh e0 n t a0] ; 
+
+define PhoneticedNumber3 
+[t r e1 yc n t a0]|[k w a0 r e1 n t a0]|[c i0 n k w e1 n t a0]|[s e0 s e1 n t a0]|[s e0 t e1 n t a0]|[o0 ts e1 n t a0]|[n o0 vh e1 n t a0] ; 
+define PersonalObjectPronoun 
+# The same thing but for "mi", "tu" and "su".
+[m i0] | [[s|t] u0] ; 
+define Adverb 
+# Adverbs like "muy", than and others will be used here for some stressing situations.
+[m u1 yc] | [t a1 n] | [m e1 n t e0] ; 
+# We now define first person, afirmative, condition keywords and other stuff, which be used lather in two cases.
+define firstPerson [y o1] ; 
+define afirmative [y a1] ; 
+define condition [s i0] | [m j e0 n t r a0 s] ; 
+define UniqueObject [[v|vh] o0 l u1 m e0 n] | [[g|gh] o1 l p e0] ; 
+define bajoObject 
+# So, we could start conjugating: Un bajo, el bajo, ese bajo, este bajo, aquel bajo, mi bajo, tu bajo, su bajo (the bass music instrument)
+# But, in other side, we defined "muy" adverb. This is another sentence context for bajo. In this, we are talking of low / lower (too slow, muy bajo/tan bajo).
+[b a0 x o0]: [b a1 x o0] | 
+# Bajo in aproximants, example: golpe bajo (e, space, B, a).
+[bh a0 x o0]: [bh a1 x o0] ; 
+
+define sobreObject 
+# Un sobre, el sobre, ese sobre, este sobre, aquel sobre, mi sobre, tu sobre, su sobre (a paper object)
+[s o0 b r e0]: [s o1 b r e0] ; 
+# We created the context structure for "bajo", "sobre" and other future words according to sentence. Now, let's create another context to improve spanish stress, according to sentence as well.
+define esDemonstrative 
+# Now, we have: esta, este, ese, esa.
+[e0 s t a0]:[e1 s t a0] | [e0 s t e0]:[e1 s t e0] | [e0 s e0]:[e1 s e0] | [e0 s a0]:[e1 s a0] ; 
+
+define sonDemonstrative 
+# We have estas, estos, esas, esos.
+[e0 s t a0 s]:[e1 s t a0 s] | [e0 s t o0 s]:[e1 s t o0 s] | [e0 s a0 s]:[e1 s a0 s] | [e0 s o0 s]:[e1 s o0 s] ; 
+
+define singularAction 
+[e1 s]|[t j e1 n e0]|[p o0 s e1 e0]|[s i0 g n i0 f i1 k a0] ; 
+define pluralAction 
+[s o1 n]|[t j e1 n e0 n]|[p o0 s e1 e0 n]|[s i0 g n i0 f i1 k a0 n] ; 
+# We defined "es" and "son", which can be used in a different context. For example: "esta es mi casa", "este es Mateo, tu amigo", "esto es lo que hay que hacer", "estas son mis llaves", etc. In all of these cases, the demonstrative should be stressed, as we saw in these definitions.
+define PersonalReflexivePronoun 
+# Le, me, nos, te
+# Required for a particular case (see below)
+[[l|m|t] e0]|[n o0 s] ; 
+define comer 
+# This is from the verb "comer" (eat).
+[k o0 m o0]:[k o1 m o0] ; 
+# So, it would be: yo como, si como, mientras como. Yo como is a statement, meaning "I eat something"; si como is a condition, meaning "if I eat". We can add the "mientras" as extra word, meaning "mientras como" (while I eat).
+
+define HomonymousWords 
+# We'll need to stress "bajo" and "sobre" in these eight cases, because regarding "bajo" we are talking of: a) the "bass" music instrument, b) low/lower, instead of the attribution (under), and regarding "sobre", we are talking of the paper object, not the "about" preposition (talk about her / hablar sobre ella, for example).
+bajoObject -> || 
+# Bass instrument or low/lower:
+[MaleObjectPronoun|PersonalObjectPronoun|Adverb] %# _ WB , 
+# Other subcase for bajo: lowering action (acción de bajar)
+# Mientras bajo, si bajo, yo bajo, ya bajo.
+[firstPerson|afirmative|condition] %# _ WB , 
+# And other context for bajo. The low volume, the low shot.
+# Example: "El bajo volumen de ventas en línea en algunas áreas remotas mantiene altos los precios de entrega".
+# Example 2: ¡Me parece que alguien me dio un golpe bajo!
+UniqueObject %# _ WB , WB _ %# UniqueObject ,, 
+# Sobre object. There are three subcases for this word. The one is the "under" attribution, the second is the paper object, and the third is action (acción de sobrar).
+sobreObject -> || 
+[MaleObjectPronoun|PersonalObjectPronoun] %# _ WB , 
+[k w a0 n d o0] %# _ WB , # Example: cuando sobre la comida, haré el recalentado.
+WB _ %# [k o0 n] ,, 
+# Also, we will stress demonstratives for es. For example: esta es, este es, ese es, esa es.
+esDemonstrative -> || 
+WB _ %# singularAction , 
+WB [s i0 n %# k e0 %#] _ %# ImperativoAfirmativoSSingular WB ,, 
+# And we will apply the same for "son". Example: estas son las bufandas que Mateo tegió.
+sonDemonstrative -> || 
+WB _ %# pluralAction , 
+WB [s i0 n %# k e0 %#] _ %# ImperativoAfirmativoTPlural WB ,, 
+# Rules for para, which can be used in two contexts: "stop" action (parar) and "to" preposition (para)
+# Example: se me "pára" el corazón, no "pára" de llover > esto es para ti.
+[p a0 r a0]:[p a1 r a0] -> || 
+WB [s e0] (%# PersonalReflexivePronoun) %# _ , 
+WB [n o1] %# _ %# [dh e0] %# ,, 
+# And these rules for the "eat" verb:
+comer -> || [firstPerson|condition] %# _ WB , [k e0 %# m e0 %#] _ WB ,, 
+# Let's create another context. Since "una" is unstressed in g2p, we need to stress it when the word "cada" is found before. For example, "él repartió cada una de las galletas". The strength of the vowel is in the una (cada úna).
+[u0 n a0]:[u1 n a0] -> || 
+WB [k a1 dh a0] %# _ , 
+%# [[l|m|s] e0] %# _ WB , 
+WB _ %# [[d|dh] e0] ,, 
+# SAPM for "unas", example: cuando te unas a la llamada.
+[u0 n a0 s]:[u1 n a0 s] -> || %# [[[l|t] e0]|[n o0 s]] %# _ WB ,, 
+# Stressing context for "hace". Hace is the action of "hacer" (make), however it also reffers to an action happened in the past. "ella ya no está desde hace un tiempo"
+MakeTag:[a0 c e0] -> || 
+# General basis.
+[d e0 s d e0] %# _ %# , 
+WB _ %# [[m i1 l e0 s]|[m i0 ll o1 n e0 s]] %# , 
+# Gender-independent:
+WB _ %# HaceFemeninoSingular %# HaceFemeninoSingularAction WB , 
+WB _ %# HaceFemeninoPlural %# HaceFemeninoPluralAction WB , 
+WB _ %# HaceMasculinoSingular %# HaceMasculinoSingularAction WB , 
+WB _ %# HaceMasculinoPlural %# [HaceMasculinoPluralAction|HaceMasculinoPluralActionNumber] WB , 
+# Number independend:
+WB _ %# PhoneticedNumber2 %# i0 %# PhoneticedDigit %# [HaceFemeninoPluralAction|HaceMasculinoPluralActionNumber] WB , 
+WB _ %# PhoneticedNumber3 %# [HaceFemeninoPluralAction|HaceMasculinoPluralActionNumber] WB , 
+WB _ %# [PhoneticedDigit|PhoneticedNumber] %# [HaceFemeninoPluralAction|HaceMasculinoPluralActionNumber] WB ,, 
+# Create stressing context for "nuestro" (s), example: lo nuestro ya no puede continuar, este es uno de los nuestros.
+[n w e0 s t r o0]:[n w e1 s t r o0] -> || WB [l o0] %# _ WB ,, 
+[n w e0 s t r o0 s]:[n w e1 s t r o0 s] -> || WB [l o0 s] %# _ WB ,, 
+# Stress "cuando", example: "de vez en cuando"
+[k w a0 n d o0]:[k w a1 n d o0] -> || [vh e1 zh %# e0 n %#] _ WB ,, 
+# Unstress frente (example: frente a una copa de vino)
+[f r e1 n t e0]:[f r e0 n t e0] -> || WB _ %# [a0 (l)] %# ,, 
+# Context stress for "entre": we have the preposition (between) and the verb (entrar)
+[e0 n t r e0]:[e1 n t r e0] -> || WB k e0 (%# PersonalReflexivePronoun %#) _ WB ,, 
+# And create stressing context for "haya". "Haya" can be used in two contexts. The one is the verb called "hacer" (espero que hayas hecho la tarea), default in g2p, and the other is from the verb "haber" (cuando haya plata, que haya paz en la tierra) which we are going to make here.
+[a0 y a0]:[a1 y a0] -> || 
+WB [k w a0 n d o0] %# _ WB , 
+WB _ %# [[l a0]|[p a1 zh]] WB , 
+WB _ %# [n a1 dh a0] WB ; 
+
+define AloneWords 
+[m j e0 n t r a0 s]:[m j e1 n t r a0 s] -> || PB _ PB ; 
+
+define untag 
+MakeTag -> [a1 c e0] ; 
+
+define untag2 
+TagYgriega -> i0 ; 
+
+regex 
+PhonemeToSpelling .o. 
+untag2 .o. 
+RemainingApproximants .o. 
+unstressNumber .o. 
+HomonymousWords .o. 
+AloneWords .o. 
+untag ; 

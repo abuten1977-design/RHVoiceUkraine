@@ -1,0 +1,197 @@
+# Copyright (C) 2020  Olga Yakovleva <yakovleva.o.v@gmail.com>
+# Copyright (C) 2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define Roman1 I ; 
+define Roman5 V ; 
+define Roman10 X ; 
+define Roman40 Roman10 L ; 
+define Roman50 L ; 
+define Roman2 Roman1^2 ; 
+define Roman3 Roman1^3 ; 
+define Roman4 Roman1 Roman5 ; 
+define Roman6 Roman5 Roman1 ; 
+define Roman7 Roman5 Roman2 ; 
+define Roman8 Roman5 Roman3 ; 
+define Roman9 Roman1 Roman10 ; 
+define Roman11 Roman10 Roman1 ; 
+define Roman12 Roman10 Roman2 ; 
+define Roman13 Roman10 Roman3 ; 
+define Roman14 Roman10 Roman4 ; 
+define Roman15 Roman10 Roman5 ; 
+define Roman16 Roman10 Roman6 ; 
+define Roman17 Roman10 Roman7 ; 
+define Roman18 Roman10 Roman8 ; 
+define Roman19 Roman10 Roman9 ; 
+define Roman20 Roman10^2 ; 
+define Roman21 Roman20 Roman1 ; 
+define Roman22 Roman20 Roman2 ; 
+define Roman23 Roman20 Roman3 ; 
+define Roman24 Roman20 Roman4 ; 
+define Roman25 Roman20 Roman5 ; 
+define Roman26 Roman20 Roman6 ; 
+define Roman27 Roman20 Roman7 ; 
+define Roman28 Roman20 Roman8 ; 
+define Roman29 Roman20 Roman9 ; 
+define Roman30 Roman10^3 ; 
+define Roman31 Roman30 Roman1 ; 
+define Roman32 Roman30 Roman2 ; 
+define Roman33 Roman30 Roman3 ; 
+define Roman34 Roman30 Roman4 ; 
+define Roman35 Roman30 Roman5 ; 
+define Roman36 Roman30 Roman6 ; 
+define Roman37 Roman30 Roman7 ; 
+define Roman38 Roman30 Roman8 ; 
+define Roman39 Roman30 Roman9 ; 
+define Roman41 Roman40 Roman1 ; 
+define Roman42 Roman40 Roman2 ; 
+define Roman43 Roman40 Roman3 ; 
+define Roman44 Roman40 Roman4 ; 
+define Roman45 Roman40 Roman5 ; 
+define Roman46 Roman40 Roman6 ; 
+define Roman47 Roman40 Roman7 ; 
+define Roman48 Roman40 Roman8 ; 
+define Roman49 Roman40 Roman9 ; 
+define Roman51 Roman50 Roman1 ; 
+define Roman52 Roman50 Roman2 ; 
+define Roman53 Roman50 Roman3 ; 
+define Roman54 Roman50 Roman4 ; 
+define Roman55 Roman50 Roman5 ; 
+define Roman56 Roman50 Roman6 ; 
+define Roman57 Roman50 Roman7 ; 
+define Roman58 Roman50 Roman8 ; 
+define Roman59 Roman50 Roman9 ; 
+define Roman60 Roman50 Roman10 ; 
+define Roman61 Roman60 Roman1 ; 
+define Roman62 Roman60 Roman2 ; 
+define Roman63 Roman60 Roman3 ; 
+define Roman64 Roman60 Roman4 ; 
+define Roman65 Roman60 Roman5 ; 
+define Roman66 Roman60 Roman6 ; 
+define Roman67 Roman60 Roman7 ; 
+define Roman68 Roman60 Roman8 ; 
+define Roman69 Roman60 Roman9 ; 
+define Roman70 Roman50 Roman20 ; 
+define Roman71 Roman70 Roman1 ; 
+define Roman72 Roman70 Roman2 ; 
+define Roman73 Roman70 Roman3 ; 
+define Roman74 Roman70 Roman4 ; 
+define Roman75 Roman70 Roman5 ; 
+define Roman76 Roman70 Roman6 ; 
+define Roman77 Roman70 Roman7 ; 
+define Roman78 Roman70 Roman8 ; 
+define Roman79 Roman70 Roman9 ; 
+define Roman80 Roman50 Roman30 ; 
+define Roman81 Roman80 Roman1 ; 
+define Roman82 Roman80 Roman2 ; 
+define Roman83 Roman80 Roman3 ; 
+define Roman84 Roman80 Roman4 ; 
+define Roman85 Roman80 Roman5 ; 
+define Roman86 Roman80 Roman6 ; 
+define Roman87 Roman80 Roman7 ; 
+define Roman88 Roman80 Roman8 ; 
+define Roman89 Roman80 Roman9 ; 
+
+define RomanMapping 
+Roman1 : 1 | 
+Roman5 : 5 | 
+Roman10 : {10} | 
+Roman40 : {40} | 
+Roman50 : {50} | 
+Roman2 : 2 | 
+Roman3 : 3 | 
+Roman4 : 4 | 
+Roman6 : 6 | 
+Roman7 : 7 | 
+Roman8 : 8 | 
+Roman9 : 9 | 
+Roman11 : {11} | 
+Roman12 : {12} | 
+Roman13 : {13} | 
+Roman14 : {14} | 
+Roman15 : {15} | 
+Roman16 : {16} | 
+Roman17 : {17} | 
+Roman18 : {18} | 
+Roman19 : {19} | 
+Roman20 : {20} | 
+Roman21 : {21} | 
+Roman22 : {22} | 
+Roman23 : {23} | 
+Roman24 : {24} | 
+Roman25 : {25} | 
+Roman26 : {26} | 
+Roman27 : {27} | 
+Roman28 : {28} | 
+Roman29 : {29} | 
+Roman30 : {30} | 
+Roman31 : {31} | 
+Roman32 : {32} | 
+Roman33 : {33} | 
+Roman34 : {34} | 
+Roman35 : {35} | 
+Roman36 : {36} | 
+Roman37 : {37} | 
+Roman38 : {38} | 
+Roman39 : {39} | 
+Roman41 : {41} | 
+Roman42 : {42} | 
+Roman43 : {43} | 
+Roman44 : {44} | 
+Roman45 : {45} | 
+Roman46 : {46} | 
+Roman47 : {47} | 
+Roman48 : {48} | 
+Roman49 : {49} | 
+Roman51 : {51} | 
+Roman52 : {52} | 
+Roman53 : {53} | 
+Roman54 : {54} | 
+Roman55 : {55} | 
+Roman56 : {56} | 
+Roman57 : {57} | 
+Roman58 : {58} | 
+Roman59 : {59} | 
+Roman59 : {59} | 
+Roman60 : {60} | 
+Roman61 : {61} | 
+Roman62 : {62} | 
+Roman63 : {63} | 
+Roman64 : {64} | 
+Roman65 : {65} | 
+Roman66 : {66} | 
+Roman67 : {67} | 
+Roman68 : {68} | 
+Roman69 : {69} | 
+Roman70 : {70} | 
+Roman71 : {71} | 
+Roman72 : {72} | 
+Roman73 : {73} | 
+Roman74 : {74} | 
+Roman75 : {75} | 
+Roman76 : {76} | 
+Roman77 : {77} | 
+Roman78 : {78} | 
+Roman79 : {79} | 
+Roman80 : {80} | 
+Roman81 : {81} | 
+Roman82 : {82} | 
+Roman83 : {83} | 
+Roman84 : {84} | 
+Roman85 : {85} | 
+Roman86 : {86} | 
+Roman87 : {87} | 
+Roman88 : {88} | 
+Roman89 : {89} ; 

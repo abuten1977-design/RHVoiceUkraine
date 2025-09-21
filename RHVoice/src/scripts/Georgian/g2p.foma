@@ -1,0 +1,188 @@
+# Copyright (C) 2013, 2014  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define TranscribeVowel 
+[ა : a ] | 
+[ე : e] | 
+[ი : i] | 
+[ო : o] | 
+[უ : u] ; 
+
+define TranscribeConsonant 
+[ბ : b] | 
+[გ : g] | 
+[დ : d] | 
+[ვ : v] | 
+[ზ : z] | 
+[თ : th] | 
+[კ : k] | 
+[ლ : l] | 
+[მ : m] | 
+[ნ : n] | 
+[პ : p] | 
+[ჟ : zh] | 
+[რ : r] | 
+[ს : s] | 
+[ტ : t] | 
+[ფ : ph] | 
+[ქ : kh] | 
+[ღ : gh] | 
+[ყ : q] | 
+[შ : sh] | 
+[ჩ : chh] | 
+[ც : tsh] | 
+[ძ : dz] | 
+[წ : ts] | 
+[ჭ : ch] | 
+[ხ : hh] | 
+[ჯ : j] | 
+[ჰ : h] ; 
+
+define TranscribeSingleConsonant 
+TranscribeConsonant 0:e ; 
+
+define TranscribeEnglishLetter 
+[a : a] | 
+[b : b] | 
+[c : tsh] | 
+[d : d] | 
+[e : e] | 
+[f : ph] | 
+[g : g] | 
+[h : h] | 
+[i : i] | 
+[j : j] | 
+[k : k] | 
+[l : l] | 
+[m : m] | 
+[n : n] | 
+[o : o] | 
+[p : p] | 
+[q : kh] | 
+[r : r] | 
+[s : s] | 
+[t : t] | 
+[u : u] | 
+[v : v] | 
+[w : v] | 
+[x : [kh s]] | 
+[y : i] | 
+[z : z] ; 
+
+define TranscribeSingleEnglishLetter 
+[a : [e i]] | 
+[b : [b i]] | 
+[c : [s i]] | 
+[d : [d i]] | 
+[e : [e]] | 
+[f : [e ph]] | 
+[g : [j i]] | 
+[h : [e i chh]] | 
+[i : [a i]] | 
+[j : [j e i]] | 
+[k : [k e i]] | 
+[l : [e l]] | 
+[m : [e m]] | 
+[n : [e n]] | 
+[o : [o]] | 
+[p : [p i]] | 
+[q : [kh u]] | 
+[r : [a r]] | 
+[s : [e s]] | 
+[t : [t i]] | 
+[u : [u]] | 
+[v : [v i]] | 
+[w : [v]] | 
+[x : [e kh s]] | 
+[y : [v a i]] | 
+[z : [z e d]] ; 
+
+define TranscribeRussianLetter 
+[а : a] | 
+[б : b] | 
+[в : v] | 
+[г : g] | 
+[д : d] | 
+[е : e] | 
+[ё : e] | 
+[ж : zh] | 
+[з : z] | 
+[и : i] | 
+[й : i] | 
+[к : k] | 
+[л : l] | 
+[м : m] | 
+[н : n] | 
+[о : o] | 
+[п : p] | 
+[р : r] | 
+[с : s] | 
+[т : t] | 
+[у : u] | 
+[ф : ph] | 
+[х : hh] | 
+[ц : tsh] | 
+[ч : chh] | 
+[ш : sh] | 
+[щ : sh] | 
+[ъ : 0] | 
+[ы : i] | 
+[ь : 0] | 
+[э : e] | 
+[ю : [i u]] | 
+[я : [i a]] ; 
+
+define TranscribeSingleRussianLetter 
+[а : [a]] | 
+[б : [b e]] | 
+[в : [v e]] | 
+[г : [g e]] | 
+[д : [d e]] | 
+[е : [i e]] | 
+[ё : [i o]] | 
+[ж : [zh e]] | 
+[з : [z e]] | 
+[и : [i]] | 
+[й : [i]] | 
+[к : [k a]] | 
+[л : [e l]] | 
+[м : [e m]] | 
+[н : [e n]] | 
+[о : [o]] | 
+[п : [p e]] | 
+[р : [e r]] | 
+[с : [e s]] | 
+[т : [t e]] | 
+[у : [u]] | 
+[ф : [e ph]] | 
+[х : [hh a]] | 
+[ц : [tsh e]] | 
+[ч : [chh e]] | 
+[ш : [sh a]] | 
+[щ : [sh a]] | 
+[ъ : [0]] | 
+[ы : [i]] | 
+[ь : [0]] | 
+[э : [e]] | 
+[ю : [i u]] | 
+[я : [i a]] ; 
+
+define TranscribeSingleLetter 
+TranscribeSingleConsonant | TranscribeSingleEnglishLetter | TranscribeSingleRussianLetter ; 
+
+define G2P 
+TranscribeSingleLetter .P. [TranscribeVowel | TranscribeConsonant | TranscribeEnglishLetter | TranscribeRussianLetter ->] ; 
+
+regex G2P;

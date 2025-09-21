@@ -1,0 +1,52 @@
+# proposal: Currency support with documentation. Maybe a new token type? Because we discovered some inconsistencies when we include these date and currency rules in number processing (numbers.foma)
+# Original script from Italian. Adaptation to Spanish from the same autor, Mateo Cedillo.
+# Separator handling and numbers.
+define DollarSign %$ ; 
+define eur %€ ; 
+define separator %. ; 
+define Nums %0|1|2|3|4|5|6|7|8|9 ; 
+define CentFormat Nums < 3 ; # Cents must be less than 100, 1 to 99.
+# We will translate currency to a human currency interpreter.
+define TranslateCurrency 
+# When it is a one dollar.
+DollarSign 1 @-> ... dólar || .#. _ separator Nums, .#. _ .#. ,, # The seccond rule is applied when the input as just $1.
+eur 1 @-> ... euro || .#. _ separator Nums, .#. _ .#. ,, 
+# When it is more than 1 dollars.
+Nums* @-> ... dólares || .#. DollarSign _ separator Nums, .#. DollarSign _ .#. ,, # The seccond rule is applied when the input as just a number inside dollar withouth cents, example: $9.
+Nums* @-> ... euros || .#. eur _ separator Nums, .#. eur _ .#. ,, 
+# When it is one cent.
+separator [1|%0 1] @-> ... centavo || DollarSign Nums* _ ,, 
+separator [1|%0 1] @-> ... céntimo || eur Nums* _ ,, 
+# 2 or more cents.
+Nums* @-> ... centavos || DollarSign Nums* separator _ ,, 
+Nums* @-> ... céntimos || eur Nums* separator _ ,, 
+# Removal of dollars with a zero at the start. That means, this should be interpreted as cents only.
+DollarSign %0 separator @-> 0 || .#. _ Nums* ,, 
+eur %0 separator @-> 0 || .#. _ Nums* ; 
+
+define RemoveDollar 
+# Removing original dollar sign from the input at start, because we already have the needed translation and we wont to be in output.
+DollarSign @-> 0 || .#. _ Nums* [dólar|dólares] separator Nums* [centavo|centavos], .#. _ Nums* [dólar|dólares] .#. ,, 
+eur @-> 0 || .#. _ Nums* [euro|euros] separator Nums* [céntimo|céntimos], .#. _ Nums* [euro|euros] .#. ; 
+
+define TranslateSeparator 
+# Example. due dollari è tre centesimi. The point separator is now "è" in these cases. As alwais, we follow the currency format.
+separator @-> con || .#. Nums* [dólar|dólares] _ Nums* [centavo|centavos] ,, 
+separator @-> con || .#. Nums* [euro|euros] _ Nums* [céntimo|céntimos] ; 
+
+define RemoveZeros 
+# Remove zeros anywhere.
+%0 @-> 0 || .#. _ Nums [centavo|centavos] , .#. Nums* [dólar|dólares] con _ Nums [centavo|centavos] ,, 
+%0 @-> 0 || .#. _ Nums [céntimo|céntimos] , .#. Nums* [euro|euros] con _ Nums [céntimo|céntimos] ; 
+
+define PluralToSingular 
+1 @-> un || .#. _ dólar , con _ centavo , .#. _ euro , con _ céntimo ; 
+
+define Currency 
+TranslateCurrency .o. 
+RemoveDollar .o. 
+TranslateSeparator .o. 
+RemoveZeros .o. 
+PluralToSingular ; 
+
+regex Currency ; 

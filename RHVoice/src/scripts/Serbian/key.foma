@@ -1,0 +1,98 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+define NZDigit 
+1:један | 
+2:два | 
+3:три | 
+4:четири | 
+5:пет | 
+6:шест | 
+7:седам | 
+8:осам | 
+9:девет ; 
+
+define Digit [%0 : нула] | NZDigit;
+
+define Number 
+NZDigit | 
+[[1:0] [
+%0:десет | 
+1:једанаест | 
+2:дванаест | 
+3:тринаест | 
+4:четрнаест | 
+5:петнаест | 
+6:шеснаест | 
+7:седамнаест | 
+8:осамнаест | 
+9:деветнаест]] | 
+[[2:двадесет] [%0:0 | NZDigit]] ;
+
+define Plus %+ : плус;
+define Minus %- : минус;
+define Slash %/ : коса;
+define BackSlash %\ :обрнута ;
+define Star %* : звездица;
+define Dot %. : тачка;
+define SpecialChar Plus | Minus | Slash | BackSlash | Star | Dot;
+
+define Enter {enter} : ентер;
+
+define OtherKey 
+{underscore} : подцрта | 
+{double-quote} : наводници | 
+{alt} : алт | 
+{control} : контрол | 
+[ctrl] : контрол | 
+{hyper} : хипер | 
+{meta} : мета | 
+{shift} : шифт | 
+{super} : супер | 
+{backspace} : бришем | 
+{break} : прекид | 
+{delete} : бриши | 
+{down} : доле | 
+{end} : крај | 
+Enter | 
+{escape} : екскејп | 
+[esc] : екскејп | 
+{home} : почетак | 
+{insert} : уметни | 
+{left} : лево | 
+{menu} : мени | 
+{next} : следеће | 
+{num-lock} : [закључавање нумеричке тастатуре] | 
+{pause} : пауза | 
+{print} : штампај | 
+{prior} : претходно | 
+{return} : ентер | 
+{right} : десно | 
+{scroll-lock} : [закључавање померања] | 
+{space} : размак | 
+{tab} : таб | 
+{up} : горе | 
+{window} : прозор ; 
+
+define KPKey 
+[{kp-} : 0] [Digit | Plus | Minus | Star | Slash | Dot | Enter];
+
+define FKey 
+f:еф Number ;
+
+define Key 
+KPKey | FKey | SpecialChar | OtherKey;
+
+regex Key;

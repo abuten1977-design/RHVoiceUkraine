@@ -1,0 +1,87 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+define LatinDowncase 
+A:a | 
+B:b | 
+V:v | 
+G:g | 
+D:d | 
+Đ:đ | 
+E:e | 
+Ź:ź | 
+Ž:ž | 
+Z:z | 
+I:i | 
+J:j | 
+K:k | 
+L:l | 
+[LJ]:[lj] | 
+M:m | 
+N:n | 
+[NJ]:[nj] | 
+O:o | 
+P:p | 
+R:r | 
+S:s | 
+T:t | 
+Ć:ć | 
+U:u | 
+F:f | 
+H:h | 
+C:c | 
+Č:č | 
+[DŽ]:[dž] | 
+Ś:ś | 
+Š:š | 
+Q:q | 
+W:w | 
+X:x | 
+Y:y ; 
+
+define CyrDowncase 
+А:а|
+Б:б|
+В:в|
+Г:г|
+Д:д|
+Ђ:ђ|
+Е:е|
+Ж:ж|
+З:з|
+И:и|
+Ј:ј|
+К:к|
+Л:л|
+Љ:љ|
+М:м|
+Н:н|
+Њ:њ|
+О:о|
+П:п|
+Р:р|
+С:с|
+Т:т|
+Ћ:ћ|
+У:у|
+Ф:ф|
+Х:х|
+Ц:ц|
+Ѕ:ѕ|
+Ч:ч|
+Џ:џ|
+Ш:ш;
+
+define Downcase 
+ [CyrDowncase | LatinDowncase] @-> || _; 

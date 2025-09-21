@@ -1,0 +1,64 @@
+# Copyright (C) 2023 Darko Milosevic  <daremc86@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, version 3.0 of the License.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+define PB %- | .#. ; 
+
+# # will separate the words in the same phrase.
+define WB %# | PB ; 
+
+define StressVowel 
+a0 : a1 | e0 : e1 | ii0 : ii1 | o0 : o1 | u0 : u1 | i0 : i1 | ax0 : ax1 ; 
+
+define Vowel StressVowel.u | StressVowel.l ; 
+
+define fixVowelLetters 
+StressVowel -> || PB _ PB ; 
+
+define FixV 
+v -> ... ax1 || PB _ PB ; 
+
+define StressSingleMonosyllabicWord 
+s e0 @-> ... || PB _ PB ,, 
+StressVowel @-> || PB [\[Vowel | %#]]* _ [\[Vowel | %#]]* PB ; 
+
+# Voiced/unvoiced pairs
+define VUPair 
+b:p|g:k|dj:tj|d:t|dzh:tsh|zh:sh|z:s|v:f;
+
+#Voiced obstruents, extracting the domain of the pair fst.
+define VObs VUPair.u;
+
+#Voiceless obstruents, extracting the range of the pair fst.
+define UObs VUPair.l | h;
+
+define Obs VObs | UObs ; 
+
+# Unvoiced become voiced before these.
+define VContext VObs - v ; 
+
+define ObsSeq Obs [[%#]* Obs]* ; 
+
+define Voicing ObsSeq .o. [VUPair.i ->] ; 
+
+define Assimilation 
+Voicing [%#]* VContext @-> || _  ; 
+
+define Rules 
+fixVowelLetters 
+.o. FixV 
+.o.  StressSingleMonosyllabicWord 
+.o. Assimilation 
+ ; 
+
+regex Rules ; 

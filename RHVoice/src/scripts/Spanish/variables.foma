@@ -1,0 +1,36 @@
+# Copyright (C) 2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+# For number:
+define Digit 
+%0:cero | 
+1:uno | 
+2:dos | 
+3:tres | 
+4:cuatro | 
+5:cinco | 
+6:seis | 
+7:siete | 
+8:ocho | 
+9:nueve ; 
+
+define Unit Digit - [%0:[?+]] ; 
+# Grapheme to phoneme:
+define Consonant 
+b|bh|c|ts|d|dh|f|g|gh|x|j|k|l|ll|m|n|ni|p|r|rr|s|sh|t|uc|v|vh|w|{ks}|y|yc|zh ; 
+
+define ConsonantWithouthNS Consonant - [n|s] ; 
+# for approximants:
+define vocal [a|a0|a1|e|e0|e1|i|i0|i1|o|o0|o1|u|u0|u1|uc|j|w|yc] ; 

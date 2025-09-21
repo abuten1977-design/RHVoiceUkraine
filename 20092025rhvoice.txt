@@ -1,0 +1,24 @@
+Current conversation context:
+
+We are working on integrating the RHVoice speech synthesizer into an iOS application. The main goal is to enable the application to speak text using RHVoice, which involves building the RHVoice library for iOS and incorporating it into an Xcode project.
+
+We have successfully:
+- Built the RHVoice library for iOS.
+- Created an Xcode project (`RHVoiceSpeechProject`) and integrated the built RHVoice library.
+- Implemented basic speech synthesis functionality within the `RHVoiceSpeechExtension` using `SpeechSynthesizer.swift`.
+
+We encountered several build issues:
+1.  **Missing iOS Simulator Runtimes:** Initially, the project failed to build for the simulator because iOS 18.4 runtime was not installed. This was resolved by the user installing the necessary platforms in Xcode.
+2.  **Code Signing for Physical Device:** When attempting to build for a physical device, Xcode required a development team for code signing. This is a manual step for the user.
+3.  **'utf8.h' file not found:** This was a persistent error. We discovered that the `utf8` library was not correctly copied into the `RHVoiceSpeechProject` structure. We resolved this by:
+    - Removing the incorrectly copied `utf8` directory.
+    - Copying the contents of `RHVoice/src/third-party/utf8/` directly into `RHVoiceSpeechProject/RHVoiceEngine/include/`.
+    - Updating `Project.yml` to reflect this change in `HEADER_SEARCH_PATHS` for `RHVoiceFramework` to only include `$(SRCROOT)/RHVoiceEngine/include`.
+4.  **'rapidxml/rapidxml.hpp' file not found:** This error reappeared after fixing the `utf8.h` issue. We discovered that the `rapidxml` directory was also not correctly copied into the `RHVoiceSpeechProject` structure. We resolved this by:
+    - Copying the `RHVoice/src/third-party/rapidxml` directory directly into `RHVoiceSpeechProject/RHVoiceEngine/include/`.
+    - Updating `Project.yml` to include `$(SRCROOT)/RHVoiceEngine/src/third-party` in the `HEADER_SEARCH_PATHS` for `RHVoiceFramework`.
+    - Attempted to change the include in `phoneme_set.hpp` from quotes to angle brackets, but the tool call was cancelled by the user.
+
+**Current Problem:** The build is still failing with `fatal error: 'rapidxml/rapidxml.hpp' file not found`, even after copying the `rapidxml` directory to `RHVoiceSpeechProject/RHVoiceEngine/include/` and setting the `HEADER_SEARCH_PATHS` to `$(inherited) $(SRCROOT)/RHVoiceEngine/include`.
+
+**Next Steps:** The last action was to verify the presence of `rapidxml` files in the correct location, which was confirmed. The issue seems to be with how the compiler resolves the include path for `rapidxml/rapidxml.hpp` from `phoneme_set.hpp` despite the correct `HEADER_SEARCH_PATHS` and file location. The next logical step is to proceed with changing the include directive in `phoneme_set.hpp` from quotes to angle brackets, as this often resolves such issues by forcing the compiler to search the include paths more broadly.

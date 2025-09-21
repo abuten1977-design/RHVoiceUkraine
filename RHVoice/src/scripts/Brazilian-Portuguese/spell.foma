@@ -1,0 +1,120 @@
+# Copyright (C) 2019  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define Digit 
+%0 : zero | 
+1:um | 
+2:dois | 
+3:três | 
+4:quatro | 
+5:cinco | 
+6:seis | 
+7:sete | 
+8:oito | 
+9:nove ; 
+
+define Letter 
+[a|A]:á | 
+[À|à]:[á crase] | 
+[Á|á]:[á agudo] | 
+[Â|â]:[á circunflexo] | 
+[Ã|ã]:[á til] | 
+[b|B]:bê | 
+[c|C]:cê | 
+[Ç|ç]:[cê cedilha] | 
+[d|D]:dê | 
+[e|E]:ê | 
+[É|é]:[ê agudo] | 
+[Ê|ê]:[ê circunflexo] | 
+[f|F]:éfe | 
+[g|G]:gê | 
+[h|H]:agá | 
+[i|I]:í | 
+[í|Í]:[í agudo] | 
+[j|J]:jóta | 
+[k|K]:cá | 
+[l|L]:éle | 
+[m|M]:ême | 
+[n|N]:êne | 
+[ñ|Ñ]:[êne til] | 
+[o|O]:ô | 
+[Ó|ó]:[ô agudo] | 
+[Ô|ô]:[ô circunflexo] | 
+[Õ|õ]:[ô til] | 
+[Ö|ö]:[ô trema] | 
+[p|P]:pê | 
+[q|Q]:quê | 
+[r|R]:érre | 
+[s|S]:ésse | 
+[t|T]:tê | 
+[u|U]:ú | 
+[Ú|ú]:[ú agudo] | 
+[Ü|ü]:[ú trema] | 
+[v|V]:vê | 
+[w|W]:dáblio | 
+[x|X]:xis | 
+[y|Y]:ípsilon | 
+[z|Z]:zê ; 
+
+define Whitespace 
+tab:tab | 
+nl:[nova linha] | 
+cr:retôrno | 
+sp:espaço | 
+nbsp:[espaço sem quebra] ; 
+
+define Symbol 
+%! : exclamação | 
+%" : aspas | 
+%# : número | 
+%$ : cifrão | 
+%£ : libra | 
+%€ : euro | 
+%¢ : centavos | 
+%¥ : iene | 
+%₹ : rúpya | 
+%% : porcento | 
+%& : [êh comercial] | 
+%' : apóstrofo | 
+%( : [abre parêntesis] | 
+%) : [fecha parêntesis] | 
+%* : asterisco | 
+%+ : mais | 
+%, : vírgula | 
+%- : hífen | 
+%. : ponto | 
+%/ : barra | 
+%: : [dois pontos] | 
+%; : [ponto e vírgula] | 
+%< : menor | 
+%> : maior | 
+%= : igual | 
+%? : interrogação | 
+%@ : arrôba | 
+%[ : [abre colchete] | 
+%] : [fecha colchete] | 
+%\ : [barra invertida] | 
+%^ : circunflexo | 
+%_ : sublinha | 
+%` : grave | 
+%{ : [abre chave] | 
+%} : [fecha chave] | 
+%| : [barra vertical] | 
+%~ : til | 
+%ª : [ordinal feminino] | 
+%º : [ordinal masculino] ; 
+
+regex 
+Letter|Digit | Whitespace | Symbol ; 

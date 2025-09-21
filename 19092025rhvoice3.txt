@@ -1,0 +1,59 @@
+# RHVoice Build Log - 19.09.2025
+
+## Overall Goal
+Compile the RHVoice speech synthesis engine with Ukrainian voices on a macOS machine.
+
+## Key Knowledge
+- The user's primary goal is to build RHVoice with Ukrainian voices (`anatol`, `natalia`, etc.).
+- The build environment is a modern macOS machine with Homebrew installed at `/opt/homebrew`.
+- The RHVoice build system is old and has numerous compatibility issues with macOS, requiring multiple patches to the `CMakeLists.txt` files.
+- Standard CMake variables like `CMAKE_PREFIX_PATH` and `CMAKE_LINKER_FLAGS` are not being respected by the build scripts.
+- A custom linker workaround script (`clangLinkerWorkaround.sh`) was found to be broken and was preventing executables from being created.
+
+## File System State
+- CWD: `/Users/m1/rhvoice`
+- CREATED: `RHVoice/` - Cloned from `https://github.com/RHVoice/RHVoice`.
+- CREATED: `RHVoice/build/` - Directory for out-of-source builds.
+- CREATED: `19092025rhvoice.txt` - A summary of the build steps taken so far.
+- MODIFIED: `RHVoice/data/voices/` - All non-Ukrainian voice directories were deleted to simplify the build.
+- MODIFIED: `RHVoice/CMakeLists.txt` (root) - Patched to force C++14 standard, add the Boost include directory, and add global Homebrew library path.
+- MODIFIED: `RHVoice/src/CMakeLists.txt` - Patched to force the use of the bundled `utf8` library.
+- MODIFIED: `RHVoice/src/audio/CMakeLists.txt` - Patched to add a linker directory and to explicitly link against the `RHVoice_core` library.
+- MODIFIED: `RHVoice/cmake/Hardening.cmake` - Patched to disable Linux-specific linker flags and to disable a broken linker workaround script.
+- MODIFIED: `RHVoice/cmake/thirdParty/CCache/CMakeLists.txt` - Updated `cmake_minimum_required` version to 3.5.
+- DELETED: `RHVoice/build/CMakeCache.txt` - Has been deleted multiple times to force CMake to re-read the patched build files.
+
+## Recent Actions
+- Successfully compiled the `libRHVoice_core`, `libRHVoice_audio`, and `libRHVoice` libraries, and all executables including `RHVoice-test`.
+- The build previously failed at the final linking stage for the `RHVoice-test` executable with the error `ld: library 'ao' not found`. This was resolved by adding `link_directories("/opt/homebrew/lib")` to the root `CMakeLists.txt`.
+- The `cmake` configuration also failed due to an outdated `cmake_minimum_required` in `cmake/thirdParty/CCache/CMakeLists.txt`, which was resolved by updating it to `VERSION 3.5`.
+- `RHVoice-test` initially failed with "No language resources are available". This was resolved by manually copying language and voice data from `RHVoice/data/` to `RHVoice/build/data/` and setting `RHVOICE_DATA_PATH` and `RHVOICE_CONFIG_PATH` environment variables.
+- The `RHVoice-test` executable then ran successfully with `Exit Code: 0`.
+
+## New Project Goal: Integrate RHVoice into iOS VoiceOver
+Create an iOS project for iOS 18 (on macOS Sequoia) that integrates the compiled RHVoice engine as a custom system voice accessible via VoiceOver's Speech Provider Extension. The project should support Ukrainian voices.
+
+## Current Project State (RHVoiceSpeechProject)
+- CREATED: `RHVoiceSpeechProject/` (Git repository initialized)
+- CREATED: Subdirectories: `RHVoiceEngine/include`, `RHVoiceEngine/src`, `RHVoiceApp`, `RHVoiceSpeechExtension`, `RHVoiceModels`.
+- COPIED: RHVoice headers from `RHVoice/src/include/` to `RHVoiceSpeechProject/RHVoiceEngine/include/`.
+- COPIED: `libRHVoice.1.16.5.dylib` from `RHVoice/install/lib/` to `RHVoiceSpeechProject/RHVoiceEngine/src/libRHVoice.dylib`.
+- COPIED: Ukrainian voice models from `RHVoice/data/voices/` to `RHVoiceSpeechProject/RHVoiceModels/`.
+- CREATED: `RHVoiceSpeechProject/RHVoiceEngine/src/RHVoiceWrapper.mm` (Objective-C++ wrapper).
+- CREATED: `RHVoiceSpeechProject/RHVoiceEngine/include/RHVoiceWrapper.h` (Header for the wrapper).
+- CREATED: `RHVoiceSpeechProject/RHVoiceSpeechExtension/Info.plist`.
+- CREATED: `RHVoiceSpeechProject/RHVoiceApp/Info.plist`.
+- CREATED: `RHVoiceSpeechProject/RHVoiceEngine/Info.plist`.
+- CREATED: `RHVoiceSpeechProject/RHVoiceEngine/include/RHVoiceFramework.h` (Umbrella Header).
+- CREATED/UPDATED: `RHVoiceSpeechProject/Project.yml` (XcodeGen configuration, updated multiple times to fix issues).
+- CREATED: `RHVoiceSpeechProject/RHVoiceSpeechExtension/SpeechSynthesizer.swift`.
+
+## Build Attempts and Issues
+- Initial `xcodebuild` failed due to missing `Info.plist` for `RHVoiceApp` and `RHVoiceFramework`, and missing umbrella header for `RHVoiceFramework`. These were addressed by creating the respective files and updating `Project.yml`.
+- Subsequent `xcodebuild` attempts failed with `Unable to find a destination matching the provided destination specifier: { generic:1, platform:iOS Simulator }` and `iOS 18.4 is not installed`. This was attempted to be fixed by changing `deploymentTarget` to `iOS: "17.0"` in `Project.yml` and explicitly specifying `OS=17.0` in the `xcodebuild` command.
+- The latest `xcodebuild` attempt failed because `xcrun simctl list devices` and `xcrun simctl list runtimes` returned empty lists, indicating no iOS Simulators or runtimes are installed/available on the system.
+
+## Current Plan
+- The project is generated, but cannot be built for a simulator due to the absence of installed iOS Simulator runtimes/devices.
+- **Next Action:** User needs to verify Xcode installation and ensure iOS Simulators are installed via `Xcode -> Settings -> Platforms`.
+- **Alternative:** Attempt to build for a `generic iOS device` if the user has a physical device and appropriate code signing certificates.

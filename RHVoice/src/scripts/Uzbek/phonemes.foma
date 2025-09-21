@@ -1,0 +1,27 @@
+# Copyright (C) 2021  Olga Yakovleva <olga@rhvoice.org>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+define FrontVowel "/a0" | "/aa0" | "/e0" | "/ee0" | "/i0" | "/ii0" ; 
+define Vowel FrontVowel | "/iy0" | "/iiy0" |  "/oa0" | "/ooa0" | "/ou0" | "/oou0" | "/u0" | "/uu0" | "/i?" | "/ii?" ; 
+
+define pG "/g" | "/gj" | "/g?" ; 
+define pK "/k" | "/kj" | "/k?" ; 
+
+define Consonant "/b" | "/p" | "/v" | "/gh" | "/g" | "/d" | "/j" | "/zh" | "/z" | "/k" | "/l" | "/m" | "/n" | "/ng" | "/r" | "/s" | "/t" | "/f" | "/h" | "/q" | "/xh" | "/y" | "/ts" | "/ch" | "/sh" | "/gs" | pG | pK ; 
+
+define Phoneme Vowel | Consonant ; 
+
+define PhonemicTranscription Phoneme+ ; 
+

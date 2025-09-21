@@ -1,0 +1,9 @@
+#pragma once
+
+#ifndef RHVOICE_GLOBAL_CONFIG_INCLUDED
+#define RHVOICE_GLOBAL_CONFIG_INCLUDED
+#cmakedefine01 ENABLE_SONIC
+#cmakedefine01 ENABLE_PKG
+
+const char VERSION[] = "@VERSION@";
+#endif

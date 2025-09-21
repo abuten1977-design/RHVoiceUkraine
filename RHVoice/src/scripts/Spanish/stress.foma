@@ -1,0 +1,69 @@
+# Copyright (C) 2024-2025  Mateo Cedillo <angelitomateocedillo@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+
+# One of references that helped a lot: https://www.reddit.com/r/Spanish/comments/1336w1x/stress_pattern_on_espa%C3%B1ol/
+
+define StressedVowel [a1 | e1 | i1 | o1 | u1] ; 
+define UnstressedVowel a0|e0|i0|o0|u0 ; 
+define StressedDhipthong i1 | u1 ;
+define UnstressedDhipthong i0 | u0 ;
+define vowel  UnstressedVowel  | StressedVowel ; 
+define dhipthong  UnstressedDhipthong  | StressedDhipthong ; 
+define pc   \vowel ; 
+define pcd   \dhipthong ; 
+define noStress UnstressedVowel | pc ; 
+define noStressD UnstressedDhipthong | pcd | StressMark ; 
+define stresses 
+[a0:a1|
+e0:e1|
+i0:i1|
+o0:o1|
+u0:u1] ; 
+
+define openStressess 
+[a0:a1|
+e0:e1|
+o0:o1] ;
+
+define closeStresses 
+[i0:i1|
+u0:u1] ; 
+
+define dhipthongStress openStressess @-> || 
+# Explanation: we stress dhipthongs, (au, eu, ou) and (ai, ei, oi) putting the stress in the first long vowel (a, e or o) For example: pausa, leudar, fraile, aire.
+.#. noStressD* _ UnstressedDhipthong Consonant* .#., .#. noStressD* _ UnstressedDhipthong Consonant* UnstressedVowel (n|s) .#. ;
+
+define MonosylStress stresses -> || 
+# Monosyllables in spanish always have the stress in the only one vowel between first consonants, and last consonants.
+.#. Consonant+ _ Consonant* .#. ,, 
+# Also, monosyllables can start with a vowel, ann more than one consonant. Let's put two.
+.#. _ Consonant .#. , .#. _ Consonant^2 .#. , .#. _ Consonant^3 .#. ; 
+
+define SpanishStress stresses -> || 
+# In words that end in a vowel, n or s, the stress generally falls on the penultimate syllable.
+.#. noStress* _ pc* UnstressedVowel (n|s) .#. ; 
+
+define SpanishStress2 stresses -> || 
+# If a word ends with a consonant, the stress falls in the last vowel of the syllable. Example, Español.
+.#. noStress+ (noStress+) _ Consonant* .#. ; 
+
+define unstress [
+a:a0|
+e:e0|
+i:i0|
+o:o0|
+u:u0
+] @-> || _ ;

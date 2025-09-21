@@ -1,0 +1,117 @@
+# Copyright (C) 2016, 2018  Olga Yakovleva <yakovleva.o.v@gmail.com>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 2.1 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+read text russian-loanwords.txt
+letter machine
+define RussianStressedLoanwords
+clear
+define RussianStressedStems [RussianStressedLoanwords .o. [?+ (ь:0)]].l;
+
+define RussianUnstress 
+А -> а || _ ,, 
+Е -> е || _ ,,
+Ё -> ё || _ ,, 
+И -> и || _ ,, 
+О -> о || _ ,, 
+У -> у || _ ,, 
+Ы -> ы || _ ,, 
+Э -> э || _ ,, 
+Ю -> ю || _ ,, 
+Я -> я || _ ; 
+
+define RussianStemsStressRules [RussianStressedStems .o. RussianUnstress].i; 
+
+define RussianTranscribePlainConsonant б:"b_r"|в:"v_r"|г:"g_r"|д:"d_r"|з:"z_r"|к:"k_r"|л:"l_r"|м:"m_r"|н:"n_r"|п:"p_r"|р:"r_r"|с:"s_r"|т:"t_r"|ф:"f_r"|х:"h_r"; 
+
+define RussianTranscribePalatalizedConsonant б:"b_j_r"|в:"v_j_r"|г:"g_j_r"|д:"d_j_r"|з:"z_j_r"|к:"k_j_r"|л:"l_j_r"|м:"m_j_r"|н:"n_j_r"|п:"p_j_r"|р:"r_j_r"|с:"s_j_r"|т:"t_j_r"|ф:"f_j_r"|х:"h_j_r"; 
+
+define RussianTranscribeInvariantConsonant ж:"zh_r"|й:"j_j_r"|ц:"c_r"|ч:"ch_j_r"|ш:"sh_r"|щ:"sch_j_r";
+
+define RussianTranscribeVowel а:"a0_r"|А:"a1_r"|е:"e0_i_r"|Е:"e1_i_r"|ё:"of1_i_r"|Ё:"of1_i_r"|и:"i0_i_r"|И:"i1_i_r"|о:"a0_r"|О:"o1_r"|у:"u0_r"|У:"u1_r"|ы:"y0_r"|Ы:"y1_r"|э:"e0_r"|Э:"e1_r"|ю:"uf0_i_r"|Ю:"uf1_i_r"|я:"a0_i_r"|Я:"a1_i_r"; 
+
+define RussianPalatalizingContext ь|е|Е|ё|Ё|и|И|ю|Ю|я|Я; 
+
+define RussianBasicTranscriptionRules 
+RussianTranscribePalatalizedConsonant -> || _ RussianPalatalizingContext ,, 
+RussianTranscribePlainConsonant -> || _ \RussianPalatalizingContext | .#. ,, 
+RussianTranscribeInvariantConsonant -> ,, 
+[..] -> "j_j_r" || .#.|а|А|е|Е|ё|Ё|и|И|о|О|у|У|ы|Ы|э|Э|ю|Ю|я|Я|ь|ъ _ е|Е|ё|Ё|ю|Ю|я|Я ,, 
+RussianTranscribeVowel -> ,, 
+ь|ъ -> 0 ; 
+
+define RussianFixTranscription 
+"a0_i_r" -> "i0_i_r" || _ \.#. ,, 
+["i1_i_r":"y1_r"|"i0_i_r":"y0_r"|"uf1_i_r":"u1_r"|"uf0_i_r":"u0_r"] -> || ["c_r"|"zh_r"|"sh_r"] _ ; 
+
+define RussianStemsTranscription 
+RussianStemsStressRules .o. 
+RussianBasicTranscriptionRules .o. 
+RussianFixTranscription ; 
+
+define KyrgyzTranscribeConsonant б:b|в:v|г:g|д:d|ж:dzh|з:z|й:j|к:k|л:l|м:m|н:n|п:p|р:r|с:s|т:t|ф:f|х:h|ц:c|ч:ch|ш:sh|щ:sch|[ң|ӊ]:ng ; 
+
+define KyrgyzTranscribeNonJVowel {аа}:aa0|а:a0|и:i0|{оо}:oo0|о:o0|{уу}:uu0|у:u0|ы:y0|{ээ}:ee0|э:e0|{үү}:uuf0|ү:uf0|[{өө}|{ѳѳ}|{ɵɵ}]:oof0|[ө|ѳ|ɵ]:of0 ; 
+
+define KyrgyzTranscribeJVowel е:e0|ё:o0|ю:u0|я:a0 ; 
+
+define KyrgyzJVowelContext .#.|а|е|ё|и|о|у|ы|э|ю|я|ө|ү|ь|ъ ; 
+
+define KyrgyzTranscriptionRules 
+RussianStemsTranscription @-> || .#. _ ,, 
+KyrgyzTranscribeConsonant @-> ,, 
+KyrgyzTranscribeNonJVowel @-> ,, 
+0:j KyrgyzTranscribeJVowel @-> || KyrgyzJVowelContext _ ,, 
+KyrgyzTranscribeJVowel @-> || \KyrgyzJVowelContext _ ,, 
+ь|ъ @-> 0 ; 
+
+define KyrgyzLetter а|б|в|г|д|е|ё|ж|з|и|й|к|л|м|н|о|п|р|с|т|у|ф|х|ц|ч|ш|щ|ь|ы|ъ|э|ю|я|ө|ѳ|ɵ|ү|ң|ӊ | a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z ; 
+
+define KyrgyzWord KyrgyzLetter+ ; 
+
+define KyrgyzConvertLatinLetters 
+a @-> а ,, 
+b @-> б ,, 
+c @-> ц ,, 
+d @-> д ,, 
+{ch} @-> ч ,, 
+e @-> э ,, 
+f @-> ф ,, 
+g @-> г ,, 
+h @-> х ,, 
+i @-> и ,, 
+j @-> ж ,, 
+k @-> к ,, 
+l @-> л ,, 
+m @-> м ,, 
+n @-> н ,, 
+o @-> о ,, 
+p @-> п ,, 
+q @-> к ,, 
+r @-> р ,, 
+s @-> с ,, 
+{sh} @-> ш ,, 
+{sch} @-> щ ,, 
+t @-> т ,, 
+u @-> у ,, 
+v @-> в ,, 
+w @-> в ,, 
+x @-> {кс} ,, 
+y @-> й || _ [a|e|i|o|u] ,, 
+y @-> ы || _ \[a|e|i|o|u] ,, 
+z @-> з ; 
+
+define KyrgyzTranscription KyrgyzWord .o. KyrgyzConvertLatinLetters .o. KyrgyzTranscriptionRules ; 
+
+regex KyrgyzTranscription ; 
