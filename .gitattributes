@@ -1,0 +1,3 @@
+RHVoice/data/voices/*.bin filter=lfs diff=lfs merge=lfs -text
+RHVoice/data/voices/*.htsvoice filter=lfs diff=lfs merge=lfs -text
+RHVoice/data/voices/* filter=lfs diff=lfs merge=lfs -text
