@@ -1,0 +1,35 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+build/
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+*.hmap
+*.ipa
+
+# Build artifacts
+/build
+/RHVoice/build
+/RHVoice/build_*
+/RHVoice/install
+/test_build
+
+# Log files
+*.txt
+
+# Other
+.gemini/
+AudioUnit.framework/
+rhvoice_*.tar.gz
+*.wav
+test_rhvoice_cli
+ios-arm64-device.cmake
+ios-arm64-simulator.cmake
+activate_screen_sharing.sh
+test_rhvoice.cpp
