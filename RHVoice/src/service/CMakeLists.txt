@@ -21,7 +21,9 @@ pkg_check_modules(LIBGIOMM REQUIRED giomm-2.4)
 add_executable("RHVoice-service" "${CMAKE_CURRENT_SOURCE_DIR}/service.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/common.cpp")
 target_include_directories("RHVoice-service" PRIVATE "${LIBGIOMM_INCLUDE_DIRS}" "${HTS_LABELS_KIT_INCLUDES}")
 target_link_libraries("RHVoice-service" "RHVoice_core" "${LIBGIOMM_LIBRARIES}")
-harden("RHVoice-service")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	harden("RHVoice-service")
+endif()
 add_sanitizers("RHVoice-service")
 
 install(TARGETS "RHVoice-service"

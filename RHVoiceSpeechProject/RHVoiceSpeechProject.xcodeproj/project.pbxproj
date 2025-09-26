@@ -10,6 +10,8 @@
 		206AE72D702396AE44A420F5 /* rapidxml_print.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		3044FBB6A116EAB87A0C222B /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
 		455566F792846E7D01C51BE7 /* rapidxml.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 52D288B22AF25E69538F2F64 /* rapidxml.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		47F6A2E285AE18A542B76319 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = BA047E8F968B03FC2DD16A4D /* main.m */; };
+		497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 705077891DDDC64180422100 /* libRHVoice.dylib */; };
 		57126DDCC19FEFD018E03017 /* rapidxml_iterators.hpp in Headers */ = {isa = PBXBuildFile; fileRef = D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		7544C0A54FB4244AB8D03CE4 /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */; };
 		ACBF080FDD14EDB624ECD732 /* rapidxml_utils.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -19,7 +21,7 @@
 		CEA011EB900621C4C394A166 /* include in Headers */ = {isa = PBXBuildFile; fileRef = 1A956A0237E36EFCE501D40F /* include */; settings = {ATTRIBUTES = (Public, ); }; };
 		DF96E415A69D57E607FB8145 /* license.txt in Resources */ = {isa = PBXBuildFile; fileRef = 91F16F293ED0BBED63C69386 /* license.txt */; };
 		EABC0D8FAE69F956058EDA9B /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		BEEFCAFE1234567890ABCDEF /* libRHVoice.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 705077891DDDC64180422100 /* libRHVoice.dylib */; };
+		F1F7EE78706C6C9B5A812581 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9FB127943CFE0CC767AC6FD7 /* AppDelegate.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,7 +90,6 @@
 		161CB2C95B06DDFB0705021D /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
 		170F6C1AA3BD6CFDBB2DC0E7 /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
 		173C70A6B6F977F7BE18E57D /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
-		176D7CBFDED76FFA079464B5 /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
 		179B19CA6BE3E6F091D9EA84 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
 		1A0506A92E91FF57F37BF919 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
 		1A956A0237E36EFCE501D40F /* include */ = {isa = PBXFileReference; path = include; sourceTree = "<group>"; };
@@ -116,7 +117,6 @@
 		30BE9118B60E89D66D986CA2 /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
 		31E9F4A2AF56E45E7C9C434C /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
 		34DB7C3917B8F8CDDDDB1F55 /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
-		3598BF6347CF3007449BA5FC /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
 		35BAD2D1716FE0A78991293A /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
 		37C1ACDA2656D2D16FEFA81D /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		3831825C6BCAA3950EED09CD /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
@@ -144,6 +144,7 @@
 		5C1BF866865F5469F29DB28F /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
 		5C45C1159DBA055CA0ED2659 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
 		5DCEE8B25AE84BFAF3F011DD /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		61E3A246C488166C313038D7 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		6505FACB5E8D03C78A513643 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
 		673E7203A5F7B1D7392B5E81 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
 		6A62B8CD6AF3C1C03A71DBC4 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
@@ -155,9 +156,7 @@
 		7481217F060BA018E26F65C4 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		74FF582A0CEE27C80678EFE5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7570416D8367938A21093C6F /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
-		7579FA9884C0CEBD33394EA2 /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
 		786390235D45A9DEDDEF75EA /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
-		7B4350373A57D9C7B1994928 /* .git */ = {isa = PBXFileReference; path = .git; sourceTree = "<group>"; };
 		7C055EBE41C807832D3366C7 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
 		7C214CF780D7E0CE8AEDFB28 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
 		7C8C67C6772BD776349992BF /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
@@ -189,6 +188,7 @@
 		9B6D37B54816ADAB05F86C54 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		9D9DB7BB7C8229488D4694F9 /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
 		9F9F00DFE1799946658F8994 /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		9FB127943CFE0CC767AC6FD7 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		A01EF279691726A5617542FA /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
 		A0421D3DDD1BE66FE0AE4C32 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		A1046F077B993EA2A6B0FB0E /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
@@ -210,6 +210,7 @@
 		B0F9913A7E2F1FC5A6F5BEEA /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
 		B82F478126121B43EF5AA173 /* RHVoiceApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RHVoiceApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8C3202E14E3092F0192CE6B /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		BA047E8F968B03FC2DD16A4D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		BA35697FD340F11FC24ACCDE /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
 		BB37D1DC5C1F1C22EDCEBF65 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
 		BECEE2655DAB5BBE4D52D954 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
@@ -275,14 +276,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F00DCAFE1234567890ABCDEF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				BEEFCAFE1234567890ABCDEF /* libRHVoice.dylib in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -336,7 +329,6 @@
 		5088D3F9AD902778AFC62A7E /* marianna */ = {
 			isa = PBXGroup;
 			children = (
-				3598BF6347CF3007449BA5FC /* .git */,
 				4CC99507E502B522308952DE /* Readme-ru.txt */,
 				01F2FA83A78086A80441F3F1 /* Readme-ua.txt */,
 				059A46C9387FB60358C43F24 /* readme.md */,
@@ -382,7 +374,7 @@
 				E48BD21E7952EA1B3548B473 /* bap.win2 */,
 				92C9A37051B11906979A9A17 /* bap.win3 */,
 				0481E74A9C650898B0C00FE0 /* bpf.txt */,
-				B0F9913A7E2F1FC5A6F5BEEA /* dur.pdf */,
+				E5DC0FA34A1FCC57638D103B /* dur.pdf */,
 				EC1816F44709EC78E36AF7E0 /* lf0.pdf */,
 				F72725D27E4E960440C5F829 /* lf0.win1 */,
 				46942DC4362CEDE6902A4C33 /* lf0.win2 */,
@@ -540,7 +532,6 @@
 		942A4C3D111F941C2B291D25 /* anatol */ = {
 			isa = PBXGroup;
 			children = (
-				176D7CBFDED76FFA079464B5 /* .git */,
 				1A0506A92E91FF57F37BF919 /* Readme-ru.txt */,
 				7C8C67C6772BD776349992BF /* Readme-ua.txt */,
 				A42F948E58E78198E24AA844 /* README.md */,
@@ -590,7 +581,6 @@
 		C0934F434A49C8F9116F2EA7 /* volodymyr */ = {
 			isa = PBXGroup;
 			children = (
-				7579FA9884C0CEBD33394EA2 /* .git */,
 				E4560E268FDC278798E36404 /* Readme-ru.txt */,
 				673E7203A5F7B1D7392B5E81 /* Readme-ua.txt */,
 				1CD67B8CA04BB106761800E0 /* README.md */,
@@ -605,7 +595,6 @@
 		C7E1C23B4625AE5A647C63EC /* natalia */ = {
 			isa = PBXGroup;
 			children = (
-				7B4350373A57D9C7B1994928 /* .git */,
 				179B19CA6BE3E6F091D9EA84 /* Readme-ru.txt */,
 				8595DE6A56A765696ACDE8D7 /* Readme-ua.txt */,
 				8FB0A1BCD77B68FA3BDCF9E1 /* README.md */,
@@ -620,7 +609,10 @@
 		CA206FBFFD2FE3D96E851DE7 /* RHVoiceApp */ = {
 			isa = PBXGroup;
 			children = (
+				61E3A246C488166C313038D7 /* AppDelegate.h */,
+				9FB127943CFE0CC767AC6FD7 /* AppDelegate.m */,
 				2FC319A51906E8A039DE7FA3 /* Info.plist */,
+				BA047E8F968B03FC2DD16A4D /* main.m */,
 			);
 			path = RHVoiceApp;
 			sourceTree = "<group>";
@@ -669,6 +661,8 @@
 				C7F7D62C3E6FA9ABB8DC566B /* Frameworks */,
 				C89E4E589BB8784630D0D204 /* Embed Frameworks */,
 			);
+			buildRules = (
+			);
 			dependencies = (
 				93A2C2CC72DD1EFC0C6EB949 /* PBXTargetDependency */,
 			);
@@ -687,6 +681,8 @@
 				E67AE1CCE14732F3C74BCE19 /* Frameworks */,
 				9934C64B5BF48F638DCFABB3 /* Embed Frameworks */,
 			);
+			buildRules = (
+			);
 			dependencies = (
 				D369406189FEF4B46BF435E1 /* PBXTargetDependency */,
 			);
@@ -704,7 +700,6 @@
 				43B282726BF21514EDDB3288 /* Headers */,
 				19C170784906CE34A6A1E6CE /* Sources */,
 				C83D35F01911653FE8F0E7F6 /* Resources */,
-				F00DCAFE1234567890ABCDEF /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -752,6 +747,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */,
 				DF96E415A69D57E607FB8145 /* license.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -771,6 +767,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F1F7EE78706C6C9B5A812581 /* AppDelegate.m in Sources */,
+				47F6A2E285AE18A542B76319 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -831,6 +829,7 @@
 					"@executable_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
+				OTHER_LDFLAGS = "$(inherited) -lRHVoice";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceFramework";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
@@ -1036,6 +1035,7 @@
 					"@executable_path/Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
+				OTHER_LDFLAGS = "$(inherited) -lRHVoice";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceFramework";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;

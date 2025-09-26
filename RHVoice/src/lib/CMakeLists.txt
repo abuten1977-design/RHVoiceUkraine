@@ -15,7 +15,9 @@
 
 add_library(RHVoice SHARED "${CMAKE_CURRENT_SOURCE_DIR}/lib.cpp")
 set_target_properties(RHVoice PROPERTIES VERSION "${RHVOICE_VERSION}" SOVERSION "${RHVOICE_VERSION_MAJOR}")
-harden("RHVoice")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	harden("RHVoice")
+endif()
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	add_sanitizers("RHVoice")
 endif()

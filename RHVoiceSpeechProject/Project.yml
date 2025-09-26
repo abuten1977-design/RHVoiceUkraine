@@ -33,6 +33,7 @@ targets:
         VERSIONING_SYSTEM: "apple-generic"
         HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party"
         LIBRARY_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/src"
+        OTHER_LDFLAGS: "$(inherited) -lRHVoice"
         CLANG_CXX_LANGUAGE_STANDARD: "c++14"
         CLANG_CXX_LIBRARY: "libc++"
         INSTALL_PATH: "@rpath/Frameworks"
@@ -43,6 +44,9 @@ targets:
     platform: iOS
     sources:
       - RHVoiceApp
+      - RHVoiceApp/main.m
+      - RHVoiceApp/AppDelegate.h
+      - RHVoiceApp/AppDelegate.m
     scheme:
       build:
         targets:

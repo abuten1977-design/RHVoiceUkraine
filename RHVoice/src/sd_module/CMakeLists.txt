@@ -20,7 +20,9 @@ file(GLOB_RECURSE SRCFILES "${CMAKE_CURRENT_SOURCE_DIR}/*.c" "${CMAKE_CURRENT_SO
 add_executable(sd_rhvoice "${SRCFILES}")
 target_include_directories(sd_rhvoice PRIVATE "${INCLUDE_DIR}" "${HTS_LABELS_KIT_INCLUDES}" "${SPEECHD_INCLUDE_DIRS}")
 target_link_libraries(sd_rhvoice "RHVoice_core" "RHVoice_audio" "${SPEECHD_LIBRARIES}" pthread)
-harden(sd_rhvoice)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	harden(sd_rhvoice)
+endif()
 add_sanitizers(sd_rhvoice)
 
 pkg_get_variable(modulebindir ${SPEECHD_MODULE_NAME} modulebindir)
