@@ -700,6 +700,7 @@
 				43B282726BF21514EDDB3288 /* Headers */,
 				19C170784906CE34A6A1E6CE /* Sources */,
 				C83D35F01911653FE8F0E7F6 /* Resources */,
+				ACFD761293AF65D84CFA5DA5 /* Copy RHVoice Resources */,
 			);
 			buildRules = (
 			);
@@ -753,6 +754,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		ACFD761293AF65D84CFA5DA5 /* Copy RHVoice Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy RHVoice Resources";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Create Resources directory inside the framework\nmkdir -p \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources\"\n\n# Copy models using a relative path from the project root\ncp -R \"${SRCROOT}/RHVoiceModels\" \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/\"\n\n# Copy config using a relative path\ncp -R \"${SRCROOT}/../RHVoice/config\" \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/\"\n\n# Ad-hoc sign the dylib after copying\ncodesign --force --sign - \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/libRHVoice.dylib\"\n\n# Remove license file to prevent signing issues\nrm -f \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/license.txt\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		19C170784906CE34A6A1E6CE /* Sources */ = {
@@ -907,7 +929,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/RHVoiceApp.app";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
 				EXTENSION_POINT_IDENTIFIER = "com.apple.speech.speech-provider";
@@ -999,7 +1020,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				BUNDLE_LOADER = "$(BUILT_PRODUCTS_DIR)/RHVoiceApp.app";
-				CLANG_CXX_LANGUAGE_STANDARD = "c++14";
 				CLANG_CXX_LIBRARY = "libc++";
 				EMBEDDED_CONTENT_CONTAINS_SWIFT = YES;
 				EXTENSION_POINT_IDENTIFIER = "com.apple.speech.speech-provider";

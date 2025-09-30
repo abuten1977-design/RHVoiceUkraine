@@ -33,9 +33,19 @@ static int rhvoice_set_sample_rate_callback(int sample_rate, void* user_data) {
         // Initialize g_audioData
         g_audioData = [[NSMutableData alloc] init];
 
-        // Set data and config paths
-        NSString *dataPath = @"/Users/m1/rhvoice/RHVoice/data";
-        NSString *configPath = @"/Users/m1/rhvoice/RHVoice/config";
+        // Set data and config paths dynamically from the app bundle
+        NSBundle *bundle = [NSBundle bundleForClass:[self class]];
+        NSString *dataPath = [bundle pathForResource:@"data" ofType:nil];
+        NSString *configPath = [bundle pathForResource:@"config" ofType:nil];
+
+        if (!dataPath) {
+            NSLog(@"RHVoiceWrapper: Error - 'data' folder not found in bundle.");
+            return;
+        }
+        if (!configPath) {
+            NSLog(@"RHVoiceWrapper: Error - 'config' folder not found in bundle.");
+            return;
+        }
 
         // Convert NSString to C-style strings
         const char *cDataPath = [dataPath UTF8String];

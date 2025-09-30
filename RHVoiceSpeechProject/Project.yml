@@ -39,6 +39,26 @@ targets:
         INSTALL_PATH: "@rpath/Frameworks"
         INFOPLIST_FILE: RHVoiceEngine/Info.plist
 
+    postbuildScripts:
+      - script: |
+          # Create Resources directory inside the framework
+          mkdir -p "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources"
+
+          # Copy models using a relative path from the project root
+          cp -R "${SRCROOT}/RHVoiceModels" "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/"
+
+          # Copy config using a relative path
+          cp -R "${SRCROOT}/../RHVoice/config" "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/"
+
+          # Ad-hoc sign the dylib after copying
+          codesign --force --sign - "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/libRHVoice.dylib"
+
+          # Remove license file to prevent signing issues
+          rm -f "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/license.txt"
+        name: Copy RHVoice Resources
+
+
+
   RHVoiceApp:
     type: application
     platform: iOS
@@ -85,11 +105,12 @@ targets:
         OTHER_LDFLAGS: $(inherited) -lc++
         HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party/rapidxml"
         LIBRARY_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/src"
-        CLANG_CXX_LANGUAGE_STANDARD: "c++14"
         CLANG_CXX_LIBRARY: "libc++"
     dependencies:
       - target: RHVoiceFramework
         embed: true # Встраиваем фреймворк в Extension
+
+
 
 fileGroups:
   - RHVoiceModels # Добавляем группу для голосовых моделей
