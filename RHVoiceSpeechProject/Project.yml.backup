@@ -1,6 +1,6 @@
 name: RHVoiceSpeechProject
 options:
-  bundleIdPrefix: com.yourcompany # Замените на ваш префикс Bundle ID
+  bundleIdPrefix: com.yourcompany
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -17,8 +17,8 @@ targets:
         excludes:
           - "CMakeLists.txt"
           - "**/userdict_parser.c"
-      - path: ../RHVoice/src/core/userdict_parser.c
-        compilerFlags: -x c++
+          - "**/unidata.cpp"
+          - "**/emoji_data.cpp"
       - path: ../RHVoice/src/lib
         glob: "**/*.{cpp,c,h,hpp}"
         excludes: ["CMakeLists.txt"]
@@ -30,6 +30,7 @@ targets:
       - path: ../RHVoice/src/third-party/rapidxml
         glob: "**/*.hpp"
       - path: ../RHVoice/external/libs/sonic
+        excludes: ["spectrogram.c", "main.c"]
         glob: "**/*.c"
     publicHeaders: RHVoiceFramework/Headers
     settings:
@@ -42,6 +43,7 @@ targets:
         CLANG_CXX_LIBRARY: "libc++"
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/../RHVoice/src/include"
+          - "$(SRCROOT)/RHVoiceEngine/include"
           - "$(SRCROOT)/../RHVoice/src/third-party/utf8"
           - "$(SRCROOT)/../RHVoice/src/third-party/concurrentqueue"
           - "$(SRCROOT)/../RHVoice/src/third-party/date/include"
@@ -95,41 +97,38 @@ targets:
           - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/function/include"
           - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_index/include"
           - "$(SRCROOT)/../RHVoice/external/libs/sonic"
-          - /usr/local/include
-          - /opt/homebrew/include
-          - /usr/include
-        LIBRARY_SEARCH_PATHS:
-          - /usr/local/lib
-          - /opt/homebrew/lib
-          - /usr/lib
-        OTHER_LDFLAGS:
-          - -lboost_filesystem
-          - -lboost_locale
-          - -lboost_program_options
-          - -licuuc
-          - -licui18n
-          - -licudata
-          - -lsndfile
-          - -lz
-          - -lpthread
-    postbuildScripts:
+    prebuildScripts:
       - name: Copy RHVoice Resources
         script: |
-          mkdir -p "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources"
-          cp -R "${SRCROOT}/RHVoiceModels" "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/"
-          cp -R "${SRCROOT}/../RHVoice/config" "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/"
-          touch "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/.copied"
-        outputFiles:
-          - $(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/RHVoiceFramework.framework/Resources/.copied
+          echo "Starting resource copy..."
+          mkdir -p "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources"
+          
+          if [ -d "${SRCROOT}/RHVoiceModels" ]; then
+            echo "Copying RHVoiceModels..."
+            cp -R "${SRCROOT}/RHVoiceModels" "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/"
+          else
+            echo "Warning: RHVoiceModels not found at ${SRCROOT}/RHVoiceModels"
+          fi
+          
+          if [ -d "${SRCROOT}/../RHVoice/config" ]; then
+            echo "Copying config..."
+            cp -R "${SRCROOT}/../RHVoice/config" "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/"
+          else
+            echo "Warning: config not found at ${SRCROOT}/../RHVoice/config"
+          fi
+          
+          touch "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/.copied"
+          echo "Resource copy completed"
 
   RHVoiceApp:
     type: application
     platform: iOS
     sources:
-      - RHVoiceApp
       - RHVoiceApp/main.m
       - RHVoiceApp/AppDelegate.h
       - RHVoiceApp/AppDelegate.m
+      - RHVoiceApp/ViewController.h
+      - RHVoiceApp/ViewController.m
     scheme:
       build:
         targets:
@@ -143,7 +142,7 @@ targets:
         INFOPLIST_FILE: RHVoiceApp/Info.plist
     dependencies:
       - target: RHVoiceFramework
-        embed: true # Встраиваем фреймворк в приложение
+        embed: true
 
   RHVoiceSpeechExtension:
     type: app-extension
@@ -171,7 +170,7 @@ targets:
         CLANG_CXX_LIBRARY: "libc++"
     dependencies:
       - target: RHVoiceFramework
-        embed: true # Встраиваем фреймворк в Extension
+        embed: true
 
 fileGroups:
-  - RHVoiceModels # Добавляем группу для голосовых моделей
+  - RHVoiceModels

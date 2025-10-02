@@ -14,34 +14,49 @@
 		126D4C08CFC6E8D65BFCE9B3 /* unicode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7B0109D4A695E1B773B2E6C8 /* unicode.cpp */; };
 		138C36AADAC7D29466D9F2C9 /* HTS_label.c in Sources */ = {isa = PBXBuildFile; fileRef = 758A48E7586E4480C4B93DA2 /* HTS_label.c */; };
 		17AB94AC924B905766543152 /* macedonian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 891A479A9B784C65CC0ECCA4 /* macedonian.cpp */; };
+		22ABA6758E2B80E3010F24C4 /* stereo_test.wav in Resources */ = {isa = PBXBuildFile; fileRef = BA6FA41CFD0FC45B3CB64FD9 /* stereo_test.wav */; };
 		26141E3435F63D7B65E88328 /* sonic.c in Sources */ = {isa = PBXBuildFile; fileRef = 21A83021C899805E8523C3DF /* sonic.c */; };
 		26E4FE10ACA627E255C40F08 /* phoneme_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA1552696C7060CBCFF72FAC /* phoneme_set.cpp */; };
 		2B467F16FFEE3FFEA00DEC87 /* english.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71E505027F40ACA902D196D5 /* english.cpp */; };
 		2D36009869E5CB5DA285B147 /* question_matcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63B22812F42C51F37876E40 /* question_matcher.cpp */; };
+		2D54EB5D288F2F4EE559CA32 /* sonic.install in Resources */ = {isa = PBXBuildFile; fileRef = 9997FCACB826B5388944CF13 /* sonic.install */; };
 		2E202CCD35688AF18B0FE255 /* unchecked.h in Headers */ = {isa = PBXBuildFile; fileRef = A95C52C9561AD78E779872A9 /* unchecked.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3044FBB6A116EAB87A0C222B /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
 		32786BB19C6FCA6B39ABA479 /* dtree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB5E551A7B6594FC236CFE1D /* dtree.cpp */; };
 		382A7F3673571A44A1961DAC /* lts.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A880A2C8DB3166ECE692277E /* lts.cpp */; };
+		38B64740AE050D4981F3380B /* twosineperiods.wav in Resources */ = {isa = PBXBuildFile; fileRef = F654E13546ADCAD21F9E7020 /* twosineperiods.wav */; };
 		39FDA6C71B7876A41D89A589 /* lib.def in Headers */ = {isa = PBXBuildFile; fileRef = F0654C9E05D2C67FE5E55DF1 /* lib.def */; settings = {ATTRIBUTES = (Public, ); }; };
+		3BA503FD081C03AE685A92F1 /* talking_2x.wav in Resources */ = {isa = PBXBuildFile; fileRef = F07EC6E189865E018263107C /* talking_2x.wav */; };
+		41CACF6140A81352FABAA1FA /* libsonic0.symbols in Resources */ = {isa = PBXBuildFile; fileRef = A180B2D038F9D6D468A9FF93 /* libsonic0.symbols */; };
 		41FD25FEFBB59E0B2BF66167 /* ukrainian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAEB9DF63F63B433ED6BC918 /* ukrainian.cpp */; };
 		427DFB01CF464922235BDA00 /* russian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4DEEBB7BEE051C76D47F76F8 /* russian.cpp */; };
+		42AB713F512326CBD884CC0F /* config.h.in in Resources */ = {isa = PBXBuildFile; fileRef = 2A7485157C0AD12F3BF18E3E /* config.h.in */; };
+		43FA97AD9B8709A1EEA81A04 /* index.md in Resources */ = {isa = PBXBuildFile; fileRef = 6F6DBCCCDEEF3FCF0A410575 /* index.md */; };
 		4448ECB82FC515EA4DBEEFEE /* params.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1936605CD3F8DCC88C64BDC7 /* params.cpp */; };
+		4684B8830BDF2B96C3C2EFC1 /* espeak_sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = AA6863293037BF8374973282 /* espeak_sonic.wav */; };
 		47F6A2E285AE18A542B76319 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = BA047E8F968B03FC2DD16A4D /* main.m */; };
+		48437CA02CFE23CB43A4AA2D /* libsonic-dev.install in Resources */ = {isa = PBXBuildFile; fileRef = C5B70963C00D63FE58EDA6B1 /* libsonic-dev.install */; };
 		488378F73CAEEC89E79D3AA3 /* georgian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8810592C76DB87A721970EEF /* georgian.cpp */; };
 		4F669600EDAF478C6222794B /* sonic.h in Headers */ = {isa = PBXBuildFile; fileRef = 5FB36850BCD86282D855B8D7 /* sonic.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		50048EA20CF092FA769D428B /* HTS_gstream.c in Sources */ = {isa = PBXBuildFile; fileRef = E0DFA410A6370394C66DE13C /* HTS_gstream.c */; };
 		53D8CB11FC78235BEA9D1FA8 /* hts_labeller.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 634A7CD541A232FCC9402475 /* hts_labeller.cpp */; };
 		54DC41E53E1905A4ED66FB8D /* model_answer_cache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC15CEB68A90E53F38419FB8 /* model_answer_cache.cpp */; };
+		580A6D93F174BB49550C963A /* test1.txt in Resources */ = {isa = PBXBuildFile; fileRef = C919B69C537C0F8A4032810F /* test1.txt */; };
 		5981573B3F877BD801729D3F /* relation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D108E24F50AA98892742DFC8 /* relation.cpp */; };
+		5C4B8AC4E70D991D2AF61967 /* soundstretch.wav in Resources */ = {isa = PBXBuildFile; fileRef = E4247B0B525EA0F368C0CB73 /* soundstretch.wav */; };
 		605D8BC781ADA3ECD53F9AD2 /* kyrgyz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EFD8FCACCC8D965AF98CC52B /* kyrgyz.cpp */; };
+		685BD61813FC632C50744E20 /* sonic.manpages in Resources */ = {isa = PBXBuildFile; fileRef = DCBEBDA982BCE26068AD5815 /* sonic.manpages */; };
 		6CBD17AEED2CAE1D659253D2 /* HTS_vocoder.c in Sources */ = {isa = PBXBuildFile; fileRef = 573D644EE7E83F9EBC974373 /* HTS_vocoder.c */; };
 		6DC09208B3CCFF5E38CC29A5 /* userdict_parser.h in Headers */ = {isa = PBXBuildFile; fileRef = 01A7A1D3512B90D342D50B4C /* userdict_parser.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		6DEE2EC1995A17F6C6964025 /* libsonic0.install in Resources */ = {isa = PBXBuildFile; fileRef = 68DA27397053406F250BB51A /* libsonic0.install */; };
+		73D0A47D3CB437E45723E469 /* sonic.odt in Resources */ = {isa = PBXBuildFile; fileRef = 452A8DB291C77E7452272274 /* sonic.odt */; };
 		74292027F07C3A89479FA0CF /* wave.h in Headers */ = {isa = PBXBuildFile; fileRef = 0DEFBF5EC820317C52AEE00D /* wave.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7544C0A54FB4244AB8D03CE4 /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */; };
 		781F1097659A229AD4BF8E00 /* tts_api.h in Headers */ = {isa = PBXBuildFile; fileRef = 0B2A6CB95002FC65C5DF7CDB /* tts_api.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7835B8D8507C5A44B847DA43 /* document.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 552E067BFE56C4D2A9C2BF47 /* document.cpp */; };
 		78560788165922DE6CCC7065 /* hts_label.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D825707E35C39377684D56BA /* hts_label.cpp */; };
 		7931143AE15B60357DF8B7E8 /* speech_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4253BE7D23A5A1F5705C8546 /* speech_processor.cpp */; };
+		7AE773009BA018394C3A1FD5 /* license.txt in Resources */ = {isa = PBXBuildFile; fileRef = 8F11FA73D559020F68047E31 /* license.txt */; };
 		7C08DB5EE8BA320205492C1A /* userdict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4E62C2AC1882E94765D64CD7 /* userdict.cpp */; };
 		7C735449E978F3C45543D54E /* rapidxml_utils.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 8C13995E6244FB19BA4203AA /* rapidxml_utils.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		800B10765FBB389188C74895 /* str_hts_engine_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A44FEEB1D01D83EB1EDA4F2D /* str_hts_engine_impl.cpp */; };
@@ -56,18 +71,23 @@
 		9C66A55A850AE849030D2E4B /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A4B17BED29BDE9D28BBBD34 /* config.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		9D32B108BE197CF529419AB3 /* HTS_pstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 69B98BE24A62E75BB47A0D6D /* HTS_pstream.c */; };
 		9D5A5A5B203431142A555FAE /* english_id.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A3FC9B11646A9B339D6AD46 /* english_id.cpp */; };
+		9E44915C826689BC9F9F1544 /* Main.java in Resources */ = {isa = PBXBuildFile; fileRef = EDAD19832E7C25DE79732499 /* Main.java */; };
 		A25924A351686822138D1FE9 /* config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 12C15C45E7B8F5734A59D4F8 /* config.cpp */; };
 		A40136C18C3153B73D0CB598 /* tatar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EA78269D68CED7F3FF335A3F /* tatar.cpp */; };
 		A69083BD0636B391C2A550FD /* HTS_hidden.h in Headers */ = {isa = PBXBuildFile; fileRef = 9DE640E0658D56A6955DFA18 /* HTS_hidden.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		A8B91B67A0409FE4340E6156 /* userdict_parser.g in Resources */ = {isa = PBXBuildFile; fileRef = 0AEF58BF458C21E4F6DEED64 /* userdict_parser.g */; };
 		B27A9AE53352541658F4AAD2 /* RHVoiceWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9200BA9820874C39B6FF50E5 /* RHVoiceWrapper.mm */; settings = {COMPILER_FLAGS = "-x objective-c++"; }; };
 		B3850603DDD28F872E020180 /* item.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AD53B28B6CB9A797580B7A0 /* item.cpp */; };
 		B3EAC7E1D1962FBDE7A8BA45 /* hts_engine_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F95E536AC50512D0232B16BA /* hts_engine_impl.cpp */; };
 		B53EF059B96A25CF0A52CFA6 /* brazilian_portuguese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C9CB8CF25AC5ED5704361A1C /* brazilian_portuguese.cpp */; };
 		B62A6C147DBC3E6E017E7FBE /* HTS_sstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 346B91E126AFBA0CBB375D39 /* HTS_sstream.c */; };
+		B77C168B7EF3DA5503289118 /* Sonic.java in Resources */ = {isa = PBXBuildFile; fileRef = A47DCA0B3F526B57713EF326 /* Sonic.java */; };
 		B7D94C08F9B2E518BA31E9AE /* vietnamese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FFEB56DA1CF3F332F4DE5D2 /* vietnamese.cpp */; };
 		B7FD7DEB12AF7DEA50EB1EAC /* emoji.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5FADB42737E3498EE2ED993 /* emoji.cpp */; };
+		B845403268B435CC2E56F414 /* talking.wav in Resources */ = {isa = PBXBuildFile; fileRef = 3A5FEC4B61FACC0F56F9CA19 /* talking.wav */; };
 		B96CC928199DFC5FE8BBB006 /* fst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9415EEA174A68E7AE561E197 /* fst.cpp */; };
 		BAA888996356095E875F9C6A /* engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B576E4F677302ACAA456126 /* engine.cpp */; };
+		BB4FC7007A99F4D08CBF3097 /* changelog.vinux in Resources */ = {isa = PBXBuildFile; fileRef = 13183A8C5C8F6CFA7163DBC4 /* changelog.vinux */; };
 		BB87468CBDA4E10E7DBF7152 /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
 		BE22E5A6FACBD1EE531F7DBD /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C3567F5DB02C2D8297D2526E /* equalizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7971F0210A8B94BBEA2ED8B7 /* equalizer.cpp */; };
@@ -80,6 +100,7 @@
 		D5BD18CFD68BC9601C764722 /* hts_vocoder_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FEBE37ED4B9A6E2942839C /* hts_vocoder_wrapper.cpp */; };
 		D6550EA1D9F158D6ACE9082C /* io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5F65C4B3324C2F29F80C691 /* io.cpp */; };
 		D67B4B175E534648B7857585 /* HTS_engine.h in Headers */ = {isa = PBXBuildFile; fileRef = 50903BF3979373A732C7CB5B /* HTS_engine.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D9EC40C576494BD3BC5E0E7A /* sonic.1 in Resources */ = {isa = PBXBuildFile; fileRef = A4D5E19FE773E580DFB16D32 /* sonic.1 */; };
 		E03AF900E01333A63779FEA7 /* HTS_misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 92E81078ED6A8D1BABB461B4 /* HTS_misc.c */; };
 		E5E1290C826D4FC01697FF37 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC0F8522CD0B17F6BABA40AD /* ViewController.m */; };
 		E7C11E6E920DF80B70A25523 /* rapidxml.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 44DDE454EE9AEE1DF8578A8D /* rapidxml.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -89,6 +110,8 @@
 		F2A6087A22079782B42B0062 /* utf8.h in Headers */ = {isa = PBXBuildFile; fileRef = DAA3BFC3565300FE20CE1A96 /* utf8.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		F6686D411B592BC448CE3F6A /* unit_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B5CE378A8C675542A2BA7885 /* unit_db.cpp */; };
 		F92555EA2DFDBFE2AFBE623A /* esperanto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 277B2E8970E1E910AEB49365 /* esperanto.cpp */; };
+		FD6B34DE963F140CA7E52546 /* espeak_s450.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2C2BB7E6586AD95FE3CC0D34 /* espeak_s450.wav */; };
+		FDA60575DEE1CF0643543D10 /* sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = 84A57D564C3B7557FFA76DE1 /* sonic.wav */; };
 		FDED2E837E4355FFDAA39879 /* rapidxml_print.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 3E417DC4109B37DEB32C5C86 /* rapidxml_print.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		FFDB19A5EB0FE13E13A763D9 /* ini_parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 97F229EC247EE9A4968FA599 /* ini_parser.cpp */; };
 /* End PBXBuildFile section */
@@ -1178,6 +1201,29 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9E44915C826689BC9F9F1544 /* Main.java in Resources */,
+				B77C168B7EF3DA5503289118 /* Sonic.java in Resources */,
+				BB4FC7007A99F4D08CBF3097 /* changelog.vinux in Resources */,
+				42AB713F512326CBD884CC0F /* config.h.in in Resources */,
+				FD6B34DE963F140CA7E52546 /* espeak_s450.wav in Resources */,
+				4684B8830BDF2B96C3C2EFC1 /* espeak_sonic.wav in Resources */,
+				43FA97AD9B8709A1EEA81A04 /* index.md in Resources */,
+				48437CA02CFE23CB43A4AA2D /* libsonic-dev.install in Resources */,
+				6DEE2EC1995A17F6C6964025 /* libsonic0.install in Resources */,
+				41CACF6140A81352FABAA1FA /* libsonic0.symbols in Resources */,
+				7AE773009BA018394C3A1FD5 /* license.txt in Resources */,
+				D9EC40C576494BD3BC5E0E7A /* sonic.1 in Resources */,
+				2D54EB5D288F2F4EE559CA32 /* sonic.install in Resources */,
+				685BD61813FC632C50744E20 /* sonic.manpages in Resources */,
+				73D0A47D3CB437E45723E469 /* sonic.odt in Resources */,
+				FDA60575DEE1CF0643543D10 /* sonic.wav in Resources */,
+				5C4B8AC4E70D991D2AF61967 /* soundstretch.wav in Resources */,
+				22ABA6758E2B80E3010F24C4 /* stereo_test.wav in Resources */,
+				B845403268B435CC2E56F414 /* talking.wav in Resources */,
+				3BA503FD081C03AE685A92F1 /* talking_2x.wav in Resources */,
+				580A6D93F174BB49550C963A /* test1.txt in Resources */,
+				38B64740AE050D4981F3380B /* twosineperiods.wav in Resources */,
+				A8B91B67A0409FE4340E6156 /* userdict_parser.g in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

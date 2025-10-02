@@ -105,7 +105,7 @@ targets:
           
           if [ -d "${SRCROOT}/RHVoiceModels" ]; then
             echo "Copying RHVoiceModels..."
-            cp -R "${SRCROOT}/RHVoiceModels" "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/"
+            rsync -av --exclude="*.wav" --exclude="*.mp3" --exclude="*.ogg" "${SRCROOT}/RHVoiceModels/"  "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/"
           else
             echo "Warning: RHVoiceModels not found at ${SRCROOT}/RHVoiceModels"
           fi
