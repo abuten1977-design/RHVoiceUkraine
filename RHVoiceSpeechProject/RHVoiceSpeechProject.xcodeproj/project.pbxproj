@@ -102,6 +102,7 @@
 		D67B4B175E534648B7857585 /* HTS_engine.h in Headers */ = {isa = PBXBuildFile; fileRef = 50903BF3979373A732C7CB5B /* HTS_engine.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D9EC40C576494BD3BC5E0E7A /* sonic.1 in Resources */ = {isa = PBXBuildFile; fileRef = A4D5E19FE773E580DFB16D32 /* sonic.1 */; };
 		E03AF900E01333A63779FEA7 /* HTS_misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 92E81078ED6A8D1BABB461B4 /* HTS_misc.c */; };
+		E5E1290C826D4FC01697FF37 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = AC0F8522CD0B17F6BABA40AD /* ViewController.m */; };
 		E7C11E6E920DF80B70A25523 /* rapidxml.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 44DDE454EE9AEE1DF8578A8D /* rapidxml.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		EABC0D8FAE69F956058EDA9B /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F0F1621CE11E42BE012F8732 /* path.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E6163A0DCBBCF78D047DA3B3 /* path.cpp */; };
@@ -223,7 +224,6 @@
 		2DA146017195F56B7C893E7F /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
 		2E08129BB49955B596AE155C /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		2F555E3D92683B7D0C222B4C /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
-		2FC319A51906E8A039DE7FA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		30BE9118B60E89D66D986CA2 /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
 		31E9F4A2AF56E45E7C9C434C /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
 		346B91E126AFBA0CBB375D39 /* HTS_sstream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_sstream.c; sourceTree = "<group>"; };
@@ -363,6 +363,7 @@
 		AA6863293037BF8374973282 /* espeak_sonic.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = espeak_sonic.wav; sourceTree = "<group>"; };
 		AAEB9DF63F63B433ED6BC918 /* ukrainian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ukrainian.cpp; sourceTree = "<group>"; };
 		AB5E551A7B6594FC236CFE1D /* dtree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dtree.cpp; sourceTree = "<group>"; };
+		AC0F8522CD0B17F6BABA40AD /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		AC5204231FE0DACBBCA062B9 /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
 		ACAF1D4918853A336F0C166D /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
 		AD798CD582A3ECEF4F2A6168 /* rapidxml_iterators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_iterators.hpp; sourceTree = "<group>"; };
@@ -396,6 +397,7 @@
 		C803CC367AC3AB6202DE9B98 /* watch */ = {isa = PBXFileReference; path = watch; sourceTree = "<group>"; };
 		C919B69C537C0F8A4032810F /* test1.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = test1.txt; sourceTree = "<group>"; };
 		C9CB8CF25AC5ED5704361A1C /* brazilian_portuguese.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = brazilian_portuguese.cpp; sourceTree = "<group>"; };
+		CE6D50B531B2AB4E6F897CE0 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
 		D108E24F50AA98892742DFC8 /* relation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = relation.cpp; sourceTree = "<group>"; };
 		D22153705EEBA4F2AAFFC86F /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
 		D23D15D2E922E669CD011C84 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
@@ -942,8 +944,9 @@
 			children = (
 				61E3A246C488166C313038D7 /* AppDelegate.h */,
 				9FB127943CFE0CC767AC6FD7 /* AppDelegate.m */,
-				2FC319A51906E8A039DE7FA3 /* Info.plist */,
 				BA047E8F968B03FC2DD16A4D /* main.m */,
+				CE6D50B531B2AB4E6F897CE0 /* ViewController.h */,
+				AC0F8522CD0B17F6BABA40AD /* ViewController.m */,
 			);
 			path = RHVoiceApp;
 			sourceTree = "<group>";
@@ -1319,6 +1322,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F1F7EE78706C6C9B5A812581 /* AppDelegate.m in Sources */,
+				E5E1290C826D4FC01697FF37 /* ViewController.m in Sources */,
 				47F6A2E285AE18A542B76319 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

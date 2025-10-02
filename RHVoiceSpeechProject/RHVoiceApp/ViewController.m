@@ -1,0 +1,169 @@
+#import "ViewController.h"
+#import <RHVoiceFramework/RHVoiceWrapper.h>
+#import <AVFoundation/AVFoundation.h>
+
+@interface ViewController ()
+@property (nonatomic, strong) AVAudioPlayer *audioPlayer;
+@end
+
+@implementation ViewController
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    // Setup UI
+    self.view.backgroundColor = [UIColor systemBackgroundColor];
+    
+    // Create text view
+    self.textView = [[UITextView alloc] init];
+    self.textView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.textView.text = @"Привіт! Це тест українського синтезу мовлення RHVoice. Як справи?";
+    self.textView.font = [UIFont systemFontOfSize:16];
+    self.textView.layer.borderColor = [UIColor systemGrayColor].CGColor;
+    self.textView.layer.borderWidth = 1.0;
+    self.textView.layer.cornerRadius = 8.0;
+    [self.view addSubview:self.textView];
+    
+    // Create button
+    self.synthesizeButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    self.synthesizeButton.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.synthesizeButton setTitle:@"🎤 Синтезувати українською" forState:UIControlStateNormal];
+    self.synthesizeButton.titleLabel.font = [UIFont boldSystemFontOfSize:18];
+    self.synthesizeButton.backgroundColor = [UIColor systemBlueColor];
+    [self.synthesizeButton setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    self.synthesizeButton.layer.cornerRadius = 8.0;
+    [self.synthesizeButton addTarget:self action:@selector(synthesizeButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.synthesizeButton];
+    
+    // Create status label
+    self.statusLabel = [[UILabel alloc] init];
+    self.statusLabel.translatesAutoresizingMaskIntoConstraints = NO;
+    self.statusLabel.text = @"Готово до тестування";
+    self.statusLabel.textAlignment = NSTextAlignmentCenter;
+    self.statusLabel.numberOfLines = 0;
+    self.statusLabel.font = [UIFont systemFontOfSize:14];
+    self.statusLabel.textColor = [UIColor systemGrayColor];
+    [self.view addSubview:self.statusLabel];
+    
+    // Setup constraints
+    [NSLayoutConstraint activateConstraints:@[
+        [self.textView.topAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.topAnchor constant:20],
+        [self.textView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [self.textView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
+        [self.textView.heightAnchor constraintEqualToConstant:120],
+        
+        [self.synthesizeButton.topAnchor constraintEqualToAnchor:self.textView.bottomAnchor constant:20],
+        [self.synthesizeButton.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [self.synthesizeButton.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20],
+        [self.synthesizeButton.heightAnchor constraintEqualToConstant:50],
+        
+        [self.statusLabel.topAnchor constraintEqualToAnchor:self.synthesizeButton.bottomAnchor constant:20],
+        [self.statusLabel.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor constant:20],
+        [self.statusLabel.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor constant:-20]
+    ]];
+    
+    // Initialize RHVoice
+    NSLog(@"ViewController: Initializing RHVoice...");
+    [RHVoiceWrapper initializeRHVoice];
+}
+
+- (IBAction)synthesizeButtonTapped:(id)sender {
+    NSLog(@"ViewController: Synthesize button tapped");
+    
+    self.statusLabel.text = @"🔄 Синтезую мовлення...";
+    self.synthesizeButton.enabled = NO;
+    
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        NSString *textToSynthesize = self.textView.text;
+        if (textToSynthesize.length == 0) {
+            textToSynthesize = @"Привіт! Це тест RHVoice.";
+        }
+        
+        NSLog(@"ViewController: Synthesizing text: %@", textToSynthesize);
+        
+        // Test with Ukrainian voice "natalia"
+        NSData *audioData = [RHVoiceWrapper synthesizeText:textToSynthesize withVoice:@"natalia"];
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.synthesizeButton.enabled = YES;
+            
+            if (audioData && audioData.length > 0) {
+                NSLog(@"ViewController: Synthesis successful! Audio data: %lu bytes", (unsigned long)audioData.length);
+                
+                // Save to Documents directory
+                NSString *documentsPath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+                NSString *audioFilePath = [documentsPath stringByAppendingPathComponent:@"rhvoice_ukrainian_test.wav"];
+                
+                // Convert PCM to WAV format
+                NSData *wavData = [self convertPCMToWAV:audioData sampleRate:22050]; // Assuming 22050 Hz
+                
+                if ([wavData writeToFile:audioFilePath atomically:YES]) {
+                    NSLog(@"ViewController: Audio saved to: %@", audioFilePath);
+                    self.statusLabel.text = [NSString stringWithFormat:@"✅ Успіх! Аудіо збережено (%lu байт)\n📁 %@", (unsigned long)wavData.length, audioFilePath];
+                    
+                    // Try to play the audio
+                    [self playAudioFromData:wavData];
+                } else {
+                    NSLog(@"ViewController: Failed to save audio file");
+                    self.statusLabel.text = @"❌ Помилка збереження файлу";
+                }
+            } else {
+                NSLog(@"ViewController: Synthesis failed or returned no data");
+                self.statusLabel.text = @"❌ Синтез не вдався";
+            }
+        });
+    });
+}
+
+- (NSData *)convertPCMToWAV:(NSData *)pcmData sampleRate:(int)sampleRate {
+    // Simple WAV header creation
+    int dataSize = (int)pcmData.length;
+    int fileSize = dataSize + 44 - 8;
+    
+    NSMutableData *wavData = [NSMutableData data];
+    
+    // WAV header
+    [wavData appendBytes:"RIFF" length:4];
+    [wavData appendBytes:&fileSize length:4];
+    [wavData appendBytes:"WAVE" length:4];
+    [wavData appendBytes:"fmt " length:4];
+    
+    int fmtSize = 16;
+    short audioFormat = 1; // PCM
+    short numChannels = 1; // Mono
+    int byteRate = sampleRate * numChannels * 2; // 16-bit
+    short blockAlign = numChannels * 2;
+    short bitsPerSample = 16;
+    
+    [wavData appendBytes:&fmtSize length:4];
+    [wavData appendBytes:&audioFormat length:2];
+    [wavData appendBytes:&numChannels length:2];
+    [wavData appendBytes:&sampleRate length:4];
+    [wavData appendBytes:&byteRate length:4];
+    [wavData appendBytes:&blockAlign length:2];
+    [wavData appendBytes:&bitsPerSample length:2];
+    [wavData appendBytes:"data" length:4];
+    [wavData appendBytes:&dataSize length:4];
+    
+    // Append PCM data
+    [wavData appendData:pcmData];
+    
+    return wavData;
+}
+
+- (void)playAudioFromData:(NSData *)wavData {
+    NSError *error;
+    self.audioPlayer = [[AVAudioPlayer alloc] initWithData:wavData error:&error];
+    
+    if (error) {
+        NSLog(@"ViewController: Error creating audio player: %@", error.localizedDescription);
+        return;
+    }
+    
+    [self.audioPlayer prepareToPlay];
+    [self.audioPlayer play];
+    
+    NSLog(@"ViewController: Playing synthesized audio");
+}
+
+@end
