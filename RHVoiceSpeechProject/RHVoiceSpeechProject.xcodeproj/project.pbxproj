@@ -7,21 +7,113 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		206AE72D702396AE44A420F5 /* rapidxml_print.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		05C9BBFBC0A500B9DA07DF26 /* voice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D5A2BFC82F24D8420578FA5B /* voice.cpp */; };
+		07C8E7DD53E689D8D31EA1A9 /* bpf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 077B032F2E1A6E6A63D2940A /* bpf.cpp */; };
+		1139A1A4365640181E89407E /* hts_engine_call.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C18A6005B52B797977BC6A7 /* hts_engine_call.cpp */; };
+		1224015A186C1B129388EC0B /* data_only_language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 63A87BFC790DD982ACE42C90 /* data_only_language.cpp */; };
+		126D4C08CFC6E8D65BFCE9B3 /* unicode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7B0109D4A695E1B773B2E6C8 /* unicode.cpp */; };
+		138C36AADAC7D29466D9F2C9 /* HTS_label.c in Sources */ = {isa = PBXBuildFile; fileRef = 758A48E7586E4480C4B93DA2 /* HTS_label.c */; };
+		17AB94AC924B905766543152 /* macedonian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 891A479A9B784C65CC0ECCA4 /* macedonian.cpp */; };
+		22ABA6758E2B80E3010F24C4 /* stereo_test.wav in Resources */ = {isa = PBXBuildFile; fileRef = BA6FA41CFD0FC45B3CB64FD9 /* stereo_test.wav */; };
+		26141E3435F63D7B65E88328 /* sonic.c in Sources */ = {isa = PBXBuildFile; fileRef = 21A83021C899805E8523C3DF /* sonic.c */; };
+		26E4FE10ACA627E255C40F08 /* phoneme_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BA1552696C7060CBCFF72FAC /* phoneme_set.cpp */; };
+		2B467F16FFEE3FFEA00DEC87 /* english.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 71E505027F40ACA902D196D5 /* english.cpp */; };
+		2D36009869E5CB5DA285B147 /* question_matcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A63B22812F42C51F37876E40 /* question_matcher.cpp */; };
+		2D54EB5D288F2F4EE559CA32 /* sonic.install in Resources */ = {isa = PBXBuildFile; fileRef = 9997FCACB826B5388944CF13 /* sonic.install */; };
+		2E202CCD35688AF18B0FE255 /* unchecked.h in Headers */ = {isa = PBXBuildFile; fileRef = A95C52C9561AD78E779872A9 /* unchecked.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3044FBB6A116EAB87A0C222B /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
-		455566F792846E7D01C51BE7 /* rapidxml.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 52D288B22AF25E69538F2F64 /* rapidxml.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		32786BB19C6FCA6B39ABA479 /* dtree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AB5E551A7B6594FC236CFE1D /* dtree.cpp */; };
+		382A7F3673571A44A1961DAC /* lts.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A880A2C8DB3166ECE692277E /* lts.cpp */; };
+		38B64740AE050D4981F3380B /* twosineperiods.wav in Resources */ = {isa = PBXBuildFile; fileRef = F654E13546ADCAD21F9E7020 /* twosineperiods.wav */; };
+		39FDA6C71B7876A41D89A589 /* lib.def in Headers */ = {isa = PBXBuildFile; fileRef = F0654C9E05D2C67FE5E55DF1 /* lib.def */; settings = {ATTRIBUTES = (Public, ); }; };
+		3BA503FD081C03AE685A92F1 /* talking_2x.wav in Resources */ = {isa = PBXBuildFile; fileRef = F07EC6E189865E018263107C /* talking_2x.wav */; };
+		41CACF6140A81352FABAA1FA /* libsonic0.symbols in Resources */ = {isa = PBXBuildFile; fileRef = A180B2D038F9D6D468A9FF93 /* libsonic0.symbols */; };
+		41FD25FEFBB59E0B2BF66167 /* ukrainian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AAEB9DF63F63B433ED6BC918 /* ukrainian.cpp */; };
+		427DFB01CF464922235BDA00 /* russian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4DEEBB7BEE051C76D47F76F8 /* russian.cpp */; };
+		42AB713F512326CBD884CC0F /* config.h.in in Resources */ = {isa = PBXBuildFile; fileRef = 2A7485157C0AD12F3BF18E3E /* config.h.in */; };
+		43FA97AD9B8709A1EEA81A04 /* index.md in Resources */ = {isa = PBXBuildFile; fileRef = 6F6DBCCCDEEF3FCF0A410575 /* index.md */; };
+		4448ECB82FC515EA4DBEEFEE /* params.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1936605CD3F8DCC88C64BDC7 /* params.cpp */; };
+		4684B8830BDF2B96C3C2EFC1 /* espeak_sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = AA6863293037BF8374973282 /* espeak_sonic.wav */; };
 		47F6A2E285AE18A542B76319 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = BA047E8F968B03FC2DD16A4D /* main.m */; };
-		497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */ = {isa = PBXBuildFile; fileRef = 705077891DDDC64180422100 /* libRHVoice.dylib */; };
-		57126DDCC19FEFD018E03017 /* rapidxml_iterators.hpp in Headers */ = {isa = PBXBuildFile; fileRef = D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		48437CA02CFE23CB43A4AA2D /* libsonic-dev.install in Resources */ = {isa = PBXBuildFile; fileRef = C5B70963C00D63FE58EDA6B1 /* libsonic-dev.install */; };
+		488378F73CAEEC89E79D3AA3 /* georgian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8810592C76DB87A721970EEF /* georgian.cpp */; };
+		4F669600EDAF478C6222794B /* sonic.h in Headers */ = {isa = PBXBuildFile; fileRef = 5FB36850BCD86282D855B8D7 /* sonic.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		50048EA20CF092FA769D428B /* HTS_gstream.c in Sources */ = {isa = PBXBuildFile; fileRef = E0DFA410A6370394C66DE13C /* HTS_gstream.c */; };
+		53D8CB11FC78235BEA9D1FA8 /* hts_labeller.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 634A7CD541A232FCC9402475 /* hts_labeller.cpp */; };
+		54DC41E53E1905A4ED66FB8D /* model_answer_cache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FC15CEB68A90E53F38419FB8 /* model_answer_cache.cpp */; };
+		580A6D93F174BB49550C963A /* test1.txt in Resources */ = {isa = PBXBuildFile; fileRef = C919B69C537C0F8A4032810F /* test1.txt */; };
+		5981573B3F877BD801729D3F /* relation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D108E24F50AA98892742DFC8 /* relation.cpp */; };
+		5C4B8AC4E70D991D2AF61967 /* soundstretch.wav in Resources */ = {isa = PBXBuildFile; fileRef = E4247B0B525EA0F368C0CB73 /* soundstretch.wav */; };
+		605D8BC781ADA3ECD53F9AD2 /* kyrgyz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EFD8FCACCC8D965AF98CC52B /* kyrgyz.cpp */; };
+		685BD61813FC632C50744E20 /* sonic.manpages in Resources */ = {isa = PBXBuildFile; fileRef = DCBEBDA982BCE26068AD5815 /* sonic.manpages */; };
+		6CBD17AEED2CAE1D659253D2 /* HTS_vocoder.c in Sources */ = {isa = PBXBuildFile; fileRef = 573D644EE7E83F9EBC974373 /* HTS_vocoder.c */; };
+		6DC09208B3CCFF5E38CC29A5 /* userdict_parser.h in Headers */ = {isa = PBXBuildFile; fileRef = 01A7A1D3512B90D342D50B4C /* userdict_parser.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		6DEE2EC1995A17F6C6964025 /* libsonic0.install in Resources */ = {isa = PBXBuildFile; fileRef = 68DA27397053406F250BB51A /* libsonic0.install */; };
+		73D0A47D3CB437E45723E469 /* sonic.odt in Resources */ = {isa = PBXBuildFile; fileRef = 452A8DB291C77E7452272274 /* sonic.odt */; };
+		74292027F07C3A89479FA0CF /* wave.h in Headers */ = {isa = PBXBuildFile; fileRef = 0DEFBF5EC820317C52AEE00D /* wave.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7544C0A54FB4244AB8D03CE4 /* SpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */; };
-		ACBF080FDD14EDB624ECD732 /* rapidxml_utils.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		781F1097659A229AD4BF8E00 /* tts_api.h in Headers */ = {isa = PBXBuildFile; fileRef = 0B2A6CB95002FC65C5DF7CDB /* tts_api.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		7835B8D8507C5A44B847DA43 /* document.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 552E067BFE56C4D2A9C2BF47 /* document.cpp */; };
+		78560788165922DE6CCC7065 /* hts_label.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D825707E35C39377684D56BA /* hts_label.cpp */; };
+		7931143AE15B60357DF8B7E8 /* speech_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4253BE7D23A5A1F5705C8546 /* speech_processor.cpp */; };
+		7AE773009BA018394C3A1FD5 /* license.txt in Resources */ = {isa = PBXBuildFile; fileRef = 8F11FA73D559020F68047E31 /* license.txt */; };
+		7C08DB5EE8BA320205492C1A /* userdict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4E62C2AC1882E94765D64CD7 /* userdict.cpp */; };
+		7C735449E978F3C45543D54E /* rapidxml_utils.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 8C13995E6244FB19BA4203AA /* rapidxml_utils.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		7E53F7938200048DE65FA7F0 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 67072C7785BB2F3BC2C96519 /* main.c */; };
+		800B10765FBB389188C74895 /* str_hts_engine_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A44FEEB1D01D83EB1EDA4F2D /* str_hts_engine_impl.cpp */; };
+		80F60032510BEB99C56DF7E4 /* language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6BE3DFE1B2BDAD2F97134E67 /* language.cpp */; };
+		824BFB2A7DE7EE0B36AA3A8B /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = D642F73AA4AD82BF3DBDEB53 /* utils.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		85FC6D5C3A695BCDA79BC333 /* wave.c in Sources */ = {isa = PBXBuildFile; fileRef = EC604515BE2D31A86699DF6E /* wave.c */; };
+		866014AED2E4957AEE0A7F4C /* HTS_audio.c in Sources */ = {isa = PBXBuildFile; fileRef = 38ABDA0C7B20EFFC0ED5C6B6 /* HTS_audio.c */; };
+		89E38055986057023FE07CAF /* lib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 80EEE8250FE91B2D43E62BB8 /* lib.cpp */; };
+		8B820C5B394B9A28FFA41C70 /* HTS_engine.c in Sources */ = {isa = PBXBuildFile; fileRef = 255842124040E1108505BAAC /* HTS_engine.c */; };
+		8C3778E0CBB85DB317490B9E /* utterance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 743B9BA56C15AB87F6FEA575 /* utterance.cpp */; };
+		9C4047D70E4AF729E3DB0B2C /* HTS_model.c in Sources */ = {isa = PBXBuildFile; fileRef = EF6FFA2A31FE1B907DBC2655 /* HTS_model.c */; };
+		9C66A55A850AE849030D2E4B /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A4B17BED29BDE9D28BBBD34 /* config.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		9D32B108BE197CF529419AB3 /* HTS_pstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 69B98BE24A62E75BB47A0D6D /* HTS_pstream.c */; };
+		9D5A5A5B203431142A555FAE /* english_id.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A3FC9B11646A9B339D6AD46 /* english_id.cpp */; };
+		9E44915C826689BC9F9F1544 /* Main.java in Resources */ = {isa = PBXBuildFile; fileRef = EDAD19832E7C25DE79732499 /* Main.java */; };
+		A25924A351686822138D1FE9 /* config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 12C15C45E7B8F5734A59D4F8 /* config.cpp */; };
+		A40136C18C3153B73D0CB598 /* tatar.cpp in Sources */ = {isa = PBXBuildFile; fileRef = EA78269D68CED7F3FF335A3F /* tatar.cpp */; };
+		A69083BD0636B391C2A550FD /* HTS_hidden.h in Headers */ = {isa = PBXBuildFile; fileRef = 9DE640E0658D56A6955DFA18 /* HTS_hidden.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		A8B91B67A0409FE4340E6156 /* userdict_parser.g in Resources */ = {isa = PBXBuildFile; fileRef = 0AEF58BF458C21E4F6DEED64 /* userdict_parser.g */; };
 		B27A9AE53352541658F4AAD2 /* RHVoiceWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = 9200BA9820874C39B6FF50E5 /* RHVoiceWrapper.mm */; settings = {COMPILER_FLAGS = "-x objective-c++"; }; };
+		B3850603DDD28F872E020180 /* item.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 1AD53B28B6CB9A797580B7A0 /* item.cpp */; };
+		B3EAC7E1D1962FBDE7A8BA45 /* hts_engine_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F95E536AC50512D0232B16BA /* hts_engine_impl.cpp */; };
+		B53EF059B96A25CF0A52CFA6 /* brazilian_portuguese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C9CB8CF25AC5ED5704361A1C /* brazilian_portuguese.cpp */; };
+		B62A6C147DBC3E6E017E7FBE /* HTS_sstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 346B91E126AFBA0CBB375D39 /* HTS_sstream.c */; };
+		B77C168B7EF3DA5503289118 /* Sonic.java in Resources */ = {isa = PBXBuildFile; fileRef = A47DCA0B3F526B57713EF326 /* Sonic.java */; };
+		B7D94C08F9B2E518BA31E9AE /* vietnamese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7FFEB56DA1CF3F332F4DE5D2 /* vietnamese.cpp */; };
+		B7FD7DEB12AF7DEA50EB1EAC /* emoji.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5FADB42737E3498EE2ED993 /* emoji.cpp */; };
+		B845403268B435CC2E56F414 /* talking.wav in Resources */ = {isa = PBXBuildFile; fileRef = 3A5FEC4B61FACC0F56F9CA19 /* talking.wav */; };
+		B96CC928199DFC5FE8BBB006 /* fst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9415EEA174A68E7AE561E197 /* fst.cpp */; };
+		BAA888996356095E875F9C6A /* engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2B576E4F677302ACAA456126 /* engine.cpp */; };
+		BB4FC7007A99F4D08CBF3097 /* changelog.vinux in Resources */ = {isa = PBXBuildFile; fileRef = 13183A8C5C8F6CFA7163DBC4 /* changelog.vinux */; };
 		BB87468CBDA4E10E7DBF7152 /* RHVoiceFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; };
 		BE22E5A6FACBD1EE531F7DBD /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		CEA011EB900621C4C394A166 /* include in Headers */ = {isa = PBXBuildFile; fileRef = 1A956A0237E36EFCE501D40F /* include */; settings = {ATTRIBUTES = (Public, ); }; };
-		DF96E415A69D57E607FB8145 /* license.txt in Resources */ = {isa = PBXBuildFile; fileRef = 91F16F293ED0BBED63C69386 /* license.txt */; };
+		C3567F5DB02C2D8297D2526E /* equalizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7971F0210A8B94BBEA2ED8B7 /* equalizer.cpp */; };
+		C453E6FB5D13018094F1414B /* core.h in Headers */ = {isa = PBXBuildFile; fileRef = 7458ED6FFA925D93E5674B9E /* core.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		CB0D88FA0A9695513874949A /* rapidxml_iterators.hpp in Headers */ = {isa = PBXBuildFile; fileRef = AD798CD582A3ECEF4F2A6168 /* rapidxml_iterators.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		CB62E8ABEC3D71F6DB923D05 /* limiter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E40A56AA7D7D093489D71EDF /* limiter.cpp */; };
+		CBCFBD52EF5A3F0F75B09FBE /* pitch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 141B798C9AFC79A82D6A57BF /* pitch.cpp */; };
+		CD184AB6B8952B41B6AD8B3D /* tts_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 80DC73AAA2C2FEFDE2E77715 /* tts_api.cpp */; };
+		D0C35ED312184CAE6C3E4E27 /* checked.h in Headers */ = {isa = PBXBuildFile; fileRef = 95DEFE1C6562E57E74540132 /* checked.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D5BD18CFD68BC9601C764722 /* hts_vocoder_wrapper.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D7FEBE37ED4B9A6E2942839C /* hts_vocoder_wrapper.cpp */; };
+		D6550EA1D9F158D6ACE9082C /* io.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5F65C4B3324C2F29F80C691 /* io.cpp */; };
+		D67B4B175E534648B7857585 /* HTS_engine.h in Headers */ = {isa = PBXBuildFile; fileRef = 50903BF3979373A732C7CB5B /* HTS_engine.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D9EC40C576494BD3BC5E0E7A /* sonic.1 in Resources */ = {isa = PBXBuildFile; fileRef = A4D5E19FE773E580DFB16D32 /* sonic.1 */; };
+		E03AF900E01333A63779FEA7 /* HTS_misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 92E81078ED6A8D1BABB461B4 /* HTS_misc.c */; };
+		E7C11E6E920DF80B70A25523 /* rapidxml.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 44DDE454EE9AEE1DF8578A8D /* rapidxml.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		EABC0D8FAE69F956058EDA9B /* RHVoiceFramework.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F0F1621CE11E42BE012F8732 /* path.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E6163A0DCBBCF78D047DA3B3 /* path.cpp */; };
 		F1F7EE78706C6C9B5A812581 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 9FB127943CFE0CC767AC6FD7 /* AppDelegate.m */; };
+		F2A6087A22079782B42B0062 /* utf8.h in Headers */ = {isa = PBXBuildFile; fileRef = DAA3BFC3565300FE20CE1A96 /* utf8.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F6686D411B592BC448CE3F6A /* unit_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B5CE378A8C675542A2BA7885 /* unit_db.cpp */; };
+		F92555EA2DFDBFE2AFBE623A /* esperanto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 277B2E8970E1E910AEB49365 /* esperanto.cpp */; };
+		FD6B34DE963F140CA7E52546 /* espeak_s450.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2C2BB7E6586AD95FE3CC0D34 /* espeak_s450.wav */; };
+		FDA60575DEE1CF0643543D10 /* sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = 84A57D564C3B7557FFA76DE1 /* sonic.wav */; };
+		FDED2E837E4355FFDAA39879 /* rapidxml_print.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 3E417DC4109B37DEB32C5C86 /* rapidxml_print.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
+		FFDB19A5EB0FE13E13A763D9 /* ini_parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 97F229EC247EE9A4968FA599 /* ini_parser.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,28 +163,39 @@
 		00D2F093DDA0DFF5B860BE80 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
 		00D89CC9DD9E20C1B31C5AB4 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
 		01A16412D0A02B7CF1672C28 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		01A7A1D3512B90D342D50B4C /* userdict_parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = userdict_parser.h; sourceTree = "<group>"; };
 		01F2FA83A78086A80441F3F1 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
 		0481E74A9C650898B0C00FE0 /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
 		0518665B9CE0B0A63246B50E /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
 		059A46C9387FB60358C43F24 /* readme.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = readme.md; sourceTree = "<group>"; };
 		05BE89C7DF6403FC3E118878 /* SpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechSynthesizer.swift; sourceTree = "<group>"; };
 		06729ADFB11901D11107D761 /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		077B032F2E1A6E6A63D2940A /* bpf.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = bpf.cpp; sourceTree = "<group>"; };
+		086F121E811CB1A4E6925D96 /* compat */ = {isa = PBXFileReference; path = compat; sourceTree = "<group>"; };
+		0A3FC9B11646A9B339D6AD46 /* english_id.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = english_id.cpp; sourceTree = "<group>"; };
+		0AEF58BF458C21E4F6DEED64 /* userdict_parser.g */ = {isa = PBXFileReference; path = userdict_parser.g; sourceTree = "<group>"; };
+		0B2A6CB95002FC65C5DF7CDB /* tts_api.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tts_api.h; sourceTree = "<group>"; };
 		0B880A47F9A3106DB02C01FF /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
+		0DEFBF5EC820317C52AEE00D /* wave.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = wave.h; sourceTree = "<group>"; };
 		0E0397B7EC4DF8B8C1525D45 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
 		0F1D1DEEAF1CFA4DED68ABF7 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
 		0F32B8FC32004CF2F208C4AF /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
 		0FA1AF4574A57BBEED6B9E0B /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
 		11278D442773A9C445520CD9 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
 		116F066A556BB21AE5F99361 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		12C15C45E7B8F5734A59D4F8 /* config.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = config.cpp; sourceTree = "<group>"; };
 		12C86FD956B2060DF9F5FFFE /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		13183A8C5C8F6CFA7163DBC4 /* changelog.vinux */ = {isa = PBXFileReference; path = changelog.vinux; sourceTree = "<group>"; };
+		141B798C9AFC79A82D6A57BF /* pitch.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = pitch.cpp; sourceTree = "<group>"; };
 		155A897CC6178871E2A12A1B /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		15E2C9BA123CEFE94177AE45 /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
 		161CB2C95B06DDFB0705021D /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
 		170F6C1AA3BD6CFDBB2DC0E7 /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
 		173C70A6B6F977F7BE18E57D /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
 		179B19CA6BE3E6F091D9EA84 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
+		1936605CD3F8DCC88C64BDC7 /* params.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = params.cpp; sourceTree = "<group>"; };
 		1A0506A92E91FF57F37BF919 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
-		1A956A0237E36EFCE501D40F /* include */ = {isa = PBXFileReference; path = include; sourceTree = "<group>"; };
+		1AD53B28B6CB9A797580B7A0 /* item.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = item.cpp; sourceTree = "<group>"; };
 		1B93F062AAB8A4C975586D02 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
 		1CD67B8CA04BB106761800E0 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		1CF8069B069DC080BA81DB31 /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
@@ -100,15 +203,23 @@
 		1F15682DEF3A29271ED7AE90 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
 		1FC33D61FC47965112B17E19 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
 		20E1D1F1B23DD00CE509C74D /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		21A83021C899805E8523C3DF /* sonic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sonic.c; sourceTree = "<group>"; };
 		21D47218054507B000A54856 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		21D84791CA336A4FDBC4D289 /* README */ = {isa = PBXFileReference; path = README; sourceTree = "<group>"; };
 		220DD71684A1CB9F3FD3A243 /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
 		2289BAC93C26756528111047 /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
 		239CE16CD68FEBFB6BF1C503 /* RHVoiceFramework.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RHVoiceFramework.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		255842124040E1108505BAAC /* HTS_engine.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_engine.c; sourceTree = "<group>"; };
 		261479D233F6E06040E028F2 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
 		266B9A1DF01D218AE24ED335 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
 		26A108252A9EB9FEFEFEC51C /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
+		277B2E8970E1E910AEB49365 /* esperanto.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = esperanto.cpp; sourceTree = "<group>"; };
 		290C3F6CBF673D206015F546 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		2A1260EBEEAE25F6F355849F /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		2A4B17BED29BDE9D28BBBD34 /* config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+		2A7485157C0AD12F3BF18E3E /* config.h.in */ = {isa = PBXFileReference; path = config.h.in; sourceTree = "<group>"; };
+		2B576E4F677302ACAA456126 /* engine.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = engine.cpp; sourceTree = "<group>"; };
+		2C2BB7E6586AD95FE3CC0D34 /* espeak_s450.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = espeak_s450.wav; sourceTree = "<group>"; };
 		2D59853AF90D5962486477D0 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		2DA146017195F56B7C893E7F /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
 		2E08129BB49955B596AE155C /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
@@ -116,146 +227,237 @@
 		2FC319A51906E8A039DE7FA3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		30BE9118B60E89D66D986CA2 /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
 		31E9F4A2AF56E45E7C9C434C /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		346B91E126AFBA0CBB375D39 /* HTS_sstream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_sstream.c; sourceTree = "<group>"; };
 		34DB7C3917B8F8CDDDDB1F55 /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
 		35BAD2D1716FE0A78991293A /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
 		37C1ACDA2656D2D16FEFA81D /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		3831825C6BCAA3950EED09CD /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		383F1E723DB4854B81497E90 /* copyright */ = {isa = PBXFileReference; path = copyright; sourceTree = "<group>"; };
+		38ABDA0C7B20EFFC0ED5C6B6 /* HTS_audio.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_audio.c; sourceTree = "<group>"; };
 		38B7990894CEF210E8F11E93 /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
 		392207DAAF43F0B1A3BCB33A /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
 		39B3EFD13D0CC8DB4E09B2A4 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		3A5FEC4B61FACC0F56F9CA19 /* talking.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = talking.wav; sourceTree = "<group>"; };
 		3CE56EF7ECE7BE04C16938E4 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
 		3DAB76366B1A62CDD8E5EACF /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		3E417DC4109B37DEB32C5C86 /* rapidxml_print.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_print.hpp; sourceTree = "<group>"; };
 		3FCAD9DD5775D3C9ECD04BCC /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
 		409C1913715FF9F8206AA0D8 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		41664B8109C948DED061275A /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		4253BE7D23A5A1F5705C8546 /* speech_processor.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = speech_processor.cpp; sourceTree = "<group>"; };
+		44DDE454EE9AEE1DF8578A8D /* rapidxml.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml.hpp; sourceTree = "<group>"; };
+		452A8DB291C77E7452272274 /* sonic.odt */ = {isa = PBXFileReference; path = sonic.odt; sourceTree = "<group>"; };
 		456BFFBD5BB08833D6C71BD1 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
 		46942DC4362CEDE6902A4C33 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
 		47BD6B314B72273455553D98 /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
 		494BB5792F1BA46FCF42467A /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
-		4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_utils.hpp; sourceTree = "<group>"; };
 		4AFB711C1BB2B2DD0FF2E9B0 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
 		4BFF526A0D474631928FE70F /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		4C071ACB3B1486CBAD82E043 /* SConscript */ = {isa = PBXFileReference; path = SConscript; sourceTree = "<group>"; };
 		4CC99507E502B522308952DE /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
 		4D97C92DC783BE731D331717 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
-		52D288B22AF25E69538F2F64 /* rapidxml.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml.hpp; sourceTree = "<group>"; };
-		53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_print.hpp; sourceTree = "<group>"; };
+		4DEEBB7BEE051C76D47F76F8 /* russian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = russian.cpp; sourceTree = "<group>"; };
+		4E62C2AC1882E94765D64CD7 /* userdict.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = userdict.cpp; sourceTree = "<group>"; };
+		50903BF3979373A732C7CB5B /* HTS_engine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HTS_engine.h; sourceTree = "<group>"; };
+		552E067BFE56C4D2A9C2BF47 /* document.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = document.cpp; sourceTree = "<group>"; };
+		573D644EE7E83F9EBC974373 /* HTS_vocoder.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_vocoder.c; sourceTree = "<group>"; };
 		596379E570A76B15B4A7DF6A /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
 		5BC056950FE464C93B704BBF /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
 		5C1BF866865F5469F29DB28F /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
 		5C45C1159DBA055CA0ED2659 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
 		5DCEE8B25AE84BFAF3F011DD /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		5EA96CC30D8979D741938B83 /* Makefile */ = {isa = PBXFileReference; path = Makefile; sourceTree = "<group>"; };
+		5FB36850BCD86282D855B8D7 /* sonic.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = sonic.h; sourceTree = "<group>"; };
 		61E3A246C488166C313038D7 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		634A7CD541A232FCC9402475 /* hts_labeller.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_labeller.cpp; sourceTree = "<group>"; };
+		63A87BFC790DD982ACE42C90 /* data_only_language.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = data_only_language.cpp; sourceTree = "<group>"; };
 		6505FACB5E8D03C78A513643 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		67072C7785BB2F3BC2C96519 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		673E7203A5F7B1D7392B5E81 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
+		68DA27397053406F250BB51A /* libsonic0.install */ = {isa = PBXFileReference; path = libsonic0.install; sourceTree = "<group>"; };
+		69B98BE24A62E75BB47A0D6D /* HTS_pstream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_pstream.c; sourceTree = "<group>"; };
 		6A62B8CD6AF3C1C03A71DBC4 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		6B50FB788904939BCE8BBA0F /* mkorig */ = {isa = PBXFileReference; path = mkorig; sourceTree = "<group>"; };
+		6BE3DFE1B2BDAD2F97134E67 /* language.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = language.cpp; sourceTree = "<group>"; };
 		6E06F2C2030004A7FF5F995E /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
-		705077891DDDC64180422100 /* libRHVoice.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libRHVoice.dylib; sourceTree = "<group>"; };
+		6EFEEB8274DE0E896A74DC57 /* format */ = {isa = PBXFileReference; path = format; sourceTree = "<group>"; };
+		6F6DBCCCDEEF3FCF0A410575 /* index.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = index.md; sourceTree = "<group>"; };
 		70F8BF8690546DC63005149C /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		71E505027F40ACA902D196D5 /* english.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = english.cpp; sourceTree = "<group>"; };
 		71F85CB19EED2B86D60AF1F3 /* CMakeLists.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = CMakeLists.txt; sourceTree = "<group>"; };
 		72C41E2904FFE55094C85EB4 /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		743B9BA56C15AB87F6FEA575 /* utterance.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utterance.cpp; sourceTree = "<group>"; };
+		7458ED6FFA925D93E5674B9E /* core.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core.h; sourceTree = "<group>"; };
 		7481217F060BA018E26F65C4 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		74FF582A0CEE27C80678EFE5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		7570416D8367938A21093C6F /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		758A48E7586E4480C4B93DA2 /* HTS_label.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_label.c; sourceTree = "<group>"; };
 		786390235D45A9DEDDEF75EA /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
+		7971F0210A8B94BBEA2ED8B7 /* equalizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = equalizer.cpp; sourceTree = "<group>"; };
+		7B0109D4A695E1B773B2E6C8 /* unicode.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = unicode.cpp; sourceTree = "<group>"; };
 		7C055EBE41C807832D3366C7 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
 		7C214CF780D7E0CE8AEDFB28 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
 		7C8C67C6772BD776349992BF /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
 		7DD9447428B21CEA252855EA /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
 		7F7C22A2C3947BE6AE6FC970 /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		7FFEB56DA1CF3F332F4DE5D2 /* vietnamese.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vietnamese.cpp; sourceTree = "<group>"; };
+		80DC73AAA2C2FEFDE2E77715 /* tts_api.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = tts_api.cpp; sourceTree = "<group>"; };
+		80EEE8250FE91B2D43E62BB8 /* lib.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = lib.cpp; sourceTree = "<group>"; };
 		82006DF9362CB55CE4C26E5B /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		82CCC1565CBE8EDE17CC604E /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
 		830BCC4C4EFA698B08DADFD3 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
 		84781062369377F264E298C5 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
+		84A57D564C3B7557FFA76DE1 /* sonic.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sonic.wav; sourceTree = "<group>"; };
 		851AD990A14F66410A77C531 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
 		858EA50A1A5AF1174220523D /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
 		8595DE6A56A765696ACDE8D7 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
+		8810592C76DB87A721970EEF /* georgian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = georgian.cpp; sourceTree = "<group>"; };
+		891A479A9B784C65CC0ECCA4 /* macedonian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = macedonian.cpp; sourceTree = "<group>"; };
 		8925840A38A6540387F57762 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
 		8AE12BEF020A07E5FE282049 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
 		8B42308D3F3FE997B7AF3723 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		8C13995E6244FB19BA4203AA /* rapidxml_utils.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_utils.hpp; sourceTree = "<group>"; };
+		8F11FA73D559020F68047E31 /* license.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = license.txt; sourceTree = "<group>"; };
 		8FB0A1BCD77B68FA3BDCF9E1 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		91F16F293ED0BBED63C69386 /* license.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = license.txt; sourceTree = "<group>"; };
 		9200BA9820874C39B6FF50E5 /* RHVoiceWrapper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RHVoiceWrapper.mm; sourceTree = "<group>"; };
 		9214222471F83DC815D9BF51 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
 		9224A77A4E7174CCCD403A47 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
 		92C9A37051B11906979A9A17 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
+		92E81078ED6A8D1BABB461B4 /* HTS_misc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_misc.c; sourceTree = "<group>"; };
+		9415EEA174A68E7AE561E197 /* fst.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = fst.cpp; sourceTree = "<group>"; };
+		94A05AC901AD85054BC008DF /* SConscript */ = {isa = PBXFileReference; path = SConscript; sourceTree = "<group>"; };
 		94E20B391A643A4C9CB4600B /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
 		94EEE4A9002A6B2D2A986D1E /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
 		956070E28DE440C59209F85B /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
 		95B0581EB39D5BF337456EE5 /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		95DEFE1C6562E57E74540132 /* checked.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = checked.h; sourceTree = "<group>"; };
 		96838DDF2D81A59E65AC20FE /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
 		9726E9E34BE736CB8E8DDE17 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
 		97637009FC634D29721DF9BD /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
+		97DE932A46B1AB2AF0BE660E /* SConscript */ = {isa = PBXFileReference; path = SConscript; sourceTree = "<group>"; };
+		97F229EC247EE9A4968FA599 /* ini_parser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ini_parser.cpp; sourceTree = "<group>"; };
+		9997FCACB826B5388944CF13 /* sonic.install */ = {isa = PBXFileReference; path = sonic.install; sourceTree = "<group>"; };
 		9B6D37B54816ADAB05F86C54 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
+		9C18A6005B52B797977BC6A7 /* hts_engine_call.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_engine_call.cpp; sourceTree = "<group>"; };
 		9D9DB7BB7C8229488D4694F9 /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
+		9DE640E0658D56A6955DFA18 /* HTS_hidden.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = HTS_hidden.h; sourceTree = "<group>"; };
 		9F9F00DFE1799946658F8994 /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
 		9FB127943CFE0CC767AC6FD7 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		A01EF279691726A5617542FA /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
 		A0421D3DDD1BE66FE0AE4C32 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		A1046F077B993EA2A6B0FB0E /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		A180B2D038F9D6D468A9FF93 /* libsonic0.symbols */ = {isa = PBXFileReference; path = libsonic0.symbols; sourceTree = "<group>"; };
+		A1D13A791C0FB513C861C016 /* changelog */ = {isa = PBXFileReference; path = changelog; sourceTree = "<group>"; };
 		A30C1BFDA62FB368C447F50C /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
 		A3D047A46665313458CEE11E /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
 		A42F948E58E78198E24AA844 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		A44FEEB1D01D83EB1EDA4F2D /* str_hts_engine_impl.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = str_hts_engine_impl.cpp; sourceTree = "<group>"; };
+		A47DCA0B3F526B57713EF326 /* Sonic.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = Sonic.java; sourceTree = "<group>"; };
+		A4D5E19FE773E580DFB16D32 /* sonic.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = sonic.1; sourceTree = "<group>"; };
 		A6251EB5B3FCE16E43929BC9 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		A63B22812F42C51F37876E40 /* question_matcher.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = question_matcher.cpp; sourceTree = "<group>"; };
+		A880A2C8DB3166ECE692277E /* lts.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = lts.cpp; sourceTree = "<group>"; };
 		A8918B17F2D9E5D12ED0B7F1 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
 		A896E514F3BFE296342DE02A /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
 		A8D562025DBE990C9A48AD53 /* RHVoiceSpeechExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = RHVoiceSpeechExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A95C52C9561AD78E779872A9 /* unchecked.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = unchecked.h; sourceTree = "<group>"; };
 		A991BD0AB5D7AA62F8E50EB4 /* mgc.win2 */ = {isa = PBXFileReference; path = mgc.win2; sourceTree = "<group>"; };
+		AA6863293037BF8374973282 /* espeak_sonic.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = espeak_sonic.wav; sourceTree = "<group>"; };
+		AAEB9DF63F63B433ED6BC918 /* ukrainian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ukrainian.cpp; sourceTree = "<group>"; };
+		AB5E551A7B6594FC236CFE1D /* dtree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dtree.cpp; sourceTree = "<group>"; };
 		AC5204231FE0DACBBCA062B9 /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
 		ACAF1D4918853A336F0C166D /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
+		AD798CD582A3ECEF4F2A6168 /* rapidxml_iterators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_iterators.hpp; sourceTree = "<group>"; };
 		ADF2990B2BDDA23D276E706C /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		AE9C128C903A120A03C7F115 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
 		AF3EECB74D3F86D331601AF2 /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
 		B0187BDE8832D903076AA580 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
 		B0B668C86700C34483AF1198 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
 		B0F9913A7E2F1FC5A6F5BEEA /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		B5CE378A8C675542A2BA7885 /* unit_db.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = unit_db.cpp; sourceTree = "<group>"; };
+		B73677EB62E5337EB60388C5 /* COPYING */ = {isa = PBXFileReference; path = COPYING; sourceTree = "<group>"; };
 		B82F478126121B43EF5AA173 /* RHVoiceApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RHVoiceApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B8C3202E14E3092F0192CE6B /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
 		BA047E8F968B03FC2DD16A4D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		BA1552696C7060CBCFF72FAC /* phoneme_set.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = phoneme_set.cpp; sourceTree = "<group>"; };
 		BA35697FD340F11FC24ACCDE /* bap.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = bap.pdf; sourceTree = "<group>"; };
+		BA6FA41CFD0FC45B3CB64FD9 /* stereo_test.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = stereo_test.wav; sourceTree = "<group>"; };
 		BB37D1DC5C1F1C22EDCEBF65 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		BB884A94125763EA961F5742 /* control */ = {isa = PBXFileReference; path = control; sourceTree = "<group>"; };
 		BECEE2655DAB5BBE4D52D954 /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
+		BEDCB156F50B3D71E26DD604 /* .gitignore */ = {isa = PBXFileReference; path = .gitignore; sourceTree = "<group>"; };
+		C11BBEACAE2428566391E7DD /* rules */ = {isa = PBXFileReference; path = rules; sourceTree = "<group>"; };
 		C1CB44EC371EA302C51620DE /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
 		C204627F3FE65E2B6612C8BC /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
 		C465E43A457E361BF47293D7 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		C5B70963C00D63FE58EDA6B1 /* libsonic-dev.install */ = {isa = PBXFileReference; path = "libsonic-dev.install"; sourceTree = "<group>"; };
 		C5E4333F3D67F1915DCE23E1 /* voice.info */ = {isa = PBXFileReference; path = voice.info; sourceTree = "<group>"; };
+		C5F65C4B3324C2F29F80C691 /* io.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = io.cpp; sourceTree = "<group>"; };
+		C5FADB42737E3498EE2ED993 /* emoji.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emoji.cpp; sourceTree = "<group>"; };
 		C73D1B76C967A434E3825360 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
+		C803CC367AC3AB6202DE9B98 /* watch */ = {isa = PBXFileReference; path = watch; sourceTree = "<group>"; };
+		C919B69C537C0F8A4032810F /* test1.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = test1.txt; sourceTree = "<group>"; };
+		C9CB8CF25AC5ED5704361A1C /* brazilian_portuguese.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = brazilian_portuguese.cpp; sourceTree = "<group>"; };
+		D108E24F50AA98892742DFC8 /* relation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = relation.cpp; sourceTree = "<group>"; };
 		D22153705EEBA4F2AAFFC86F /* voice.params */ = {isa = PBXFileReference; path = voice.params; sourceTree = "<group>"; };
 		D23D15D2E922E669CD011C84 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
 		D2A369E755249D12FCEB7426 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
 		D2E2927CB56A71D543C8D04B /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
 		D4AF9B5C436402566B98DDAE /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
 		D54FCA10786141506A87EFB9 /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
-		D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = rapidxml_iterators.hpp; sourceTree = "<group>"; };
+		D5A2BFC82F24D8420578FA5B /* voice.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = voice.cpp; sourceTree = "<group>"; };
+		D642F73AA4AD82BF3DBDEB53 /* utils.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utils.h; sourceTree = "<group>"; };
 		D7A83B36BB2D8B679B6E2CBA /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
+		D7FEBE37ED4B9A6E2942839C /* hts_vocoder_wrapper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_vocoder_wrapper.cpp; sourceTree = "<group>"; };
+		D825707E35C39377684D56BA /* hts_label.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_label.cpp; sourceTree = "<group>"; };
 		D832BF22FE27015BC995ACC4 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		D86CB974F2A2FE5BA2CCCC4E /* bpf.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = bpf.txt; sourceTree = "<group>"; };
+		DAA3BFC3565300FE20CE1A96 /* utf8.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = utf8.h; sourceTree = "<group>"; };
 		DC226B2524E8E276906E3F9E /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		DCBEBDA982BCE26068AD5815 /* sonic.manpages */ = {isa = PBXFileReference; path = sonic.manpages; sourceTree = "<group>"; };
 		DCC1138933AFDAE037694E2A /* tree-bap.inf */ = {isa = PBXFileReference; path = "tree-bap.inf"; sourceTree = "<group>"; };
 		DCC79D82C7C92399287C130A /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
 		DDF65473A2BB88E19E9257A7 /* tree-lf0.inf */ = {isa = PBXFileReference; path = "tree-lf0.inf"; sourceTree = "<group>"; };
 		DE721E53FB66F03E2A6A6EEB /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
 		DF01DA3A0C1B73770C632ABD /* mgc.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = mgc.pdf; sourceTree = "<group>"; };
 		DF26E2B7A8A1F06AB08E93B2 /* mgc.win1 */ = {isa = PBXFileReference; path = mgc.win1; sourceTree = "<group>"; };
+		E0DFA410A6370394C66DE13C /* HTS_gstream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_gstream.c; sourceTree = "<group>"; };
 		E0F82B7DC4DD975B105C3714 /* mgc.win3 */ = {isa = PBXFileReference; path = mgc.win3; sourceTree = "<group>"; };
 		E1B49CA6059A835B6816E89D /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		E1F4906C978DCCD7CC50ABB6 /* .gitignore */ = {isa = PBXFileReference; path = .gitignore; sourceTree = "<group>"; };
+		E352F07FD7D7F14DFA137429 /* README */ = {isa = PBXFileReference; path = README; sourceTree = "<group>"; };
+		E40A56AA7D7D093489D71EDF /* limiter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = limiter.cpp; sourceTree = "<group>"; };
+		E4247B0B525EA0F368C0CB73 /* soundstretch.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = soundstretch.wav; sourceTree = "<group>"; };
 		E4560E268FDC278798E36404 /* Readme-ru.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ru.txt"; sourceTree = "<group>"; };
 		E48BD21E7952EA1B3548B473 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
 		E5BE339D6313769883FDF197 /* bap.win3 */ = {isa = PBXFileReference; path = bap.win3; sourceTree = "<group>"; };
 		E5DC0FA34A1FCC57638D103B /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		E6163A0DCBBCF78D047DA3B3 /* path.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = path.cpp; sourceTree = "<group>"; };
 		E7EE089A84671F0575A04072 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
 		E858514C33037C1238BCE8AA /* dur.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = dur.pdf; sourceTree = "<group>"; };
+		EA78269D68CED7F3FF335A3F /* tatar.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = tatar.cpp; sourceTree = "<group>"; };
 		EC1816F44709EC78E36AF7E0 /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 		EC44577E94FFE24F18C0DAA2 /* tree-mgc.inf */ = {isa = PBXFileReference; path = "tree-mgc.inf"; sourceTree = "<group>"; };
+		EC604515BE2D31A86699DF6E /* wave.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = wave.c; sourceTree = "<group>"; };
+		EDAD19832E7C25DE79732499 /* Main.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = Main.java; sourceTree = "<group>"; };
 		EE5D02AE83F2B4D4D7081693 /* lf0.win2 */ = {isa = PBXFileReference; path = lf0.win2; sourceTree = "<group>"; };
+		EF6FFA2A31FE1B907DBC2655 /* HTS_model.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_model.c; sourceTree = "<group>"; };
+		EFD8FCACCC8D965AF98CC52B /* kyrgyz.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kyrgyz.cpp; sourceTree = "<group>"; };
+		F0654C9E05D2C67FE5E55DF1 /* lib.def */ = {isa = PBXFileReference; path = lib.def; sourceTree = "<group>"; };
+		F07EC6E189865E018263107C /* talking_2x.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = talking_2x.wav; sourceTree = "<group>"; };
 		F2080F946EB14D13A2546A68 /* tree-dur.inf */ = {isa = PBXFileReference; path = "tree-dur.inf"; sourceTree = "<group>"; };
 		F4AD3F13806BB3F883134BA2 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		F654E13546ADCAD21F9E7020 /* twosineperiods.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = twosineperiods.wav; sourceTree = "<group>"; };
 		F72725D27E4E960440C5F829 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		F95E536AC50512D0232B16BA /* hts_engine_impl.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_engine_impl.cpp; sourceTree = "<group>"; };
 		F98E569F13DEE70E88AA8B28 /* bap.win2 */ = {isa = PBXFileReference; path = bap.win2; sourceTree = "<group>"; };
 		FB84537DD9F1C955FF094D04 /* lf0.win3 */ = {isa = PBXFileReference; path = lf0.win3; sourceTree = "<group>"; };
 		FBA487B967E0A6AE05218FF9 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
+		FC15CEB68A90E53F38419FB8 /* model_answer_cache.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = model_answer_cache.cpp; sourceTree = "<group>"; };
 		FC57925192F3BBB95ACC02B6 /* voice.data */ = {isa = PBXFileReference; path = voice.data; sourceTree = "<group>"; };
 		FD80D35323AAD2C277E3914D /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
 		FD8B98EF3459EBA786461699 /* lf0.win1 */ = {isa = PBXFileReference; path = lf0.win1; sourceTree = "<group>"; };
+		FF81D706CB3BCE7B63B79B76 /* post */ = {isa = PBXFileReference; path = post; sourceTree = "<group>"; };
 		FFC9078A2B81622AA816498F /* lf0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = lf0.pdf; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -279,6 +481,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		154421BFD0A66E2FDDDE2F36 /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				80EEE8250FE91B2D43E62BB8 /* lib.cpp */,
+				F0654C9E05D2C67FE5E55DF1 /* lib.def */,
+				94A05AC901AD85054BC008DF /* SConscript */,
+			);
+			path = lib;
+			sourceTree = "<group>";
+		};
 		196A3EA88324492E8B6B815C = {
 			isa = PBXGroup;
 			children = (
@@ -286,8 +498,85 @@
 				F18E308DFF704926ECB1CB3C /* RHVoiceEngine */,
 				77AB19C41A7162D46F74CF77 /* RHVoiceModels */,
 				DF7F66221F761DD855D57762 /* RHVoiceSpeechExtension */,
+				FD8CB98E83843E7E1F129540 /* RHVoiceUkraine */,
 				70E7D3EEB3928EC37CD2D8FB /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		1DC8CD658A6901E834B3FD29 /* sonic */ = {
+			isa = PBXGroup;
+			children = (
+				E1F4906C978DCCD7CC50ABB6 /* .gitignore */,
+				B73677EB62E5337EB60388C5 /* COPYING */,
+				67072C7785BB2F3BC2C96519 /* main.c */,
+				EDAD19832E7C25DE79732499 /* Main.java */,
+				5EA96CC30D8979D741938B83 /* Makefile */,
+				6B50FB788904939BCE8BBA0F /* mkorig */,
+				E352F07FD7D7F14DFA137429 /* README */,
+				A4D5E19FE773E580DFB16D32 /* sonic.1 */,
+				21A83021C899805E8523C3DF /* sonic.c */,
+				5FB36850BCD86282D855B8D7 /* sonic.h */,
+				A47DCA0B3F526B57713EF326 /* Sonic.java */,
+				EC604515BE2D31A86699DF6E /* wave.c */,
+				0DEFBF5EC820317C52AEE00D /* wave.h */,
+				64F1F189E4A73ABF4614D678 /* debian */,
+				27E96A18071F1CE332FE04D8 /* doc */,
+				6A6E2A765B832A01DD609BF1 /* samples */,
+			);
+			path = sonic;
+			sourceTree = "<group>";
+		};
+		1E1A10E1FB664188825EE42F /* RHVoice */ = {
+			isa = PBXGroup;
+			children = (
+				6E2B5B7BD45F0E1E8716C451 /* external */,
+				8F145C748606DBD22A2F9B69 /* src */,
+			);
+			path = RHVoice;
+			sourceTree = "<group>";
+		};
+		229ABF529F3D4A9F84F7C7B9 /* third-party */ = {
+			isa = PBXGroup;
+			children = (
+				2B452B8390A4254B3724F868 /* rapidxml */,
+				F086C4740931A5A8452D31C1 /* utf8 */,
+			);
+			path = "third-party";
+			sourceTree = "<group>";
+		};
+		27E96A18071F1CE332FE04D8 /* doc */ = {
+			isa = PBXGroup;
+			children = (
+				6F6DBCCCDEEF3FCF0A410575 /* index.md */,
+				FF81D706CB3BCE7B63B79B76 /* post */,
+				452A8DB291C77E7452272274 /* sonic.odt */,
+			);
+			path = doc;
+			sourceTree = "<group>";
+		};
+		2B452B8390A4254B3724F868 /* rapidxml */ = {
+			isa = PBXGroup;
+			children = (
+				8F11FA73D559020F68047E31 /* license.txt */,
+				604DC0E13EC0E4A303194E57 /* rapidxml */,
+			);
+			path = rapidxml;
+			sourceTree = "<group>";
+		};
+		31CDBC9B412C14F4D013C146 /* libs */ = {
+			isa = PBXGroup;
+			children = (
+				1DC8CD658A6901E834B3FD29 /* sonic */,
+			);
+			path = libs;
+			sourceTree = "<group>";
+		};
+		371066AF312E6723289D3DBE /* source */ = {
+			isa = PBXGroup;
+			children = (
+				6EFEEB8274DE0E896A74DC57 /* format */,
+			);
+			path = source;
 			sourceTree = "<group>";
 		};
 		3D479D92C46062C35A4787B3 /* 24000 */ = {
@@ -319,9 +608,7 @@
 		434B2CA6B3094959E8C5D9AC /* src */ = {
 			isa = PBXGroup;
 			children = (
-				705077891DDDC64180422100 /* libRHVoice.dylib */,
 				9200BA9820874C39B6FF50E5 /* RHVoiceWrapper.mm */,
-				A6D10B50F4557908DE2F428C /* third-party */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -418,15 +705,60 @@
 			path = 24000;
 			sourceTree = "<group>";
 		};
-		5E26995643209481A5471DBB /* rapidxml */ = {
+		604DC0E13EC0E4A303194E57 /* rapidxml */ = {
 			isa = PBXGroup;
 			children = (
-				D75B60A1F3DC11913513688E /* rapidxml_iterators.hpp */,
-				53DCBB35D98BDD7D34FE4E32 /* rapidxml_print.hpp */,
-				4A31A7268DC739F470844AA8 /* rapidxml_utils.hpp */,
-				52D288B22AF25E69538F2F64 /* rapidxml.hpp */,
+				AD798CD582A3ECEF4F2A6168 /* rapidxml_iterators.hpp */,
+				3E417DC4109B37DEB32C5C86 /* rapidxml_print.hpp */,
+				8C13995E6244FB19BA4203AA /* rapidxml_utils.hpp */,
+				44DDE454EE9AEE1DF8578A8D /* rapidxml.hpp */,
 			);
 			path = rapidxml;
+			sourceTree = "<group>";
+		};
+		64F1F189E4A73ABF4614D678 /* debian */ = {
+			isa = PBXGroup;
+			children = (
+				A1D13A791C0FB513C861C016 /* changelog */,
+				13183A8C5C8F6CFA7163DBC4 /* changelog.vinux */,
+				086F121E811CB1A4E6925D96 /* compat */,
+				BB884A94125763EA961F5742 /* control */,
+				383F1E723DB4854B81497E90 /* copyright */,
+				C5B70963C00D63FE58EDA6B1 /* libsonic-dev.install */,
+				68DA27397053406F250BB51A /* libsonic0.install */,
+				A180B2D038F9D6D468A9FF93 /* libsonic0.symbols */,
+				C11BBEACAE2428566391E7DD /* rules */,
+				9997FCACB826B5388944CF13 /* sonic.install */,
+				DCBEBDA982BCE26068AD5815 /* sonic.manpages */,
+				C803CC367AC3AB6202DE9B98 /* watch */,
+				371066AF312E6723289D3DBE /* source */,
+			);
+			path = debian;
+			sourceTree = "<group>";
+		};
+		6A6E2A765B832A01DD609BF1 /* samples */ = {
+			isa = PBXGroup;
+			children = (
+				2C2BB7E6586AD95FE3CC0D34 /* espeak_s450.wav */,
+				AA6863293037BF8374973282 /* espeak_sonic.wav */,
+				21D84791CA336A4FDBC4D289 /* README */,
+				84A57D564C3B7557FFA76DE1 /* sonic.wav */,
+				E4247B0B525EA0F368C0CB73 /* soundstretch.wav */,
+				BA6FA41CFD0FC45B3CB64FD9 /* stereo_test.wav */,
+				F07EC6E189865E018263107C /* talking_2x.wav */,
+				3A5FEC4B61FACC0F56F9CA19 /* talking.wav */,
+				C919B69C537C0F8A4032810F /* test1.txt */,
+				F654E13546ADCAD21F9E7020 /* twosineperiods.wav */,
+			);
+			path = samples;
+			sourceTree = "<group>";
+		};
+		6E2B5B7BD45F0E1E8716C451 /* external */ = {
+			isa = PBXGroup;
+			children = (
+				31CDBC9B412C14F4D013C146 /* libs */,
+			);
+			path = external;
 			sourceTree = "<group>";
 		};
 		70382E9622032A2BC6F2712C /* 24000 */ = {
@@ -529,6 +861,17 @@
 			path = RHVoiceModels;
 			sourceTree = "<group>";
 		};
+		8F145C748606DBD22A2F9B69 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				E38466C8BA59C65F028D2573 /* core */,
+				E2592EA396568D80D52FEE1E /* hts_engine */,
+				154421BFD0A66E2FDDDE2F36 /* lib */,
+				229ABF529F3D4A9F84F7C7B9 /* third-party */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		942A4C3D111F941C2B291D25 /* anatol */ = {
 			isa = PBXGroup;
 			children = (
@@ -541,15 +884,6 @@
 				5D92FD2C675B0997F6803275 /* 24000 */,
 			);
 			path = anatol;
-			sourceTree = "<group>";
-		};
-		A6D10B50F4557908DE2F428C /* third-party */ = {
-			isa = PBXGroup;
-			children = (
-				91F16F293ED0BBED63C69386 /* license.txt */,
-				5E26995643209481A5471DBB /* rapidxml */,
-			);
-			path = "third-party";
 			sourceTree = "<group>";
 		};
 		B66A19D82FA2DE06656E4067 /* 24000 */ = {
@@ -626,13 +960,120 @@
 			path = RHVoiceSpeechExtension;
 			sourceTree = "<group>";
 		};
+		E2592EA396568D80D52FEE1E /* hts_engine */ = {
+			isa = PBXGroup;
+			children = (
+				38ABDA0C7B20EFFC0ED5C6B6 /* HTS_audio.c */,
+				255842124040E1108505BAAC /* HTS_engine.c */,
+				50903BF3979373A732C7CB5B /* HTS_engine.h */,
+				E0DFA410A6370394C66DE13C /* HTS_gstream.c */,
+				9DE640E0658D56A6955DFA18 /* HTS_hidden.h */,
+				758A48E7586E4480C4B93DA2 /* HTS_label.c */,
+				92E81078ED6A8D1BABB461B4 /* HTS_misc.c */,
+				EF6FFA2A31FE1B907DBC2655 /* HTS_model.c */,
+				69B98BE24A62E75BB47A0D6D /* HTS_pstream.c */,
+				346B91E126AFBA0CBB375D39 /* HTS_sstream.c */,
+				573D644EE7E83F9EBC974373 /* HTS_vocoder.c */,
+				97DE932A46B1AB2AF0BE660E /* SConscript */,
+				D642F73AA4AD82BF3DBDEB53 /* utils.h */,
+			);
+			path = hts_engine;
+			sourceTree = "<group>";
+		};
+		E38466C8BA59C65F028D2573 /* core */ = {
+			isa = PBXGroup;
+			children = (
+				BEDCB156F50B3D71E26DD604 /* .gitignore */,
+				077B032F2E1A6E6A63D2940A /* bpf.cpp */,
+				C9CB8CF25AC5ED5704361A1C /* brazilian_portuguese.cpp */,
+				12C15C45E7B8F5734A59D4F8 /* config.cpp */,
+				2A4B17BED29BDE9D28BBBD34 /* config.h */,
+				2A7485157C0AD12F3BF18E3E /* config.h.in */,
+				63A87BFC790DD982ACE42C90 /* data_only_language.cpp */,
+				552E067BFE56C4D2A9C2BF47 /* document.cpp */,
+				AB5E551A7B6594FC236CFE1D /* dtree.cpp */,
+				C5FADB42737E3498EE2ED993 /* emoji.cpp */,
+				2B576E4F677302ACAA456126 /* engine.cpp */,
+				0A3FC9B11646A9B339D6AD46 /* english_id.cpp */,
+				71E505027F40ACA902D196D5 /* english.cpp */,
+				7971F0210A8B94BBEA2ED8B7 /* equalizer.cpp */,
+				277B2E8970E1E910AEB49365 /* esperanto.cpp */,
+				9415EEA174A68E7AE561E197 /* fst.cpp */,
+				8810592C76DB87A721970EEF /* georgian.cpp */,
+				9C18A6005B52B797977BC6A7 /* hts_engine_call.cpp */,
+				F95E536AC50512D0232B16BA /* hts_engine_impl.cpp */,
+				D825707E35C39377684D56BA /* hts_label.cpp */,
+				634A7CD541A232FCC9402475 /* hts_labeller.cpp */,
+				D7FEBE37ED4B9A6E2942839C /* hts_vocoder_wrapper.cpp */,
+				97F229EC247EE9A4968FA599 /* ini_parser.cpp */,
+				C5F65C4B3324C2F29F80C691 /* io.cpp */,
+				1AD53B28B6CB9A797580B7A0 /* item.cpp */,
+				EFD8FCACCC8D965AF98CC52B /* kyrgyz.cpp */,
+				6BE3DFE1B2BDAD2F97134E67 /* language.cpp */,
+				E40A56AA7D7D093489D71EDF /* limiter.cpp */,
+				A880A2C8DB3166ECE692277E /* lts.cpp */,
+				891A479A9B784C65CC0ECCA4 /* macedonian.cpp */,
+				FC15CEB68A90E53F38419FB8 /* model_answer_cache.cpp */,
+				1936605CD3F8DCC88C64BDC7 /* params.cpp */,
+				E6163A0DCBBCF78D047DA3B3 /* path.cpp */,
+				BA1552696C7060CBCFF72FAC /* phoneme_set.cpp */,
+				141B798C9AFC79A82D6A57BF /* pitch.cpp */,
+				A63B22812F42C51F37876E40 /* question_matcher.cpp */,
+				D108E24F50AA98892742DFC8 /* relation.cpp */,
+				4DEEBB7BEE051C76D47F76F8 /* russian.cpp */,
+				4C071ACB3B1486CBAD82E043 /* SConscript */,
+				4253BE7D23A5A1F5705C8546 /* speech_processor.cpp */,
+				A44FEEB1D01D83EB1EDA4F2D /* str_hts_engine_impl.cpp */,
+				EA78269D68CED7F3FF335A3F /* tatar.cpp */,
+				80DC73AAA2C2FEFDE2E77715 /* tts_api.cpp */,
+				0B2A6CB95002FC65C5DF7CDB /* tts_api.h */,
+				AAEB9DF63F63B433ED6BC918 /* ukrainian.cpp */,
+				7B0109D4A695E1B773B2E6C8 /* unicode.cpp */,
+				B5CE378A8C675542A2BA7885 /* unit_db.cpp */,
+				0AEF58BF458C21E4F6DEED64 /* userdict_parser.g */,
+				01A7A1D3512B90D342D50B4C /* userdict_parser.h */,
+				4E62C2AC1882E94765D64CD7 /* userdict.cpp */,
+				743B9BA56C15AB87F6FEA575 /* utterance.cpp */,
+				7FFEB56DA1CF3F332F4DE5D2 /* vietnamese.cpp */,
+				D5A2BFC82F24D8420578FA5B /* voice.cpp */,
+			);
+			path = core;
+			sourceTree = "<group>";
+		};
+		F086C4740931A5A8452D31C1 /* utf8 */ = {
+			isa = PBXGroup;
+			children = (
+				DAA3BFC3565300FE20CE1A96 /* utf8.h */,
+				F91C382D42AEC454942895DB /* utf8 */,
+			);
+			path = utf8;
+			sourceTree = "<group>";
+		};
 		F18E308DFF704926ECB1CB3C /* RHVoiceEngine */ = {
 			isa = PBXGroup;
 			children = (
-				1A956A0237E36EFCE501D40F /* include */,
 				434B2CA6B3094959E8C5D9AC /* src */,
 			);
 			path = RHVoiceEngine;
+			sourceTree = "<group>";
+		};
+		F91C382D42AEC454942895DB /* utf8 */ = {
+			isa = PBXGroup;
+			children = (
+				95DEFE1C6562E57E74540132 /* checked.h */,
+				7458ED6FFA925D93E5674B9E /* core.h */,
+				A95C52C9561AD78E779872A9 /* unchecked.h */,
+			);
+			path = utf8;
+			sourceTree = "<group>";
+		};
+		FD8CB98E83843E7E1F129540 /* RHVoiceUkraine */ = {
+			isa = PBXGroup;
+			children = (
+				1E1A10E1FB664188825EE42F /* RHVoice */,
+			);
+			name = RHVoiceUkraine;
+			path = ..;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -642,11 +1083,23 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CEA011EB900621C4C394A166 /* include in Headers */,
-				455566F792846E7D01C51BE7 /* rapidxml.hpp in Headers */,
-				57126DDCC19FEFD018E03017 /* rapidxml_iterators.hpp in Headers */,
-				206AE72D702396AE44A420F5 /* rapidxml_print.hpp in Headers */,
-				ACBF080FDD14EDB624ECD732 /* rapidxml_utils.hpp in Headers */,
+				D67B4B175E534648B7857585 /* HTS_engine.h in Headers */,
+				A69083BD0636B391C2A550FD /* HTS_hidden.h in Headers */,
+				D0C35ED312184CAE6C3E4E27 /* checked.h in Headers */,
+				9C66A55A850AE849030D2E4B /* config.h in Headers */,
+				C453E6FB5D13018094F1414B /* core.h in Headers */,
+				39FDA6C71B7876A41D89A589 /* lib.def in Headers */,
+				E7C11E6E920DF80B70A25523 /* rapidxml.hpp in Headers */,
+				CB0D88FA0A9695513874949A /* rapidxml_iterators.hpp in Headers */,
+				FDED2E837E4355FFDAA39879 /* rapidxml_print.hpp in Headers */,
+				7C735449E978F3C45543D54E /* rapidxml_utils.hpp in Headers */,
+				4F669600EDAF478C6222794B /* sonic.h in Headers */,
+				781F1097659A229AD4BF8E00 /* tts_api.h in Headers */,
+				2E202CCD35688AF18B0FE255 /* unchecked.h in Headers */,
+				6DC09208B3CCFF5E38CC29A5 /* userdict_parser.h in Headers */,
+				F2A6087A22079782B42B0062 /* utf8.h in Headers */,
+				824BFB2A7DE7EE0B36AA3A8B /* utils.h in Headers */,
+				74292027F07C3A89479FA0CF /* wave.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -748,8 +1201,29 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				497F6EE6925865E6BFC418B7 /* libRHVoice.dylib in Resources */,
-				DF96E415A69D57E607FB8145 /* license.txt in Resources */,
+				9E44915C826689BC9F9F1544 /* Main.java in Resources */,
+				B77C168B7EF3DA5503289118 /* Sonic.java in Resources */,
+				BB4FC7007A99F4D08CBF3097 /* changelog.vinux in Resources */,
+				42AB713F512326CBD884CC0F /* config.h.in in Resources */,
+				FD6B34DE963F140CA7E52546 /* espeak_s450.wav in Resources */,
+				4684B8830BDF2B96C3C2EFC1 /* espeak_sonic.wav in Resources */,
+				43FA97AD9B8709A1EEA81A04 /* index.md in Resources */,
+				48437CA02CFE23CB43A4AA2D /* libsonic-dev.install in Resources */,
+				6DEE2EC1995A17F6C6964025 /* libsonic0.install in Resources */,
+				41CACF6140A81352FABAA1FA /* libsonic0.symbols in Resources */,
+				7AE773009BA018394C3A1FD5 /* license.txt in Resources */,
+				D9EC40C576494BD3BC5E0E7A /* sonic.1 in Resources */,
+				2D54EB5D288F2F4EE559CA32 /* sonic.install in Resources */,
+				685BD61813FC632C50744E20 /* sonic.manpages in Resources */,
+				73D0A47D3CB437E45723E469 /* sonic.odt in Resources */,
+				FDA60575DEE1CF0643543D10 /* sonic.wav in Resources */,
+				5C4B8AC4E70D991D2AF61967 /* soundstretch.wav in Resources */,
+				22ABA6758E2B80E3010F24C4 /* stereo_test.wav in Resources */,
+				B845403268B435CC2E56F414 /* talking.wav in Resources */,
+				3BA503FD081C03AE685A92F1 /* talking_2x.wav in Resources */,
+				580A6D93F174BB49550C963A /* test1.txt in Resources */,
+				38B64740AE050D4981F3380B /* twosineperiods.wav in Resources */,
+				A8B91B67A0409FE4340E6156 /* userdict_parser.g in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -769,10 +1243,11 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/RHVoiceFramework.framework/Resources/.copied",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Create Resources directory inside the framework\nmkdir -p \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources\"\n\n# Copy models using a relative path from the project root\ncp -R \"${SRCROOT}/RHVoiceModels\" \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/\"\n\n# Copy config using a relative path\ncp -R \"${SRCROOT}/../RHVoice/config\" \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/\"\n\n# Ad-hoc sign the dylib after copying\ncodesign --force --sign - \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/libRHVoice.dylib\"\n\n# Remove license file to prevent signing issues\nrm -f \"${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/license.txt\"\n";
+			shellScript = "mkdir -p \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources\"\ncp -R \"${SRCROOT}/RHVoiceModels\" \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/\"\ncp -R \"${SRCROOT}/../RHVoice/config\" \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/\"\ntouch \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/.copied\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -781,7 +1256,66 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				866014AED2E4957AEE0A7F4C /* HTS_audio.c in Sources */,
+				8B820C5B394B9A28FFA41C70 /* HTS_engine.c in Sources */,
+				50048EA20CF092FA769D428B /* HTS_gstream.c in Sources */,
+				138C36AADAC7D29466D9F2C9 /* HTS_label.c in Sources */,
+				E03AF900E01333A63779FEA7 /* HTS_misc.c in Sources */,
+				9C4047D70E4AF729E3DB0B2C /* HTS_model.c in Sources */,
+				9D32B108BE197CF529419AB3 /* HTS_pstream.c in Sources */,
+				B62A6C147DBC3E6E017E7FBE /* HTS_sstream.c in Sources */,
+				6CBD17AEED2CAE1D659253D2 /* HTS_vocoder.c in Sources */,
 				B27A9AE53352541658F4AAD2 /* RHVoiceWrapper.mm in Sources */,
+				07C8E7DD53E689D8D31EA1A9 /* bpf.cpp in Sources */,
+				B53EF059B96A25CF0A52CFA6 /* brazilian_portuguese.cpp in Sources */,
+				A25924A351686822138D1FE9 /* config.cpp in Sources */,
+				1224015A186C1B129388EC0B /* data_only_language.cpp in Sources */,
+				7835B8D8507C5A44B847DA43 /* document.cpp in Sources */,
+				32786BB19C6FCA6B39ABA479 /* dtree.cpp in Sources */,
+				B7FD7DEB12AF7DEA50EB1EAC /* emoji.cpp in Sources */,
+				BAA888996356095E875F9C6A /* engine.cpp in Sources */,
+				2B467F16FFEE3FFEA00DEC87 /* english.cpp in Sources */,
+				9D5A5A5B203431142A555FAE /* english_id.cpp in Sources */,
+				C3567F5DB02C2D8297D2526E /* equalizer.cpp in Sources */,
+				F92555EA2DFDBFE2AFBE623A /* esperanto.cpp in Sources */,
+				B96CC928199DFC5FE8BBB006 /* fst.cpp in Sources */,
+				488378F73CAEEC89E79D3AA3 /* georgian.cpp in Sources */,
+				1139A1A4365640181E89407E /* hts_engine_call.cpp in Sources */,
+				B3EAC7E1D1962FBDE7A8BA45 /* hts_engine_impl.cpp in Sources */,
+				78560788165922DE6CCC7065 /* hts_label.cpp in Sources */,
+				53D8CB11FC78235BEA9D1FA8 /* hts_labeller.cpp in Sources */,
+				D5BD18CFD68BC9601C764722 /* hts_vocoder_wrapper.cpp in Sources */,
+				FFDB19A5EB0FE13E13A763D9 /* ini_parser.cpp in Sources */,
+				D6550EA1D9F158D6ACE9082C /* io.cpp in Sources */,
+				B3850603DDD28F872E020180 /* item.cpp in Sources */,
+				605D8BC781ADA3ECD53F9AD2 /* kyrgyz.cpp in Sources */,
+				80F60032510BEB99C56DF7E4 /* language.cpp in Sources */,
+				89E38055986057023FE07CAF /* lib.cpp in Sources */,
+				CB62E8ABEC3D71F6DB923D05 /* limiter.cpp in Sources */,
+				382A7F3673571A44A1961DAC /* lts.cpp in Sources */,
+				17AB94AC924B905766543152 /* macedonian.cpp in Sources */,
+				7E53F7938200048DE65FA7F0 /* main.c in Sources */,
+				54DC41E53E1905A4ED66FB8D /* model_answer_cache.cpp in Sources */,
+				4448ECB82FC515EA4DBEEFEE /* params.cpp in Sources */,
+				F0F1621CE11E42BE012F8732 /* path.cpp in Sources */,
+				26E4FE10ACA627E255C40F08 /* phoneme_set.cpp in Sources */,
+				CBCFBD52EF5A3F0F75B09FBE /* pitch.cpp in Sources */,
+				2D36009869E5CB5DA285B147 /* question_matcher.cpp in Sources */,
+				5981573B3F877BD801729D3F /* relation.cpp in Sources */,
+				427DFB01CF464922235BDA00 /* russian.cpp in Sources */,
+				26141E3435F63D7B65E88328 /* sonic.c in Sources */,
+				7931143AE15B60357DF8B7E8 /* speech_processor.cpp in Sources */,
+				800B10765FBB389188C74895 /* str_hts_engine_impl.cpp in Sources */,
+				A40136C18C3153B73D0CB598 /* tatar.cpp in Sources */,
+				CD184AB6B8952B41B6AD8B3D /* tts_api.cpp in Sources */,
+				41FD25FEFBB59E0B2BF66167 /* ukrainian.cpp in Sources */,
+				126D4C08CFC6E8D65BFCE9B3 /* unicode.cpp in Sources */,
+				F6686D411B592BC448CE3F6A /* unit_db.cpp in Sources */,
+				7C08DB5EE8BA320205492C1A /* userdict.cpp in Sources */,
+				8C3778E0CBB85DB317490B9E /* utterance.cpp in Sources */,
+				B7D94C08F9B2E518BA31E9AE /* vietnamese.cpp in Sources */,
+				05C9BBFBC0A500B9DA07DF26 /* voice.cpp in Sources */,
+				85FC6D5C3A695BCDA79BC333 /* wave.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -843,19 +1377,74 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = arm64;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../RHVoice/src/include",
+					"$(SRCROOT)/RHVoiceEngine/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/utf8",
+					"$(SRCROOT)/../RHVoice/src/third-party/concurrentqueue",
+					"$(SRCROOT)/../RHVoice/src/third-party/date/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/expected/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/optional/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/pico/lang",
+					"$(SRCROOT)/../RHVoice/src/third-party/pico/tts/lib",
+					"$(SRCROOT)/../RHVoice/src/third-party/rapidxml",
+					"$(SRCROOT)/../RHVoice/src/third-party/spdlog/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/variant/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/align/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/assert/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/config/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/container/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/container_hash/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/core/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/detail/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/exception/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/integer/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/interprocess/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/intrusive/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/io/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/json/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/move/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/mp11/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/predef/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/preprocessor/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/smart_ptr/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/static_assert/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/system/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/throw_exception/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/tuple/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_traits/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/unordered/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/utility/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/variant2/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/winapi/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/tokenizer/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/lexical_cast/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/algorithm/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/nowide/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/optional/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/date_time/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/range/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/iterator/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/mpl/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/concept_check/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/numeric_conversion/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/array/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/bind/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/function/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_index/include",
+					"$(SRCROOT)/../RHVoice/external/libs/sonic",
+				);
 				INFOPLIST_FILE = RHVoiceEngine/Info.plist;
-				INSTALL_PATH = "@rpath/Frameworks";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
-				OTHER_LDFLAGS = "$(inherited) -lRHVoice";
-				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceFramework";
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.RHVoiceFramework;
+				PRODUCT_MODULE_NAME = RHVoiceFramework;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};
@@ -1047,19 +1636,74 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party";
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = arm64;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/../RHVoice/src/include",
+					"$(SRCROOT)/RHVoiceEngine/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/utf8",
+					"$(SRCROOT)/../RHVoice/src/third-party/concurrentqueue",
+					"$(SRCROOT)/../RHVoice/src/third-party/date/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/expected/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/optional/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/pico/lang",
+					"$(SRCROOT)/../RHVoice/src/third-party/pico/tts/lib",
+					"$(SRCROOT)/../RHVoice/src/third-party/rapidxml",
+					"$(SRCROOT)/../RHVoice/src/third-party/spdlog/include",
+					"$(SRCROOT)/../RHVoice/src/third-party/variant/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/align/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/assert/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/config/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/container/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/container_hash/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/core/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/detail/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/exception/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/integer/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/interprocess/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/intrusive/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/io/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/json/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/move/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/mp11/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/predef/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/preprocessor/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/smart_ptr/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/static_assert/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/system/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/throw_exception/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/tuple/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_traits/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/unordered/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/utility/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/variant2/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/winapi/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/tokenizer/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/lexical_cast/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/algorithm/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/nowide/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/optional/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/date_time/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/range/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/iterator/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/mpl/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/concept_check/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/numeric_conversion/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/array/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/bind/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/function/include",
+					"$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_index/include",
+					"$(SRCROOT)/../RHVoice/external/libs/sonic",
+				);
 				INFOPLIST_FILE = RHVoiceEngine/Info.plist;
-				INSTALL_PATH = "@rpath/Frameworks";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(SRCROOT)/RHVoiceEngine/src";
-				OTHER_LDFLAGS = "$(inherited) -lRHVoice";
-				PRODUCT_BUNDLE_IDENTIFIER = "$(bundleIdPrefix).RHVoiceFramework";
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.RHVoiceFramework;
+				PRODUCT_MODULE_NAME = RHVoiceFramework;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
 			};

@@ -1,4 +1,3 @@
-
 name: RHVoiceSpeechProject
 options:
   bundleIdPrefix: com.yourcompany # Замените на ваш префикс Bundle ID
@@ -11,53 +10,102 @@ targets:
     type: framework
     platform: iOS
     sources:
-      - path: RHVoiceEngine/src
-        excludes:
-          - RHVoiceWrapper.mm
-      - path: RHVoiceEngine/include
-        type: file
-        buildPhase: headers
-        public: true
       - path: RHVoiceEngine/src/RHVoiceWrapper.mm
-        type: file
         compilerFlags: -x objective-c++
-    scheme:
-      build:
-        targets:
-          RHVoiceFramework: all
+      - path: ../RHVoice/src/core
+        glob: "**/*.{cpp,c,h,hpp}"
+        excludes:
+          - "CMakeLists.txt"
+          - "**/userdict_parser.c"
+          - "**/unidata.cpp"
+          - "**/emoji_data.cpp"
+      - path: ../RHVoice/src/lib
+        glob: "**/*.{cpp,c,h,hpp}"
+        excludes: ["CMakeLists.txt"]
+      - path: ../RHVoice/src/hts_engine
+        glob: "**/*.{c,h}"
+        excludes: ["CMakeLists.txt"]
+      - path: ../RHVoice/src/third-party/utf8
+        glob: "**/*.h"
+      - path: ../RHVoice/src/third-party/rapidxml
+        glob: "**/*.hpp"
+      - path: ../RHVoice/external/libs/sonic
+        excludes: ["spectrogram.c"]
+        glob: "**/*.c"
+    publicHeaders: RHVoiceFramework/Headers
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: $(bundleIdPrefix).RHVoiceFramework
-        SWIFT_VERSION: 5
-        CURRENT_PROJECT_VERSION: 1
-        VERSIONING_SYSTEM: "apple-generic"
-        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/include $(SRCROOT)/RHVoiceEngine/src/third-party"
-        LIBRARY_SEARCH_PATHS: "$(inherited) $(SRCROOT)/RHVoiceEngine/src"
-        OTHER_LDFLAGS: "$(inherited) -lRHVoice"
+        INFOPLIST_FILE: RHVoiceEngine/Info.plist
+        DEFINES_MODULE: YES
+        PRODUCT_MODULE_NAME: RHVoiceFramework
+        EXCLUDED_ARCHS[sdk=iphonesimulator*]: arm64
         CLANG_CXX_LANGUAGE_STANDARD: "c++14"
         CLANG_CXX_LIBRARY: "libc++"
-        INSTALL_PATH: "@rpath/Frameworks"
-        INFOPLIST_FILE: RHVoiceEngine/Info.plist
-
+        HEADER_SEARCH_PATHS:
+          - "$(SRCROOT)/../RHVoice/src/include"
+          - "$(SRCROOT)/RHVoiceEngine/include"
+          - "$(SRCROOT)/../RHVoice/src/third-party/utf8"
+          - "$(SRCROOT)/../RHVoice/src/third-party/concurrentqueue"
+          - "$(SRCROOT)/../RHVoice/src/third-party/date/include"
+          - "$(SRCROOT)/../RHVoice/src/third-party/expected/include"
+          - "$(SRCROOT)/../RHVoice/src/third-party/optional/include"
+          - "$(SRCROOT)/../RHVoice/src/third-party/pico/lang"
+          - "$(SRCROOT)/../RHVoice/src/third-party/pico/tts/lib"
+          - "$(SRCROOT)/../RHVoice/src/third-party/rapidxml"
+          - "$(SRCROOT)/../RHVoice/src/third-party/spdlog/include"
+          - "$(SRCROOT)/../RHVoice/src/third-party/variant/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/align/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/assert/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/config/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/container/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/container_hash/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/core/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/detail/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/exception/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/integer/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/interprocess/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/intrusive/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/io/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/json/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/move/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/mp11/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/predef/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/preprocessor/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/smart_ptr/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/static_assert/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/system/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/throw_exception/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/tuple/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_traits/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/unordered/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/utility/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/variant2/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/winapi/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/tokenizer/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/lexical_cast/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/algorithm/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/nowide/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/optional/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/date_time/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/range/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/iterator/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/mpl/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/concept_check/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/numeric_conversion/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/array/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/bind/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/function/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_index/include"
+          - "$(SRCROOT)/../RHVoice/external/libs/sonic"
     postbuildScripts:
-      - script: |
-          # Create Resources directory inside the framework
-          mkdir -p "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources"
-
-          # Copy models using a relative path from the project root
-          cp -R "${SRCROOT}/RHVoiceModels" "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/"
-
-          # Copy config using a relative path
-          cp -R "${SRCROOT}/../RHVoice/config" "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/Resources/"
-
-          # Ad-hoc sign the dylib after copying
-          codesign --force --sign - "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/libRHVoice.dylib"
-
-          # Remove license file to prevent signing issues
-          rm -f "${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}/license.txt"
-        name: Copy RHVoice Resources
-
-
+      - name: Copy RHVoice Resources
+        script: |
+          mkdir -p "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources"
+          cp -R "${SRCROOT}/RHVoiceModels" "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/"
+          cp -R "${SRCROOT}/../RHVoice/config" "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/"
+          touch "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/.copied"
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/RHVoiceFramework.framework/Resources/.copied
 
   RHVoiceApp:
     type: application
@@ -109,8 +157,6 @@ targets:
     dependencies:
       - target: RHVoiceFramework
         embed: true # Встраиваем фреймворк в Extension
-
-
 
 fileGroups:
   - RHVoiceModels # Добавляем группу для голосовых моделей
