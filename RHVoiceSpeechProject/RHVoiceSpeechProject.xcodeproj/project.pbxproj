@@ -59,7 +59,6 @@
 		7AE773009BA018394C3A1FD5 /* license.txt in Resources */ = {isa = PBXBuildFile; fileRef = 8F11FA73D559020F68047E31 /* license.txt */; };
 		7C08DB5EE8BA320205492C1A /* userdict.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 4E62C2AC1882E94765D64CD7 /* userdict.cpp */; };
 		7C735449E978F3C45543D54E /* rapidxml_utils.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 8C13995E6244FB19BA4203AA /* rapidxml_utils.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
-		7E53F7938200048DE65FA7F0 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 67072C7785BB2F3BC2C96519 /* main.c */; };
 		800B10765FBB389188C74895 /* str_hts_engine_impl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A44FEEB1D01D83EB1EDA4F2D /* str_hts_engine_impl.cpp */; };
 		80F60032510BEB99C56DF7E4 /* language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 6BE3DFE1B2BDAD2F97134E67 /* language.cpp */; };
 		824BFB2A7DE7EE0B36AA3A8B /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = D642F73AA4AD82BF3DBDEB53 /* utils.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -272,7 +271,6 @@
 		634A7CD541A232FCC9402475 /* hts_labeller.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_labeller.cpp; sourceTree = "<group>"; };
 		63A87BFC790DD982ACE42C90 /* data_only_language.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = data_only_language.cpp; sourceTree = "<group>"; };
 		6505FACB5E8D03C78A513643 /* bap.win1 */ = {isa = PBXFileReference; path = bap.win1; sourceTree = "<group>"; };
-		67072C7785BB2F3BC2C96519 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		673E7203A5F7B1D7392B5E81 /* Readme-ua.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Readme-ua.txt"; sourceTree = "<group>"; };
 		68DA27397053406F250BB51A /* libsonic0.install */ = {isa = PBXFileReference; path = libsonic0.install; sourceTree = "<group>"; };
 		69B98BE24A62E75BB47A0D6D /* HTS_pstream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_pstream.c; sourceTree = "<group>"; };
@@ -508,7 +506,6 @@
 			children = (
 				E1F4906C978DCCD7CC50ABB6 /* .gitignore */,
 				B73677EB62E5337EB60388C5 /* COPYING */,
-				67072C7785BB2F3BC2C96519 /* main.c */,
 				EDAD19832E7C25DE79732499 /* Main.java */,
 				5EA96CC30D8979D741938B83 /* Makefile */,
 				6B50FB788904939BCE8BBA0F /* mkorig */,
@@ -1150,10 +1147,10 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C535D55992A8182870B934A1 /* Build configuration list for PBXNativeTarget "RHVoiceFramework" */;
 			buildPhases = (
+				ACFD761293AF65D84CFA5DA5 /* Copy RHVoice Resources */,
 				43B282726BF21514EDDB3288 /* Headers */,
 				19C170784906CE34A6A1E6CE /* Sources */,
 				C83D35F01911653FE8F0E7F6 /* Resources */,
-				ACFD761293AF65D84CFA5DA5 /* Copy RHVoice Resources */,
 			);
 			buildRules = (
 			);
@@ -1243,11 +1240,10 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/RHVoiceFramework.framework/Resources/.copied",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "mkdir -p \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources\"\ncp -R \"${SRCROOT}/RHVoiceModels\" \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/\"\ncp -R \"${SRCROOT}/../RHVoice/config\" \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/\"\ntouch \"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/.copied\"\n";
+			shellScript = "echo \"Starting resource copy...\"\nmkdir -p \"${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources\"\n\nif [ -d \"${SRCROOT}/RHVoiceModels\" ]; then\n  echo \"Copying RHVoiceModels...\"\n  cp -R \"${SRCROOT}/RHVoiceModels\" \"${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/\"\nelse\n  echo \"Warning: RHVoiceModels not found at ${SRCROOT}/RHVoiceModels\"\nfi\n\nif [ -d \"${SRCROOT}/../RHVoice/config\" ]; then\n  echo \"Copying config...\"\n  cp -R \"${SRCROOT}/../RHVoice/config\" \"${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/\"\nelse\n  echo \"Warning: config not found at ${SRCROOT}/../RHVoice/config\"\nfi\n\ntouch \"${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/.copied\"\necho \"Resource copy completed\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1294,7 +1290,6 @@
 				CB62E8ABEC3D71F6DB923D05 /* limiter.cpp in Sources */,
 				382A7F3673571A44A1961DAC /* lts.cpp in Sources */,
 				17AB94AC924B905766543152 /* macedonian.cpp in Sources */,
-				7E53F7938200048DE65FA7F0 /* main.c in Sources */,
 				54DC41E53E1905A4ED66FB8D /* model_answer_cache.cpp in Sources */,
 				4448ECB82FC515EA4DBEEFEE /* params.cpp in Sources */,
 				F0F1621CE11E42BE012F8732 /* path.cpp in Sources */,

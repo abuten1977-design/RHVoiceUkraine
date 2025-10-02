@@ -1,6 +1,6 @@
 name: RHVoiceSpeechProject
 options:
-  bundleIdPrefix: com.yourcompany # Замените на ваш префикс Bundle ID
+  bundleIdPrefix: com.yourcompany
   deploymentTarget:
     iOS: "17.0"
   createIntermediateGroups: true
@@ -30,7 +30,7 @@ targets:
       - path: ../RHVoice/src/third-party/rapidxml
         glob: "**/*.hpp"
       - path: ../RHVoice/external/libs/sonic
-        excludes: ["spectrogram.c"]
+        excludes: ["spectrogram.c", "main.c"]
         glob: "**/*.c"
     publicHeaders: RHVoiceFramework/Headers
     settings:
@@ -97,15 +97,28 @@ targets:
           - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/function/include"
           - "$(SRCROOT)/../RHVoice/external/libs/boost/libs/type_index/include"
           - "$(SRCROOT)/../RHVoice/external/libs/sonic"
-    postbuildScripts:
+    prebuildScripts:
       - name: Copy RHVoice Resources
         script: |
-          mkdir -p "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources"
-          cp -R "${SRCROOT}/RHVoiceModels" "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/"
-          cp -R "${SRCROOT}/../RHVoice/config" "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/"
-          touch "${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RHVoiceFramework.framework/Resources/.copied"
-        outputFiles:
-          - $(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/RHVoiceFramework.framework/Resources/.copied
+          echo "Starting resource copy..."
+          mkdir -p "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources"
+          
+          if [ -d "${SRCROOT}/RHVoiceModels" ]; then
+            echo "Copying RHVoiceModels..."
+            cp -R "${SRCROOT}/RHVoiceModels" "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/"
+          else
+            echo "Warning: RHVoiceModels not found at ${SRCROOT}/RHVoiceModels"
+          fi
+          
+          if [ -d "${SRCROOT}/../RHVoice/config" ]; then
+            echo "Copying config..."
+            cp -R "${SRCROOT}/../RHVoice/config" "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/"
+          else
+            echo "Warning: config not found at ${SRCROOT}/../RHVoice/config"
+          fi
+          
+          touch "${BUILT_PRODUCTS_DIR}/RHVoiceFramework.framework/Resources/.copied"
+          echo "Resource copy completed"
 
   RHVoiceApp:
     type: application
@@ -128,7 +141,7 @@ targets:
         INFOPLIST_FILE: RHVoiceApp/Info.plist
     dependencies:
       - target: RHVoiceFramework
-        embed: true # Встраиваем фреймворк в приложение
+        embed: true
 
   RHVoiceSpeechExtension:
     type: app-extension
@@ -156,7 +169,7 @@ targets:
         CLANG_CXX_LIBRARY: "libc++"
     dependencies:
       - target: RHVoiceFramework
-        embed: true # Встраиваем фреймворк в Extension
+        embed: true
 
 fileGroups:
-  - RHVoiceModels # Добавляем группу для голосовых моделей
+  - RHVoiceModels
