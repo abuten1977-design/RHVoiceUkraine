@@ -28,7 +28,7 @@ include(FindPkgConfig)
 include(GNUInstallDirs)
 include(CPackComponent)
 include(Hardening)
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+if(FALSE) # Disabled Git versioning
     include(VersionFromGit)
     getVersionFromGit("RHVOICE" "1.2.2")
 endif()

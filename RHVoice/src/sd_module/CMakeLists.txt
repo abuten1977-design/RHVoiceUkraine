@@ -23,7 +23,7 @@ target_link_libraries(sd_rhvoice "RHVoice_core" "RHVoice_audio" "${SPEECHD_LIBRA
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	harden(sd_rhvoice)
 endif()
-add_sanitizers(sd_rhvoice)
+# add_sanitizers(sd_rhvoice)
 
 pkg_get_variable(modulebindir ${SPEECHD_MODULE_NAME} modulebindir)
 if (NOT modulebindir)

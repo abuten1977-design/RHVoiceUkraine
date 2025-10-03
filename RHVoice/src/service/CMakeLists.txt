@@ -24,7 +24,7 @@ target_link_libraries("RHVoice-service" "RHVoice_core" "${LIBGIOMM_LIBRARIES}")
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	harden("RHVoice-service")
 endif()
-add_sanitizers("RHVoice-service")
+# add_sanitizers("RHVoice-service")
 
 install(TARGETS "RHVoice-service"
 	RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"

@@ -57,7 +57,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	harden("RHVoice_core")
 endif()
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-	add_sanitizers("RHVoice_core")
+	# add_sanitizers("RHVoice_core")
 endif()
 
 cpack_add_component(core

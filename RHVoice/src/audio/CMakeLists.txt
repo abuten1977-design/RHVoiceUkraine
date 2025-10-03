@@ -44,7 +44,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif()
 target_link_libraries(RHVoice_audio RHVoice_core)
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-	add_sanitizers("RHVoice_audio")
+	# add_sanitizers("RHVoice_audio")
 endif()
 target_include_directories(RHVoice_audio PRIVATE "${INCLUDE_DIR}")
 

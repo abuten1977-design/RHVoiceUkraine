@@ -21,7 +21,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	harden("RHVoice-test")
 endif()
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-	add_sanitizers("RHVoice-test")
+	# add_sanitizers("RHVoice-test")
 endif()
 
 if(WITH_CLI11)

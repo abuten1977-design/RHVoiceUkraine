@@ -41,7 +41,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	harden(libhts_engine)
 endif()
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
-	add_sanitizers(libhts_engine)
+	# add_sanitizers(libhts_engine)
 endif()
 set_target_properties("libhts_engine" PROPERTIES PREFIX "")
 

@@ -1,0 +1,156 @@
+name: SimpleRHVoiceTest
+options:
+  bundleIdPrefix: com.test
+  deploymentTarget:
+    iOS: 17.0
+targets:
+  SimpleRHVoiceTest:
+    type: application
+    platform: iOS
+    sources:
+      - simple_test_app.m
+      - RHVoiceEngine/src/RHVoiceWrapper.mm
+      - path: ../RHVoice/src
+        excludes:
+          - "**/*.cpp"
+          - "**/*.c"
+        includes:
+          - "core/*.cpp"
+          - "audio/*.cpp"
+          - "third-party/sonic/*.c"
+    settings:
+      HEADER_SEARCH_PATHS:
+        - ../RHVoice/src/include
+        - RHVoiceEngine/include
+        - ../RHVoice/src/third-party/utf8
+        - ../RHVoice/src/third-party/concurrentqueue
+        - ../RHVoice/src/third-party/date/include
+        - ../RHVoice/src/third-party/expected/include
+        - ../RHVoice/src/third-party/optional/include
+        - ../RHVoice/src/third-party/pico/lang
+        - ../RHVoice/src/third-party/pico/tts/lib
+        - ../RHVoice/src/third-party/rapidxml
+        - ../RHVoice/src/third-party/spdlog/include
+        - ../RHVoice/src/third-party/variant/include
+        - ../RHVoice/external/libs/boost/libs/align/include
+        - ../RHVoice/external/libs/boost/libs/assert/include
+        - ../RHVoice/external/libs/boost/libs/config/include
+        - ../RHVoice/external/libs/boost/libs/container/include
+        - ../RHVoice/external/libs/boost/libs/container_hash/include
+        - ../RHVoice/external/libs/boost/libs/core/include
+        - ../RHVoice/external/libs/boost/libs/detail/include
+        - ../RHVoice/external/libs/boost/libs/exception/include
+        - ../RHVoice/external/libs/boost/libs/integer/include
+        - ../RHVoice/external/libs/boost/libs/interprocess/include
+        - ../RHVoice/external/libs/boost/libs/intrusive/include
+        - ../RHVoice/external/libs/boost/libs/io/include
+        - ../RHVoice/external/libs/boost/libs/json/include
+        - ../RHVoice/external/libs/boost/libs/move/include
+        - ../RHVoice/external/libs/boost/libs/mp11/include
+        - ../RHVoice/external/libs/boost/libs/predef/include
+        - ../RHVoice/external/libs/boost/libs/preprocessor/include
+        - ../RHVoice/external/libs/boost/libs/smart_ptr/include
+        - ../RHVoice/external/libs/boost/libs/static_assert/include
+        - ../RHVoice/external/libs/boost/libs/system/include
+        - ../RHVoice/external/libs/boost/libs/throw_exception/include
+        - ../RHVoice/external/libs/boost/libs/tuple/include
+        - ../RHVoice/external/libs/boost/libs/type_traits/include
+        - ../RHVoice/external/libs/boost/libs/unordered/include
+        - ../RHVoice/external/libs/boost/libs/utility/include
+        - ../RHVoice/external/libs/boost/libs/variant2/include
+        - ../RHVoice/external/libs/boost/libs/winapi/include
+        - ../RHVoice/external/libs/boost/libs/tokenizer/include
+        - ../RHVoice/external/libs/boost/libs/lexical_cast/include
+        - ../RHVoice/external/libs/boost/libs/algorithm/include
+        - ../RHVoice/external/libs/boost/libs/nowide/include
+        - ../RHVoice/external/libs/boost/libs/optional/include
+        - ../RHVoice/external/libs/boost/libs/date_time/include
+        - ../RHVoice/external/libs/boost/libs/range/include
+        - ../RHVoice/external/libs/boost/libs/iterator/include
+        - ../RHVoice/external/libs/boost/libs/mpl/include
+        - ../RHVoice/external/libs/boost/libs/concept_check/include
+        - ../RHVoice/external/libs/boost/libs/numeric_conversion/include
+        - ../RHVoice/external/libs/boost/libs/array/include
+        - ../RHVoice/external/libs/boost/libs/bind/include
+        - ../RHVoice/external/libs/boost/libs/function/include
+        - ../RHVoice/external/libs/boost/libs/type_index/include
+        - ../RHVoice/external/libs/sonic
+      GCC_PREPROCESSOR_DEFINITIONS:
+        - DEBUG=1
+        - __GCC_HAVE_DWARF2_CFI_ASM=1
+      CLANG_CXX_LANGUAGE_STANDARD: c++17
+      CLANG_CXX_LIBRARY: libc++
+      GCC_C_LANGUAGE_STANDARD: c11
+      ENABLE_BITCODE: NO
+      VALID_ARCHS: x86_64
+      ARCHS: x86_64
+      ONLY_ACTIVE_ARCH: YES
+      COPY_PHASE_STRIP: NO
+      DEBUG_INFORMATION_FORMAT: dwarf
+      GCC_DYNAMIC_NO_PIC: NO
+      GCC_NO_COMMON_BLOCKS: YES
+      GCC_OPTIMIZATION_LEVEL: 0
+      GCC_WARN_64_TO_32_BIT_CONVERSION: YES
+      GCC_WARN_ABOUT_RETURN_TYPE: YES_ERROR
+      GCC_WARN_UNDECLARED_SELECTOR: YES
+      GCC_WARN_UNINITIALIZED_AUTOS: YES_AGGRESSIVE
+      GCC_WARN_UNUSED_FUNCTION: YES
+      GCC_WARN_UNUSED_VARIABLE: YES
+      CLANG_ANALYZER_NONNULL: YES
+      CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION: YES_AGGRESSIVE
+      CLANG_CXX_LANGUAGE_STANDARD: c++17
+      CLANG_ENABLE_MODULES: YES
+      CLANG_ENABLE_OBJC_ARC: YES
+      CLANG_ENABLE_OBJC_WEAK: YES
+      CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING: YES
+      CLANG_WARN_BOOL_CONVERSION: YES
+      CLANG_WARN_COMMA: YES
+      CLANG_WARN_CONSTANT_CONVERSION: YES
+      CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS: YES
+      CLANG_WARN_DIRECT_OBJC_ISA_USAGE: YES_ERROR
+      CLANG_WARN_DOCUMENTATION_COMMENTS: YES
+      CLANG_WARN_EMPTY_BODY: YES
+      CLANG_WARN_ENUM_CONVERSION: YES
+      CLANG_WARN_INFINITE_RECURSION: YES
+      CLANG_WARN_INT_CONVERSION: YES
+      CLANG_WARN_NON_LITERAL_NULL_CONVERSION: YES
+      CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF: YES
+      CLANG_WARN_OBJC_LITERAL_CONVERSION: YES
+      CLANG_WARN_OBJC_ROOT_CLASS: YES_ERROR
+      CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER: YES
+      CLANG_WARN_RANGE_LOOP_ANALYSIS: YES
+      CLANG_WARN_STRICT_PROTOTYPES: YES
+      CLANG_WARN_SUSPICIOUS_MOVE: YES
+      CLANG_WARN_UNGUARDED_AVAILABILITY: YES_AGGRESSIVE
+      CLANG_WARN_UNREACHABLE_CODE: YES
+      MTL_ENABLE_DEBUG_INFO: INCLUDE_SOURCE
+      MTL_FAST_MATH: YES
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+    dependencies:
+      - target: RHVoiceModels
+        embed: false
+    info:
+      path: SimpleTest-Info.plist
+      properties:
+        CFBundleDisplayName: SimpleRHVoiceTest
+        CFBundleIdentifier: com.test.SimpleRHVoiceTest
+        CFBundleName: SimpleRHVoiceTest
+        CFBundleVersion: "1"
+        CFBundleShortVersionString: "1.0"
+        LSRequiresIPhoneOS: true
+        UIDeviceFamily: [1, 2]
+        UISupportedInterfaceOrientations: 
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UILaunchStoryboardName: LaunchScreen
+        UIMainStoryboardFile: Main
+        UIRequiredDeviceCapabilities: [armv7]
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true

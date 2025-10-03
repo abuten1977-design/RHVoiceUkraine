@@ -22,14 +22,14 @@ target_link_libraries("RHVoice-client" PRIVATE "RHVoice_core" "${DBUS_LIBRARIES}
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	harden("RHVoice-client")
 endif()
-add_sanitizers("RHVoice-client")
+# add_sanitizers("RHVoice-client")
 target_compile_definitions("RHVoice-client" PRIVATE "-DVERSION=\"${VERSION}\"")
 
 #add_executable("RHVoice" "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 #target_link_libraries("RHVoice" "RHVoice_core")
 #target_compile_definitions(RHVoice PRIVATE "-DPACKAGE=\"RHVoice\"")
 #harden("RHVoice")
-#add_sanitizers("RHVoice")
+## add_sanitizers("RHVoice")
 
 cpack_add_component(client
 	DISPLAY_NAME "RHVoice D-Bus service client"
