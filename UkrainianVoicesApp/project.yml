@@ -23,6 +23,8 @@ targets:
         DEVELOPMENT_TEAM: ""
     dependencies:
       - target: UkrainianVoicesExtension
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
     
   UkrainianVoicesExtension:
     type: framework
@@ -39,3 +41,7 @@ targets:
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+      - sdk: AudioToolbox.framework

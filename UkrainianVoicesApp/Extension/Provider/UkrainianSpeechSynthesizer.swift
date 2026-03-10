@@ -6,11 +6,11 @@
 //
 
 import AVFoundation
-import Foundation
+import AVFAudio
 
 @available(iOS 16.0, *)
 @objc(UkrainianSpeechSynthesizer)
-public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudioUnit {
+public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     
     // MARK: - Properties
     
@@ -24,15 +24,16 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
     
     // MARK: - Initialization
     
-    public override init() {
+    public override init(componentDescription: AudioComponentDescription,
+                        options: AudioComponentInstantiationOptions = []) throws {
         self.rhvoiceEngine = RHVoiceEngine()
-        super.init()
+        try super.init(componentDescription: componentDescription, options: options)
         NSLog("✅ UkrainianSpeechSynthesizer initialized with REAL RHVoice!")
     }
     
     // MARK: - AVSpeechSynthesisProviderAudioUnit
     
-    public var speechVoices: [AVSpeechSynthesisProviderVoice] {
+    public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
         return [
             AVSpeechSynthesisProviderVoice(
                 name: "Anatol",
@@ -61,7 +62,7 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
         ]
     }
     
-    public func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
+    public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
         currentRequest = request
         
         NSLog("🎤 Synthesis request received")
@@ -70,10 +71,10 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
         synthesisQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Параметри
-            let rate = Double(request.rate)
-            let volume = Double(request.volume)
-            let pitch = Double(request.pitch)
+            // Параметри (використовуємо дефолтні значення, бо API не надає їх напряму)
+            let rate = 1.0
+            let volume = 1.0
+            let pitch = 1.0
             
             // Ім'я голосу
             let voiceIdentifier = request.voice.identifier
@@ -82,7 +83,7 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
             // Текст
             let text = request.ssmlRepresentation
             
-            NSLog("🗣️ Synthesizing: voice=\(voiceName), rate=\(rate), volume=\(volume), pitch=\(pitch)")
+            NSLog("🗣️ Synthesizing: voice=\(voiceName)")
             NSLog("📝 Text: \(text.prefix(50))...")
             
             // РЕАЛЬНИЙ синтез через RHVoice!
@@ -103,14 +104,14 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
         }
     }
     
-    public func cancelSpeechRequest() {
+    public override func cancelSpeechRequest() {
         NSLog("🛑 Synthesis cancelled")
         currentRequest = nil
         audioBuffer = nil
         framePosition = 0
     }
     
-    // MARK: - Render Block
+    // MARK: - AUAudioUnit Render
     
     public override var internalRenderBlock: AUInternalRenderBlock {
         return { [weak self] (
@@ -125,6 +126,13 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
             guard let self = self else { return kAudioUnitErr_NoConnection }
             
             guard let buffer = self.audioBuffer else {
+                // Тиша, якщо немає буфера
+                let ablPointer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
+                for bufferIndex in 0..<ablPointer.count {
+                    if let targetBuffer = ablPointer[bufferIndex].mData {
+                        memset(targetBuffer, 0, Int(ablPointer[bufferIndex].mDataByteSize))
+                    }
+                }
                 return noErr
             }
             
@@ -136,7 +144,7 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
                 let targetBufferPointer = targetBuffer.assumingMemoryBound(to: Float.self)
                 let sourceBufferPointer = buffer.floatChannelData![bufferIndex]
                 
-                var framesToCopy = min(
+                let framesToCopy = min(
                     Int(frameCount),
                     Int(buffer.frameLength) - Int(self.framePosition)
                 )
