@@ -28,8 +28,8 @@ targets:
     type: framework
     platform: iOS
     sources:
-      - path: Extension/Provider
-      - path: Extension/Bridge
+      - Extension/Provider
+      - Extension/Bridge
     resources:
       - Extension/Resources/Voices
     settings:
@@ -38,3 +38,4 @@ targets:
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
