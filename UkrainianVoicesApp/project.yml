@@ -1,0 +1,39 @@
+name: UkrainianVoices
+options:
+  bundleIdPrefix: com.rhvoice.ukrainian
+  deploymentTarget:
+    iOS: "16.0"
+
+targets:
+  UkrainianVoicesApp:
+    type: application
+    platform: iOS
+    sources:
+      - App
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukrainian.app
+      INFOPLIST_FILE: App/Info.plist
+    dependencies:
+      - target: UkrainianVoicesExtension
+        embed: true
+
+  UkrainianVoicesExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Extension/Provider
+      - Extension/Bridge
+    resources:
+      - Extension/Resources
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukrainian.app.extension
+      INFOPLIST_FILE: Extension/Info.plist
+      NSExtensionPointIdentifier: com.apple.speech-synthesis-provider
+    
+  UkrainianVoicesTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: UkrainianVoicesExtension

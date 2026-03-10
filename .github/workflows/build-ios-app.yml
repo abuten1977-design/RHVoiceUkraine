@@ -1,0 +1,163 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'UkrainianVoicesApp/**'
+      - '.github/workflows/build-ios-app.yml'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      
+      - name: Run Swift Tests
+        run: |
+          cd UkrainianVoicesApp
+          swift test --enable-code-coverage
+      
+      - name: Generate Coverage
+        run: |
+          cd UkrainianVoicesApp
+          xcrun llvm-cov export \
+            .build/debug/UkrainianVoicesPackageTests.xctest/Contents/MacOS/UkrainianVoicesPackageTests \
+            -instr-profile .build/debug/codecov/default.profdata \
+            -format="lcov" > coverage.lcov || true
+
+  build-ipa:
+    name: Build IPA for iPhone
+    runs-on: macos-latest
+    needs: test
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      
+      - name: Install Dependencies
+        run: |
+          brew install cmake boost
+      
+      - name: Build RHVoice Libraries (arm64)
+        run: |
+          cd RHVoice
+          mkdir -p build_ios_device
+          cd build_ios_device
+          cmake .. \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
+          cmake --build . --config Release
+      
+      - name: Copy Libraries to App
+        run: |
+          mkdir -p UkrainianVoicesApp/Extension/Libraries
+          cp RHVoice/build_ios_device/src/lib/libRHVoice.dylib \
+             RHVoice/build_ios_device/src/core/libRHVoice_core.dylib \
+             RHVoice/build_ios_device/src/audio/libRHVoice_audio.dylib \
+             UkrainianVoicesApp/Extension/Libraries/
+      
+      - name: Create Swift Package
+        run: |
+          cd UkrainianVoicesApp
+          # Используем Package.swift из Extension
+          cp Extension/Package.swift .
+      
+      - name: Build Swift Package
+        run: |
+          cd UkrainianVoicesApp
+          swift build -c release
+      
+      - name: Create App Bundle Structure
+        run: |
+          mkdir -p build/UkrainianVoices.app
+          
+          # Копируем исполняемый файл
+          cp UkrainianVoicesApp/.build/release/UkrainianVoicesApp \
+             build/UkrainianVoices.app/UkrainianVoices || true
+          
+          # Копируем Info.plist
+          cp UkrainianVoicesApp/App/Info.plist build/UkrainianVoices.app/
+          
+          # Копируем ресурсы
+          cp -r UkrainianVoicesApp/Extension/Resources build/UkrainianVoices.app/
+          
+          # Копируем библиотеки
+          mkdir -p build/UkrainianVoices.app/Frameworks
+          cp UkrainianVoicesApp/Extension/Libraries/*.dylib \
+             build/UkrainianVoices.app/Frameworks/ || true
+      
+      - name: Create IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/UkrainianVoices.app build/Payload/
+          cd build
+          zip -r UkrainianVoices.ipa Payload
+          cd ..
+          
+          # Информация о файле
+          ls -lh build/UkrainianVoices.ipa
+          file build/UkrainianVoices.ipa
+      
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: UkrainianVoices-IPA
+          path: build/UkrainianVoices.ipa
+          retention-days: 30
+      
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: UkrainianVoices-App
+          path: build/UkrainianVoices.app
+          retention-days: 7
+
+  summary:
+    name: Build Summary
+    runs-on: macos-latest
+    needs: [test, build-ipa]
+    
+    steps:
+      - name: Create Summary
+        run: |
+          echo "## ✅ iOS App Build Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📦 Artifacts:" >> $GITHUB_STEP_SUMMARY
+          echo "- **UkrainianVoices-IPA** - Ready for iPhone installation" >> $GITHUB_STEP_SUMMARY
+          echo "- **UkrainianVoices-App** - App bundle" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📱 Installation:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Download UkrainianVoices.ipa" >> $GITHUB_STEP_SUMMARY
+          echo "2. Install via Xcode or iTunes" >> $GITHUB_STEP_SUMMARY
+          echo "3. Trust developer certificate on iPhone" >> $GITHUB_STEP_SUMMARY
+          echo "4. Open Settings → Accessibility → VoiceOver → Speech → Voice → Ukrainian" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🎤 Available Voices:" >> $GITHUB_STEP_SUMMARY
+          echo "- Anatol (male)" >> $GITHUB_STEP_SUMMARY
+          echo "- Natalia (female)" >> $GITHUB_STEP_SUMMARY
+          echo "- Marianna (female)" >> $GITHUB_STEP_SUMMARY
+          echo "- Volodymyr (male)" >> $GITHUB_STEP_SUMMARY
