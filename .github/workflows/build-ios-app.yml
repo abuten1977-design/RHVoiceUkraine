@@ -27,12 +27,12 @@ jobs:
       
       - name: Run Swift Tests
         run: |
-          cd UkrainianVoicesApp
+          cd UkrainianVoicesApp/Extension
           swift test --enable-code-coverage
       
       - name: Generate Coverage
         run: |
-          cd UkrainianVoicesApp
+          cd UkrainianVoicesApp/Extension
           xcrun llvm-cov export \
             .build/debug/UkrainianVoicesPackageTests.xctest/Contents/MacOS/UkrainianVoicesPackageTests \
             -instr-profile .build/debug/codecov/default.profdata \
@@ -54,110 +54,69 @@ jobs:
         with:
           xcode-version: latest-stable
       
-      - name: Install Dependencies
-        run: |
-          brew install cmake boost
-      
-      - name: Build RHVoice Libraries (arm64)
-        run: |
-          cd RHVoice
-          mkdir -p build_ios_device
-          cd build_ios_device
-          cmake .. \
-            -DCMAKE_SYSTEM_NAME=iOS \
-            -DCMAKE_OSX_ARCHITECTURES=arm64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
-          cmake --build . --config Release
-      
-      - name: Copy Libraries to App
-        run: |
-          mkdir -p UkrainianVoicesApp/Extension/Libraries
-          cp RHVoice/build_ios_device/src/lib/libRHVoice.dylib \
-             RHVoice/build_ios_device/src/core/libRHVoice_core.dylib \
-             RHVoice/build_ios_device/src/audio/libRHVoice_audio.dylib \
-             UkrainianVoicesApp/Extension/Libraries/
-      
-      - name: Create Swift Package
+      - name: Create Xcode Project
         run: |
           cd UkrainianVoicesApp
-          # Используем Package.swift из Extension
-          cp Extension/Package.swift .
+          
+          # Create project structure
+          mkdir -p UkrainianVoices.xcodeproj
+          
+          cat > UkrainianVoices.xcodeproj/project.pbxproj << 'PBXPROJ'
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+		A1000001 /* UkrainianVoicesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UkrainianVoicesApp.swift; sourceTree = "<group>"; };
+		A1000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A1000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1000010 /* UkrainianVoices.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UkrainianVoices.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000020 /* App */ = {isa = PBXGroup; children = (A1000001, A1000002, A1000003); path = App; sourceTree = "<group>"; };
+		A1000030 /* Products */ = {isa = PBXGroup; children = (A1000010); name = Products; sourceTree = "<group>"; };
+		A1000040 /* UkrainianVoices */ = {isa = PBXGroup; children = (A1000020, A1000030); sourceTree = "<group>"; };
+		A1AAAAAA /* PBXProject */ = {isa = PBXProject; attributes = {LastSwiftUpdateCheck = 1500; LastUpgradeCheck = 1500; TargetAttributes = {A1000050 = {CreatedOnToolsVersion = 15.0;};};}; buildConfigurationList = A1BBBBBB; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, uk); mainGroup = A1000040; productRefGroup = A1000030; projectDirPath = ""; projectRoot = ""; targets = (A1000050); };
+		A1000050 /* UkrainianVoices */ = {isa = PBXNativeTarget; buildConfigurationList = A1CCCCCC; buildPhases = (A1000060, A1000070, A1000080); buildRules = (); dependencies = (); name = UkrainianVoices; productName = UkrainianVoices; productReference = A1000010; productType = "com.apple.product-type.application"; };
+		A1000060 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A1000061, A1000062); runOnlyForDeploymentPostprocessing = 0; };
+		A1000061 /* UkrainianVoicesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000001; };
+		A1000062 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002; };
+		A1000070 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A1000080 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A1BBBBBB /* Build configuration list for PBXProject */ = {isa = XCConfigurationList; buildConfigurations = (A1DDDDDD, A1EEEEEE); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A1CCCCCC /* Build configuration list for PBXNativeTarget */ = {isa = XCConfigurationList; buildConfigurations = (A1FFFFFF, A1111111); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A1DDDDDD /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ANALYZER_NONNULL = YES; CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; CLANG_ENABLE_OBJC_WEAK = YES; CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES; CLANG_WARN_BOOL_CONVERSION = YES; CLANG_WARN_COMMA = YES; CLANG_WARN_CONSTANT_CONVERSION = YES; CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES; CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR; CLANG_WARN_DOCUMENTATION_COMMENTS = YES; CLANG_WARN_EMPTY_BODY = YES; CLANG_WARN_ENUM_CONVERSION = YES; CLANG_WARN_INFINITE_RECURSION = YES; CLANG_WARN_INT_CONVERSION = YES; CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES; CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES; CLANG_WARN_OBJC_LITERAL_CONVERSION = YES; CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR; CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES; CLANG_WARN_RANGE_LOOP_ANALYSIS = YES; CLANG_WARN_STRICT_PROTOTYPES = YES; CLANG_WARN_SUSPICIOUS_MOVE = YES; CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE; CLANG_WARN_UNREACHABLE_CODE = YES; CLANG_WARN__DUPLICATE_METHOD_MATCH = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = dwarf; ENABLE_STRICT_OBJC_MSGSEND = YES; ENABLE_TESTABILITY = YES; GCC_C_LANGUAGE_STANDARD = gnu11; GCC_DYNAMIC_NO_PIC = NO; GCC_NO_COMMON_BLOCKS = YES; GCC_OPTIMIZATION_LEVEL = 0; GCC_PREPROCESSOR_DEFINITIONS = ("DEBUG=1", "$(inherited)"); GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE; MTL_FAST_MATH = YES; ONLY_ACTIVE_ARCH = YES; SDKROOT = iphoneos; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		A1EEEEEE /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ANALYZER_NONNULL = YES; CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE; CLANG_CXX_LANGUAGE_STANDARD = "gnu++20"; CLANG_ENABLE_MODULES = YES; CLANG_ENABLE_OBJC_ARC = YES; CLANG_ENABLE_OBJC_WEAK = YES; CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES; CLANG_WARN_BOOL_CONVERSION = YES; CLANG_WARN_COMMA = YES; CLANG_WARN_CONSTANT_CONVERSION = YES; CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES; CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR; CLANG_WARN_DOCUMENTATION_COMMENTS = YES; CLANG_WARN_EMPTY_BODY = YES; CLANG_WARN_ENUM_CONVERSION = YES; CLANG_WARN_INFINITE_RECURSION = YES; CLANG_WARN_INT_CONVERSION = YES; CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES; CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES; CLANG_WARN_OBJC_LITERAL_CONVERSION = YES; CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR; CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES; CLANG_WARN_RANGE_LOOP_ANALYSIS = YES; CLANG_WARN_STRICT_PROTOTYPES = YES; CLANG_WARN_SUSPICIOUS_MOVE = YES; CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE; CLANG_WARN_UNREACHABLE_CODE = YES; CLANG_WARN__DUPLICATE_METHOD_MATCH = YES; COPY_PHASE_STRIP = NO; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; ENABLE_NS_ASSERTIONS = NO; ENABLE_STRICT_OBJC_MSGSEND = YES; GCC_C_LANGUAGE_STANDARD = gnu11; GCC_NO_COMMON_BLOCKS = YES; GCC_WARN_64_TO_32_BIT_CONVERSION = YES; GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR; GCC_WARN_UNDECLARED_SELECTOR = YES; GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE; GCC_WARN_UNUSED_FUNCTION = YES; GCC_WARN_UNUSED_VARIABLE = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; MTL_ENABLE_DEBUG_INFO = NO; MTL_FAST_MATH = YES; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; VALIDATE_PRODUCT = YES; }; name = Release; };
+		A1FFFFFF /* Debug */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = App/Info.plist; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks"); MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		A1111111 /* Release */ = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = App/Info.plist; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES; INFOPLIST_KEY_UILaunchScreen_Generation = YES; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"; LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks"); MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_EMIT_LOC_STRINGS = YES; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+	};
+	rootObject = A1AAAAAA;
+}
+PBXPROJ
       
-      - name: Build Swift Package
+      - name: Build App
         run: |
           cd UkrainianVoicesApp
-          swift build -c release
-      
-      - name: Create App Bundle Structure
-        run: |
-          mkdir -p build/UkrainianVoices.app
-          
-          # Копируем исполняемый файл
-          cp UkrainianVoicesApp/.build/release/UkrainianVoicesApp \
-             build/UkrainianVoices.app/UkrainianVoices || true
-          
-          # Копируем Info.plist
-          cp UkrainianVoicesApp/App/Info.plist build/UkrainianVoices.app/
-          
-          # Копируем ресурсы
-          cp -r UkrainianVoicesApp/Extension/Resources build/UkrainianVoices.app/
-          
-          # Копируем библиотеки
-          mkdir -p build/UkrainianVoices.app/Frameworks
-          cp UkrainianVoicesApp/Extension/Libraries/*.dylib \
-             build/UkrainianVoices.app/Frameworks/ || true
+          xcodebuild -project UkrainianVoices.xcodeproj \
+            -scheme UkrainianVoices \
+            -configuration Release \
+            -sdk iphoneos \
+            -arch arm64 \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
       
       - name: Create IPA
         run: |
-          mkdir -p build/Payload
-          cp -r build/UkrainianVoices.app build/Payload/
-          cd build
+          cd UkrainianVoicesApp
+          mkdir -p Payload
+          cp -r build/Release-iphoneos/UkrainianVoices.app Payload/
           zip -r UkrainianVoices.ipa Payload
-          cd ..
-          
-          # Информация о файле
-          ls -lh build/UkrainianVoices.ipa
-          file build/UkrainianVoices.ipa
       
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: UkrainianVoices-IPA
-          path: build/UkrainianVoices.ipa
+          path: UkrainianVoicesApp/UkrainianVoices.ipa
           retention-days: 30
-      
-      - name: Upload App Bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: UkrainianVoices-App
-          path: build/UkrainianVoices.app
-          retention-days: 7
-
-  summary:
-    name: Build Summary
-    runs-on: macos-latest
-    needs: [test, build-ipa]
-    
-    steps:
-      - name: Create Summary
-        run: |
-          echo "## ✅ iOS App Build Successful!" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📦 Artifacts:" >> $GITHUB_STEP_SUMMARY
-          echo "- **UkrainianVoices-IPA** - Ready for iPhone installation" >> $GITHUB_STEP_SUMMARY
-          echo "- **UkrainianVoices-App** - App bundle" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📱 Installation:" >> $GITHUB_STEP_SUMMARY
-          echo "1. Download UkrainianVoices.ipa" >> $GITHUB_STEP_SUMMARY
-          echo "2. Install via Xcode or iTunes" >> $GITHUB_STEP_SUMMARY
-          echo "3. Trust developer certificate on iPhone" >> $GITHUB_STEP_SUMMARY
-          echo "4. Open Settings → Accessibility → VoiceOver → Speech → Voice → Ukrainian" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🎤 Available Voices:" >> $GITHUB_STEP_SUMMARY
-          echo "- Anatol (male)" >> $GITHUB_STEP_SUMMARY
-          echo "- Natalia (female)" >> $GITHUB_STEP_SUMMARY
-          echo "- Marianna (female)" >> $GITHUB_STEP_SUMMARY
-          echo "- Volodymyr (male)" >> $GITHUB_STEP_SUMMARY
