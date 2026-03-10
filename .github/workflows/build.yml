@@ -147,14 +147,23 @@ jobs:
           ONLY_ACTIVE_ARCH=NO \
           clean build
     
+    - name: Copy Voices to .app
+      run: |
+        cd UkrainianVoicesApp
+        echo "📦 Копіюю голоси в .app..."
+        cp -r Extension/Resources/Voices build/Build/Products/Release-iphoneos/UkrainianVoices.app/
+        ls -la build/Build/Products/Release-iphoneos/UkrainianVoices.app/Voices/
+    
     - name: Create IPA
       run: |
         cd UkrainianVoicesApp
         mkdir -p Payload
         cp -r build/Build/Products/Release-iphoneos/UkrainianVoices.app Payload/
         zip -r UkrainianVoices-unsigned.ipa Payload
+        echo "📊 Статистика IPA:"
         ls -lh UkrainianVoices-unsigned.ipa
-        ls -la Payload/UkrainianVoices.app
+        unzip -l UkrainianVoices-unsigned.ipa | grep -c "Voices" || echo "⚠️ Voices не знайдено"
+        unzip -l UkrainianVoices-unsigned.ipa | wc -l
     
     - name: Upload IPA
       uses: actions/upload-artifact@v4
