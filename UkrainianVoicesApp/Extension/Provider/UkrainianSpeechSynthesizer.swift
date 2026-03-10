@@ -22,19 +22,18 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     // РЕАЛЬНИЙ RHVoice engine!
     private let rhvoiceEngine: RHVoiceEngine
     
+    // Голоси
+    private var _speechVoices: [AVSpeechSynthesisProviderVoice] = []
+    
     // MARK: - Initialization
     
     public override init(componentDescription: AudioComponentDescription,
                         options: AudioComponentInstantiationOptions = []) throws {
         self.rhvoiceEngine = RHVoiceEngine()
         try super.init(componentDescription: componentDescription, options: options)
-        NSLog("✅ UkrainianSpeechSynthesizer initialized with REAL RHVoice!")
-    }
-    
-    // MARK: - AVSpeechSynthesisProviderAudioUnit
-    
-    public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        return [
+        
+        // Ініціалізуємо голоси
+        _speechVoices = [
             AVSpeechSynthesisProviderVoice(
                 name: "Anatol",
                 identifier: "com.rhvoice.ukrainian.anatol",
@@ -60,6 +59,15 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
                 supportedLanguages: ["uk-UA"]
             )
         ]
+        
+        NSLog("✅ UkrainianSpeechSynthesizer initialized with REAL RHVoice!")
+    }
+    
+    // MARK: - AVSpeechSynthesisProviderAudioUnit
+    
+    public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
+        get { return _speechVoices }
+        set { _speechVoices = newValue }
     }
     
     public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
