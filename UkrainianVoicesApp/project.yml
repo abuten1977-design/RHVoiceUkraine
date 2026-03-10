@@ -39,6 +39,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
+        INFOPLIST_FILE: Extension/Info.plist
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
