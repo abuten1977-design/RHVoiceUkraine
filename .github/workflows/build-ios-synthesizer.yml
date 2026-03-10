@@ -23,7 +23,7 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.2'
+          xcode-version: latest-stable
       
       - name: Build RHVoice Libraries
         run: |
@@ -80,7 +80,7 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '15.2'
+          xcode-version: latest-stable
       
       - name: Install Dependencies
         run: |
