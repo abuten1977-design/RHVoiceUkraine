@@ -5,7 +5,7 @@ on:
     branches: [ main, master, develop ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:  # Ручной запуск
+  workflow_dispatch:
 
 jobs:
   build-macos:
@@ -29,13 +29,17 @@ jobs:
         cd build_macos
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=OFF
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBOOST_ROOT=$(brew --prefix boost) \
+          -DBoost_INCLUDE_DIR=$(brew --prefix boost)/include
         make -j$(sysctl -n hw.ncpu)
     
     - name: Build macOS Test
       run: |
         cd MacOSTest
-        clang++ -std=c++11 -I../RHVoice/src/include \
+        clang++ -std=c++11 \
+          -I../RHVoice/src/include \
+          -I$(brew --prefix boost)/include \
           minimal_rhvoice_test.cpp \
           ../RHVoice/build_macos/src/lib/libRHVoice.a \
           ../RHVoice/build_macos/src/lib/libRHVoice_core.a \
@@ -80,7 +84,9 @@ jobs:
           -DCMAKE_SYSTEM_NAME=iOS \
           -DCMAKE_OSX_SYSROOT=iphoneos \
           -DCMAKE_OSX_ARCHITECTURES=arm64 \
-          -DBUILD_SHARED_LIBS=OFF
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBOOST_ROOT=$(brew --prefix boost) \
+          -DBoost_INCLUDE_DIR=$(brew --prefix boost)/include
         make -j$(sysctl -n hw.ncpu)
     
     - name: Upload iOS libraries
