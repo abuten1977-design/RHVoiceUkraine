@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-macos:
+  build-macos-test:
     name: Build macOS Test
     runs-on: macos-latest
     
@@ -34,15 +34,9 @@ jobs:
           -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
         make -j$(sysctl -n hw.ncpu)
     
-    - name: List built libraries
-      run: |
-        echo "=== Libraries in build_macos ==="
-        find RHVoice/build_macos -name "*.a" -o -name "*.dylib" | head -20
-    
-    - name: Build macOS Test
+    - name: Run macOS Test
       run: |
         cd MacOSTest
-        # Use .dylib files since .a weren't created
         clang++ -std=c++11 \
           -I../RHVoice/src/include \
           -I$(brew --prefix boost)/include \
@@ -52,12 +46,8 @@ jobs:
           -L../RHVoice/build_macos/src/lib \
           -lRHVoice -lRHVoice_core -lRHVoice_audio \
           -o rhvoice_test
-    
-    - name: Run Test
-      run: |
-        cd MacOSTest
         export DYLD_LIBRARY_PATH=../RHVoice/build_macos/src/lib:../RHVoice/build_macos/src/core:../RHVoice/build_macos/src/audio
-        ./rhvoice_test || echo "Test failed but continuing"
+        ./rhvoice_test || echo "⚠️ Test failed but continuing"
     
     - name: Upload macOS artifacts
       uses: actions/upload-artifact@v4
@@ -68,8 +58,8 @@ jobs:
           MacOSTest/*.wav
         retention-days: 7
 
-  build-ios-device:
-    name: Build iOS Device (arm64)
+  build-ios-libs:
+    name: Build iOS Libraries
     runs-on: macos-latest
     
     steps:
@@ -82,7 +72,7 @@ jobs:
       run: |
         brew install cmake pkg-config boost
     
-    - name: Build for iOS Device
+    - name: Build for iOS Device (arm64)
       run: |
         export BOOST_ROOT=$(brew --prefix boost)
         cd RHVoice
@@ -97,29 +87,83 @@ jobs:
           -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
         make -j$(sysctl -n hw.ncpu)
     
-    - name: List iOS libraries
+    - name: Copy iOS libraries
       run: |
-        echo "=== iOS Libraries ===" 
-        find RHVoice/build_ios_device -name "*.a" -o -name "*.dylib"
+        mkdir -p UkrainianVoicesApp/Extension/Libraries
+        find RHVoice/build_ios_device -name "*.a" -exec cp {} UkrainianVoicesApp/Extension/Libraries/ \;
+        ls -lh UkrainianVoicesApp/Extension/Libraries/
     
     - name: Upload iOS libraries
       uses: actions/upload-artifact@v4
       with:
         name: ios-device-libs
-        path: |
-          RHVoice/build_ios_device/**/*.a
-          RHVoice/build_ios_device/**/*.dylib
+        path: UkrainianVoicesApp/Extension/Libraries/
         retention-days: 7
 
-  report:
-    name: Build Report
-    runs-on: ubuntu-latest
-    needs: [build-macos, build-ios-device]
-    if: always()
+  build-ios-app:
+    name: Build iOS App (.ipa)
+    runs-on: macos-latest
+    needs: build-ios-libs
     
     steps:
-    - name: Report Status
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Install XcodeGen
       run: |
-        echo "Build Summary:"
-        echo "macOS Test: ${{ needs.build-macos.result }}"
-        echo "iOS Device: ${{ needs.build-ios-device.result }}"
+        brew install xcodegen
+    
+    - name: Download iOS libraries
+      uses: actions/download-artifact@v4
+      with:
+        name: ios-device-libs
+        path: UkrainianVoicesApp/Extension/Libraries/
+    
+    - name: Generate Xcode project
+      run: |
+        cd UkrainianVoicesApp
+        xcodegen generate
+        ls -la *.xcodeproj
+    
+    - name: Build iOS App
+      run: |
+        cd UkrainianVoicesApp
+        xcodebuild -project UkrainianVoices.xcodeproj \
+          -scheme UkrainianVoices \
+          -configuration Release \
+          -sdk iphoneos \
+          -arch arm64 \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          ONLY_ACTIVE_ARCH=NO \
+          clean build
+    
+    - name: Create IPA
+      run: |
+        cd UkrainianVoicesApp
+        mkdir -p Payload
+        cp -r build/Release-iphoneos/UkrainianVoices.app Payload/ || \
+        cp -r Build/Products/Release-iphoneos/UkrainianVoices.app Payload/
+        zip -r UkrainianVoices-unsigned.ipa Payload
+        ls -lh UkrainianVoices-unsigned.ipa
+    
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: UkrainianVoices-IPA-Unsigned
+        path: UkrainianVoicesApp/UkrainianVoices-unsigned.ipa
+        retention-days: 30
+    
+    - name: Success
+      run: |
+        echo "✅ iOS App built successfully!"
+        echo "📦 Download artifact: UkrainianVoices-IPA-Unsigned"
+        echo "⚠️ Note: IPA is unsigned - you need to sign it locally"

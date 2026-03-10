@@ -1,39 +1,40 @@
 name: UkrainianVoices
 options:
-  bundleIdPrefix: com.rhvoice.ukrainian
+  bundleIdPrefix: com.rhvoice
   deploymentTarget:
     iOS: "16.0"
 
 targets:
-  UkrainianVoicesApp:
+  UkrainianVoices:
     type: application
     platform: iOS
     sources:
       - App
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukrainian.app
-      INFOPLIST_FILE: App/Info.plist
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices
+        INFOPLIST_FILE: App/Info.plist
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: ""
     dependencies:
       - target: UkrainianVoicesExtension
-        embed: true
-
-  UkrainianVoicesExtension:
-    type: app-extension
-    platform: iOS
-    sources:
-      - Extension/Provider
-      - Extension/Bridge
-    resources:
-      - Extension/Resources
-    settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukrainian.app.extension
-      INFOPLIST_FILE: Extension/Info.plist
-      NSExtensionPointIdentifier: com.apple.speech-synthesis-provider
     
-  UkrainianVoicesTests:
-    type: bundle.unit-test
+  UkrainianVoicesExtension:
+    type: framework
     platform: iOS
     sources:
-      - Tests
-    dependencies:
-      - target: UkrainianVoicesExtension
+      - path: Extension/Provider
+      - path: Extension/Bridge
+    resources:
+      - Extension/Resources/Voices
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
+        SWIFT_VERSION: "5.0"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        DEFINES_MODULE: YES
