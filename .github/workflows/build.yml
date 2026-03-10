@@ -20,7 +20,7 @@ jobs:
     
     - name: Install dependencies
       run: |
-        brew install cmake pkg-config
+        brew install cmake pkg-config boost
     
     - name: Build RHVoice Core
       run: |
@@ -32,22 +32,22 @@ jobs:
           -DBUILD_SHARED_LIBS=OFF
         make -j$(sysctl -n hw.ncpu)
     
-    - name: Build MacOSTest
+    - name: Build macOS Test
       run: |
         cd MacOSTest
-        clang++ -std=c++11 \
-          -I../RHVoice/src/include \
-          -L../RHVoice/build_macos/src/lib \
+        clang++ -std=c++11 -I../RHVoice/src/include \
           minimal_rhvoice_test.cpp \
-          -lRHVoice_core -lRHVoice -lRHVoice_audio \
+          ../RHVoice/build_macos/src/lib/libRHVoice.a \
+          ../RHVoice/build_macos/src/lib/libRHVoice_core.a \
+          ../RHVoice/build_macos/src/lib/libRHVoice_audio.a \
           -o rhvoice_test
     
-    - name: Test RHVoice
+    - name: Run Test
       run: |
         cd MacOSTest
-        ./rhvoice_test || echo "Test completed"
+        ./rhvoice_test || echo "Test failed but continuing"
     
-    - name: Upload macOS build
+    - name: Upload macOS artifacts
       uses: actions/upload-artifact@v4
       with:
         name: macos-test
@@ -68,9 +68,9 @@ jobs:
     
     - name: Install dependencies
       run: |
-        brew install cmake
+        brew install cmake pkg-config boost
     
-    - name: Build RHVoice for iPhone
+    - name: Build for iOS Device
       run: |
         cd RHVoice
         mkdir -p build_ios_device
@@ -90,22 +90,16 @@ jobs:
         path: |
           RHVoice/build_ios_device/src/lib/*.a
         retention-days: 7
-    
-    - name: Show library info
-      run: |
-        echo "📦 Compiled libraries:"
-        ls -lh RHVoice/build_ios_device/src/lib/*.a
 
   report:
     name: Build Report
-    needs: [build-macos, build-ios-device]
     runs-on: ubuntu-latest
+    needs: [build-macos, build-ios-device]
     if: always()
     
     steps:
     - name: Report Status
       run: |
-        echo "## 📊 Build Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ macOS Test: ${{ needs.build-macos.result }}" >> $GITHUB_STEP_SUMMARY
-        echo "- 📱 iOS Device: ${{ needs.build-ios-device.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "Build Summary:"
+        echo "macOS Test: ${{ needs.build-macos.result }}"
+        echo "iOS Device: ${{ needs.build-ios-device.result }}"
