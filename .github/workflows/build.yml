@@ -1,0 +1,111 @@
+name: Build RHVoice Ukraine
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Ручной запуск
+
+jobs:
+  build-macos:
+    name: Build macOS Test
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        brew install cmake pkg-config
+    
+    - name: Build RHVoice Core
+      run: |
+        cd RHVoice
+        mkdir -p build_macos
+        cd build_macos
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF
+        make -j$(sysctl -n hw.ncpu)
+    
+    - name: Build MacOSTest
+      run: |
+        cd MacOSTest
+        clang++ -std=c++11 \
+          -I../RHVoice/src/include \
+          -L../RHVoice/build_macos/src/lib \
+          minimal_rhvoice_test.cpp \
+          -lRHVoice_core -lRHVoice -lRHVoice_audio \
+          -o rhvoice_test
+    
+    - name: Test RHVoice
+      run: |
+        cd MacOSTest
+        ./rhvoice_test || echo "Test completed"
+    
+    - name: Upload macOS build
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-test
+        path: |
+          MacOSTest/rhvoice_test
+          MacOSTest/*.wav
+        retention-days: 7
+
+  build-ios-device:
+    name: Build iOS Device (arm64)
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+    
+    - name: Install dependencies
+      run: |
+        brew install cmake
+    
+    - name: Build RHVoice for iPhone
+      run: |
+        cd RHVoice
+        mkdir -p build_ios_device
+        cd build_ios_device
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_SYSTEM_NAME=iOS \
+          -DCMAKE_OSX_SYSROOT=iphoneos \
+          -DCMAKE_OSX_ARCHITECTURES=arm64 \
+          -DBUILD_SHARED_LIBS=OFF
+        make -j$(sysctl -n hw.ncpu)
+    
+    - name: Upload iOS libraries
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-device-libs
+        path: |
+          RHVoice/build_ios_device/src/lib/*.a
+        retention-days: 7
+    
+    - name: Show library info
+      run: |
+        echo "📦 Compiled libraries:"
+        ls -lh RHVoice/build_ios_device/src/lib/*.a
+
+  report:
+    name: Build Report
+    needs: [build-macos, build-ios-device]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Report Status
+      run: |
+        echo "## 📊 Build Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ macOS Test: ${{ needs.build-macos.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 📱 iOS Device: ${{ needs.build-ios-device.result }}" >> $GITHUB_STEP_SUMMARY

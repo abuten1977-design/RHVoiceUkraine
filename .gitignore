@@ -2,34 +2,61 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
 
 # Xcode
 build/
 *.xcodeproj/project.xcworkspace/
 *.xcodeproj/xcuserdata/
-*.xcworkspace/
-xcuserdata/
+*.xcworkspace/xcuserdata/
 DerivedData/
 *.hmap
 *.ipa
+*.dSYM.zip
+*.dSYM
 
-# Build artifacts
-/build
-/RHVoice/build
-/RHVoice/build_*
-/RHVoice/install
-/test_build
+# CMake Build Directories
+build_*/
+install/
+install_*/
 
-# Log files
+# Compiled Libraries
+*.a
+*.dylib
+*.so
+libs_*/
+
+# Archives
+*.tar.gz
+*.zip
+archived_ipa_files/
+UkrainianReaderProject_Original.tar.gz
+RHVoice_sources.tar.gz
+
+# Test Files
+*.wav
 *.txt
+!CMakeLists.txt
+!README.md
+!*.md
+
+# Temporary Files
+*.bak
+*.tmp
+*~
+
+# IDE
+.vscode/
+.idea/
 
 # Other
 .gemini/
 AudioUnit.framework/
-rhvoice_*.tar.gz
-*.wav
 test_rhvoice_cli
-ios-arm64-device.cmake
-ios-arm64-simulator.cmake
-activate_screen_sharing.sh
-test_rhvoice.cpp
+RHVoiceSynthesizer
+MacTest/
+MorseSynthesizer/
+
+# Keep Important Files
+!.gitignore
+!.github/
