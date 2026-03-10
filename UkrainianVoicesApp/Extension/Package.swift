@@ -26,7 +26,6 @@ let package = Package(
             path: "Bridge",
             publicHeadersPath: ".",
             cxxSettings: [
-                .headerSearchPath("../../RHVoice/src/include"),
                 .define("RHVOICE_STATIC")
             ],
             linkerSettings: [
