@@ -44,7 +44,7 @@ targets:
         DEFINES_MODULE: YES
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
-        OTHER_LDFLAGS: "$(SRCROOT)/Extension/Libraries/libRHVoice.dylib $(SRCROOT)/Extension/Libraries/libRHVoice_core.dylib $(SRCROOT)/Extension/Libraries/libRHVoice_audio.dylib"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
     dependencies:
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
