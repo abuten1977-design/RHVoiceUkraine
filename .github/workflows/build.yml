@@ -24,14 +24,14 @@ jobs:
     
     - name: Build RHVoice Core
       run: |
+        export BOOST_ROOT=$(brew --prefix boost)
         cd RHVoice
         mkdir -p build_macos
         cd build_macos
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
           -DBUILD_SHARED_LIBS=OFF \
-          -DBOOST_ROOT=$(brew --prefix boost) \
-          -DBoost_INCLUDE_DIR=$(brew --prefix boost)/include
+          -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
         make -j$(sysctl -n hw.ncpu)
     
     - name: Build macOS Test
@@ -76,6 +76,7 @@ jobs:
     
     - name: Build for iOS Device
       run: |
+        export BOOST_ROOT=$(brew --prefix boost)
         cd RHVoice
         mkdir -p build_ios_device
         cd build_ios_device
@@ -85,8 +86,7 @@ jobs:
           -DCMAKE_OSX_SYSROOT=iphoneos \
           -DCMAKE_OSX_ARCHITECTURES=arm64 \
           -DBUILD_SHARED_LIBS=OFF \
-          -DBOOST_ROOT=$(brew --prefix boost) \
-          -DBoost_INCLUDE_DIR=$(brew --prefix boost)/include
+          -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
         make -j$(sysctl -n hw.ncpu)
     
     - name: Upload iOS libraries
