@@ -2,6 +2,8 @@
 //  UkrainianSpeechSynthesizer.swift
 //  Ukrainian Voices Extension
 //
+//  РЕАЛЬНИЙ синтез з RHVoice!
+//
 
 import AVFoundation
 import Foundation
@@ -17,14 +19,15 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
     private var audioBuffer: AVAudioPCMBuffer?
     private var framePosition: AVAudioFramePosition = 0
     
-    // RHVoice engine wrapper
-    private let rhvoiceEngine: RHVoiceEngineWrapper
+    // РЕАЛЬНИЙ RHVoice engine!
+    private let rhvoiceEngine: RHVoiceEngine
     
     // MARK: - Initialization
     
     public override init() {
-        self.rhvoiceEngine = RHVoiceEngineWrapper()
+        self.rhvoiceEngine = RHVoiceEngine()
         super.init()
+        NSLog("✅ UkrainianSpeechSynthesizer initialized with REAL RHVoice!")
     }
     
     // MARK: - AVSpeechSynthesisProviderAudioUnit
@@ -61,40 +64,47 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
     public func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
         currentRequest = request
         
-        // Асинхронный синтез
+        NSLog("🎤 Synthesis request received")
+        
+        // Асинхронний РЕАЛЬНИЙ синтез
         synthesisQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Извлекаем параметры
-            let rate = request.rate
-            let volume = request.volume
-            let pitch = request.pitch
+            // Параметри
+            let rate = Double(request.rate)
+            let volume = Double(request.volume)
+            let pitch = Double(request.pitch)
             
-            // Извлекаем имя голоса
+            // Ім'я голосу
             let voiceIdentifier = request.voice.identifier
             let voiceName = self.extractVoiceName(from: voiceIdentifier)
             
-            // Получаем текст (SSML или plain text)
+            // Текст
             let text = request.ssmlRepresentation
             
-            // Синтезируем через RHVoice
+            NSLog("🗣️ Synthesizing: voice=\(voiceName), rate=\(rate), volume=\(volume), pitch=\(pitch)")
+            NSLog("📝 Text: \(text.prefix(50))...")
+            
+            // РЕАЛЬНИЙ синтез через RHVoice!
             if let buffer = self.rhvoiceEngine.synthesize(
-                text: text,
+                text,
                 voice: voiceName,
-                rate: Double(rate),
-                volume: Double(volume),
-                pitch: Double(pitch)
+                rate: rate,
+                volume: volume,
+                pitch: pitch
             ) {
                 self.audioBuffer = buffer
                 self.framePosition = 0
+                NSLog("✅ Synthesis successful! Buffer: \(buffer.frameLength) frames")
             } else {
-                // Ошибка синтеза
+                NSLog("❌ Synthesis failed!")
                 self.audioBuffer = nil
             }
         }
     }
     
     public func cancelSpeechRequest() {
+        NSLog("🛑 Synthesis cancelled")
         currentRequest = nil
         audioBuffer = nil
         framePosition = 0
@@ -140,7 +150,7 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
                     self.framePosition += AVAudioFramePosition(framesToCopy)
                 }
                 
-                // Заполняем остаток нулями если нужно
+                // Заповнюємо залишок нулями
                 if framesToCopy < frameCount {
                     memset(
                         targetBufferPointer.advanced(by: framesToCopy),
@@ -150,9 +160,10 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
                 }
             }
             
-            // Сигнализируем о завершении
+            // Сигналізуємо про завершення
             if self.framePosition >= buffer.frameLength {
                 actionFlags.pointee = .offlineUnitRenderAction_Complete
+                NSLog("🏁 Rendering complete")
             }
             
             return noErr
@@ -164,50 +175,5 @@ public class UkrainianSpeechSynthesizer: NSObject, AVSpeechSynthesisProviderAudi
     private func extractVoiceName(from identifier: String) -> String {
         let components = identifier.components(separatedBy: ".")
         return components.last ?? "anatol"
-    }
-}
-
-// MARK: - RHVoice Engine Wrapper
-
-class RHVoiceEngineWrapper {
-    
-    func synthesize(
-        text: String,
-        voice: String,
-        rate: Double,
-        volume: Double,
-        pitch: Double
-    ) -> AVAudioPCMBuffer? {
-        
-        // TODO: Подключить реальный RHVoice C API
-        // Пока возвращаем тестовый буфер
-        
-        let format = AVAudioFormat(
-            standardFormatWithSampleRate: 24000,
-            channels: 1
-        )!
-        
-        let frameCount = AVAudioFrameCount(24000) // 1 секунда
-        guard let buffer = AVAudioPCMBuffer(
-            pcmFormat: format,
-            frameCapacity: frameCount
-        ) else {
-            return nil
-        }
-        
-        buffer.frameLength = frameCount
-        
-        // Генерируем тестовый тон (440 Hz)
-        if let channelData = buffer.floatChannelData {
-            let frequency: Float = 440.0
-            let sampleRate: Float = 24000.0
-            
-            for frame in 0..<Int(frameCount) {
-                let value = sin(2.0 * .pi * frequency * Float(frame) / sampleRate)
-                channelData[0][frame] = value * Float(volume)
-            }
-        }
-        
-        return buffer
     }
 }

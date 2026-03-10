@@ -2,19 +2,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "RHVoiceUkrainianSynthesizer",
+    name: "UkrainianVoicesExtension",
     platforms: [
         .iOS(.v16)
     ],
     products: [
         .library(
-            name: "RHVoiceUkrainianSynthesizer",
-            targets: ["RHVoiceUkrainianSynthesizer"]
+            name: "UkrainianVoicesExtension",
+            targets: ["UkrainianVoicesExtension"]
         ),
     ],
     targets: [
         .target(
-            name: "RHVoiceUkrainianSynthesizer",
+            name: "UkrainianVoicesExtension",
             dependencies: ["RHVoiceBridge"],
             path: "Provider",
             resources: [
@@ -37,8 +37,8 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "RHVoiceUkrainianSynthesizerTests",
-            dependencies: ["RHVoiceUkrainianSynthesizer"],
+            name: "UkrainianVoicesExtensionTests",
+            dependencies: ["UkrainianVoicesExtension"],
             path: "Tests"
         ),
     ],
