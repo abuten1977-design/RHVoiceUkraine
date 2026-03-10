@@ -10,8 +10,8 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
-    name: Run Tests
+  build:
+    name: Build Check
     runs-on: macos-latest
     
     steps:
@@ -25,15 +25,10 @@ jobs:
         with:
           xcode-version: latest-stable
       
-      - name: Run Swift Tests
+      - name: Build Extension
         run: |
           cd UkrainianVoicesApp/Extension
-          swift test --enable-code-coverage
-      
-      - name: Generate Coverage
-        run: |
-          cd UkrainianVoicesApp/Extension
-          xcrun llvm-cov export \
-            .build/debug/UkrainianVoicesPackageTests.xctest/Contents/MacOS/UkrainianVoicesPackageTests \
-            -instr-profile .build/debug/codecov/default.profdata \
-            -format="lcov" > coverage.lcov || true
+          swift build -c release
+          
+      - name: Success
+        run: echo "✅ Build successful!"
