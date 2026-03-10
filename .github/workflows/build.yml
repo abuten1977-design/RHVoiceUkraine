@@ -140,6 +140,7 @@ jobs:
           -configuration Release \
           -sdk iphoneos \
           -arch arm64 \
+          -derivedDataPath ./build \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO \
@@ -150,9 +151,10 @@ jobs:
       run: |
         cd UkrainianVoicesApp
         mkdir -p Payload
-        find . -name "UkrainianVoices.app" -type d -print -exec cp -r {} Payload/ \;
+        cp -r build/Build/Products/Release-iphoneos/UkrainianVoices.app Payload/
         zip -r UkrainianVoices-unsigned.ipa Payload
         ls -lh UkrainianVoices-unsigned.ipa
+        ls -la Payload/UkrainianVoices.app
     
     - name: Upload IPA
       uses: actions/upload-artifact@v4
