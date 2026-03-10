@@ -18,8 +18,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: ""
+        CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: ""
     dependencies:
       - target: UkrainianVoicesExtension
@@ -33,9 +32,10 @@ targets:
       - Extension/Provider
       - Extension/Bridge
     resources:
-      - path: Extension/Resources/Voices
-        name: Voices
-        type: folder
+      - Extension/Resources/Voices/anatol
+      - Extension/Resources/Voices/marianna
+      - Extension/Resources/Voices/natalia
+      - Extension/Resources/Voices/volodymyr
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
@@ -46,6 +46,8 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ""
     dependencies:
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
