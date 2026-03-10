@@ -48,12 +48,28 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         return YES;
     }
     
+    // ВИПРАВЛЕНО: Правильний шлях до голосів
     NSBundle *bundle = [NSBundle mainBundle];
-    NSString *voicesPath = [bundle pathForResource:@"Voices" ofType:nil inDirectory:@"Resources"];
+    NSString *resourcePath = [bundle resourcePath];
+    NSString *voicesPath = [resourcePath stringByAppendingPathComponent:@"Voices"];
     
-    if (!voicesPath) {
-        NSLog(@"❌ Voices path not found!");
-        return NO;
+    NSLog(@"🔍 Looking for voices at: %@", voicesPath);
+    
+    // Перевіряємо чи існує папка
+    BOOL isDirectory;
+    BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDirectory];
+    
+    if (!exists || !isDirectory) {
+        NSLog(@"❌ Voices directory not found at: %@", voicesPath);
+        // Спробуємо альтернативний шлях
+        voicesPath = [bundle pathForResource:@"Voices" ofType:nil];
+        if (!voicesPath) {
+            NSLog(@"❌ Voices path not found!");
+            return NO;
+        }
+        NSLog(@"✅ Found voices at alternative path: %@", voicesPath);
+    } else {
+        NSLog(@"✅ Found voices directory");
     }
     
     RHVoice_init_params params;
@@ -157,10 +173,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     
     buffer.frameLength = frameCount;
     
-    // Конвертуємо short → float
     const short *samples = (const short *)[data bytes];
     float *channelData = buffer.floatChannelData[0];
     
+    // Конвертуємо short → float
     for (AVAudioFrameCount i = 0; i < frameCount; i++) {
         channelData[i] = samples[i] / 32768.0f;
     }
@@ -171,6 +187,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (void)dealloc {
     if (self.engine) {
         RHVoice_delete_tts_engine(self.engine);
+        self.engine = NULL;
     }
 }
 

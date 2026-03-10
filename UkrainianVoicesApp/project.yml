@@ -33,7 +33,9 @@ targets:
       - Extension/Provider
       - Extension/Bridge
     resources:
-      - Extension/Resources/Voices
+      - path: Extension/Resources/Voices
+        name: Voices
+        type: folder
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
@@ -41,6 +43,8 @@ targets:
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
     dependencies:
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
