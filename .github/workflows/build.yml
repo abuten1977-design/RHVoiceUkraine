@@ -182,6 +182,7 @@ jobs:
         echo "⚠️ Note: IPA is unsigned - you need to sign it locally"
 
   build-macos-app:
+    if: always()
     name: Build macOS App (.app)
     runs-on: macos-latest
     needs: build-macos-test
