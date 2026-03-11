@@ -41,22 +41,24 @@ jobs:
           -I../RHVoice/src/include \
           -I$(brew --prefix boost)/include \
           minimal_rhvoice_test.cpp \
-          -L../RHVoice/build_macos/src/core \
-          -L../RHVoice/build_macos/src/audio \
           -L../RHVoice/build_macos/src/lib \
           -lRHVoice -lRHVoice_core -lRHVoice_audio \
           -o rhvoice_test
-        export DYLD_LIBRARY_PATH=../RHVoice/build_macos/src/lib:../RHVoice/build_macos/src/core:../RHVoice/build_macos/src/audio
         ./rhvoice_test || echo "⚠️ Test failed but continuing"
+    
+    - name: Copy macOS libraries
+      run: |
+        echo "📦 Копіюю macOS бібліотеки..."
+        mkdir -p macos_libs
+        find RHVoice/build_macos -name "*.a" -exec cp {} macos_libs/ \;
+        ls -lh macos_libs/
     
     - name: Upload macOS artifacts
       uses: actions/upload-artifact@v4
       with:
         name: macos-libs
         path: |
-          RHVoice/build_macos/src/lib/libRHVoice.a
-          RHVoice/build_macos/src/core/libRHVoice_core.a
-          RHVoice/build_macos/src/audio/libRHVoice_audio.a
+          macos_libs/*.a
         retention-days: 7
 
   build-ios-libs:
