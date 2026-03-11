@@ -33,7 +33,11 @@ struct VoiceSelectionView: View {
                 }
             }
         }
+        #if os(iOS)
         .listStyle(InsetGroupedListStyle())
+        #else
+        .listStyle(SidebarListStyle())
+        #endif
         .navigationTitle("Вибір голосу")
     }
 }
