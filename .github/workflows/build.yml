@@ -52,10 +52,11 @@ jobs:
     - name: Upload macOS artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: macos-test
+        name: macos-libs
         path: |
-          MacOSTest/rhvoice_test
-          MacOSTest/*.wav
+          RHVoice/build_macos/src/lib/libRHVoice.a
+          RHVoice/build_macos/src/core/libRHVoice_core.a
+          RHVoice/build_macos/src/audio/libRHVoice_audio.a
         retention-days: 7
 
   build-ios-libs:
@@ -201,7 +202,7 @@ jobs:
     - name: Download macOS libraries
       uses: actions/download-artifact@v4
       with:
-        name: macos-test
+        name: macos-libs
         path: UkrainianVoicesApp/Extension/Libraries/
     
     - name: Generate Xcode project
