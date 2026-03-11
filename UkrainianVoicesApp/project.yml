@@ -43,7 +43,7 @@ targets:
       - sdk: AVFAudio.framework
     
   UkrainianVoicesExtension:
-    type: framework
+    type: app-extension
     platform: iOS
     sources:
       - Extension/Provider
