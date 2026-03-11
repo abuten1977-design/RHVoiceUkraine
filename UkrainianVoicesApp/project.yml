@@ -48,6 +48,9 @@ targets:
     sources:
       - Extension/Provider
       - Extension/Bridge
+      - Extension/Models
+      - Extension/Services
+      - Extension/Views
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
