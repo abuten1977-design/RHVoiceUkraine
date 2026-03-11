@@ -46,6 +46,7 @@ jobs:
           -o rhvoice_test
         ./rhvoice_test || echo "⚠️ Test failed but continuing"
     
+      if: always()
     - name: Copy macOS libraries
       run: |
         echo "📦 Копіюю macOS бібліотеки..."
@@ -53,6 +54,7 @@ jobs:
         find RHVoice/build_macos -name "*.a" -exec cp {} macos_libs/ \;
         ls -lh macos_libs/
     
+      if: always()
     - name: Upload macOS artifacts
       uses: actions/upload-artifact@v4
       with:
