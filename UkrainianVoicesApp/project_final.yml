@@ -1,0 +1,39 @@
+name: UkrainianVoices
+options:
+  bundleIdPrefix: com.rhvoice
+  deploymentTarget:
+    macOS: "13.0"
+    iOS: "16.0"
+
+targets:
+  UkrainianVoicesMac:
+    type: application
+    platform: macOS
+    sources: [App]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
+        ARCHS: x86_64
+        VALID_ARCHS: x86_64
+        SUPPORTED_PLATFORMS: macosx
+    postBuildScripts:
+      - name: Copy All Voices
+        script: |
+          DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/Voices"
+          mkdir -p "$DST"
+          cp -r "${SRCROOT}/Resources/Voices/"* "$DST/"
+    dependencies:
+      - target: UkrainianVoicesExtensionMac
+      - sdk: AVFoundation.framework
+
+  UkrainianVoicesExtensionMac:
+    type: app-extension
+    platform: macOS
+    sources: [Extension/Provider, Extension/Bridge]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension.mac
+        ARCHS: x86_64
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        SUPPORTED_PLATFORMS: macosx

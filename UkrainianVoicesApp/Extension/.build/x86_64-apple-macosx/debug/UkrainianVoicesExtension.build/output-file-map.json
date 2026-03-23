@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/master.swiftdeps"
+  },
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Provider/UkrainianSpeechSynthesizer.swift": {
+    "dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer.d",
+    "object": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer.swift.o",
+    "swiftmodule": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer~partial.swiftmodule",
+    "swift-dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer.swiftdeps"
+  }
+}

@@ -1,0 +1,34 @@
+name: UkrainianVoicesMacOnly
+options:
+  bundleIdPrefix: com.rhvoice
+  deploymentTarget:
+    macOS: "13.0"
+
+targets:
+  UkrainianVoicesMac:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
+        ARCHS: x86_64
+        SDKROOT: macosx
+    dependencies:
+      - target: UkrainianVoicesExtensionMac
+      - sdk: AVFoundation.framework
+
+  UkrainianVoicesExtensionMac:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Extension/Provider
+      - Extension/Bridge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension.mac
+        ARCHS: x86_64
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        SDKROOT: macosx

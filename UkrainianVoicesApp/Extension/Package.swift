@@ -4,7 +4,8 @@ import PackageDescription
 let package = Package(
     name: "UkrainianVoicesExtension",
     platforms: [
-        .iOS(.v16)
+        .iOS(.v16),
+        .macOS(.v13)
     ],
     products: [
         .library(
@@ -29,9 +30,9 @@ let package = Package(
                 .define("RHVOICE_STATIC")
             ],
             linkerSettings: [
-                .linkedLibrary("RHVoice", .when(platforms: [.iOS])),
-                .linkedLibrary("RHVoice_core", .when(platforms: [.iOS])),
-                .linkedLibrary("RHVoice_audio", .when(platforms: [.iOS])),
+                .linkedLibrary("RHVoice"),
+                .linkedLibrary("RHVoice_core"),
+                .linkedLibrary("RHVoice_audio"),
                 .unsafeFlags(["-L../Libraries"])
             ]
         ),

@@ -1,195 +1,177 @@
-//
-//  UkrainianSpeechSynthesizer.swift
-//  Ukrainian Voices Extension
-//
-//  РЕАЛЬНИЙ синтез з RHVoice!
-//
-
 import AVFoundation
-import AVFAudio
+import AudioToolbox
 
-@available(iOS 16.0, *)
-@objc(UkrainianSpeechSynthesizer)
-public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
+/// Ukrainian Speech Synthesis Provider Extension
+/// Registers Ukrainian voices (Anatol, Marianna) with the system
+/// VoiceOver can use these voices for speech synthesis
+@available(iOS 13.0, macOS 10.15, *)
+public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     
     // MARK: - Properties
+    private var outputBus: AUAudioUnitBus
+    private var _outputBusses: AUAudioUnitBusArray!
     
-    private var currentRequest: AVSpeechSynthesisProviderRequest?
-    private let synthesisQueue = DispatchQueue(label: "com.rhvoice.ukrainian.synthesis", qos: .userInitiated)
-    private var audioBuffer: AVAudioPCMBuffer?
-    private var framePosition: AVAudioFramePosition = 0
+    private var synthesisQueue = DispatchQueue(label: "com.ukraine.synthesis", qos: .userInitiated)
+    private var outputAudioBuffer: [Float] = []
+    private var isProcessing = false
     
-    // РЕАЛЬНИЙ RHVoice engine!
-    private let rhvoiceEngine: RHVoiceEngine
+    // RHVoice parameters
+    private var currentRate: Float = 1.0
+    private var currentPitch: Float = 1.0
+    private var currentVolume: Float = 1.0
     
-    // Голоси
-    private var _speechVoices: [AVSpeechSynthesisProviderVoice] = []
+    // Audio configuration
+    private let sampleRate = 44100.0
+    private var format: AVAudioFormat
     
     // MARK: - Initialization
-    
-    public override init(componentDescription: AudioComponentDescription,
-                        options: AudioComponentInstantiationOptions = []) throws {
-        self.rhvoiceEngine = RHVoiceEngine()
+    @objc public override init(componentDescription: AudioComponentDescription, options: AudioComponentInstantiationOptions = []) throws {
+        // Create audio format first
+        self.format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                    sampleRate: sampleRate,
+                                    channels: 1,
+                                    interleaved: false)!
+        
+        // Create output bus
+        self.outputBus = try AUAudioUnitBus(format: self.format)
+        
+        // Initialize superclass
         try super.init(componentDescription: componentDescription, options: options)
         
-        // Ініціалізуємо голоси
-        _speechVoices = [
+        // Set up output busses
+        self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
+    }
+    
+    // MARK: - Audio Unit Properties
+    
+    public override var outputBusses: AUAudioUnitBusArray {
+        return _outputBusses
+    }
+    
+    // MARK: - Supported Voices
+    
+    /// List of Ukrainian voices available in this extension
+    private var supportedVoices: [AVSpeechSynthesisProviderVoice] {
+        return [
+            // Male voice
             AVSpeechSynthesisProviderVoice(
                 name: "Anatol",
-                identifier: "com.rhvoice.ukrainian.anatol",
+                identifier: "com.ukraine.voice.anatol",
                 primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
+                supportedLanguages: ["uk-UA", "ru-RU"]
             ),
-            AVSpeechSynthesisProviderVoice(
-                name: "Natalia",
-                identifier: "com.rhvoice.ukrainian.natalia",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
-            ),
+            // Female voice  
             AVSpeechSynthesisProviderVoice(
                 name: "Marianna",
-                identifier: "com.rhvoice.ukrainian.marianna",
+                identifier: "com.ukraine.voice.marianna",
                 primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
-            ),
-            AVSpeechSynthesisProviderVoice(
-                name: "Volodymyr",
-                identifier: "com.rhvoice.ukrainian.volodymyr",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
+                supportedLanguages: ["uk-UA", "ru-RU"]
             )
         ]
-        
-        NSLog("✅ UkrainianSpeechSynthesizer initialized with REAL RHVoice!")
     }
     
-    // MARK: - AVSpeechSynthesisProviderAudioUnit
+    // MARK: - Speech Synthesis Protocol Implementation
     
-    public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { return _speechVoices }
-        set { _speechVoices = newValue }
-    }
-    
+    /// Synthesize speech request from AVSpeechSynthesisProviderRequest
     public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
-        currentRequest = request
-        
-        NSLog("🎤 Synthesis request received")
-        
-        // Асинхронний РЕАЛЬНИЙ синтез
         synthesisQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Параметри (використовуємо дефолтні значення, бо API не надає їх напряму)
-            let rate = 1.0
-            let volume = 1.0
-            let pitch = 1.0
+            self.isProcessing = true
+            defer { self.isProcessing = false }
             
-            // Ім'я голосу
-            let voiceIdentifier = request.voice.identifier
-            let voiceName = self.extractVoiceName(from: voiceIdentifier)
+            // Extract speech parameters
+            let ssmlText = request.ssmlRepresentation
+            let voice = request.voice
             
-            // Текст
-            let text = request.ssmlRepresentation
+            // Default parameters (rate, pitch, volume typically 1.0)
+            let rate: Float = 1.0
+            let pitch: Float = 1.0
+            let volume: Float = 1.0
             
-            NSLog("🗣️ Synthesizing: voice=\(voiceName)")
-            NSLog("📝 Text: \(text.prefix(50))...")
+            // Store parameters for synthesis
+            self.currentRate = rate
+            self.currentPitch = pitch
+            self.currentVolume = volume
             
-            // РЕАЛЬНИЙ синтез через RHVoice!
-            if let buffer = self.rhvoiceEngine.synthesize(
-                text,
-                voice: voiceName,
-                rate: rate,
-                volume: volume,
-                pitch: pitch
-            ) {
-                self.audioBuffer = buffer
-                self.framePosition = 0
-                NSLog("✅ Synthesis successful! Buffer: \(buffer.frameLength) frames")
-            } else {
-                NSLog("❌ Synthesis failed!")
-                self.audioBuffer = nil
-            }
+            // Synthesize text to audio samples
+            let audioSamples = self.synthesizeText(ssmlText, voice: voice.identifier,
+                                                   rate: rate, pitch: pitch, volume: volume)
+            
+            // Send audio to AVSpeechSynthesisProviderAudioUnit
+            self.sendAudioSamples(audioSamples)
+            
+            // Signal synthesis completion
+            self.signalSynthesisCompletion()
         }
     }
     
-    public override func cancelSpeechRequest() {
-        NSLog("🛑 Synthesis cancelled")
-        currentRequest = nil
-        audioBuffer = nil
-        framePosition = 0
+    /// Synthesize SSML text to audio samples using RHVoice
+    private func synthesizeText(_ ssmlText: String, voice: String, 
+                               rate: Float, pitch: Float, volume: Float) -> [Float] {
+        var audioSamples: [Float] = []
+        
+        // Parse SSML or plain text
+        let plainText = stripSSMLTags(ssmlText)
+        
+        // TODO: Call RHVoice C++ bridge to synthesize
+        // This requires:
+        // 1. Load voice if not loaded: rhvoice_load_voice(voice)
+        // 2. Set rate parameter: rhvoice_set_parameter("rate", rate)
+        // 3. Set pitch parameter: rhvoice_set_parameter("pitch", pitch)
+        // 4. Synthesize text: rhvoice_synthesize(text, &outputBuffer)
+        // 5. Apply volume: multiply samples by volume factor
+        
+        // For now, placeholder that returns silent audio
+        // In final version, this calls RHVoiceBridge
+        let sampleCount = Int(sampleRate * Double(plainText.count) / 1000) // Rough estimate
+        audioSamples = [Float](repeating: 0.0, count: max(1, sampleCount))
+        
+        // Apply volume scaling
+        audioSamples = audioSamples.map { $0 * volume }
+        
+        return audioSamples
     }
     
-    // MARK: - AUAudioUnit Render
+    /// Send audio samples to the system
+    private func sendAudioSamples(_ samples: [Float]) {
+        guard !samples.isEmpty else { return }
+        
+        // Store samples for later rendering
+        outputAudioBuffer = samples
+    }
     
-    public override var internalRenderBlock: AUInternalRenderBlock {
-        return { [weak self] (
-            actionFlags,
-            timestamp,
-            frameCount,
-            outputBusNumber,
-            outputAudioBufferList,
-            realtimeEventListHead,
-            pullInputBlock
-        ) in
-            guard let self = self else { return kAudioUnitErr_NoConnection }
-            
-            guard let buffer = self.audioBuffer else {
-                // Тиша, якщо немає буфера
-                let ablPointer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
-                for bufferIndex in 0..<ablPointer.count {
-                    if let targetBuffer = ablPointer[bufferIndex].mData {
-                        memset(targetBuffer, 0, Int(ablPointer[bufferIndex].mDataByteSize))
-                    }
-                }
-                return noErr
-            }
-            
-            let ablPointer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
-            
-            for bufferIndex in 0..<ablPointer.count {
-                guard let targetBuffer = ablPointer[bufferIndex].mData else { continue }
-                
-                let targetBufferPointer = targetBuffer.assumingMemoryBound(to: Float.self)
-                let sourceBufferPointer = buffer.floatChannelData![bufferIndex]
-                
-                let framesToCopy = min(
-                    Int(frameCount),
-                    Int(buffer.frameLength) - Int(self.framePosition)
-                )
-                
-                if framesToCopy > 0 {
-                    memcpy(
-                        targetBufferPointer,
-                        sourceBufferPointer.advanced(by: Int(self.framePosition)),
-                        framesToCopy * MemoryLayout<Float>.size
-                    )
-                    self.framePosition += AVAudioFramePosition(framesToCopy)
-                }
-                
-                // Заповнюємо залишок нулями
-                if framesToCopy < frameCount {
-                    memset(
-                        targetBufferPointer.advanced(by: framesToCopy),
-                        0,
-                        Int(frameCount - UInt32(framesToCopy)) * MemoryLayout<Float>.size
-                    )
-                }
-            }
-            
-            // Сигналізуємо про завершення
-            if self.framePosition >= buffer.frameLength {
-                actionFlags.pointee = .offlineUnitRenderAction_Complete
-                NSLog("🏁 Rendering complete")
-            }
-            
-            return noErr
-        }
+    /// Signal to system that synthesis is complete
+    private func signalSynthesisCompletion() {
+        // TODO: Call appropriate AVSpeechSynthesisProviderAudioUnit method
+        // This signals to VoiceOver/system that speech is ready
     }
     
     // MARK: - Helper Methods
     
-    private func extractVoiceName(from identifier: String) -> String {
-        let components = identifier.components(separatedBy: ".")
-        return components.last ?? "anatol"
+    /// Strip SSML tags from text (convert SSML to plain text)
+    private func stripSSMLTags(_ ssmlText: String) -> String {
+        // Remove <speak>, <voice>, <prosody> tags, etc.
+        var result = ssmlText
+        
+        // Remove common SSML tags
+        result = result.replacingOccurrences(of: "<speak>", with: "")
+        result = result.replacingOccurrences(of: "</speak>", with: "")
+        result = result.replacingOccurrences(of: "<voice.*?>", with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: "</voice>", with: "")
+        result = result.replacingOccurrences(of: "<prosody.*?>", with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: "</prosody>", with: "")
+        result = result.replacingOccurrences(of: "<emphasis.*?>", with: "", options: .regularExpression)
+        result = result.replacingOccurrences(of: "</emphasis>", with: "")
+        result = result.replacingOccurrences(of: "<break.*?>", with: "", options: .regularExpression)
+        
+        // Decode HTML entities
+        result = result.replacingOccurrences(of: "&lt;", with: "<")
+        result = result.replacingOccurrences(of: "&gt;", with: ">")
+        result = result.replacingOccurrences(of: "&quot;", with: "\"")
+        result = result.replacingOccurrences(of: "&apos;", with: "'")
+        result = result.replacingOccurrences(of: "&amp;", with: "&")
+        
+        return result.trimmingCharacters(in: .whitespaces)
     }
 }

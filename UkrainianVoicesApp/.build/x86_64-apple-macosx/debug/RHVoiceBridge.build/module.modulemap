@@ -1,0 +1,4 @@
+module RHVoiceBridge {
+    umbrella "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge"
+    export *
+}

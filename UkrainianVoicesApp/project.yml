@@ -3,12 +3,12 @@ options:
   bundleIdPrefix: com.rhvoice
   deploymentTarget:
     macOS: "13.0"
-    iOS: "16.0"
+    
 
 targets:
   UkrainianVoices:
     type: application
-    platform: iOS
+    platform: macOS
     sources:
       - App
     postBuildScripts:
@@ -45,7 +45,7 @@ targets:
     
   UkrainianVoicesExtension:
     type: app-extension
-    platform: iOS
+    platform: macOS
     sources:
       - Extension/Provider
       - Extension/Bridge

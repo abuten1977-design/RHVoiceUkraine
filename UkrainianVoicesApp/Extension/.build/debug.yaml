@@ -1,0 +1,105 @@
+client:
+  name: basic
+tools: {}
+targets:
+  "PackageStructure": ["<PackageStructure>"]
+  "RHVoiceBridge-debug.module": ["<RHVoiceBridge-debug.module>"]
+  "UkrainianVoicesExtension-debug.module": ["<UkrainianVoicesExtension-debug.module>"]
+  "UkrainianVoicesExtensionPackageTests-debug.test": ["<UkrainianVoicesExtensionPackageTests-debug.test>"]
+  "UkrainianVoicesExtensionTests-debug.module": ["<UkrainianVoicesExtensionTests-debug.module>"]
+  "main": ["<RHVoiceBridge-debug.module>","<UkrainianVoicesExtension-debug.module>"]
+  "test": ["<RHVoiceBridge-debug.module>","<UkrainianVoicesExtension-debug.module>","<UkrainianVoicesExtensionPackageTests-debug.test>","<UkrainianVoicesExtensionTests-debug.module>"]
+default: "main"
+nodes:
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Provider/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Tests/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+commands:
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.o":
+    tool: clang
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge/RHVoiceEngine+Parameters.mm"]
+    outputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.o"]
+    description: "Compiling RHVoiceBridge RHVoiceEngine+Parameters.mm"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang","-fobjc-arc","-target","x86_64-apple-macosx13.0","-g","-O0","-DSWIFT_PACKAGE=1","-DDEBUG=1","-fblocks","-index-store-path","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/index/store","-I","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge","-DRHVOICE_STATIC","-isysroot","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-fPIC","-MD","-MT","dependencies","-MF","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.d","-std=c++17","-c","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge/RHVoiceEngine+Parameters.mm","-o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.o"]
+    deps: "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.d"
+
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.o":
+    tool: clang
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge/RHVoiceEngine.mm"]
+    outputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.o"]
+    description: "Compiling RHVoiceBridge RHVoiceEngine.mm"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang","-fobjc-arc","-target","x86_64-apple-macosx13.0","-g","-O0","-DSWIFT_PACKAGE=1","-DDEBUG=1","-fblocks","-index-store-path","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/index/store","-I","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge","-DRHVOICE_STATIC","-isysroot","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-fPIC","-MD","-MT","dependencies","-MF","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.d","-std=c++17","-c","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge/RHVoiceEngine.mm","-o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.o"]
+    deps: "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.d"
+
+  "<RHVoiceBridge-debug.module>":
+    tool: phony
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.o"]
+    outputs: ["<RHVoiceBridge-debug.module>"]
+
+  "<UkrainianVoicesExtension-debug.module>":
+    tool: phony
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.swiftmodule"]
+    outputs: ["<UkrainianVoicesExtension-debug.module>"]
+
+  "<UkrainianVoicesExtensionPackageTests-debug.test>":
+    tool: phony
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionPackageTests.xctest/Contents/MacOS/UkrainianVoicesExtensionPackageTests"]
+    outputs: ["<UkrainianVoicesExtensionPackageTests-debug.test>"]
+
+  "<UkrainianVoicesExtensionTests-debug.module>":
+    tool: phony
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/RHVoiceParametersTests.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/UkrainianSpeechSynthesizerTests.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.swiftmodule"]
+    outputs: ["<UkrainianVoicesExtensionTests-debug.module>"]
+
+  "C.UkrainianVoicesExtension-debug.module":
+    tool: swift-compiler
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Provider/UkrainianSpeechSynthesizer.swift","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.o"]
+    outputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.swiftmodule"]
+    executable: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    module-name: "UkrainianVoicesExtension"
+    module-output-path: "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.swiftmodule"
+    import-paths: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug"]
+    temps-path: "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build"
+    objects: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer.swift.o"]
+    other-args: ["-target","x86_64-apple-macosx13.0","-swift-version","5","-enable-batch-mode","-index-store-path","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/index/store","-Onone","-enable-testing","-g","-j4","-DSWIFT_PACKAGE","-DDEBUG","-Xcc","-fmodule-map-file=/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/module.modulemap","-Xcc","-I","-Xcc","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge","-module-cache-path","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-emit-objc-header","-emit-objc-header-path","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianVoicesExtension-Swift.h","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-fPIC","-package-name","extension"]
+    sources: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Provider/UkrainianSpeechSynthesizer.swift"]
+    is-library: true
+    enable-whole-module-optimization: false
+    num-threads: 4
+
+  "C.UkrainianVoicesExtensionPackageTests-debug.test":
+    tool: shell
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine+Parameters.mm.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/RHVoiceEngine.mm.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianSpeechSynthesizer.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/RHVoiceParametersTests.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/UkrainianSpeechSynthesizerTests.swift.o"]
+    outputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionPackageTests.xctest/Contents/MacOS/UkrainianVoicesExtensionPackageTests"]
+    description: "Linking ./.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionPackageTests.xctest/Contents/MacOS/UkrainianVoicesExtensionPackageTests"
+    args: ["/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc","-lc++","-L","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug","-o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionPackageTests.xctest/Contents/MacOS/UkrainianVoicesExtensionPackageTests","-module-name","UkrainianVoicesExtensionPackageTests","-Xlinker","-bundle","-Xlinker","-rpath","-Xlinker","@loader_path/../../../","@/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionPackageTests.product/Objects.LinkFileList","-target","x86_64-apple-macosx13.0","-lRHVoice","-lRHVoice_core","-lRHVoice_audio","-L../Libraries","-Xlinker","-add_ast_path","-Xlinker","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.swiftmodule","-Xlinker","-add_ast_path","-Xlinker","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.swiftmodule","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib"]
+
+  "C.UkrainianVoicesExtensionTests-debug.module":
+    tool: swift-compiler
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Tests/RHVoiceParametersTests.swift","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Tests/UkrainianSpeechSynthesizerTests.swift","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.swiftmodule"]
+    outputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/RHVoiceParametersTests.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/UkrainianSpeechSynthesizerTests.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.swiftmodule"]
+    executable: "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    module-name: "UkrainianVoicesExtensionTests"
+    module-output-path: "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.swiftmodule"
+    import-paths: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug"]
+    temps-path: "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build"
+    objects: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/RHVoiceParametersTests.swift.o","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtensionTests.build/UkrainianSpeechSynthesizerTests.swift.o"]
+    other-args: ["-target","x86_64-apple-macosx13.0","-swift-version","5","-enable-batch-mode","-index-store-path","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/index/store","-Onone","-enable-testing","-g","-j4","-DSWIFT_PACKAGE","-DDEBUG","-Xcc","-fmodule-map-file=/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/RHVoiceBridge.build/module.modulemap","-Xcc","-I","-Xcc","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge","-module-cache-path","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/ModuleCache","-parseable-output","-parse-as-library","-sdk","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk","-F","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-I","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-L","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib","-Xcc","-isysroot","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.2.sdk","-Xcc","-F","-Xcc","/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks","-Xcc","-fPIC","-package-name","extension"]
+    sources: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Tests/RHVoiceParametersTests.swift","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Tests/UkrainianSpeechSynthesizerTests.swift"]
+    is-library: true
+    enable-whole-module-optimization: false
+    num-threads: 4
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Bridge/","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Provider/","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Tests/","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Package.swift","/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

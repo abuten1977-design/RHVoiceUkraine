@@ -1,0 +1,4 @@
+module UkrainianVoicesExtension {
+    header "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Extension/.build/x86_64-apple-macosx/debug/UkrainianVoicesExtension.build/UkrainianVoicesExtension-Swift.h"
+    requires objc
+}

@@ -1,0 +1,17 @@
+{
+  "": {
+    "swift-dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/master.swiftdeps"
+  },
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/App/ContentView.swift": {
+    "dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/ContentView.d",
+    "object": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/ContentView.swift.o",
+    "swiftmodule": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/ContentView~partial.swiftmodule",
+    "swift-dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/ContentView.swiftdeps"
+  },
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/App/UkrainianVoicesApp.swift": {
+    "dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/UkrainianVoicesApp.d",
+    "object": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/UkrainianVoicesApp.swift.o",
+    "swiftmodule": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/UkrainianVoicesApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/UkrainianVoices.build/UkrainianVoicesApp.swiftdeps"
+  }
+}
