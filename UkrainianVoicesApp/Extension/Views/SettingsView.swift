@@ -51,6 +51,44 @@ struct SettingsView: View {
                         Slider(value: Binding(
                             get: { voiceManager.parameters.volume },
                             set: { voiceManager.updateParameter(\.volume, to: $0) }
+
+                    // Speed Multiplier
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("1x")
+                                .accessibilityHidden(true)
+                            Slider(value: Binding(
+                                get: { voiceManager.parameters.speedMultiplier },
+                                set: { voiceManager.updateParameter(\.speedMultiplier, to: $0) }
+                            ), in: 1.0...5.0, step: 0.5)
+                            Text("5x")
+                                .accessibilityHidden(true)
+                        }
+                        .accessibilityElement(children: .combine)
+                        Text(String(format: "%.1fx", voiceManager.parameters.speedMultiplier))
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    .accessibilityLabel("Speed multiplier")
+
+                    // Sentence Pause
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("0")
+                                .accessibilityHidden(true)
+                            Slider(value: Binding(
+                                get: { Double(voiceManager.parameters.sentencePause) },
+                                set: { voiceManager.updateParameter(\.sentencePause, to: Int($0)) }
+                            ), in: 0...2000, step: 100)
+                            Text("2000")
+                                .accessibilityHidden(true)
+                        }
+                        .accessibilityElement(children: .combine)
+                        Text("\(Int(voiceManager.parameters.sentencePause)) ms")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                    }
+                    .accessibilityLabel("Sentence pause")
                         ), in: 0.0...1.0, step: 0.1)
                     }
                 }
