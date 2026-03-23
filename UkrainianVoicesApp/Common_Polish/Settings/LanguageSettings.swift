@@ -8,6 +8,8 @@ import RHVoice
 public class LanguageSettings: Codable {
     public var rate: Double = RHVoiceParameters.rate().defaultValue
     public var volume: Double = RHVoiceParameters.volume().defaultValue
+    public var speedMultiplier: Double = 1.0
+    public var sentencePause: Int = 0
     
     // Новые параметры (Твои 'ускорители')
     public var multiplier: Double = 1.0 // От 1.0 до 3.0
@@ -22,6 +24,14 @@ extension LanguageSettings {
     
     public static var volumeRange: ClosedRange<Double> {
         return RHVoiceParameters.volume().range
+    }
+
+    public static var speedMultiplierRange: ClosedRange<Double> {
+        return 1.0...5.0
+    }
+
+    public static var sentencePauseRange: ClosedRange<Double> {
+        return 0...2000
     }
     
     // Диапазон для твоего множителя
