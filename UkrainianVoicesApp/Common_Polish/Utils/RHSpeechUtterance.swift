@@ -38,7 +38,10 @@ extension RHSpeechUtterance {
         let settings = sharedSettings.languageSettings(for: voice.language.code)
         
         quality = SettingsStore.shared.quality
-        rate = settings.rate
+        rate = settings.rate * settings.speedMultiplier
+        if settings.speedMultiplier > 1.0 {
+            dontClipRate = true
+        }
         volume = settings.volume
         
         if SettingsStore.shared.languageSwitching {
