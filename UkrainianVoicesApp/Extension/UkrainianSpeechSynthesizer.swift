@@ -5,9 +5,12 @@ import AudioToolbox
 /// Registers Ukrainian voices (Anatol, Marianna) with the system
 /// VoiceOver can use these voices for speech synthesis
 @available(iOS 13.0, macOS 10.15, *)
-public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
+public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     
     // MARK: - Properties
+    private var outputBus: AUAudioUnitBus
+    private var _outputBusses: AUAudioUnitBusArray!
+    
     private var synthesisQueue = DispatchQueue(label: "com.ukraine.synthesis", qos: .userInitiated)
     private var outputAudioBuffer: [Float] = []
     private var isProcessing = false
@@ -16,36 +19,55 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     private var currentRate: Float = 1.0
     private var currentPitch: Float = 1.0
     private var currentVolume: Float = 1.0
-    private var sentencePauseDuration: Int = 0 // ms
+    
+    // Audio configuration
+    private let sampleRate = 44100.0
+    private var format: AVAudioFormat
     
     // MARK: - Initialization
-    public override init(componentDescription: AudioComponentDescription, options: AudioComponentInstantiationOptions = []) throws {
+    @objc public override init(componentDescription: AudioComponentDescription, options: AudioComponentInstantiationOptions = []) throws {
+        // Create audio format first
+        self.format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                    sampleRate: sampleRate,
+                                    channels: 1,
+                                    interleaved: false)!
+        
+        // Create output bus
+        self.outputBus = try AUAudioUnitBus(format: self.format)
+        
+        // Initialize superclass
         try super.init(componentDescription: componentDescription, options: options)
-        initializeAudioUnit()
+        
+        // Set up output busses
+        self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
     }
     
-    /// Initialize Audio Unit configuration
-    private func initializeAudioUnit() {
-        // Set default audio format: 44100Hz, mono, 32-bit float
-        let audioFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                       sampleRate: 44100,
-                                       channels: 1,
-                                       interleaved: false)
-        
-        // Configure input and output bus
-        let inputBus = AUAudioUnitBus(format: audioFormat)
-        let outputBus = AUAudioUnitBus(format: audioFormat)
-        
-        // Initialize busses
-        do {
-            let inputBusArray = AUAudioUnitBusArray(audioUnit: self, busType: .input, busses: [inputBus])
-            let outputBusArray = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
-            
-            try self.setInputBusses(inputBusArray)
-            try self.setOutputBusses(outputBusArray)
-        } catch {
-            print("❌ Failed to initialize audio buses: \(error)")
-        }
+    // MARK: - Audio Unit Properties
+    
+    public override var outputBusses: AUAudioUnitBusArray {
+        return _outputBusses
+    }
+    
+    // MARK: - Supported Voices
+    
+    /// List of Ukrainian voices available in this extension
+    private var supportedVoices: [AVSpeechSynthesisProviderVoice] {
+        return [
+            // Male voice
+            AVSpeechSynthesisProviderVoice(
+                name: "Anatol",
+                identifier: "com.ukraine.voice.anatol",
+                primaryLanguages: ["uk-UA"],
+                supportedLanguages: ["uk-UA", "ru-RU"]
+            ),
+            // Female voice  
+            AVSpeechSynthesisProviderVoice(
+                name: "Marianna",
+                identifier: "com.ukraine.voice.marianna",
+                primaryLanguages: ["uk-UA"],
+                supportedLanguages: ["uk-UA", "ru-RU"]
+            )
+        ]
     }
     
     // MARK: - Speech Synthesis Protocol Implementation
@@ -61,9 +83,11 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             // Extract speech parameters
             let ssmlText = request.ssmlRepresentation
             let voice = request.voice
-            let rate = Float(request.rate) // 0.0...1.0 (0.5 = slower, 1.0 = normal, 2.0 = faster)
-            let pitch = Float(request.pitchMultiplier) // 0.5...2.0
-            let volume = Float(request.volume) // 0.0...1.0
+            
+            // Default parameters (rate, pitch, volume typically 1.0)
+            let rate: Float = 1.0
+            let pitch: Float = 1.0
+            let volume: Float = 1.0
             
             // Store parameters for synthesis
             self.currentRate = rate
@@ -100,8 +124,8 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
         
         // For now, placeholder that returns silent audio
         // In final version, this calls RHVoiceBridge
-        let sampleCount = Int(44100 * Double(plainText.count) / 1000) // Rough estimate
-        audioSamples = [Float](repeating: 0.0, count: sampleCount)
+        let sampleCount = Int(sampleRate * Double(plainText.count) / 1000) // Rough estimate
+        audioSamples = [Float](repeating: 0.0, count: max(1, sampleCount))
         
         // Apply volume scaling
         audioSamples = audioSamples.map { $0 * volume }
@@ -113,26 +137,7 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     private func sendAudioSamples(_ samples: [Float]) {
         guard !samples.isEmpty else { return }
         
-        // Create AVAudioPCMBuffer from samples
-        let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                   sampleRate: 44100,
-                                   channels: 1,
-                                   interleaved: false)
-        
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format,
-                                           frameCapacity: AVAudioFrameCount(samples.count)) else {
-            print("❌ Failed to create audio buffer")
-            return
-        }
-        
-        // Copy samples to buffer
-        let floatChannelData = buffer.floatChannelData!
-        for i in 0..<samples.count {
-            floatChannelData[0][i] = samples[i]
-        }
-        buffer.frameLength = AVAudioFrameCount(samples.count)
-        
-        // Send to output
+        // Store samples for later rendering
         outputAudioBuffer = samples
     }
     
@@ -140,32 +145,6 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     private func signalSynthesisCompletion() {
         // TODO: Call appropriate AVSpeechSynthesisProviderAudioUnit method
         // This signals to VoiceOver/system that speech is ready
-    }
-    
-    // MARK: - Supported Voices
-    
-    /// List of Ukrainian voices available in this extension
-    public override var supportedVoices: [AVSpeechSynthesisProviderVoice] {
-        return [
-            // Male voice
-            AVSpeechSynthesisProviderVoice(
-                name: "Anatol",
-                identifier: "com.ukraine.voice.anatol",
-                primaryLanguage: "uk-UA",
-                gender: .male,
-                quality: .enhanced,
-                version: "1.0"
-            ),
-            // Female voice  
-            AVSpeechSynthesisProviderVoice(
-                name: "Marianna",
-                identifier: "com.ukraine.voice.marianna",
-                primaryLanguage: "uk-UA",
-                gender: .female,
-                quality: .enhanced,
-                version: "1.0"
-            )
-        ]
     }
     
     // MARK: - Helper Methods
