@@ -2,93 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <!-- Bundle Configuration -->
-    <key>CFBundleDevelopmentRegion</key>
-    <string>uk</string>
-    <key>CFBundleExecutable</key>
-    <string>$(EXECUTABLE_NAME)</string>
-    <key>CFBundleIdentifier</key>
-    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>Ukrainian Voices</string>
-    <key>CFBundlePackageType</key>
-    <string>XPC!</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    
-    <!-- Minimum OS Versions -->
-    <key>MinimumOSVersion</key>
-    <string>13.0</string>
-    <key>NSMinimumOSVersion</key>
-    <string>10.15</string>
-    
-    <!-- Speech Synthesis Extension Configuration -->
     <key>NSExtension</key>
     <dict>
-        <!-- Extension point identifier for Speech Synthesis -->
         <key>NSExtensionPointIdentifier</key>
-        <string>com.apple.speech.synthesis.extension</string>
-        
-        <!-- Main class that provides speech synthesis -->
+        <string>com.apple.speech-synthesis-provider</string>
         <key>NSExtensionPrincipalClass</key>
         <string>$(PRODUCT_MODULE_NAME).UkrainianSpeechSynthesizer</string>
-        
-        <!-- Extension attributes -->
-        <key>NSExtensionAttributes</key>
-        <dict>
-            <!-- List of voice identifiers provided by this extension -->
-            <key>AVSpeechSynthesisProviderVoiceIdentifiers</key>
-            <array>
-                <string>com.ukraine.voice.anatol</string>
-                <string>com.ukraine.voice.marianna</string>
-            </array>
-            
-            <!-- Additional voice metadata -->
-            <key>com.apple.speech.synthesis.voices</key>
-            <array>
-                <dict>
-                    <key>VoiceName</key>
-                    <string>Anatol</string>
-                    <key>VoiceIdentifier</key>
-                    <string>com.ukraine.voice.anatol</string>
-                    <key>VoiceLanguage</key>
-                    <string>uk-UA</string>
-                    <key>VoiceGender</key>
-                    <string>Male</string>
-                </dict>
-                <dict>
-                    <key>VoiceName</key>
-                    <string>Marianna</string>
-                    <key>VoiceIdentifier</key>
-                    <string>com.ukraine.voice.marianna</string>
-                    <key>VoiceLanguage</key>
-                    <string>uk-UA</string>
-                    <key>VoiceGender</key>
-                    <string>Female</string>
-                </dict>
-            </array>
-            
-            <!-- Supported features -->
-            <key>SupportsVolumeControl</key>
-            <true/>
-            <key>SupportsPitchControl</key>
-            <true/>
-            <key>SupportsRateControl</key>
-            <true/>
-            <key>SupportsLanguageSelection</key>
-            <true/>
-        </dict>
     </dict>
-    
-    <!-- App Transport Security -->
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsArbitraryLoads</key>
-        <false/>
-    </dict>
+    <key>CFBundleDisplayName</key>
+    <string>Ukrainian Voices</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
 </dict>
 </plist>

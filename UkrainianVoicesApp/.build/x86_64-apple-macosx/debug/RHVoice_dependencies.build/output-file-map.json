@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/RHVoice_dependencies.build/master.swiftdeps"
+  },
+  "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core/Bridge/placeholder.swift": {
+    "dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/RHVoice_dependencies.build/placeholder.d",
+    "object": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/RHVoice_dependencies.build/placeholder.swift.o",
+    "swiftmodule": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/RHVoice_dependencies.build/placeholder~partial.swiftmodule",
+    "swift-dependencies": "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/RHVoice_dependencies.build/placeholder.swiftdeps"
+  }
+}

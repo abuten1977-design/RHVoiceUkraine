@@ -235,6 +235,8 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
 				VALID_ARCHS = x86_64;
@@ -315,8 +317,12 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Extension/Libraries";
-				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio";
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.Extension.mac;
+				INFOPLIST_FILE = Extension/Info.plist;
+				SWIFT_OBJC_BRIDGING_HEADER = "Extension/Bridge/UkrainianVoices-Bridging-Header.h";
+				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio -framework AVFoundation -framework AudioToolbox -framework Foundation";
+				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac.Extension;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
 			};
@@ -334,6 +340,8 @@
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
 				VALID_ARCHS = x86_64;
@@ -407,8 +415,12 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Extension/Libraries";
-				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio";
-				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.Extension.mac;
+				INFOPLIST_FILE = Extension/Info.plist;
+				SWIFT_OBJC_BRIDGING_HEADER = "Extension/Bridge/UkrainianVoices-Bridging-Header.h";
+				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio -framework AVFoundation -framework AudioToolbox -framework Foundation";
+				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac.Extension;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
 			};

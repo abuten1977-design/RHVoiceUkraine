@@ -1,0 +1,4 @@
+module Common {
+    header "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/Common.build/Common-Swift.h"
+    requires objc
+}

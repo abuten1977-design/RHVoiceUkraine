@@ -1,10 +1,86 @@
 {
   "object" : {
     "artifacts" : [
-
+      {
+        "kind" : "xcframework",
+        "packageRef" : {
+          "identity" : "core",
+          "kind" : "fileSystem",
+          "location" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core",
+          "name" : "RHVoice"
+        },
+        "path" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/artifacts/core/libssl/libssl.xcframework",
+        "source" : {
+          "checksum" : "eaa778c6241bb4662e57b7d63b9d647ec891e86b078e3716a478f392e28176bc",
+          "type" : "remote",
+          "url" : "https://github.com/IhorShevchuk/Build-OpenSSL-cURL/releases/download/8.0.1/libssl.xcframework.zip"
+        },
+        "targetName" : "libssl"
+      },
+      {
+        "kind" : "xcframework",
+        "packageRef" : {
+          "identity" : "core",
+          "kind" : "fileSystem",
+          "location" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core",
+          "name" : "RHVoice"
+        },
+        "path" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/artifacts/core/libcrypto/libcrypto.xcframework",
+        "source" : {
+          "checksum" : "6d4a105f591a32453726fc68f0e18b9a8050e9e051a3b5a01bfcf3e072414ed2",
+          "type" : "remote",
+          "url" : "https://github.com/IhorShevchuk/Build-OpenSSL-cURL/releases/download/8.0.1/libcrypto.xcframework.zip"
+        },
+        "targetName" : "libcrypto"
+      },
+      {
+        "kind" : "xcframework",
+        "packageRef" : {
+          "identity" : "core",
+          "kind" : "fileSystem",
+          "location" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core",
+          "name" : "RHVoice"
+        },
+        "path" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/artifacts/core/libnghttp2/libnghttp2.xcframework",
+        "source" : {
+          "checksum" : "a14509e7638174a1d55127bd6860424fc96bab388184ceb1228450d2bc21819d",
+          "type" : "remote",
+          "url" : "https://github.com/IhorShevchuk/Build-OpenSSL-cURL/releases/download/8.0.1/libnghttp2.xcframework.zip"
+        },
+        "targetName" : "libnghttp2"
+      },
+      {
+        "kind" : "xcframework",
+        "packageRef" : {
+          "identity" : "core",
+          "kind" : "fileSystem",
+          "location" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core",
+          "name" : "RHVoice"
+        },
+        "path" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/artifacts/core/libcurl/libcurl.xcframework",
+        "source" : {
+          "checksum" : "ca6db5983531dd0daf88077fb090b5b543c622264c97bdf269d06cdb99f13433",
+          "type" : "remote",
+          "url" : "https://github.com/IhorShevchuk/Build-OpenSSL-cURL/releases/download/8.0.1/libcurl.xcframework.zip"
+        },
+        "targetName" : "libcurl"
+      }
     ],
     "dependencies" : [
-
+      {
+        "basedOn" : null,
+        "packageRef" : {
+          "identity" : "core",
+          "kind" : "fileSystem",
+          "location" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core",
+          "name" : "RHVoice"
+        },
+        "state" : {
+          "name" : "fileSystem",
+          "path" : "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core"
+        },
+        "subpath" : "core"
+      }
     ]
   },
   "version" : 6

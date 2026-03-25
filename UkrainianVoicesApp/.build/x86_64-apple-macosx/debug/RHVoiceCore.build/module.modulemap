@@ -1,0 +1,4 @@
+module RHVoiceCore {
+    umbrella "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core/Core/src/include"
+    export *
+}

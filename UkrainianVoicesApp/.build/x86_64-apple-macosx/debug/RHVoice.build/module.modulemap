@@ -1,0 +1,4 @@
+module RHVoice {
+    umbrella header "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/Core/Bridge/RHVoice/PublicHeaders/RHVoice.h"
+    export *
+}

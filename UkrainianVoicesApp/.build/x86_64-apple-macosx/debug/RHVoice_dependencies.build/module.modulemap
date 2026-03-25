@@ -1,0 +1,4 @@
+module RHVoice_dependencies {
+    header "/Users/andriybutenko/Projects/RHVoiceUkraine/UkrainianVoicesApp/.build/x86_64-apple-macosx/debug/RHVoice_dependencies.build/RHVoice_dependencies-Swift.h"
+    requires objc
+}
