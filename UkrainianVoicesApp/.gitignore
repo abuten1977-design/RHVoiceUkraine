@@ -1,0 +1,5 @@
+.build/
+*.xcodeproj.backup/
+*.pbxproj.bak*
+DerivedData/
+.build/

@@ -13,6 +13,7 @@
 		DC20ED4CC0D387D5241B2DB5 /* UkrainianVoicesExtensionMac.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 156A3C9B7ED0A811E4366987 /* UkrainianVoicesExtensionMac.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E5568BE9FFBDCCE8F7DE31B2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A56E76780E038F7DD3596F /* ContentView.swift */; };
 		EFF4D9E6C4A8F745159CFFB2 /* UkrainianVoicesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4AD37E0F3614FDEAB8FD64 /* UkrainianVoicesApp.swift */; };
+		AA11BB22CC33DD45 /* Voices in Resources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44 /* Voices */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -38,6 +39,15 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
+		AA11BB22CC33DD46 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA11BB22CC33DD45 /* Voices in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
 
 /* Begin PBXFileReference section */
 		0767F8B5D4C22FA2631FDBB6 /* RHVoiceEngine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RHVoiceEngine.h; sourceTree = "<group>"; };
@@ -53,6 +63,7 @@
 		B6707CECBB983D990EB28DCD /* RHVoiceEngine+Parameters.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RHVoiceEngine+Parameters.h"; sourceTree = "<group>"; };
 		E4EB257DD9B46FD386FE008A /* UkrainianVoicesMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UkrainianVoicesMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5CCA54CA2A0157F900AE902 /* RHVoiceEngine.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RHVoiceEngine.mm; sourceTree = "<group>"; };
+		AA11BB22CC33DD44 /* Voices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Voices; path = Extension/Resources/Voices; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -106,6 +117,7 @@
 				B6707CECBB983D990EB28DCD /* RHVoiceEngine+Parameters.h */,
 				673769D2A0EC2ED20998C703 /* RHVoiceEngine+Parameters.mm */,
 				4B29C8CB988EDA455564B7B1 /* UkrainianVoices-Bridging-Header.h */,
+				AA11BB22CC33DD44 /* Voices */,
 			);
 			name = Bridge;
 			path = Extension/Bridge;
@@ -154,6 +166,7 @@
 			buildConfigurationList = E7BC7B32943A67BE75306838 /* Build configuration list for PBXNativeTarget "UkrainianVoicesExtensionMac" */;
 			buildPhases = (
 				536EDCD7114578E3AD1A42BA /* Sources */,
+				AA11BB22CC33DD46 /* Resources */,
 			);
 			buildRules = (
 			);
