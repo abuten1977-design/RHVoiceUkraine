@@ -1,50 +1,40 @@
-//
 //  UkrainianSpeechSynthesizer.swift
-//  UkrainianVoicesExtension
-//
-//  Copyright (C) 2026 Andriy Butenko
-//  SPDX-License-Identifier: GPL-3.0-or-later
-//
-//  Speech Synthesis Provider Extension for Ukrainian voices.
-//  Uses RHVoice C library via Objective-C++ bridge (RHVoiceEngine).
-//  Implements AVSpeechSynthesisProviderAudioUnit — required for VoiceOver integration.
-//
+//  Copyright (C) 2026 Andriy Butenko — GPL-3.0-or-later
 
 import AVFoundation
 import AudioToolbox
 
+private let appGroup = "group.rhvoice.UkrainianVoices.shared"
+
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
-    // MARK: - Audio Unit setup
+    // MARK: - AudioUnit setup
 
     private var outputBus: AUAudioUnitBus
     private var _outputBusses: AUAudioUnitBusArray!
     private let sampleRate = 24000.0
-    private var format: AVAudioFormat
 
     @objc public override init(componentDescription: AudioComponentDescription,
                                options: AudioComponentInstantiationOptions) throws {
-        format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                               sampleRate: sampleRate, channels: 1, interleaved: true)!
+        let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                   sampleRate: 24000, channels: 1, interleaved: true)!
         outputBus = try AUAudioUnitBus(format: format)
         try super.init(componentDescription: componentDescription, options: options)
-        _outputBusses = AUAudioUnitBusArray(audioUnit: self,
-                                            busType: .output, busses: [outputBus])
+        _outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
     }
 
     public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
     public override var canProcessInPlace: Bool { true }
 
-    // MARK: - Audio buffer state
+    // MARK: - Buffer state
 
-    private let outputQueue = DispatchQueue(label: "UkrainianSpeechSynthesizer.output",
-                                            qos: .userInteractive)
+    private let queue = DispatchQueue(label: "UkrainianSpeechSynthesizer", qos: .userInteractive)
     private var outputData: [Float] = []
     private var outputOffset = 0
     private var renderComplete = false
+    private var sentencePauseAdded = false
 
-    // MARK: - Rendering
-    // NOTE: Safe to use Swift — Speech Extensions process offline, not realtime.
+    // MARK: - Render
 
     public override var internalRenderBlock: AUInternalRenderBlock { performRender }
 
@@ -57,68 +47,79 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         renderEvents: UnsafePointer<AURenderEvent>?,
         renderPull: AURenderPullInputBlock?
     ) -> AUAudioUnitStatus {
-        let intFrameCount = Int(frameCount)
-
+        let n = Int(frameCount)
         var available = 0
         var total = 0
-        outputQueue.sync {
+        queue.sync {
             total = outputData.count
-            available = min(max(total - outputOffset, 0), intFrameCount)
+            available = min(max(total - outputOffset, 0), n)
         }
 
-        // All data rendered — signal completion
-        if renderComplete && available == 0 {
+        if renderComplete && available == 0 && (!sentencePauseAdded || outputOffset >= total) {
             actionFlags.pointee = .offlineUnitRenderAction_Complete
             return noErr
         }
 
-        // Fill output buffer
-        outputAudioBufferList.pointee.mNumberBuffers = 1
         var buf = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)[0]
         let frames = buf.mData!.assumingMemoryBound(to: Float32.self)
-        frames.update(repeating: 0, count: intFrameCount)
+        frames.update(repeating: 0, count: n)
         buf.mNumberChannels = 1
         buf.mDataByteSize = UInt32(available * MemoryLayout<Float32>.size)
+        outputAudioBufferList.pointee.mNumberBuffers = 1
 
-        var slice: [Float] = []
-        outputQueue.sync {
-            if outputOffset >= 0 && outputOffset + available <= outputData.count {
+        if available > 0 {
+            var slice: [Float] = []
+            queue.sync {
                 slice = Array(outputData[outputOffset..<(outputOffset + available)])
             }
+            for (i, s) in slice.enumerated() { frames[i] = s }
+            outputOffset += available
         }
-        for (i, sample) in slice.enumerated() { frames[i] = sample }
-        outputOffset += available
         actionFlags.pointee = .offlineUnitRenderAction_Render
         return noErr
     }
 
-    // MARK: - Speech synthesis
+    // MARK: - Synthesis
 
     private let engine = RHVoiceEngine()
 
-    public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+    public override func synthesizeSpeechRequest(_ req: AVSpeechSynthesisProviderRequest) {
         cancelSpeechRequest()
 
-        let voiceName = speechRequest.voice.name
-        // Extract plain text from SSML (strip tags)
-        let ssml = speechRequest.ssmlRepresentation
-        let text = ssml
+        // Read voice name from identifier (e.g. com.rhvoice.UkrainianVoices.anatol → anatol)
+        let voiceName = req.voice.identifier.components(separatedBy: ".").last ?? req.voice.name
+
+        let text = req.ssmlRepresentation
             .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard !text.isEmpty else {
-            outputQueue.sync { renderComplete = true }
+            queue.sync { renderComplete = true }
             return
         }
 
+        // Read settings from App Group
+        let defaults = UserDefaults(suiteName: appGroup)
+        let rate = defaults?.double(forKey: "rate").clamped(to: 0...1) ?? 0.5
+        let volume = defaults?.double(forKey: "volume").clamped(to: 0...1) ?? 1.0
+        let speedMult = defaults?.double(forKey: "speedMultiplier").clamped(to: 1...5) ?? 1.0
+        let pauseMs = defaults?.double(forKey: "sentencePause").clamped(to: 0...2000) ?? 0
+
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
-            let buffer = self.engine.synthesize(text, voice: voiceName,
-                                                rate: 1.0, volume: 1.0, pitch: 1.0)
-            self.outputQueue.sync {
-                if let buf = buffer, let data = buf.floatChannelData?[0] {
-                    let count = Int(buf.frameLength)
-                    self.outputData = Array(UnsafeBufferPointer(start: data, count: count))
+            let buf = self.engine.synthesize(text, voice: voiceName,
+                                             rate: rate * speedMult,
+                                             volume: volume,
+                                             pitch: 1.0)
+            self.queue.sync {
+                if let b = buf, let data = b.floatChannelData?[0] {
+                    self.outputData = Array(UnsafeBufferPointer(start: data, count: Int(b.frameLength)))
+                }
+                // Add sentence pause
+                if pauseMs > 0 {
+                    let pauseSamples = Int(pauseMs / 1000.0 * self.sampleRate)
+                    self.outputData.append(contentsOf: [Float](repeating: 0, count: pauseSamples))
+                    self.sentencePauseAdded = true
                 }
                 self.renderComplete = true
             }
@@ -126,39 +127,52 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     public override func cancelSpeechRequest() {
-        outputQueue.sync {
+        queue.sync {
             outputData = []
             outputOffset = 0
             renderComplete = false
+            sentencePauseAdded = false
         }
     }
 
     // MARK: - Voices
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { ukrainianVoices }
+        get {
+            let defaults = UserDefaults(suiteName: appGroup)
+            guard let enabled = defaults?.stringArray(forKey: "enabledVoiceIdentifiers") else {
+                return allVoices
+            }
+            let enabledSet = Set(enabled)
+            return allVoices.filter { enabledSet.contains($0.identifier) }
+        }
         set { }
     }
 
-    /// Ukrainian voices registered with the system.
-    private var ukrainianVoices: [AVSpeechSynthesisProviderVoice] {
-        return [
-            AVSpeechSynthesisProviderVoice(name: "Anatol",
-                identifier: "com.andriybutenko.RHVoiceUA.anatol",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]),
-            AVSpeechSynthesisProviderVoice(name: "Marianna",
-                identifier: "com.andriybutenko.RHVoiceUA.marianna",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]),
-            AVSpeechSynthesisProviderVoice(name: "Natalia",
-                identifier: "com.andriybutenko.RHVoiceUA.natalia",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]),
-            AVSpeechSynthesisProviderVoice(name: "Volodymyr",
-                identifier: "com.andriybutenko.RHVoiceUA.volodymyr",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"])
-        ]
+    private var allVoices: [AVSpeechSynthesisProviderVoice] {[
+        AVSpeechSynthesisProviderVoice(name: "Anatol",
+            identifier: "com.rhvoice.UkrainianVoices.anatol",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Marianna",
+            identifier: "com.rhvoice.UkrainianVoices.marianna",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Natalia",
+            identifier: "com.rhvoice.UkrainianVoices.natalia",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Volodymyr",
+            identifier: "com.rhvoice.UkrainianVoices.volodymyr",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Alan",
+            identifier: "com.rhvoice.UkrainianVoices.alan",
+            primaryLanguages: ["en-US"], supportedLanguages: ["en-US"]),
+        AVSpeechSynthesisProviderVoice(name: "Victoria",
+            identifier: "com.rhvoice.UkrainianVoices.victoria",
+            primaryLanguages: ["en-US"], supportedLanguages: ["en-US"])
+    ]}
+}
+
+private extension Double {
+    func clamped(to range: ClosedRange<Double>) -> Double {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

@@ -14,6 +14,8 @@
 		E5568BE9FFBDCCE8F7DE31B2 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34A56E76780E038F7DD3596F /* ContentView.swift */; };
 		EFF4D9E6C4A8F745159CFFB2 /* UkrainianVoicesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4AD37E0F3614FDEAB8FD64 /* UkrainianVoicesApp.swift */; };
 		AA11BB22CC33DD45 /* Voices in Resources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44 /* Voices */; };
+		A1B2C3D4E5F60718293A4B5C /* AudioUnitFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5B /* AudioUnitFactory.swift */; };
+		A1B2C3D4E5F60718293A4B5E /* UkrainianSpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5D /* UkrainianSpeechSynthesizer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,6 +66,8 @@
 		E4EB257DD9B46FD386FE008A /* UkrainianVoicesMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UkrainianVoicesMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5CCA54CA2A0157F900AE902 /* RHVoiceEngine.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RHVoiceEngine.mm; sourceTree = "<group>"; };
 		AA11BB22CC33DD44 /* Voices */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Voices; path = Extension/Resources/Voices; sourceTree = SOURCE_ROOT; };
+		A1B2C3D4E5F60718293A4B5B /* AudioUnitFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUnitFactory.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5D /* UkrainianSpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UkrainianSpeechSynthesizer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,6 +106,8 @@
 		7FA6B3A7C51CD8FFA46AF3F2 /* Provider */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F60718293A4B5B /* AudioUnitFactory.swift */,
+				A1B2C3D4E5F60718293A4B5D /* UkrainianSpeechSynthesizer.swift */,
 			);
 			name = Provider;
 			path = Extension/Provider;
@@ -149,6 +155,7 @@
 			buildPhases = (
 				4FEA87CC5DCC1DEC6CFAD37C /* Sources */,
 				B1CA84F433B9BFC7D8B08FD8 /* Frameworks */,
+				A1B2C3D4E5F60718293A4B60 /* Embed RHVoice dylibs */,
 				AAB1F6FD776DF7886ED31B2B /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -204,6 +211,28 @@
 				24A5D473B006C588A82DA988 /* UkrainianVoicesMac */,
 			);
 		};
+
+/* Begin PBXShellScriptBuildPhase section */
+		A1B2C3D4E5F60718293A4B60 /* Embed RHVoice dylibs */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed RHVoice dylibs";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nAPP_FRAMEWORKS=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Frameworks\"\nmkdir -p \"$APP_FRAMEWORKS\"\nfor lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do\n  SRC=\"${SRCROOT}/Extension/Libraries/$lib\"\n  DST=\"$APP_FRAMEWORKS/$lib\"\n  if [ ! -f \"$SRC\" ]; then\n    echo \"Missing RHVoice library: $SRC\" >&2\n    exit 1\n  fi\n  cp -f \"$SRC\" \"$DST\"\n  chmod 755 \"$DST\"\ndone";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -220,6 +249,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F60718293A4B5C /* AudioUnitFactory.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5E /* UkrainianSpeechSynthesizer.swift in Sources */,
 				C1AAC490FDAE8B7D76B72855 /* RHVoiceEngine+Parameters.mm in Sources */,
 				5523E91B19DB927E0ED09E0C /* RHVoiceEngine.mm in Sources */,
 			);
@@ -243,12 +274,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = App/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
@@ -330,11 +363,13 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Extension/Libraries";
+				CODE_SIGN_ENTITLEMENTS = Extension/Extension.entitlements;
 				INFOPLIST_FILE = Extension/Info.plist;
 				SWIFT_OBJC_BRIDGING_HEADER = "Extension/Bridge/UkrainianVoices-Bridging-Header.h";
 				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio -framework AVFoundation -framework AudioToolbox -framework Foundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac.Extension;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
@@ -348,12 +383,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = App/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;
@@ -428,11 +465,13 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Extension/Libraries";
+				CODE_SIGN_ENTITLEMENTS = Extension/Extension.entitlements;
 				INFOPLIST_FILE = Extension/Info.plist;
 				SWIFT_OBJC_BRIDGING_HEADER = "Extension/Bridge/UkrainianVoices-Bridging-Header.h";
 				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio -framework AVFoundation -framework AudioToolbox -framework Foundation";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.UkrainianVoices.mac.Extension;
 				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 5NNZPP8CRR;
 				SDKROOT = macosx;
 				SUPPORTED_PLATFORMS = macosx;

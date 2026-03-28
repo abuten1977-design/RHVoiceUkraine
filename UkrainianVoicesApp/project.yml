@@ -35,9 +35,9 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
-        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: ""
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
     dependencies:
       - target: UkrainianVoicesExtension
       - sdk: AVFoundation.framework
@@ -59,9 +59,9 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
-        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: ""
-        DEVELOPMENT_TEAM: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
     dependencies:
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
@@ -95,9 +95,9 @@ targets:
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
     dependencies:
       - target: UkrainianVoicesExtensionMac
@@ -112,16 +112,16 @@ targets:
       - Extension/Bridge
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension.mac
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac.Extension
         INFOPLIST_FILE: Extension/Info.plist
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
     dependencies:
       - sdk: AVFoundation.framework
