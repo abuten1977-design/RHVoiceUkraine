@@ -27,33 +27,15 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: Install build tools
-        run: brew install cmake pkg-config boost xcodegen
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
-      - name: Build RHVoice static libraries for iPhone
+      - name: Verify tracked static libraries
         run: |
           set -euxo pipefail
-          export BOOST_ROOT="$(brew --prefix boost)"
-          cd RHVoice
-          rm -rf build_ios_device
-          mkdir -p build_ios_device
-          cd build_ios_device
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_SYSTEM_NAME=iOS \
-            -DCMAKE_OSX_SYSROOT=iphoneos \
-            -DCMAKE_OSX_ARCHITECTURES=arm64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DCMAKE_CXX_FLAGS="-I${BOOST_ROOT}/include"
-          cmake --build . --parallel
-
-      - name: Copy iPhone libraries into app project
-        run: |
-          set -euxo pipefail
-          rm -rf UkrainianVoicesApp/Extension/Libraries
-          mkdir -p UkrainianVoicesApp/Extension/Libraries
-          find RHVoice/build_ios_device -name "*.a" -exec cp {} UkrainianVoicesApp/Extension/Libraries/ \;
+          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice.a
+          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_core.a
+          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_audio.a
           ls -lh UkrainianVoicesApp/Extension/Libraries/
 
       - name: Generate Xcode project
@@ -74,19 +56,21 @@ jobs:
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             -derivedDataPath build \
+            ONLY_ACTIVE_ARCH=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="" \
-            clean build
+            clean archive \
+            -archivePath build/UkrainianVoices.xcarchive
 
       - name: Package unsigned app
         run: |
           set -euxo pipefail
           cd UkrainianVoicesApp
-          test -d build/Build/Products/Release-iphoneos/UkrainianVoices.app
+          test -d build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app
           mkdir -p unsigned_artifacts/Payload
-          cp -R build/Build/Products/Release-iphoneos/UkrainianVoices.app unsigned_artifacts/Payload/
+          cp -R build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app unsigned_artifacts/Payload/
           cd unsigned_artifacts
           zip -qry ../UkrainianVoices-unsigned.ipa Payload
 
@@ -96,7 +80,7 @@ jobs:
           name: ios-unsigned-build
           path: |
             UkrainianVoicesApp/UkrainianVoices-unsigned.ipa
-            UkrainianVoicesApp/build/Build/Products/Release-iphoneos/UkrainianVoices.app
+            UkrainianVoicesApp/build/UkrainianVoices.xcarchive
           if-no-files-found: error
           retention-days: 1
 
