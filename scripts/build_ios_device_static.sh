@@ -36,19 +36,20 @@ build_archive() {
   ar rcs "$out" "${objects[@]}"
 }
 
-collect_sources() {
-  local dir="$1"
-  local -n out_ref="$2"
-  out_ref=()
+core_sources=()
+while IFS= read -r src; do
+  core_sources+=("$src")
+done < <(find "$RHVOICE_SRC/core" -maxdepth 1 -name '*.cpp' | sort)
 
-  while IFS= read -r src; do
-    out_ref+=("$src")
-  done < <(find "$dir" -maxdepth 1 -name '*.cpp' | sort)
-}
+audio_sources=()
+while IFS= read -r src; do
+  audio_sources+=("$src")
+done < <(find "$RHVOICE_SRC/audio" -maxdepth 1 -name '*.cpp' | sort)
 
-collect_sources "$RHVOICE_SRC/core" core_sources
-collect_sources "$RHVOICE_SRC/audio" audio_sources
-collect_sources "$RHVOICE_SRC/lib" lib_sources
+lib_sources=()
+while IFS= read -r src; do
+  lib_sources+=("$src")
+done < <(find "$RHVOICE_SRC/lib" -maxdepth 1 -name '*.cpp' | sort)
 
 build_archive libRHVoice_core.a "${core_sources[@]}"
 build_archive libRHVoice_audio.a "${audio_sources[@]}"
