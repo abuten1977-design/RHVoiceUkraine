@@ -35,8 +35,15 @@ CXXFLAGS=(
   -stdlib=libc++
   -DRHVOICE_STATIC
   -I"$RHVOICE_SRC/include"
-  -I"$ROOT_DIR/RHVoice/src/third-party/utf8"
+  -I"$RHVOICE_SRC/hts_engine"
+  -I"$ROOT_DIR/RHVoice/external/libs/boost/include"
 )
+
+for dep_dir in "$RHVOICE_SRC/third-party"/*; do
+  if [ -d "$dep_dir" ]; then
+    CXXFLAGS+=(-I"$dep_dir")
+  fi
+done
 
 build_archive() {
   local name="$1"
