@@ -17,7 +17,6 @@ fail() {
 echo "Checking workflow file exists"
 [ -f "$WORKFLOW" ] || fail "workflow missing"
 [ -f "$LEGACY_WORKFLOW" ] || fail "build.yml missing"
-[ -f "$BUILD_SCRIPT" ] || fail "build script missing"
 
 echo "Checking project file exists"
 [ -f "$PROJECT_YML" ] || fail "project.yml missing"
@@ -36,14 +35,14 @@ grep -q 'archivePath build/UkrainianVoices.xcarchive' "$WORKFLOW" || fail "archi
 grep -q 'CODE_SIGNING_ALLOWED=NO' "$WORKFLOW" || fail "CODE_SIGNING_ALLOWED=NO missing"
 grep -q 'generic/platform=iOS' "$WORKFLOW" || fail "generic iOS destination missing"
 
-echo "Checking build.yml uses fresh iPhone library build path"
+echo "Checking build.yml matches tracked-library unsigned build path"
 grep -q '^  workflow_dispatch:' "$LEGACY_WORKFLOW" || fail "build.yml workflow_dispatch missing"
 grep -q '^  cancel-in-progress: true' "$LEGACY_WORKFLOW" || fail "build.yml cancel-in-progress missing"
-grep -q 'Build fresh iPhone static libraries' "$LEGACY_WORKFLOW" || fail "build.yml missing fresh iPhone build step"
-grep -q 'Inject fresh iPhone libraries' "$LEGACY_WORKFLOW" || fail "build.yml missing fresh iPhone injection"
-grep -q 'scripts/build_ios_device_static.sh' "$LEGACY_WORKFLOW" || fail "build.yml missing build script reference"
+grep -q 'Verify tracked static libraries and voices' "$LEGACY_WORKFLOW" || fail "build.yml missing tracked library verification"
 grep -q 'archivePath build/UkrainianVoices.xcarchive' "$LEGACY_WORKFLOW" || fail "build.yml archivePath missing"
 grep -q 'retention-days: 1' "$LEGACY_WORKFLOW" || fail "build.yml retention-days mismatch"
+grep -q 'CODE_SIGNING_ALLOWED=NO' "$LEGACY_WORKFLOW" || fail "build.yml CODE_SIGNING_ALLOWED=NO missing"
+grep -q 'generic/platform=iOS' "$LEGACY_WORKFLOW" || fail "build.yml generic iOS destination missing"
 
 echo "Checking project links to bundled static libraries"
 grep -Fq 'LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"' "$PROJECT_YML" || fail "library search path mismatch"
