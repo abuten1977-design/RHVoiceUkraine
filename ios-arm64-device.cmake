@@ -1,0 +1,48 @@
+# ios-arm64-device.cmake
+#
+# This CMake toolchain file targets physical iPhone devices on ARM64.
+
+set(CMAKE_SYSTEM_NAME iOS)
+set(CMAKE_SYSTEM_PROCESSOR arm64)
+set(CMAKE_OSX_ARCHITECTURES "arm64")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "16.0")
+
+execute_process(
+  COMMAND xcrun --sdk iphoneos --show-sdk-path
+  OUTPUT_VARIABLE IOS_SDK_ROOT
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(NOT IOS_SDK_ROOT)
+  message(FATAL_ERROR "Could not find iPhoneOS SDK. Is Xcode installed?")
+endif()
+
+set(CMAKE_OSX_SYSROOT "${IOS_SDK_ROOT}")
+set(CMAKE_SYSROOT "${IOS_SDK_ROOT}")
+
+execute_process(
+  COMMAND xcrun --sdk iphoneos --find clang
+  OUTPUT_VARIABLE CMAKE_C_COMPILER
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND xcrun --sdk iphoneos --find clang++
+  OUTPUT_VARIABLE CMAKE_CXX_COMPILER
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fembed-bitcode -miphoneos-version-min=16.0")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode -miphoneos-version-min=16.0")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -miphoneos-version-min=16.0")
+set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -miphoneos-version-min=16.0")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -miphoneos-version-min=16.0")
+
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+set(CMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH YES)
+set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED NO)
+set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "")
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)

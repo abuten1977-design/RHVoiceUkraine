@@ -7,6 +7,7 @@ LEGACY_WORKFLOW="$ROOT_DIR/.github/workflows/build.yml"
 PROJECT_YML="$ROOT_DIR/UkrainianVoicesApp/project.yml"
 LIB_DIR="$ROOT_DIR/UkrainianVoicesApp/Extension/Libraries"
 VOICES_DIR="$ROOT_DIR/UkrainianVoicesApp/Extension/Resources/Voices"
+DEVICE_TOOLCHAIN="$ROOT_DIR/ios-arm64-device.cmake"
 
 fail() {
   echo "VALIDATION_FAIL: $*" >&2
@@ -16,6 +17,7 @@ fail() {
 echo "Checking workflow file exists"
 [ -f "$WORKFLOW" ] || fail "workflow missing"
 [ -f "$LEGACY_WORKFLOW" ] || fail "build.yml missing"
+[ -f "$DEVICE_TOOLCHAIN" ] || fail "device toolchain missing"
 
 echo "Checking project file exists"
 [ -f "$PROJECT_YML" ] || fail "project.yml missing"
@@ -39,10 +41,12 @@ grep -q 'archivePath build/UkrainianVoices.xcarchive' "$WORKFLOW" || fail "archi
 grep -q 'CODE_SIGNING_ALLOWED=NO' "$WORKFLOW" || fail "CODE_SIGNING_ALLOWED=NO missing"
 grep -q 'generic/platform=iOS' "$WORKFLOW" || fail "generic iOS destination missing"
 
-echo "Checking build.yml uses manual-only tracked-libs path"
+echo "Checking build.yml uses fresh iPhone library build path"
 grep -q '^  workflow_dispatch:' "$LEGACY_WORKFLOW" || fail "build.yml workflow_dispatch missing"
 grep -q '^  cancel-in-progress: true' "$LEGACY_WORKFLOW" || fail "build.yml cancel-in-progress missing"
-grep -q 'Verify tracked iPhone libraries and voices' "$LEGACY_WORKFLOW" || fail "build.yml still missing tracked library verification"
+grep -q 'Build RHVoice iPhone static libraries' "$LEGACY_WORKFLOW" || fail "build.yml missing RHVoice iPhone build step"
+grep -q 'ios-arm64-device.cmake' "$LEGACY_WORKFLOW" || fail "build.yml missing device toolchain"
+grep -q 'Inject freshly built iPhone libraries' "$LEGACY_WORKFLOW" || fail "build.yml missing fresh library injection"
 grep -q 'archivePath build/UkrainianVoices.xcarchive' "$LEGACY_WORKFLOW" || fail "build.yml archivePath missing"
 grep -q 'retention-days: 1' "$LEGACY_WORKFLOW" || fail "build.yml retention-days mismatch"
 
