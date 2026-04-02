@@ -64,7 +64,7 @@ build_archive() {
 core_sources=()
 while IFS= read -r src; do
   core_sources+=("$src")
-done < <(find "$RHVOICE_SRC/core" -maxdepth 1 -name '*.cpp' | sort)
+done < <(find "$RHVOICE_SRC/core" -maxdepth 1 -name '*.cpp' ! -name 'emoji_data.cpp' ! -name 'unidata.cpp' | sort)
 
 audio_sources=()
 while IFS= read -r src; do
