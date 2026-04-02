@@ -29,7 +29,7 @@ targets:
         basedOnDependencyAnalysis: false
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR
         INFOPLIST_FILE: App/Info.plist
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -54,7 +54,7 @@ targets:
       - Extension/Views
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR.Extension
         INFOPLIST_FILE: Extension/Info.plist
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
