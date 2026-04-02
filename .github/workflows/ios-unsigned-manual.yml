@@ -1,0 +1,113 @@
+name: iOS Unsigned Manual Build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-unsigned-manual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios-unsigned:
+    name: Build Unsigned iPhone App
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Install build tools
+        run: brew install cmake pkg-config boost xcodegen
+
+      - name: Build RHVoice static libraries for iPhone
+        run: |
+          set -euxo pipefail
+          export BOOST_ROOT="$(brew --prefix boost)"
+          cd RHVoice
+          rm -rf build_ios_device
+          mkdir -p build_ios_device
+          cd build_ios_device
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_CXX_FLAGS="-I${BOOST_ROOT}/include"
+          cmake --build . --parallel
+
+      - name: Copy iPhone libraries into app project
+        run: |
+          set -euxo pipefail
+          rm -rf UkrainianVoicesApp/Extension/Libraries
+          mkdir -p UkrainianVoicesApp/Extension/Libraries
+          find RHVoice/build_ios_device -name "*.a" -exec cp {} UkrainianVoicesApp/Extension/Libraries/ \;
+          ls -lh UkrainianVoicesApp/Extension/Libraries/
+
+      - name: Generate Xcode project
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodegen generate
+          ls -la UkrainianVoices.xcodeproj
+
+      - name: Build unsigned iPhone app
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodebuild \
+            -project UkrainianVoices.xcodeproj \
+            -scheme UkrainianVoices \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            clean build
+
+      - name: Package unsigned app
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          test -d build/Build/Products/Release-iphoneos/UkrainianVoices.app
+          mkdir -p unsigned_artifacts/Payload
+          cp -R build/Build/Products/Release-iphoneos/UkrainianVoices.app unsigned_artifacts/Payload/
+          cd unsigned_artifacts
+          zip -qry ../UkrainianVoices-unsigned.ipa Payload
+
+      - name: Upload unsigned iPhone artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-build
+          path: |
+            UkrainianVoicesApp/UkrainianVoices-unsigned.ipa
+            UkrainianVoicesApp/build/Build/Products/Release-iphoneos/UkrainianVoices.app
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Write build summary
+        run: |
+          {
+            echo "## iOS unsigned build ready"
+            echo ""
+            echo "- Runner: \`macos-latest\`"
+            echo "- Trigger: manual only"
+            echo "- Output artifact: \`ios-unsigned-build\`"
+            echo "- Retention: 1 day"
+            echo "- Signing: disabled in CI; sign locally on Mac"
+          } >> "$GITHUB_STEP_SUMMARY"
