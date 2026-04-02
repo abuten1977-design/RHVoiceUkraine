@@ -22,41 +22,29 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install build tools
-        run: brew install cmake pkg-config boost xcodegen
+      - name: Install XcodeGen
+        run: brew install xcodegen
 
-      - name: Verify source voices and library paths
+      - name: Verify sources and voices
         run: |
           set -euxo pipefail
-          test -f ios-arm64-device.cmake
+          test -f scripts/build_ios_device_static.sh
           test -d UkrainianVoicesApp/Extension/Resources/Voices
           find UkrainianVoicesApp/Extension/Resources/Voices -maxdepth 2 -type f | head -20
 
-      - name: Build RHVoice iPhone static libraries
+      - name: Build fresh iPhone static libraries
         run: |
           set -euxo pipefail
-          export BOOST_ROOT="$(brew --prefix boost)"
-          rm -rf RHVoice/build_ios_device_ci
-          cmake -S RHVoice -B RHVoice/build_ios_device_ci \
-            -G Xcode \
-            -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/ios-arm64-device.cmake" \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DCMAKE_CXX_FLAGS="-I${BOOST_ROOT}/include"
-          cmake --build RHVoice/build_ios_device_ci --config Release --parallel
+          bash scripts/build_ios_device_static.sh "$GITHUB_WORKSPACE/build_ios_device_manual"
 
-      - name: Inject freshly built iPhone libraries
+      - name: Inject fresh iPhone libraries
         run: |
           set -euxo pipefail
           rm -rf UkrainianVoicesApp/Extension/Libraries
           mkdir -p UkrainianVoicesApp/Extension/Libraries
-          find RHVoice/build_ios_device_ci -name "libRHVoice.a" -exec cp {} UkrainianVoicesApp/Extension/Libraries/ \;
-          find RHVoice/build_ios_device_ci -name "libRHVoice_core.a" -exec cp {} UkrainianVoicesApp/Extension/Libraries/ \;
-          find RHVoice/build_ios_device_ci -name "libRHVoice_audio.a" -exec cp {} UkrainianVoicesApp/Extension/Libraries/ \;
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice.a
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_core.a
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_audio.a
+          cp "$GITHUB_WORKSPACE"/build_ios_device_manual/libRHVoice.a UkrainianVoicesApp/Extension/Libraries/
+          cp "$GITHUB_WORKSPACE"/build_ios_device_manual/libRHVoice_core.a UkrainianVoicesApp/Extension/Libraries/
+          cp "$GITHUB_WORKSPACE"/build_ios_device_manual/libRHVoice_audio.a UkrainianVoicesApp/Extension/Libraries/
           ls -lh UkrainianVoicesApp/Extension/Libraries/
 
       - name: Generate Xcode project
