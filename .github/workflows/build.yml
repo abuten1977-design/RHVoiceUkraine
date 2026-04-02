@@ -1,262 +1,93 @@
 name: Build RHVoice Ukraine
 
 on:
-  push:
-    branches: [ main, master, develop ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: build-rhvoice-ukraine-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-macos-test:
-    name: Build macOS Test
-    runs-on: macos-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-    
-    - name: Install dependencies
-      run: |
-        brew install cmake pkg-config boost
-    
-    - name: Build RHVoice Core
-      run: |
-        export BOOST_ROOT=$(brew --prefix boost)
-        cd RHVoice
-        mkdir -p build_macos
-        cd build_macos
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
-        make -j$(sysctl -n hw.ncpu)
-    
-    - name: Run macOS Test
-      run: |
-        cd MacOSTest
-        clang++ -std=c++11 \
-          -I../RHVoice/src/include \
-          -I$(brew --prefix boost)/include \
-          minimal_rhvoice_test.cpp \
-          -L../RHVoice/build_macos/src/lib \
-          -lRHVoice -lRHVoice_core -lRHVoice_audio \
-          -o rhvoice_test
-        ./rhvoice_test || echo "⚠️ Test failed but continuing"
-    
-      if: always()
-    - name: Copy macOS libraries
-      run: |
-        echo "📦 Копіюю macOS бібліотеки..."
-        mkdir -p macos_libs
-        find RHVoice/build_macos -name "*.a" -exec cp {} macos_libs/ \;
-        ls -lh macos_libs/
-    
-      if: always()
-    - name: Upload macOS artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: macos-libs
-        path: |
-          macos_libs/*.a
-        retention-days: 7
-
-  build-ios-libs:
-    name: Build iOS Libraries
-    runs-on: macos-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-    
-    - name: Install dependencies
-      run: |
-        brew install cmake pkg-config boost
-    
-    - name: Build for iOS Device (arm64)
-      run: |
-        export BOOST_ROOT=$(brew --prefix boost)
-        cd RHVoice
-        mkdir -p build_ios_device
-        cd build_ios_device
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_SYSTEM_NAME=iOS \
-          -DCMAKE_OSX_SYSROOT=iphoneos \
-          -DCMAKE_OSX_ARCHITECTURES=arm64 \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
-        make -j$(sysctl -n hw.ncpu)
-    
-    - name: Copy iOS libraries
-      run: |
-        mkdir -p UkrainianVoicesApp/Extension/Libraries
-        find RHVoice/build_ios_device -name "*.a" -exec cp {} UkrainianVoicesApp/Extension/Libraries/ \;
-        ls -lh UkrainianVoicesApp/Extension/Libraries/
-    
-    - name: Upload iOS libraries
-      uses: actions/upload-artifact@v4
-      with:
-        name: ios-device-libs
-        path: UkrainianVoicesApp/Extension/Libraries/
-        retention-days: 7
-
   build-ios-app:
     name: Build iOS App (.ipa)
     runs-on: macos-latest
-    needs: build-ios-libs
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-    
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: latest-stable
-    
-    - name: Install XcodeGen
-      run: |
-        brew install xcodegen
-    
-    - name: Download iOS libraries
-      uses: actions/download-artifact@v4
-      with:
-        name: ios-device-libs
-        path: UkrainianVoicesApp/Extension/Libraries/
-    
-    - name: Generate Xcode project
-      run: |
-        cd UkrainianVoicesApp
-        xcodegen generate
-        ls -la *.xcodeproj
-    
-    - name: Build iOS App
-      run: |
-        cd UkrainianVoicesApp
-        xcodebuild -project UkrainianVoices.xcodeproj \
-          -scheme UkrainianVoices \
-          -configuration Release \
-          -sdk iphoneos \
-          -arch arm64 \
-          -derivedDataPath ./build \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          ONLY_ACTIVE_ARCH=NO \
-          clean build
-    
-    - name: Copy Voices to .app
-      run: |
-        cd UkrainianVoicesApp
-        echo "📦 Копіюю голоси в .app..."
-        cp -r Extension/Resources/Voices build/Build/Products/Release-iphoneos/UkrainianVoices.app/
-        ls -la build/Build/Products/Release-iphoneos/UkrainianVoices.app/Voices/
-    
-    - name: Create IPA
-      run: |
-        cd UkrainianVoicesApp
-        mkdir -p Payload
-        cp -r build/Build/Products/Release-iphoneos/UkrainianVoices.app Payload/
-        zip -r UkrainianVoices-unsigned.ipa Payload
-        echo "📊 Статистика IPA:"
-        ls -lh UkrainianVoices-unsigned.ipa
-        unzip -l UkrainianVoices-unsigned.ipa | grep -c "Voices" || echo "⚠️ Voices не знайдено"
-        unzip -l UkrainianVoices-unsigned.ipa | wc -l
-    
-    - name: Upload IPA
-      uses: actions/upload-artifact@v4
-      with:
-        name: UkrainianVoices-IPA-Unsigned
-        path: UkrainianVoicesApp/UkrainianVoices-unsigned.ipa
-        retention-days: 30
-    
-    - name: Success
-      run: |
-        echo "✅ iOS App built successfully!"
-        echo "📦 Download artifact: UkrainianVoices-IPA-Unsigned"
-        echo "⚠️ Note: IPA is unsigned - you need to sign it locally"
+    timeout-minutes: 60
 
-  build-macos-app:
-    if: always()
-    name: Build macOS App (.app)
-    runs-on: macos-latest
-    needs: build-macos-test
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-    
-    - name: Setup Xcode
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: latest-stable
-    
-    - name: Install XcodeGen
-      run: |
-        brew install xcodegen
-    
-    - name: Download macOS libraries
-      uses: actions/download-artifact@v4
-      with:
-        name: macos-libs
-        path: UkrainianVoicesApp/Extension/Libraries/
-    
-    - name: Generate Xcode project
-      run: |
-        cd UkrainianVoicesApp
-        xcodegen generate
-        ls -la *.xcodeproj
-    
-    - name: Build macOS App
-      run: |
-        cd UkrainianVoicesApp
-        xcodebuild -project UkrainianVoices.xcodeproj \
-          -scheme UkrainianVoicesMac \
-          -configuration Release \
-          -sdk macosx \
-          -arch arm64 \
-          -arch x86_64 \
-          -derivedDataPath ./build \
-          CODE_SIGN_IDENTITY="-" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO \
-          clean build
-    
-    - name: Copy Voices to .app
-      run: |
-        cd UkrainianVoicesApp
-        echo "📦 Копіюю голоси в macOS .app..."
-        mkdir -p build/Build/Products/Release/UkrainianVoicesMac.app/Contents/Resources
-        cp -r Extension/Resources/Voices build/Build/Products/Release/UkrainianVoicesMac.app/Contents/Resources/
-        ls -la build/Build/Products/Release/UkrainianVoicesMac.app/Contents/Resources/Voices/
-    
-    - name: Create ZIP
-      run: |
-        cd UkrainianVoicesApp/build/Build/Products/Release
-        zip -r UkrainianVoicesMac-unsigned.zip UkrainianVoicesMac.app
-        mv UkrainianVoicesMac-unsigned.zip ../../../../
-        cd ../../../../
-        echo "📊 Статистика macOS App:"
-        ls -lh UkrainianVoicesMac-unsigned.zip
-    
-    - name: Upload macOS App
-      uses: actions/upload-artifact@v4
-      with:
-        name: UkrainianVoices-macOS-Unsigned
-        path: UkrainianVoicesApp/UkrainianVoicesMac-unsigned.zip
-        retention-days: 30
-    
-    - name: Success
-      run: |
-        echo "✅ macOS App built successfully!"
-        echo "📦 Download artifact: UkrainianVoices-macOS-Unsigned"
-        echo "✅ Can run without signing on your Mac"
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Verify tracked iPhone libraries and voices
+        run: |
+          set -euxo pipefail
+          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice.a
+          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_core.a
+          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_audio.a
+          test -d UkrainianVoicesApp/Extension/Resources/Voices
+          find UkrainianVoicesApp/Extension/Resources/Voices -maxdepth 2 -type f | head -20
+          ls -lh UkrainianVoicesApp/Extension/Libraries/
+
+      - name: Generate Xcode project
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodegen generate
+          ls -la UkrainianVoices.xcodeproj
+
+      - name: Build unsigned iPhone archive
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodebuild \
+            -project UkrainianVoices.xcodeproj \
+            -scheme UkrainianVoices \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            clean archive \
+            -archivePath build/UkrainianVoices.xcarchive
+
+      - name: Package unsigned iPhone app
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          test -d build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app
+          mkdir -p unsigned_artifacts/Payload
+          cp -R build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app unsigned_artifacts/Payload/
+          cd unsigned_artifacts
+          zip -qry ../UkrainianVoices-unsigned.ipa Payload
+
+      - name: Upload unsigned iPhone artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-unsigned-build
+          path: |
+            UkrainianVoicesApp/UkrainianVoices-unsigned.ipa
+            UkrainianVoicesApp/build/UkrainianVoices.xcarchive
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Summary
+        run: |
+          {
+            echo "## iOS unsigned build ready"
+            echo ""
+            echo "- Trigger: manual only"
+            echo "- Output artifact: \`ios-unsigned-build\`"
+            echo "- Retention: 1 day"
+            echo "- Signing: disabled in CI; sign locally on Mac"
+          } >> "$GITHUB_STEP_SUMMARY"
