@@ -5,9 +5,27 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${1:-$ROOT_DIR/build_ios_device_manual}"
 RHVOICE_SRC="$ROOT_DIR/RHVoice/src"
 SDKROOT="$(xcrun --sdk iphoneos --show-sdk-path)"
+RHVOICE_VERSION="$(git -C "$ROOT_DIR/RHVoice" describe --tags --always 2>/dev/null || echo 1.2.2)"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+
+cat > "$RHVOICE_SRC/include/core/config.h" <<EOF
+#pragma once
+
+#ifndef RHVOICE_GLOBAL_CONFIG_INCLUDED
+#define RHVOICE_GLOBAL_CONFIG_INCLUDED
+#define ENABLE_SONIC 0
+#define ENABLE_PKG 0
+
+const char VERSION[] = "$RHVOICE_VERSION";
+#endif
+EOF
+
+cat > "$RHVOICE_SRC/core/config.h" <<'EOF'
+const char CONFIG_PATH[] = "";
+const char DATA_PATH[] = "";
+EOF
 
 CXXFLAGS=(
   -arch arm64
