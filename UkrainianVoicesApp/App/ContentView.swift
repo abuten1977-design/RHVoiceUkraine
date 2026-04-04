@@ -11,10 +11,12 @@ struct ContentView: View {
             Image(systemName: "speaker.wave.3.fill")
                 .font(.system(size: 60))
                 .foregroundColor(.blue)
+                .accessibilityLabel("Speaker icon")
             
             Text("Українські голоси")
                 .font(.largeTitle)
                 .fontWeight(.bold)
+                .accessibilityAddTraits(.isHeader)
             
             Text("для VoiceOver")
                 .font(.title2)
@@ -26,6 +28,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Доступні голоси:")
                     .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
                 
                 VoiceRow(name: "Anatol", gender: "чоловічий")
                 VoiceRow(name: "Natalia", gender: "жіночий")
@@ -33,6 +36,7 @@ struct ContentView: View {
                 VoiceRow(name: "Volodymyr", gender: "чоловічий")
             }
             .padding()
+            .accessibilityElement(children: .contain)
             
             Spacer()
             
@@ -54,6 +58,7 @@ struct VoiceRow: View {
         HStack {
             Image(systemName: "person.wave.2.fill")
                 .foregroundColor(.blue)
+                .accessibilityHidden(true)
             Text(name)
                 .fontWeight(.medium)
             Spacer()
@@ -61,6 +66,8 @@ struct VoiceRow: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(name), \(gender)")
     }
 }
 
