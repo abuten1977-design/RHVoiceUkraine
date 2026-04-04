@@ -11,11 +11,10 @@ import CoreAudio
 @objc(UkrainianSpeechSynthesizer)
 public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
-    // MARK: - Audio setup (required by iOS)
+    // MARK: - Audio setup
 
     private var outputBus: AUAudioUnitBus
     private var _outputBusses: AUAudioUnitBusArray!
-    private let sampleRate = 24000.0
 
     // MARK: - Synthesis state
 
@@ -64,11 +63,9 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
                 identifier: "com.rhvoice.UkrainianVoices.volodymyr",
                 primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"])
         ]
-
-        NSLog("✅ UkrainianSpeechSynthesizer initialized")
     }
 
-    // MARK: - Required outputBusses override
+    // MARK: - outputBusses (обов'язковий override)
 
     public override var outputBusses: AUAudioUnitBusArray {
         return _outputBusses
@@ -90,42 +87,52 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     // MARK: - Synthesis request
 
     public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
-        NSLog("🎤 Synthesis request: \(request.voice.identifier)")
-
+        let voiceName = request.voice.identifier.components(separatedBy: ".").last ?? "anatol"
         let rate = defaults?.double(forKey: "rate") ?? 0.5
         let volume = defaults?.double(forKey: "volume") ?? 1.0
         let speedMultiplier = defaults?.double(forKey: "speedMultiplier") ?? 1.0
-        let finalRate = rate * speedMultiplier
-
-        let voiceName = request.voice.identifier.components(separatedBy: ".").last ?? "anatol"
         let text = request.ssmlRepresentation
 
-        // Синтез синхронно — щоб дані були готові до першого renderBlock
-        if let buffer = rhvoiceEngine.synthesize(text, voice: voiceName,
-                                                  rate: finalRate, volume: volume, pitch: 1.0),
-           let channelData = buffer.floatChannelData {
-            let frameCount = Int(buffer.frameLength)
-            var frames = [Float](repeating: 0, count: frameCount)
-            for i in 0..<frameCount {
-                frames[i] = channelData[0][i]
+        // Скидаємо стан
+        outputDataQueue.sync {
+            self.outputData = []
+            self.outputOffset = 0
+            self.synthesisCompleted = false
+        }
+
+        NSLog("🎤 Synthesis: voice=\(voiceName) rate=\(rate * speedMultiplier)")
+
+        // Синтез в background — chunks надходять через callback
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+
+            self.rhvoiceEngine.synthesizeStreaming(
+                text,
+                voice: voiceName,
+                rate: rate * speedMultiplier,
+                volume: volume,
+                pitch: 1.0
+            ) { samples, count, sampleRate in
+                // Конвертуємо Int16 → Float32 і додаємо в outputData
+                var floats = [Float](repeating: 0, count: Int(count))
+                for i in 0..<Int(count) {
+                    floats[i] = Float(samples[i]) / 32768.0
+                }
+                self.outputDataQueue.sync {
+                    self.outputData.append(contentsOf: floats)
+                }
             }
-            outputDataQueue.sync {
-                self.outputData = frames
-                self.outputOffset = 0
-                self.synthesisCompleted = false
-            }
-            NSLog("✅ Synthesis done: \(frameCount) frames")
-        } else {
-            NSLog("❌ Synthesis failed")
-            outputDataQueue.sync {
-                self.outputData = []
-                self.outputOffset = 0
+
+            // Синтез завершено
+            self.outputDataQueue.sync {
                 self.synthesisCompleted = true
             }
+            NSLog("✅ Synthesis complete: \(self.outputData.count) frames")
         }
     }
 
     public override func cancelSpeechRequest() {
+        rhvoiceEngine.cancel()
         outputDataQueue.sync {
             outputData = []
             outputOffset = 0
@@ -142,35 +149,38 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
             let intFrameCount = Int(frameCount)
             var frames: [Float] = []
-            var remaining = 0
             var completed = false
+            var hasData = false
 
             self.outputDataQueue.sync {
                 let available = max(self.outputData.count - self.outputOffset, 0)
                 let toCopy = min(available, intFrameCount)
                 if toCopy > 0 {
-                    frames = Array(self.outputData[self.outputOffset..<(self.outputOffset + toCopy)])
+                    let start = self.outputOffset
+                    frames = Array(self.outputData[start..<(start + toCopy)])
                     self.outputOffset += toCopy
+                    hasData = true
                 }
-                remaining = max(self.outputData.count - self.outputOffset, 0)
-                completed = remaining == 0
+                let remaining = max(self.outputData.count - self.outputOffset, 0)
+                completed = self.synthesisCompleted && remaining == 0
             }
 
             // Записуємо в output buffer
             let ablPointer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
             if let mData = ablPointer[0].mData {
                 let outFrames = mData.assumingMemoryBound(to: Float32.self)
+                // Спочатку заповнюємо тишею
                 outFrames.update(repeating: 0, count: intFrameCount)
+                // Потім записуємо дані
                 for (i, f) in frames.enumerated() {
                     outFrames[i] = f
                 }
-                ablPointer[0].mDataByteSize = UInt32(frames.count * MemoryLayout<Float32>.size)
+                ablPointer[0].mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float32>.size)
                 ablPointer[0].mNumberChannels = 1
             }
 
             if completed {
                 actionFlags.pointee = .offlineUnitRenderAction_Complete
-                NSLog("🏁 Render complete")
             } else {
                 actionFlags.pointee = .offlineUnitRenderAction_Render
             }

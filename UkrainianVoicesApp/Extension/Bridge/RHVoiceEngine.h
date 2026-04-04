@@ -12,11 +12,23 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (instancetype)init;
 
+// Синхронний синтез — для preview в App
 - (nullable AVAudioPCMBuffer *)synthesize:(NSString *)text
                                     voice:(NSString *)voiceName
                                      rate:(double)rate
                                    volume:(double)volume
                                     pitch:(double)pitch;
+
+// Streaming синтез — для VoiceOver Extension
+- (void)synthesizeStreaming:(NSString *)text
+                     voice:(NSString *)voiceName
+                      rate:(double)rate
+                    volume:(double)volume
+                     pitch:(double)pitch
+                   onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback;
+
+// Зупинити поточний синтез
+- (void)cancel;
 
 @end
 
