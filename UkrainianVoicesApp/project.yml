@@ -30,7 +30,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR
-        INFOPLIST_FILE: App/Info.plist
+        INFOPLIST_FILE: App/Info-iOS.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
@@ -55,7 +56,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR.Extension
-        INFOPLIST_FILE: Extension/Info.plist
+        INFOPLIST_FILE: Extension/Info-iOS.plist
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
@@ -91,6 +92,23 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
+      - name: Embed RHVoice dylibs
+        script: |
+          echo "📦 Embedding macOS RHVoice dylibs..."
+          DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          DYLIB_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
+
+          mkdir -p "$DYLIB_DST"
+
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            if [ ! -f "$DYLIB_SRC/$lib" ]; then
+              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
+              exit 1
+            fi
+            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
+            echo "✅ Embedded $lib"
+          done
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
@@ -123,13 +141,32 @@ targets:
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
     dependencies:
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
       - sdk: AudioToolbox.framework
+    postBuildScripts:
+      - name: Embed RHVoice dylibs in extension
+        script: |
+          echo "📦 Embedding RHVoice dylibs in extension..."
+          DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          DYLIB_DST="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Frameworks"
+
+          mkdir -p "$DYLIB_DST"
+
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            if [ ! -f "$DYLIB_SRC/$lib" ]; then
+              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
+              exit 1
+            fi
+            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
+            echo "✅ Embedded $lib into extension"
+          done
+        basedOnDependencyAnalysis: false
