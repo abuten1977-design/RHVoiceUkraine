@@ -59,6 +59,21 @@ targets:
       - Extension/Models
       - Extension/Services
       - Extension/Views
+    postBuildScripts:
+      - name: Copy Voices to Extension
+        script: |
+          echo "📦 Copying Voices to Extension bundle..."
+          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
+          VOICES_DST="${BUILT_PRODUCTS_DIR}/UkrainianVoicesExtension.appex/Voices"
+          
+          if [ -d "$VOICES_SRC" ]; then
+            cp -r "$VOICES_SRC" "$VOICES_DST"
+            echo "✅ Voices copied to Extension: $(find "$VOICES_DST" -type f | wc -l) files"
+          else
+            echo "❌ Voices not found: $VOICES_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR.Extension

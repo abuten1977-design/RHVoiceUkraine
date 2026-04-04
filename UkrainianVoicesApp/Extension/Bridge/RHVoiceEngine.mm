@@ -48,8 +48,8 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         return YES;
     }
     
-    // ВИПРАВЛЕНО: Правильний шлях до голосів
-    NSBundle *bundle = [NSBundle mainBundle];
+    // ВИПРАВЛЕНО: Для Extension треба використовувати bundle самого Extension
+    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
     NSString *resourcePath = [bundle resourcePath];
     NSString *voicesPath = [resourcePath stringByAppendingPathComponent:@"Voices"];
     
