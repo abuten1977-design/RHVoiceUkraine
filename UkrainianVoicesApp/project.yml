@@ -13,6 +13,7 @@ targets:
       - path: App
         excludes:
           - Info.plist
+      - Extension/Bridge
     postBuildScripts:
       - name: Copy Voices
         script: |
@@ -41,6 +42,9 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
+        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
     dependencies:
       - target: UkrainianVoicesExtension
       - sdk: AVFoundation.framework

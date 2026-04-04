@@ -25,36 +25,41 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     // Голоси
     private var _speechVoices: [AVSpeechSynthesisProviderVoice] = []
     
+    // App Group для синхронізації з App
+    private let appGroup = "group.rhvoice.UkrainianVoices.shared"
+    private let defaults: UserDefaults?
+    
     // MARK: - Initialization
     
     public override init(componentDescription: AudioComponentDescription,
                         options: AudioComponentInstantiationOptions = []) throws {
         self.rhvoiceEngine = RHVoiceEngine()
+        self.defaults = UserDefaults(suiteName: appGroup)
         try super.init(componentDescription: componentDescription, options: options)
         
         // Ініціалізуємо голоси
         _speechVoices = [
             AVSpeechSynthesisProviderVoice(
                 name: "Anatol",
-                identifier: "com.rhvoice.ukrainian.anatol",
+                identifier: "com.rhvoice.UkrainianVoices.anatol",
                 primaryLanguages: ["uk-UA"],
                 supportedLanguages: ["uk-UA"]
             ),
             AVSpeechSynthesisProviderVoice(
                 name: "Natalia",
-                identifier: "com.rhvoice.ukrainian.natalia",
+                identifier: "com.rhvoice.UkrainianVoices.natalia",
                 primaryLanguages: ["uk-UA"],
                 supportedLanguages: ["uk-UA"]
             ),
             AVSpeechSynthesisProviderVoice(
                 name: "Marianna",
-                identifier: "com.rhvoice.ukrainian.marianna",
+                identifier: "com.rhvoice.UkrainianVoices.marianna",
                 primaryLanguages: ["uk-UA"],
                 supportedLanguages: ["uk-UA"]
             ),
             AVSpeechSynthesisProviderVoice(
                 name: "Volodymyr",
-                identifier: "com.rhvoice.ukrainian.volodymyr",
+                identifier: "com.rhvoice.UkrainianVoices.volodymyr",
                 primaryLanguages: ["uk-UA"],
                 supportedLanguages: ["uk-UA"]
             )
@@ -66,7 +71,14 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     // MARK: - AVSpeechSynthesisProviderAudioUnit
     
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { return _speechVoices }
+        get {
+            // Читаємо enabled voices з App Group
+            guard let enabledIds = defaults?.stringArray(forKey: "enabledVoiceIdentifiers") else {
+                return _speechVoices
+            }
+            // Фільтруємо тільки enabled голоси
+            return _speechVoices.filter { enabledIds.contains($0.identifier) }
+        }
         set { _speechVoices = newValue }
     }
     
@@ -79,10 +91,14 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
         synthesisQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Параметри (використовуємо дефолтні значення, бо API не надає їх напряму)
-            let rate = 1.0
-            let volume = 1.0
+            // Читаємо параметри з App Group
+            let rate = self.defaults?.double(forKey: "rate") ?? 0.5
+            let volume = self.defaults?.double(forKey: "volume") ?? 1.0
+            let speedMultiplier = self.defaults?.double(forKey: "speedMultiplier") ?? 1.0
             let pitch = 1.0
+            
+            // Застосовуємо speedMultiplier до rate
+            let finalRate = rate * speedMultiplier
             
             // Ім'я голосу
             let voiceIdentifier = request.voice.identifier
@@ -91,14 +107,14 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             // Текст
             let text = request.ssmlRepresentation
             
-            NSLog("🗣️ Synthesizing: voice=\(voiceName)")
+            NSLog("🗣️ Synthesizing: voice=\(voiceName), rate=\(finalRate), volume=\(volume)")
             NSLog("📝 Text: \(text.prefix(50))...")
             
             // РЕАЛЬНИЙ синтез через RHVoice!
             if let buffer = self.rhvoiceEngine.synthesize(
                 text,
                 voice: voiceName,
-                rate: rate,
+                rate: finalRate,
                 volume: volume,
                 pitch: pitch
             ) {
