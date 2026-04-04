@@ -10,7 +10,9 @@ targets:
     type: application
     platform: iOS
     sources:
-      - App
+      - path: App
+        excludes:
+          - Info.plist
     postBuildScripts:
       - name: Copy Voices
         script: |
@@ -75,7 +77,9 @@ targets:
     type: application
     platform: macOS
     sources:
-      - App
+      - path: App
+        excludes:
+          - Info-iOS.plist
     postBuildScripts:
       - name: Copy Voices
         script: |
