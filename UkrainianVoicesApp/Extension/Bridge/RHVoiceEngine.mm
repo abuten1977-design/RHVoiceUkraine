@@ -7,7 +7,16 @@
 #include "RHVoice.h"
 #import <AVFoundation/AVFoundation.h>
 
-// Callbacks — отримують self через user_data з RHVoice_new_message
+@interface RHVoiceEngine ()
+@property (assign) RHVoice_tts_engine engine;
+@property (assign) BOOL initialized;
+@property (assign) int currentSampleRate;
+@property (assign) BOOL cancelRequested;
+@property (strong, nullable) NSMutableData *audioBuffer;
+@property (copy, nullable) void(^chunkCallback)(const short* samples, unsigned int count, int sampleRate);
+@end
+
+// C callbacks — визначені після @interface щоб бачити properties
 static int set_sample_rate_callback(int sample_rate, void* user_data) {
     if (!user_data) return 1;
     RHVoiceEngine *engine = (__bridge RHVoiceEngine*)user_data;
@@ -22,21 +31,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (engine.chunkCallback) {
         engine.chunkCallback(samples, count, engine.currentSampleRate);
     } else {
-        // Режим накопичення (для синхронного synthesize)
         [engine.audioBuffer appendBytes:samples length:count * sizeof(short)];
     }
     return 1;
 }
-
-@interface RHVoiceEngine ()
-@property (assign) RHVoice_tts_engine engine;
-@property (assign) BOOL initialized;
-// Instance змінні замість static
-@property (assign) int currentSampleRate;
-@property (assign) BOOL cancelRequested;
-@property (strong, nullable) NSMutableData *audioBuffer;
-@property (copy, nullable) void(^chunkCallback)(const short* samples, unsigned int count, int sampleRate);
-@end
 
 @implementation RHVoiceEngine
 
@@ -99,7 +97,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     return YES;
 }
 
-// Спільна підготовка synth_params
 - (RHVoice_message)buildMessage:(NSString*)text
                           voice:(NSString*)voiceName
                            rate:(double)rate
@@ -125,8 +122,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         userData
     );
 }
-
-// MARK: - Синхронний синтез (для preview в App)
 
 - (nullable AVAudioPCMBuffer *)synthesize:(NSString *)text
                                     voice:(NSString *)voiceName
@@ -156,8 +151,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     return [self convertToAudioBuffer:buffer sampleRate:sampleRate];
 }
 
-// MARK: - Streaming синтез (для VoiceOver Extension)
-
 - (void)synthesizeStreaming:(NSString *)text
                      voice:(NSString *)voiceName
                       rate:(double)rate
@@ -184,13 +177,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     self.chunkCallback = nil;
 }
 
-// MARK: - Cancel
-
 - (void)cancel {
     self.cancelRequested = YES;
 }
-
-// MARK: - Конвертація Int16 → Float32
 
 - (AVAudioPCMBuffer *)convertToAudioBuffer:(NSData *)data sampleRate:(int)sampleRate {
     if (!data || data.length == 0 || sampleRate == 0) return nil;

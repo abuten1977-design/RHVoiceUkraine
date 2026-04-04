@@ -150,7 +150,6 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             let intFrameCount = Int(frameCount)
             var frames: [Float] = []
             var completed = false
-            var hasData = false
 
             self.outputDataQueue.sync {
                 let available = max(self.outputData.count - self.outputOffset, 0)
@@ -159,7 +158,6 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
                     let start = self.outputOffset
                     frames = Array(self.outputData[start..<(start + toCopy)])
                     self.outputOffset += toCopy
-                    hasData = true
                 }
                 let remaining = max(self.outputData.count - self.outputOffset, 0)
                 completed = self.synthesisCompleted && remaining == 0
