@@ -64,7 +64,7 @@ private:
 // MARK: - Engine state structure (passed to callbacks)
 
 struct EngineState {
-    ThreadSafeRingBuffer<NSData*>* queue;
+    ThreadSafeRingBuffer<NSData*, 1024>* queue;
     std::atomic<bool> cancelled{false};
     int* sampleRate;
     int maxRetries;
@@ -187,8 +187,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     NSMutableData* audioBuffer = [NSMutableData new];
 
-    // For sync mode, use simple blocking approach
-    // (preview is not in render thread, so mutex is acceptable)
+    // For sync mode, use smaller buffer
     ThreadSafeRingBuffer<NSData*, 64> queue;
     int sampleRate = 0;
 
