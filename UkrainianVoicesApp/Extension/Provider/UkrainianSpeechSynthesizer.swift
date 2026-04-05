@@ -188,7 +188,7 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
                 
                 retries += 1
                 if retries < self.MAX_RETRIES {
-                    usleep(self.RETRY_DELAY_MICROS)
+                    usleep(useconds_t(self.RETRY_DELAY_MICROS))
                 }
             }
 
