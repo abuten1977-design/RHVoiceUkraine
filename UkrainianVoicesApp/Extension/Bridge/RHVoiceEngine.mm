@@ -187,8 +187,8 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     NSMutableData* audioBuffer = [NSMutableData new];
 
-    // For sync mode, use smaller buffer
-    ThreadSafeRingBuffer<NSData*, 64> queue;
+    // For sync mode, use same buffer size as streaming
+    ThreadSafeRingBuffer<NSData*, 1024> queue;
     int sampleRate = 0;
 
     EngineState state;
