@@ -142,9 +142,6 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
     // MARK: - Render block
 
-    private let MAX_RETRIES = 200
-    private let RETRY_DELAY_MICROS = 500
-
     public override var internalRenderBlock: AUInternalRenderBlock {
         return { [weak self] (actionFlags, timestamp, frameCount, outputBusNumber,
                               outputAudioBufferList, renderEvents, pullInputBlock) in
@@ -154,51 +151,26 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             var frames: [Float] = []
             var completed = false
 
-            // Spin-wait loop: try to get data without blocking
-            var retries = 0
-            while retries < self.MAX_RETRIES {
-                var availableData: [Float] = []
-                var offset = 0
-                var synthCompleted = false
-                
-                self.outputDataQueue.sync {
-                    let available = max(self.outputData.count - self.outputOffset, 0)
-                    let toCopy = min(available, intFrameCount)
-                    if toCopy > 0 {
-                        let start = self.outputOffset
-                        availableData = Array(self.outputData[start..<(start + toCopy)])
-                        offset = self.outputOffset
-                        self.outputOffset += toCopy
-                    }
-                    let remaining = max(self.outputData.count - self.outputOffset, 0)
-                    synthCompleted = self.synthesisCompleted && remaining == 0
+            // Read data without blocking
+            self.outputDataQueue.sync {
+                let available = max(self.outputData.count - self.outputOffset, 0)
+                let toCopy = min(available, intFrameCount)
+                if toCopy > 0 {
+                    let start = self.outputOffset
+                    frames = Array(self.outputData[start..<(start + toCopy)])
+                    self.outputOffset += toCopy
                 }
-                
-                if !availableData.isEmpty {
-                    frames = availableData
-                    completed = synthCompleted
-                    break
-                }
-                
-                // No data available - spin wait
-                if synthCompleted {
-                    completed = true
-                    break
-                }
-                
-                retries += 1
-                if retries < self.MAX_RETRIES {
-                    usleep(useconds_t(self.RETRY_DELAY_MICROS))
-                }
+                let remaining = max(self.outputData.count - self.outputOffset, 0)
+                completed = self.synthesisCompleted && remaining == 0
             }
 
-            // Записуємо в output buffer
+            // Write to output buffer
             let ablPointer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
             if let mData = ablPointer[0].mData {
                 let outFrames = mData.assumingMemoryBound(to: Float32.self)
-                // Спочатку заповнюємо тишею
+                // Fill with silence first
                 outFrames.update(repeating: 0, count: intFrameCount)
-                // Потім записуємо дані
+                // Then write data if available
                 for (i, f) in frames.enumerated() {
                     outFrames[i] = f
                 }
