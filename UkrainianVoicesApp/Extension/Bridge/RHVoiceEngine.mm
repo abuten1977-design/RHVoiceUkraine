@@ -6,6 +6,94 @@
 #import "RHVoiceEngine.h"
 #include "RHVoice.h"
 #import <AVFoundation/AVFoundation.h>
+#include <mutex>
+#include <condition_variable>
+#include <deque>
+#include <atomic>
+
+// MARK: - ThreadSafeAudioQueue
+// Producer: play_speech_callback (C API thread)
+// Consumer: synthesizeStreaming (background thread)
+
+class ThreadSafeAudioQueue {
+public:
+    void push(const short* data, size_t count) {
+        if (cancelled.load()) return;
+        // Копіюємо дані — C буфер валідний тільки під час callback
+        NSData* chunk = [NSData dataWithBytes:data length:count * sizeof(short)];
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            queue.push_back(chunk);
+        }
+        cv.notify_one();
+    }
+
+    // Повертає nil коли синтез завершено і черга порожня
+    NSData* pop() {
+        std::unique_lock<std::mutex> lock(mtx);
+        cv.wait(lock, [this] { return !queue.empty() || finished || cancelled.load(); });
+        if (queue.empty()) return nil;
+        NSData* chunk = queue.front();
+        queue.pop_front();
+        return chunk;
+    }
+
+    void set_finished() {
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            finished = true;
+        }
+        cv.notify_all();
+    }
+
+    void cancel() {
+        cancelled.store(true);
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            finished = true;
+            queue.clear();
+        }
+        cv.notify_all();
+    }
+
+    bool is_cancelled() { return cancelled.load(); }
+
+private:
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::deque<NSData*> queue;
+    bool finished = false;
+    std::atomic<bool> cancelled{false};
+};
+
+// MARK: - C Callbacks
+// user_data = вказівник на ThreadSafeAudioQueue (для streaming)
+//           = вказівник на RHVoiceEngine (для sync synthesize)
+
+static int set_sample_rate_callback(int sample_rate, void* user_data) {
+    if (!user_data) return 1;
+    RHVoiceEngine* engine = (__bridge RHVoiceEngine*)user_data;
+    engine.currentSampleRate = sample_rate;
+    return 1;
+}
+
+static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
+    if (!user_data) return 1;
+    RHVoiceEngine* engine = (__bridge RHVoiceEngine*)user_data;
+    if (engine.cancelRequested) return 0;
+
+    if (engine.audioQueue) {
+        // Streaming режим
+        if (engine.audioQueue->is_cancelled()) return 0;
+        engine.audioQueue->push(samples, count);
+    } else {
+        // Sync режим (preview)
+        [engine.audioBuffer appendBytes:samples length:count * sizeof(short)];
+    }
+    return 1;
+}
+
+// MARK: - RHVoiceEngine
 
 @interface RHVoiceEngine ()
 @property (assign) RHVoice_tts_engine engine;
@@ -13,28 +101,9 @@
 @property (assign) int currentSampleRate;
 @property (assign) BOOL cancelRequested;
 @property (strong, nullable) NSMutableData *audioBuffer;
-@property (copy, nullable) void(^chunkCallback)(const short* samples, unsigned int count, int sampleRate);
+// Вказівник на поточну чергу (тільки під час streaming синтезу)
+@property (assign) ThreadSafeAudioQueue* audioQueue;
 @end
-
-// C callbacks — визначені після @interface щоб бачити properties
-static int set_sample_rate_callback(int sample_rate, void* user_data) {
-    if (!user_data) return 1;
-    RHVoiceEngine *engine = (__bridge RHVoiceEngine*)user_data;
-    engine.currentSampleRate = sample_rate;
-    return 1;
-}
-
-static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
-    if (!user_data) return 1;
-    RHVoiceEngine *engine = (__bridge RHVoiceEngine*)user_data;
-    if (engine.cancelRequested) return 0;
-    if (engine.chunkCallback) {
-        engine.chunkCallback(samples, count, engine.currentSampleRate);
-    } else {
-        [engine.audioBuffer appendBytes:samples length:count * sizeof(short)];
-    }
-    return 1;
-}
 
 @implementation RHVoiceEngine
 
@@ -46,7 +115,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         _currentSampleRate = 0;
         _cancelRequested = NO;
         _audioBuffer = nil;
-        _chunkCallback = nil;
+        _audioQueue = nullptr;
         [self initializeEngine];
     }
     return self;
@@ -56,21 +125,18 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (self.initialized) return YES;
 
     NSBundle *bundle = [NSBundle bundleForClass:[self class]];
-    NSString *resourcePath = [bundle resourcePath];
-    NSString *voicesPath = [resourcePath stringByAppendingPathComponent:@"Voices"];
+    NSString *voicesPath = [[bundle resourcePath] stringByAppendingPathComponent:@"Voices"];
 
-    BOOL isDirectory;
-    BOOL exists = [[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDirectory];
-
-    if (!exists || !isDirectory) {
+    BOOL isDir;
+    if (![[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDir] || !isDir) {
         voicesPath = [bundle pathForResource:@"Voices" ofType:nil];
         if (!voicesPath) {
-            NSLog(@"❌ Voices path not found!");
+            NSLog(@"❌ Voices not found");
             return NO;
         }
     }
 
-    NSLog(@"✅ Voices path: %@", voicesPath);
+    NSLog(@"✅ Voices: %@", voicesPath);
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
@@ -81,134 +147,129 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     memset(&params, 0, sizeof(params));
     params.data_path = [voicesPath UTF8String];
     params.config_path = [voicesPath UTF8String];
-    params.resource_paths = NULL;
-    params.options = 0;
     params.callbacks = callbacks;
 
     self.engine = RHVoice_new_tts_engine(&params);
-
     if (!self.engine) {
-        NSLog(@"❌ Failed to create RHVoice engine");
+        NSLog(@"❌ Engine init failed");
         return NO;
     }
 
     self.initialized = YES;
-    NSLog(@"✅ RHVoice engine initialized");
+    NSLog(@"✅ Engine ready");
     return YES;
 }
 
-- (RHVoice_message)buildMessage:(NSString*)text
-                          voice:(NSString*)voiceName
-                           rate:(double)rate
-                         volume:(double)volume
-                          pitch:(double)pitch
-                       userData:(void*)userData {
-    RHVoice_synth_params synth_params;
-    memset(&synth_params, 0, sizeof(synth_params));
-    synth_params.voice_profile = [voiceName UTF8String];
-    synth_params.absolute_rate = (rate - 1.0);
-    synth_params.relative_rate = rate;
-    synth_params.absolute_pitch = (pitch - 1.0);
-    synth_params.relative_pitch = pitch;
-    synth_params.relative_volume = volume;
+- (RHVoice_message)buildMessage:(NSString*)text voice:(NSString*)voice
+                           rate:(double)rate volume:(double)volume pitch:(double)pitch {
+    RHVoice_synth_params p;
+    memset(&p, 0, sizeof(p));
+    p.voice_profile = [voice UTF8String];
+    p.absolute_rate = rate - 1.0;
+    p.relative_rate = rate;
+    p.absolute_pitch = pitch - 1.0;
+    p.relative_pitch = pitch;
+    p.relative_volume = volume;
 
-    const char *textCStr = [text UTF8String];
-    return RHVoice_new_message(
-        self.engine,
-        textCStr,
-        (unsigned int)strlen(textCStr),
-        RHVoice_message_text,
-        &synth_params,
-        userData
-    );
+    const char* t = [text UTF8String];
+    return RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
+                               RHVoice_message_text, &p,
+                               (__bridge void*)self);
 }
 
-- (nullable AVAudioPCMBuffer *)synthesize:(NSString *)text
-                                    voice:(NSString *)voiceName
-                                     rate:(double)rate
-                                   volume:(double)volume
-                                    pitch:(double)pitch {
-    if (!self.initialized || !text || text.length == 0) return nil;
+// MARK: - Sync synthesize (для preview в App)
+
+- (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
+                                    rate:(double)rate volume:(double)volume pitch:(double)pitch {
+    if (!self.initialized || !text.length) return nil;
 
     self.cancelRequested = NO;
-    self.chunkCallback = nil;
-    self.audioBuffer = [[NSMutableData alloc] init];
+    self.audioQueue = nullptr;
+    self.audioBuffer = [NSMutableData new];
     self.currentSampleRate = 0;
 
-    RHVoice_message message = [self buildMessage:text voice:voiceName
-                                            rate:rate volume:volume pitch:pitch
-                                        userData:(__bridge void*)self];
-    if (!message) return nil;
+    RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
+    if (!msg) return nil;
 
-    RHVoice_speak(message);
-    RHVoice_delete_message(message);
+    RHVoice_speak(msg);
+    RHVoice_delete_message(msg);
 
-    NSMutableData *buffer = self.audioBuffer;
-    int sampleRate = self.currentSampleRate;
+    NSData* buf = self.audioBuffer;
+    int sr = self.currentSampleRate;
     self.audioBuffer = nil;
 
-    if (!buffer || buffer.length == 0 || sampleRate == 0) return nil;
-    return [self convertToAudioBuffer:buffer sampleRate:sampleRate];
+    if (!buf.length || sr == 0) return nil;
+    return [self pcmBufferFrom:buf sampleRate:sr];
 }
 
-- (void)synthesizeStreaming:(NSString *)text
-                     voice:(NSString *)voiceName
-                      rate:(double)rate
-                    volume:(double)volume
-                     pitch:(double)pitch
+// MARK: - Streaming synthesize (для VoiceOver Extension)
+
+- (void)synthesizeStreaming:(NSString*)text voice:(NSString*)voice
+                      rate:(double)rate volume:(double)volume pitch:(double)pitch
                    onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
-    if (!self.initialized || !text || text.length == 0) return;
+    if (!self.initialized || !text.length) return;
 
+    ThreadSafeAudioQueue queue;
     self.cancelRequested = NO;
-    self.chunkCallback = chunkCallback;
+    self.audioQueue = &queue;
     self.audioBuffer = nil;
     self.currentSampleRate = 0;
 
-    RHVoice_message message = [self buildMessage:text voice:voiceName
-                                            rate:rate volume:volume pitch:pitch
-                                        userData:(__bridge void*)self];
-    if (!message) {
-        self.chunkCallback = nil;
-        return;
+    // Синтез в background — не блокує поточний потік
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
+        if (msg) {
+            RHVoice_speak(msg);
+            RHVoice_delete_message(msg);
+        }
+        queue.set_finished();
+    });
+
+    // Consumer loop — отримує chunks і передає в Swift
+    int sr = 0;
+    while (true) {
+        NSData* chunk = queue.pop();
+        if (!chunk) break; // finished або cancelled
+        if (sr == 0) sr = self.currentSampleRate;
+        const short* samples = (const short*)chunk.bytes;
+        unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+        chunkCallback(samples, count, sr > 0 ? sr : 24000);
     }
 
-    RHVoice_speak(message);
-    RHVoice_delete_message(message);
-    self.chunkCallback = nil;
+    self.audioQueue = nullptr;
 }
 
 - (void)cancel {
     self.cancelRequested = YES;
+    if (self.audioQueue) {
+        self.audioQueue->cancel();
+    }
 }
 
-- (AVAudioPCMBuffer *)convertToAudioBuffer:(NSData *)data sampleRate:(int)sampleRate {
-    if (!data || data.length == 0 || sampleRate == 0) return nil;
+// MARK: - Int16 → Float32
 
-    AVAudioFormat *format = [[AVAudioFormat alloc]
+- (AVAudioPCMBuffer*)pcmBufferFrom:(NSData*)data sampleRate:(int)sr {
+    AVAudioFormat* fmt = [[AVAudioFormat alloc]
         initWithCommonFormat:AVAudioPCMFormatFloat32
-                  sampleRate:sampleRate
-                    channels:1
-                 interleaved:NO];
-    if (!format) return nil;
+                  sampleRate:sr channels:1 interleaved:NO];
+    if (!fmt) return nil;
 
-    AVAudioFrameCount frameCount = (AVAudioFrameCount)(data.length / sizeof(short));
-    AVAudioPCMBuffer *buffer = [[AVAudioPCMBuffer alloc]
-        initWithPCMFormat:format frameCapacity:frameCount];
-    if (!buffer) return nil;
+    AVAudioFrameCount frames = (AVAudioFrameCount)(data.length / sizeof(short));
+    AVAudioPCMBuffer* buf = [[AVAudioPCMBuffer alloc] initWithPCMFormat:fmt frameCapacity:frames];
+    if (!buf) return nil;
 
-    buffer.frameLength = frameCount;
-    const short *samples = (const short *)data.bytes;
-    float *channelData = buffer.floatChannelData[0];
-    for (AVAudioFrameCount i = 0; i < frameCount; i++) {
-        channelData[i] = samples[i] / 32768.0f;
+    buf.frameLength = frames;
+    const short* src = (const short*)data.bytes;
+    float* dst = buf.floatChannelData[0];
+    for (AVAudioFrameCount i = 0; i < frames; i++) {
+        dst[i] = src[i] / 32768.0f;
     }
-    return buffer;
+    return buf;
 }
 
 - (void)dealloc {
     if (self.engine) {
         RHVoice_delete_tts_engine(self.engine);
-        self.engine = NULL;
     }
 }
 
