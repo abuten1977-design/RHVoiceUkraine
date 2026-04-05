@@ -12,14 +12,16 @@
 #include <atomic>
 
 // MARK: - ThreadSafeAudioQueue
-// Producer: play_speech_callback (C API thread)
-// Consumer: synthesizeStreaming (background thread)
 
 class ThreadSafeAudioQueue {
 public:
+    // Не копіюємо — mutex не копіюється
+    ThreadSafeAudioQueue() = default;
+    ThreadSafeAudioQueue(const ThreadSafeAudioQueue&) = delete;
+    ThreadSafeAudioQueue& operator=(const ThreadSafeAudioQueue&) = delete;
+
     void push(const short* data, size_t count) {
         if (cancelled.load()) return;
-        // Копіюємо дані — C буфер валідний тільки під час callback
         NSData* chunk = [NSData dataWithBytes:data length:count * sizeof(short)];
         {
             std::lock_guard<std::mutex> lock(mtx);
@@ -28,7 +30,6 @@ public:
         cv.notify_one();
     }
 
-    // Повертає nil коли синтез завершено і черга порожня
     NSData* pop() {
         std::unique_lock<std::mutex> lock(mtx);
         cv.wait(lock, [this] { return !queue.empty() || finished || cancelled.load(); });
@@ -56,7 +57,7 @@ public:
         cv.notify_all();
     }
 
-    bool is_cancelled() { return cancelled.load(); }
+    bool is_cancelled() const { return cancelled.load(); }
 
 private:
     std::mutex mtx;
@@ -66,9 +67,18 @@ private:
     std::atomic<bool> cancelled{false};
 };
 
-// MARK: - C Callbacks
-// user_data = вказівник на ThreadSafeAudioQueue (для streaming)
-//           = вказівник на RHVoiceEngine (для sync synthesize)
+// MARK: - @interface (до callbacks щоб вони бачили properties)
+
+@interface RHVoiceEngine ()
+@property (assign) RHVoice_tts_engine engine;
+@property (assign) BOOL initialized;
+@property (assign) int currentSampleRate;
+@property (assign) BOOL cancelRequested;
+@property (strong, nullable) NSMutableData *audioBuffer;
+@property (assign) ThreadSafeAudioQueue* audioQueue;
+@end
+
+// MARK: - C Callbacks (після @interface — бачать properties)
 
 static int set_sample_rate_callback(int sample_rate, void* user_data) {
     if (!user_data) return 1;
@@ -82,28 +92,17 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     RHVoiceEngine* engine = (__bridge RHVoiceEngine*)user_data;
     if (engine.cancelRequested) return 0;
 
-    if (engine.audioQueue) {
-        // Streaming режим
-        if (engine.audioQueue->is_cancelled()) return 0;
-        engine.audioQueue->push(samples, count);
+    ThreadSafeAudioQueue* q = engine.audioQueue;
+    if (q) {
+        if (q->is_cancelled()) return 0;
+        q->push(samples, count);
     } else {
-        // Sync режим (preview)
         [engine.audioBuffer appendBytes:samples length:count * sizeof(short)];
     }
     return 1;
 }
 
-// MARK: - RHVoiceEngine
-
-@interface RHVoiceEngine ()
-@property (assign) RHVoice_tts_engine engine;
-@property (assign) BOOL initialized;
-@property (assign) int currentSampleRate;
-@property (assign) BOOL cancelRequested;
-@property (strong, nullable) NSMutableData *audioBuffer;
-// Вказівник на поточну чергу (тільки під час streaming синтезу)
-@property (assign) ThreadSafeAudioQueue* audioQueue;
-@end
+// MARK: - @implementation
 
 @implementation RHVoiceEngine
 
@@ -130,10 +129,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     BOOL isDir;
     if (![[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDir] || !isDir) {
         voicesPath = [bundle pathForResource:@"Voices" ofType:nil];
-        if (!voicesPath) {
-            NSLog(@"❌ Voices not found");
-            return NO;
-        }
+        if (!voicesPath) { NSLog(@"❌ Voices not found"); return NO; }
     }
 
     NSLog(@"✅ Voices: %@", voicesPath);
@@ -150,10 +146,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     params.callbacks = callbacks;
 
     self.engine = RHVoice_new_tts_engine(&params);
-    if (!self.engine) {
-        NSLog(@"❌ Engine init failed");
-        return NO;
-    }
+    if (!self.engine) { NSLog(@"❌ Engine init failed"); return NO; }
 
     self.initialized = YES;
     NSLog(@"✅ Engine ready");
@@ -209,41 +202,41 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
                    onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
     if (!self.initialized || !text.length) return;
 
-    ThreadSafeAudioQueue queue;
+    // Створюємо чергу на heap щоб уникнути проблем з копіюванням
+    ThreadSafeAudioQueue* queue = new ThreadSafeAudioQueue();
     self.cancelRequested = NO;
-    self.audioQueue = &queue;
+    self.audioQueue = queue;
     self.audioBuffer = nil;
     self.currentSampleRate = 0;
 
-    // Синтез в background — не блокує поточний потік
+    // Синтез в background
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
         if (msg) {
             RHVoice_speak(msg);
             RHVoice_delete_message(msg);
         }
-        queue.set_finished();
+        queue->set_finished();
     });
 
-    // Consumer loop — отримує chunks і передає в Swift
-    int sr = 0;
+    // Consumer loop
     while (true) {
-        NSData* chunk = queue.pop();
-        if (!chunk) break; // finished або cancelled
-        if (sr == 0) sr = self.currentSampleRate;
+        NSData* chunk = queue->pop();
+        if (!chunk) break;
         const short* samples = (const short*)chunk.bytes;
         unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-        chunkCallback(samples, count, sr > 0 ? sr : 24000);
+        int sr = self.currentSampleRate > 0 ? self.currentSampleRate : 24000;
+        chunkCallback(samples, count, sr);
     }
 
     self.audioQueue = nullptr;
+    delete queue;
 }
 
 - (void)cancel {
     self.cancelRequested = YES;
-    if (self.audioQueue) {
-        self.audioQueue->cancel();
-    }
+    ThreadSafeAudioQueue* q = self.audioQueue;
+    if (q) q->cancel();
 }
 
 // MARK: - Int16 → Float32
