@@ -15,29 +15,37 @@
 template<size_t Capacity = 1024>
 class AudioRingBuffer {
 public:
-    AudioRingBuffer() = default;
+    AudioRingBuffer() {
+        memset(buffer, 0, sizeof(buffer));
+    }
+    ~AudioRingBuffer() {
+        for (size_t i = 0; i < Capacity; i++) {
+            if (buffer[i]) { CFRelease(buffer[i]); buffer[i] = nullptr; }
+        }
+    }
     AudioRingBuffer(const AudioRingBuffer&) = delete;
     AudioRingBuffer& operator=(const AudioRingBuffer&) = delete;
 
-    bool push(__unsafe_unretained NSData* value) {
+    bool push(NSData* value) {
         const size_t currentWrite = writeIndex.load(std::memory_order_relaxed);
         const size_t nextWrite = (currentWrite + 1) % Capacity;
         if (nextWrite == readIndex.load(std::memory_order_acquire)) {
             return false; // full
         }
-        buffer[currentWrite] = value;
+        buffer[currentWrite] = value ? (CFDataRef)CFRetain((__bridge CFTypeRef)value) : nullptr;
         writeIndex.store(nextWrite, std::memory_order_release);
         return true;
     }
 
-    bool pop(__unsafe_unretained NSData* __strong & value) {
+    bool pop(NSData* __strong & value) {
         const size_t currentRead = readIndex.load(std::memory_order_relaxed);
         if (currentRead == writeIndex.load(std::memory_order_acquire)) {
             return false; // empty
         }
-        value = buffer[currentRead];
-        buffer[currentRead] = nil;
+        CFDataRef ref = buffer[currentRead];
+        buffer[currentRead] = nullptr;
         readIndex.store((currentRead + 1) % Capacity, std::memory_order_release);
+        value = ref ? (__bridge_transfer NSData*)ref : nil;
         return true;
     }
 
@@ -48,7 +56,7 @@ public:
 private:
     std::atomic<size_t> writeIndex{0};
     std::atomic<size_t> readIndex{0};
-    __strong NSData* buffer[Capacity];
+    CFDataRef buffer[Capacity];
 };
 
 // MARK: - Engine state (heap-allocated, passed via user_data)
@@ -225,12 +233,13 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     });
 
     // Consumer loop with spin-wait (200 retries × 500μs = max 100ms per chunk)
-    while (true) {
+    bool cancelled = false;
+    while (!cancelled) {
         NSData* chunk = nil;
         bool gotData = false;
 
         for (int attempt = 0; attempt < 200; attempt++) {
-            if (state->cancelled.load(std::memory_order_acquire)) goto done;
+            if (state->cancelled.load(std::memory_order_acquire)) { cancelled = true; break; }
             if (queue->pop(chunk)) { gotData = true; break; }
             usleep(500);
         }
