@@ -142,6 +142,9 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
     // MARK: - Render block
 
+    private let MAX_RETRIES = 200
+    private let RETRY_DELAY_MICROS = 500
+
     public override var internalRenderBlock: AUInternalRenderBlock {
         return { [weak self] (actionFlags, timestamp, frameCount, outputBusNumber,
                               outputAudioBufferList, renderEvents, pullInputBlock) in
@@ -151,16 +154,42 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             var frames: [Float] = []
             var completed = false
 
-            self.outputDataQueue.sync {
-                let available = max(self.outputData.count - self.outputOffset, 0)
-                let toCopy = min(available, intFrameCount)
-                if toCopy > 0 {
-                    let start = self.outputOffset
-                    frames = Array(self.outputData[start..<(start + toCopy)])
-                    self.outputOffset += toCopy
+            // Spin-wait loop: try to get data without blocking
+            var retries = 0
+            while retries < self.MAX_RETRIES {
+                var availableData: [Float] = []
+                var offset = 0
+                var synthCompleted = false
+                
+                self.outputDataQueue.sync {
+                    let available = max(self.outputData.count - self.outputOffset, 0)
+                    let toCopy = min(available, intFrameCount)
+                    if toCopy > 0 {
+                        let start = self.outputOffset
+                        availableData = Array(self.outputData[start..<(start + toCopy)])
+                        offset = self.outputOffset
+                        self.outputOffset += toCopy
+                    }
+                    let remaining = max(self.outputData.count - self.outputOffset, 0)
+                    synthCompleted = self.synthesisCompleted && remaining == 0
                 }
-                let remaining = max(self.outputData.count - self.outputOffset, 0)
-                completed = self.synthesisCompleted && remaining == 0
+                
+                if !availableData.isEmpty {
+                    frames = availableData
+                    completed = synthCompleted
+                    break
+                }
+                
+                // No data available - spin wait
+                if synthCompleted {
+                    completed = true
+                    break
+                }
+                
+                retries += 1
+                if retries < self.MAX_RETRIES {
+                    usleep(self.RETRY_DELAY_MICROS)
+                }
             }
 
             // Записуємо в output buffer

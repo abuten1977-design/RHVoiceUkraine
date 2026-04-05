@@ -6,101 +6,109 @@
 #import "RHVoiceEngine.h"
 #include "RHVoice.h"
 #import <AVFoundation/AVFoundation.h>
-#include <mutex>
-#include <condition_variable>
-#include <deque>
 #include <atomic>
+#include <cstdint>
+#include <cstring>
 
-// MARK: - ThreadSafeAudioQueue
+// MARK: - ThreadSafeRingBuffer (lock-free, atomic-based)
 
-class ThreadSafeAudioQueue {
+template<typename T, size_t Capacity = 1024>
+class ThreadSafeRingBuffer {
 public:
-    // Не копіюємо — mutex не копіюється
-    ThreadSafeAudioQueue() = default;
-    ThreadSafeAudioQueue(const ThreadSafeAudioQueue&) = delete;
-    ThreadSafeAudioQueue& operator=(const ThreadSafeAudioQueue&) = delete;
+    ThreadSafeRingBuffer() = default;
+    ThreadSafeRingBuffer(const ThreadSafeRingBuffer&) = delete;
+    ThreadSafeRingBuffer& operator=(const ThreadSafeRingBuffer&) = delete;
 
-    void push(const short* data, size_t count) {
-        if (cancelled.load()) return;
-        NSData* chunk = [NSData dataWithBytes:data length:count * sizeof(short)];
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            queue.push_back(chunk);
+    bool push(const T& value) {
+        const size_t currentWrite = writeIndex.load(std::memory_order_relaxed);
+        const size_t nextWrite = (currentWrite + 1) % Capacity;
+        
+        // Buffer full?
+        if (nextWrite == readIndex.load(std::memory_order_acquire)) {
+            return false;
         }
-        cv.notify_one();
+        
+        buffer[currentWrite] = value;
+        writeIndex.store(nextWrite, std::memory_order_release);
+        return true;
     }
 
-    NSData* pop() {
-        std::unique_lock<std::mutex> lock(mtx);
-        cv.wait(lock, [this] { return !queue.empty() || finished || cancelled.load(); });
-        if (queue.empty()) return nil;
-        NSData* chunk = queue.front();
-        queue.pop_front();
-        return chunk;
-    }
-
-    void set_finished() {
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            finished = true;
+    bool pop(T& value) {
+        const size_t currentRead = readIndex.load(std::memory_order_relaxed);
+        
+        // Buffer empty?
+        if (currentRead == writeIndex.load(std::memory_order_acquire)) {
+            return false;
         }
-        cv.notify_all();
+        
+        value = buffer[currentRead];
+        readIndex.store((currentRead + 1) % Capacity, std::memory_order_release);
+        return true;
     }
 
-    void cancel() {
-        cancelled.store(true);
-        {
-            std::lock_guard<std::mutex> lock(mtx);
-            finished = true;
-            queue.clear();
-        }
-        cv.notify_all();
+    bool is_empty() const {
+        return readIndex.load(std::memory_order_acquire) == writeIndex.load(std::memory_order_acquire);
     }
 
-    bool is_cancelled() const { return cancelled.load(); }
+    void reset() {
+        writeIndex.store(0, std::memory_order_release);
+        readIndex.store(0, std::memory_order_release);
+    }
 
 private:
-    std::mutex mtx;
-    std::condition_variable cv;
-    std::deque<NSData*> queue;
-    bool finished = false;
-    std::atomic<bool> cancelled{false};
+    std::atomic<size_t> writeIndex{0};
+    std::atomic<size_t> readIndex{0};
+    T buffer[Capacity];
 };
 
-// MARK: - @interface (до callbacks щоб вони бачили properties)
+// MARK: - Engine state structure (passed to callbacks)
+
+struct EngineState {
+    ThreadSafeRingBuffer<NSData*>* queue;
+    std::atomic<bool> cancelled{false};
+    int* sampleRate;
+    int maxRetries;
+    int retryDelayMicroseconds;
+};
+
+// MARK: - Global state for callbacks (single instance per engine)
+
+static __thread EngineState* tls_engineState = nullptr;
+
+// MARK: - C Callbacks
+
+static int set_sample_rate_callback(int sample_rate, void* user_data) {
+    if (!tls_engineState) return 1;
+    if (tls_engineState->sampleRate) {
+        *tls_engineState->sampleRate = sample_rate;
+    }
+    return 1;
+}
+
+static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
+    if (!tls_engineState) return 1;
+    
+    if (tls_engineState->cancelled.load(std::memory_order_acquire)) {
+        return 0;
+    }
+    
+    NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
+    if (!tls_engineState->queue->push(chunk)) {
+        // Buffer full - drop chunk (shouldn't happen with proper sizing)
+        return 0;
+    }
+    
+    return 1;
+}
+
+// MARK: - @interface
 
 @interface RHVoiceEngine ()
 @property (assign) RHVoice_tts_engine engine;
 @property (assign) BOOL initialized;
 @property (assign) int currentSampleRate;
 @property (assign) BOOL cancelRequested;
-@property (strong, nullable) NSMutableData *audioBuffer;
-@property (assign) ThreadSafeAudioQueue* audioQueue;
 @end
-
-// MARK: - C Callbacks (після @interface — бачать properties)
-
-static int set_sample_rate_callback(int sample_rate, void* user_data) {
-    if (!user_data) return 1;
-    RHVoiceEngine* engine = (__bridge RHVoiceEngine*)user_data;
-    engine.currentSampleRate = sample_rate;
-    return 1;
-}
-
-static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
-    if (!user_data) return 1;
-    RHVoiceEngine* engine = (__bridge RHVoiceEngine*)user_data;
-    if (engine.cancelRequested) return 0;
-
-    ThreadSafeAudioQueue* q = engine.audioQueue;
-    if (q) {
-        if (q->is_cancelled()) return 0;
-        q->push(samples, count);
-    } else {
-        [engine.audioBuffer appendBytes:samples length:count * sizeof(short)];
-    }
-    return 1;
-}
 
 // MARK: - @implementation
 
@@ -113,8 +121,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         _engine = NULL;
         _currentSampleRate = 0;
         _cancelRequested = NO;
-        _audioBuffer = nil;
-        _audioQueue = nullptr;
         [self initializeEngine];
     }
     return self;
@@ -177,22 +183,47 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (!self.initialized || !text.length) return nil;
 
     self.cancelRequested = NO;
-    self.audioQueue = nullptr;
-    self.audioBuffer = [NSMutableData new];
     self.currentSampleRate = 0;
 
+    NSMutableData* audioBuffer = [NSMutableData new];
+
+    // For sync mode, use simple blocking approach
+    // (preview is not in render thread, so mutex is acceptable)
+    ThreadSafeRingBuffer<NSData*, 64> queue;
+    int sampleRate = 0;
+
+    EngineState state;
+    state.queue = &queue;
+    state.cancelled.store(false, std::memory_order_release);
+    state.sampleRate = &sampleRate;
+    state.maxRetries = 200;
+    state.retryDelayMicroseconds = 500;
+
+    tls_engineState = &state;
+
     RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
-    if (!msg) return nil;
+    if (!msg) {
+        tls_engineState = nullptr;
+        return nil;
+    }
 
     RHVoice_speak(msg);
     RHVoice_delete_message(msg);
 
-    NSData* buf = self.audioBuffer;
-    int sr = self.currentSampleRate;
-    self.audioBuffer = nil;
+    tls_engineState = nullptr;
 
-    if (!buf.length || sr == 0) return nil;
-    return [self pcmBufferFrom:buf sampleRate:sr];
+    // Collect all chunks from queue
+    NSData* chunk;
+    while (queue.pop(chunk)) {
+        if (chunk) {
+            [audioBuffer appendData:chunk];
+        }
+    }
+
+    int sr = sampleRate > 0 ? sampleRate : 24000;
+
+    if (!audioBuffer.length || sr == 0) return nil;
+    return [self pcmBufferFrom:audioBuffer sampleRate:sr];
 }
 
 // MARK: - Streaming synthesize (для VoiceOver Extension)
@@ -202,41 +233,83 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
                    onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
     if (!self.initialized || !text.length) return;
 
-    // Створюємо чергу на heap щоб уникнути проблем з копіюванням
-    ThreadSafeAudioQueue* queue = new ThreadSafeAudioQueue();
     self.cancelRequested = NO;
-    self.audioQueue = queue;
-    self.audioBuffer = nil;
-    self.currentSampleRate = 0;
 
-    // Синтез в background
+    // Create queue on heap
+    ThreadSafeRingBuffer<NSData*, 1024>* queue = new ThreadSafeRingBuffer<NSData*, 1024>();
+    int sampleRate = 0;
+
+    EngineState state;
+    state.queue = queue;
+    state.cancelled.store(false, std::memory_order_release);
+    state.sampleRate = &sampleRate;
+    state.maxRetries = 200;
+    state.retryDelayMicroseconds = 500;
+
+    tls_engineState = &state;
+
+    RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
+    if (!msg) {
+        tls_engineState = nullptr;
+        delete queue;
+        return;
+    }
+
+    // Start synthesis in background
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
-        if (msg) {
-            RHVoice_speak(msg);
-            RHVoice_delete_message(msg);
-        }
-        queue->set_finished();
+        RHVoice_speak(msg);
+        RHVoice_delete_message(msg);
+        
+        // Signal completion by pushing nil sentinel
+        NSData* sentinel = nil;
+        queue->push(sentinel);
+        
+        tls_engineState = nullptr;
     });
 
-    // Consumer loop
+    // Consumer loop with spin-wait
     while (true) {
-        NSData* chunk = queue->pop();
-        if (!chunk) break;
+        NSData* chunk = nil;
+        bool gotData = false;
+        
+        for (int attempt = 0; attempt < state.maxRetries; attempt++) {
+            if (state.cancelled.load(std::memory_order_acquire)) {
+                break;
+            }
+            
+            if (queue->pop(chunk)) {
+                gotData = true;
+                break;
+            }
+            
+            // Spin-wait: small delay before retry
+            if (attempt < state.maxRetries - 1) {
+                usleep(state.retryDelayMicroseconds);
+            }
+        }
+        
+        if (!gotData || !chunk) {
+            break;
+        }
+        
+        // Check for sentinel (nil chunk means end)
+        if (chunk.length == 0) {
+            break;
+        }
+        
         const short* samples = (const short*)chunk.bytes;
         unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-        int sr = self.currentSampleRate > 0 ? self.currentSampleRate : 24000;
+        int sr = sampleRate > 0 ? sampleRate : 24000;
         chunkCallback(samples, count, sr);
     }
 
-    self.audioQueue = nullptr;
     delete queue;
 }
 
 - (void)cancel {
     self.cancelRequested = YES;
-    ThreadSafeAudioQueue* q = self.audioQueue;
-    if (q) q->cancel();
+    // Note: For streaming mode, we'd need to track the EngineState pointer
+    // For now, this only affects sync mode via cancelRequested flag
 }
 
 // MARK: - Int16 → Float32
