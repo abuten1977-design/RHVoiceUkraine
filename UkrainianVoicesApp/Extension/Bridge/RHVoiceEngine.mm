@@ -58,6 +58,7 @@ struct EngineState {
     std::atomic<bool> cancelled{false};
     std::atomic<int> sampleRate{24000};
     std::atomic<bool> synthesisDone{false};
+    NSCondition* dataCondition; // Condition variable to wake consumer when data arrives
 };
 
 // MARK: - Thread-local pointer to current EngineState
@@ -83,7 +84,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // If ring buffer is full, drop chunk rather than block
     if (!tls_engineState->queue->push(retained)) {
         CFBridgingRelease(retained);
+        return 1;
     }
+    
+    // Signal consumer that data is available
+    [tls_engineState->dataCondition lock];
+    [tls_engineState->dataCondition signal];
+    [tls_engineState->dataCondition unlock];
+    
     return 1;
 }
 
@@ -117,7 +125,18 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     BOOL isDir = NO;
     if (![[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDir] || !isDir) {
         voicesPath = [bundle pathForResource:@"Voices" ofType:nil];
-        if (!voicesPath) { NSLog(@"❌ Voices not found"); return NO; }
+        if (!voicesPath) {
+            // Fallback: try main bundle (for App target, not Extension)
+            NSBundle* mainBundle = [NSBundle mainBundle];
+            voicesPath = [[mainBundle resourcePath] stringByAppendingPathComponent:@"Voices"];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDir] || !isDir) {
+                voicesPath = [mainBundle pathForResource:@"Voices" ofType:nil];
+                if (!voicesPath) {
+                    NSLog(@"❌ Voices not found in bundleForClass or mainBundle");
+                    return NO;
+                }
+            }
+        }
     }
 
     NSLog(@"✅ Voices: %@", voicesPath);
@@ -162,7 +181,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
                                     rate:(double)rate volume:(double)volume pitch:(double)pitch {
-    if (!self.initialized || !text.length) return nil;
+    NSLog(@"🔍 synthesize called: initialized=%d, text='%@', voice='%@'", self.initialized, text, voice);
+    
+    if (!self.initialized || !text.length) {
+        NSLog(@"❌ synthesize failed: initialized=%d, textLength=%lu", self.initialized, (unsigned long)text.length);
+        return nil;
+    }
 
     ThreadSafeRingBuffer<void*> queue;
     EngineState state;
@@ -170,12 +194,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     state.cancelled.store(false, std::memory_order_release);
     state.sampleRate.store(24000, std::memory_order_release);
     state.synthesisDone.store(false, std::memory_order_release);
+    state.dataCondition = nil; // Not used in sync mode
 
     // Set TLS in current thread — RHVoice_speak is synchronous, callbacks fire here
     tls_engineState = &state;
 
     RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
     if (!msg) {
+        NSLog(@"❌ buildMessage failed for voice '%@'", voice);
         tls_engineState = nullptr;
         return nil;
     }
@@ -194,17 +220,22 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         }
     }
 
-    if (!audioBuffer.length) return nil;
+    if (!audioBuffer.length) {
+        NSLog(@"❌ No audio data synthesized");
+        return nil;
+    }
 
     int sr = state.sampleRate.load(std::memory_order_acquire);
     if (sr <= 0) sr = 24000;
+    
+    NSLog(@"✅ Synthesized %lu bytes at %d Hz", (unsigned long)audioBuffer.length, sr);
     return [self pcmBufferFrom:audioBuffer sampleRate:sr];
 }
 
 // MARK: - Streaming synthesize (для VoiceOver Extension)
 // Producer: RHVoice_speak runs in background thread, callbacks push to ring buffer.
 // Consumer: caller's thread (synthesizeSpeechRequest background queue) drains ring buffer.
-// tls_engineState is set in the SAME thread that calls RHVoice_speak — no race condition.
+// NSCondition wakes consumer when data arrives — no spin-lock, no CPU burn.
 
 - (void)synthesizeStreaming:(NSString*)text voice:(NSString*)voice
                       rate:(double)rate volume:(double)volume pitch:(double)pitch
@@ -217,6 +248,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     state->cancelled.store(false, std::memory_order_release);
     state->sampleRate.store(24000, std::memory_order_release);
     state->synthesisDone.store(false, std::memory_order_release);
+    state->dataCondition = [[NSCondition alloc] init];
 
     NSString* textCopy = [text copy];
     NSString* voiceCopy = [voice copy];
@@ -235,10 +267,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         tls_engineState = nullptr;
         // Signal consumer that production is complete
         state->synthesisDone.store(true, std::memory_order_release);
+        [state->dataCondition lock];
+        [state->dataCondition broadcast];
+        [state->dataCondition unlock];
     });
 
-    // Consumer loop — runs in caller's background thread (NOT render thread)
-    // sched_yield() avoids busy-wait CPU burn while waiting for first chunks
+    // Consumer loop — sleeps on NSCondition until data arrives or synthesis done
     while (true) {
         void* chunkPtr = nullptr;
         if (state->queue->pop(chunkPtr)) {
@@ -262,8 +296,13 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
             }
             break;
         } else {
-            // No data yet — yield CPU, not in render thread so this is safe
-            sched_yield();
+            // No data yet and not done — sleep until signaled
+            [state->dataCondition lock];
+            // Double-check condition to avoid spurious wakeup issues
+            if (state->queue->is_empty() && !state->synthesisDone.load(std::memory_order_acquire)) {
+                [state->dataCondition wait];
+            }
+            [state->dataCondition unlock];
         }
     }
 
