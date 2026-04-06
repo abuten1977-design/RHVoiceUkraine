@@ -37,7 +37,6 @@ struct SettingsView: View {
                             .accessibilityLabel("Швидкість мовлення")
                             .accessibilityValue("\(String(format: "%.2f", voiceManager.parameters.rate))")
                             .accessibilityHint("Змінює швидкість мовлення голосу")
-                            .accessibilityAddTraits(.isAdjustable)
                     }
                     
                     // Pitch
@@ -50,7 +49,6 @@ struct SettingsView: View {
                             .accessibilityLabel("Висота тону")
                             .accessibilityValue("\(String(format: "%.2f", voiceManager.parameters.pitch))")
                             .accessibilityHint("Змінює висоту тону голосу")
-                            .accessibilityAddTraits(.isAdjustable)
                     }
                     
                     // Volume
@@ -63,7 +61,6 @@ struct SettingsView: View {
                             .accessibilityLabel("Гучність")
                             .accessibilityValue("\(String(format: "%.2f", voiceManager.parameters.volume))")
                             .accessibilityHint("Змінює гучність голосу")
-                            .accessibilityAddTraits(.isAdjustable)
                     }
                 }
                 
@@ -79,7 +76,6 @@ struct SettingsView: View {
                             .accessibilityLabel("Множитель швидкості")
                             .accessibilityValue("\(String(format: "%.2f", voiceManager.parameters.speed))")
                             .accessibilityHint("Змінює множитель швидкості мовлення")
-                            .accessibilityAddTraits(.isAdjustable)
                     }
                     
                     // Pause Duration
@@ -92,7 +88,6 @@ struct SettingsView: View {
                             .accessibilityLabel("Тривалість пауз")
                             .accessibilityValue("\(String(format: "%.2f", voiceManager.parameters.pauseDuration))")
                             .accessibilityHint("Змінює тривалість пауз між реченнями")
-                            .accessibilityAddTraits(.isAdjustable)
                     }
                 }
                 
