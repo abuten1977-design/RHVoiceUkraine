@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AVFoundation
+import MessageUI
 
 #if os(macOS)
 import AppKit
@@ -360,6 +361,7 @@ private final class ContentViewModel: ObservableObject {
 }
 
 struct ContentView: View {
+    @State private var showingMailComposer = false
     @StateObject private var model = ContentViewModel()
 
     var body: some View {
@@ -390,13 +392,44 @@ struct ContentView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Ukrainian Voices")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            Text("Manage RHVoice voices, preview them locally, and apply the selected set to the system.")
-                .foregroundColor(.secondary)
+            HStack {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Ukrainian Voices")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    Text("Manage RHVoice voices, preview them locally, and apply the selected set to the system.")
+                        .foregroundColor(.secondary)
+                }
+                Spacer()
+                #if os(iOS)
+                Button("Send Debug Logs") {
+                    showingMailComposer = true
+                }
+                .buttonStyle(.bordered)
+                .accessibilityLabel("Send debug logs via email")
+                #endif
+            }
         }
         .accessibilityElement(children: .combine)
+        .sheet(isPresented: $showingMailComposer) {
+            #if os(iOS)
+            if MFMailComposeViewController.canSendMail() {
+                MailView(logs: LogCollector.shared.getAllLogs())
+            } else {
+                VStack(spacing: 20) {
+                    Text("Mail not configured")
+                        .font(.headline)
+                    Text("Please configure Mail app on your device to send debug logs.")
+                        .multilineTextAlignment(.center)
+                    Button("OK") {
+                        showingMailComposer = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding()
+            }
+            #endif
+        }
     }
 
     private var overviewSection: some View {
