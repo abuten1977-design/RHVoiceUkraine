@@ -668,6 +668,7 @@ struct ContentView: View {
                 .accessibilityLabel(title)
                 .accessibilityValue(valueText)
                 .accessibilityHint(hint)
+                .accessibilityAddTraits(.isAdjustable)
         }
     }
 }

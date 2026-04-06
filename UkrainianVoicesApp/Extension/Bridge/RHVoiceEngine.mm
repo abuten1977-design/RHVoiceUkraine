@@ -10,7 +10,7 @@
 #include <cstdint>
 #include <cstring>
 
-// MARK: - ThreadSafeRingBuffer (lock-free, atomic-based)
+// MARK: - ThreadSafeRingBuffer (lock-free, SPSC atomic)
 
 template<typename T, size_t Capacity = 1024>
 class ThreadSafeRingBuffer {
@@ -20,29 +20,19 @@ public:
     ThreadSafeRingBuffer& operator=(const ThreadSafeRingBuffer&) = delete;
 
     bool push(T value) {
-        const size_t currentWrite = writeIndex.load(std::memory_order_relaxed);
-        const size_t nextWrite = (currentWrite + 1) % Capacity;
-        
-        // Buffer full?
-        if (nextWrite == readIndex.load(std::memory_order_acquire)) {
-            return false;
-        }
-        
-        buffer[currentWrite] = value;
-        writeIndex.store(nextWrite, std::memory_order_release);
+        const size_t w = writeIndex.load(std::memory_order_relaxed);
+        const size_t next = (w + 1) % Capacity;
+        if (next == readIndex.load(std::memory_order_acquire)) return false; // full
+        buffer[w] = value;
+        writeIndex.store(next, std::memory_order_release);
         return true;
     }
 
     bool pop(T& value) {
-        const size_t currentRead = readIndex.load(std::memory_order_relaxed);
-        
-        // Buffer empty?
-        if (currentRead == writeIndex.load(std::memory_order_acquire)) {
-            return false;
-        }
-        
-        value = buffer[currentRead];
-        readIndex.store((currentRead + 1) % Capacity, std::memory_order_release);
+        const size_t r = readIndex.load(std::memory_order_relaxed);
+        if (r == writeIndex.load(std::memory_order_acquire)) return false; // empty
+        value = buffer[r];
+        readIndex.store((r + 1) % Capacity, std::memory_order_release);
         return true;
     }
 
@@ -61,59 +51,39 @@ private:
     T buffer[Capacity];
 };
 
-// MARK: - Engine state structure (passed to callbacks)
+// MARK: - EngineState (heap-allocated, shared between C callback and ObjC)
 
 struct EngineState {
     ThreadSafeRingBuffer<void*>* queue;
     std::atomic<bool> cancelled{false};
-    int* sampleRate;
-    int preBufferCount;
-    std::atomic<int> bufferedChunks{0};
-    std::atomic<bool> readyToRender{false};
+    std::atomic<int> sampleRate{24000};
+    std::atomic<bool> synthesisDone{false};
 };
 
-// MARK: - Global state for callbacks (single instance per engine)
+// MARK: - Thread-local pointer to current EngineState
 
 static __thread EngineState* tls_engineState = nullptr;
 
 // MARK: - C Callbacks
 
 static int set_sample_rate_callback(int sample_rate, void* user_data) {
-    if (!tls_engineState) return 1;
-    if (tls_engineState->sampleRate) {
-        *tls_engineState->sampleRate = sample_rate;
+    if (tls_engineState) {
+        tls_engineState->sampleRate.store(sample_rate, std::memory_order_release);
     }
     return 1;
 }
 
 static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
     if (!tls_engineState) return 1;
-    
-    if (tls_engineState->cancelled.load(std::memory_order_acquire)) {
-        return 0;
-    }
-    
+    if (tls_engineState->cancelled.load(std::memory_order_acquire)) return 0;
+
     NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
-    void* retainedChunk = (__bridge_retained void*)chunk;
-    
-    if (!tls_engineState->queue->push(retainedChunk)) {
-        // Buffer full - drop chunk (shouldn't happen with proper sizing)
-        CFBridgingRelease(retainedChunk);
-        return 0;
+    void* retained = (__bridge_retained void*)chunk;
+
+    // If ring buffer is full, drop chunk rather than block
+    if (!tls_engineState->queue->push(retained)) {
+        CFBridgingRelease(retained);
     }
-    
-    tls_engineState->bufferedChunks.fetch_add(1, std::memory_order_release);
-    
-    // Check if we have enough pre-buffered chunks
-    if (tls_engineState->preBufferCount > 0) {
-        int current = tls_engineState->bufferedChunks.load(std::memory_order_acquire);
-        if (current >= tls_engineState->preBufferCount) {
-            tls_engineState->readyToRender.store(true, std::memory_order_release);
-        }
-    } else {
-        tls_engineState->readyToRender.store(true, std::memory_order_release);
-    }
-    
     return 1;
 }
 
@@ -122,8 +92,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @interface RHVoiceEngine ()
 @property (assign) RHVoice_tts_engine engine;
 @property (assign) BOOL initialized;
-@property (assign) int currentSampleRate;
-@property (assign) BOOL cancelRequested;
 @end
 
 // MARK: - @implementation
@@ -135,8 +103,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (self) {
         _initialized = NO;
         _engine = NULL;
-        _currentSampleRate = 0;
-        _cancelRequested = NO;
         [self initializeEngine];
     }
     return self;
@@ -145,10 +111,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (BOOL)initializeEngine {
     if (self.initialized) return YES;
 
-    NSBundle *bundle = [NSBundle bundleForClass:[self class]];
-    NSString *voicesPath = [[bundle resourcePath] stringByAppendingPathComponent:@"Voices"];
+    NSBundle* bundle = [NSBundle bundleForClass:[self class]];
+    NSString* voicesPath = [[bundle resourcePath] stringByAppendingPathComponent:@"Voices"];
 
-    BOOL isDir;
+    BOOL isDir = NO;
     if (![[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDir] || !isDir) {
         voicesPath = [bundle pathForResource:@"Voices" ofType:nil];
         if (!voicesPath) { NSLog(@"❌ Voices not found"); return NO; }
@@ -198,22 +164,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
                                     rate:(double)rate volume:(double)volume pitch:(double)pitch {
     if (!self.initialized || !text.length) return nil;
 
-    self.cancelRequested = NO;
-    self.currentSampleRate = 0;
-
-    NSMutableData* audioBuffer = [NSMutableData new];
-
-    // For sync mode, use same buffer size as streaming
     ThreadSafeRingBuffer<void*> queue;
-    int sampleRate = 0;
-
     EngineState state;
     state.queue = &queue;
     state.cancelled.store(false, std::memory_order_release);
-    state.sampleRate = &sampleRate;
-    state.preBufferCount = 0;
-    state.bufferedChunks.store(0, std::memory_order_release);
+    state.sampleRate.store(24000, std::memory_order_release);
+    state.synthesisDone.store(false, std::memory_order_release);
 
+    // Set TLS in current thread — RHVoice_speak is synchronous, callbacks fire here
     tls_engineState = &state;
 
     RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
@@ -224,10 +182,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     RHVoice_speak(msg);
     RHVoice_delete_message(msg);
-
     tls_engineState = nullptr;
 
-    // Collect all chunks from queue
+    // Collect all chunks
+    NSMutableData* audioBuffer = [NSMutableData new];
     void* chunkPtr;
     while (queue.pop(chunkPtr)) {
         if (chunkPtr) {
@@ -236,88 +194,87 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         }
     }
 
-    int sr = sampleRate > 0 ? sampleRate : 24000;
+    if (!audioBuffer.length) return nil;
 
-    if (!audioBuffer.length || sr == 0) return nil;
+    int sr = state.sampleRate.load(std::memory_order_acquire);
+    if (sr <= 0) sr = 24000;
     return [self pcmBufferFrom:audioBuffer sampleRate:sr];
 }
 
 // MARK: - Streaming synthesize (для VoiceOver Extension)
+// Producer: RHVoice_speak runs in background thread, callbacks push to ring buffer.
+// Consumer: caller's thread (synthesizeSpeechRequest background queue) drains ring buffer.
+// tls_engineState is set in the SAME thread that calls RHVoice_speak — no race condition.
 
 - (void)synthesizeStreaming:(NSString*)text voice:(NSString*)voice
                       rate:(double)rate volume:(double)volume pitch:(double)pitch
                    onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
     if (!self.initialized || !text.length) return;
 
-    self.cancelRequested = NO;
+    // Heap-allocated — lifetime spans both producer and consumer
+    EngineState* state = new EngineState();
+    state->queue = new ThreadSafeRingBuffer<void*>();
+    state->cancelled.store(false, std::memory_order_release);
+    state->sampleRate.store(24000, std::memory_order_release);
+    state->synthesisDone.store(false, std::memory_order_release);
 
-    // Create queue on heap
-    ThreadSafeRingBuffer<void*>* queue = new ThreadSafeRingBuffer<void*>();
-    int sampleRate = 0;
+    NSString* textCopy = [text copy];
+    NSString* voiceCopy = [voice copy];
 
-    EngineState state;
-    state.queue = queue;
-    state.cancelled.store(false, std::memory_order_release);
-    state.sampleRate = &sampleRate;
-    state.preBufferCount = 3; // Pre-buffer 3 chunks before starting
-    state.bufferedChunks.store(0, std::memory_order_release);
-
-    tls_engineState = &state;
-
-    RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
-    if (!msg) {
-        tls_engineState = nullptr;
-        delete queue;
-        return;
-    }
-
-    // Start synthesis in background
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        RHVoice_speak(msg);
-        RHVoice_delete_message(msg);
-        
-        // Signal completion by pushing nil sentinel
-        void* sentinel = nullptr;
-        queue->push(sentinel);
-        
+        // TLS set in THIS thread — callbacks fire synchronously from RHVoice_speak here
+        tls_engineState = state;
+
+        RHVoice_message msg = [self buildMessage:textCopy voice:voiceCopy
+                                            rate:rate volume:volume pitch:pitch];
+        if (msg) {
+            RHVoice_speak(msg);
+            RHVoice_delete_message(msg);
+        }
+
         tls_engineState = nullptr;
+        // Signal consumer that production is complete
+        state->synthesisDone.store(true, std::memory_order_release);
     });
 
-    // Consumer loop
+    // Consumer loop — runs in caller's background thread (NOT render thread)
+    // sched_yield() avoids busy-wait CPU burn while waiting for first chunks
     while (true) {
         void* chunkPtr = nullptr;
-        if (!queue->pop(chunkPtr)) {
-            // No data available - continue
-            continue;
-        }
-        
-        if (!chunkPtr) {
-            // Sentinel reached - end of synthesis
+        if (state->queue->pop(chunkPtr)) {
+            NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
+            const short* samples = (const short*)chunk.bytes;
+            unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+            int sr = state->sampleRate.load(std::memory_order_acquire);
+            if (sr <= 0) sr = 24000;
+            chunkCallback(samples, count, sr);
+        } else if (state->synthesisDone.load(std::memory_order_acquire)) {
+            // Drain any remaining chunks after done signal
+            while (state->queue->pop(chunkPtr)) {
+                if (chunkPtr) {
+                    NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
+                    const short* samples = (const short*)chunk.bytes;
+                    unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+                    int sr = state->sampleRate.load(std::memory_order_acquire);
+                    if (sr <= 0) sr = 24000;
+                    chunkCallback(samples, count, sr);
+                }
+            }
             break;
+        } else {
+            // No data yet — yield CPU, not in render thread so this is safe
+            sched_yield();
         }
-        
-        NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
-        const short* samples = (const short*)chunk.bytes;
-        unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-        int sr = sampleRate > 0 ? sampleRate : 24000;
-        chunkCallback(samples, count, sr);
     }
 
-    // Clean up remaining chunks
-    void* chunkPtr;
-    while (queue->pop(chunkPtr)) {
-        if (chunkPtr) {
-            CFBridgingRelease(chunkPtr);
-        }
-    }
-    
-    delete queue;
+    delete state->queue;
+    delete state;
 }
 
 - (void)cancel {
-    self.cancelRequested = YES;
-    // Note: For streaming mode, we'd need to track the EngineState pointer
-    // For now, this only affects sync mode via cancelRequested flag
+    if (tls_engineState) {
+        tls_engineState->cancelled.store(true, std::memory_order_release);
+    }
 }
 
 // MARK: - Int16 → Float32
