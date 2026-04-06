@@ -4,19 +4,12 @@
 //
 
 import SwiftUI
-import Sentry
+
+// NOTE: Sentry SDK will be added after Distribution certificate is available.
+// Requires re-signing of Sentry.framework for App Store Connect upload.
 
 @main
 struct UkrainianVoicesApp: App {
-    init() {
-        SentrySDK.start { options in
-            options.dsn = "INSERT_DSN_HERE" // Андрей добавит ключ позже
-            options.enableAppHangTracking = true
-            options.appHangTimeoutInterval = 2.0
-            options.attachStacktrace = true
-        }
-    }
-
     var body: some Scene {
         WindowGroup {
             ContentView()
