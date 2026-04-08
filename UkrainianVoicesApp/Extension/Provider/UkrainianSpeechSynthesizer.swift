@@ -17,16 +17,9 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     private var _outputBusses: AUAudioUnitBusArray!
 
     // MARK: - Synthesis state
-    // All fields accessed from render block use os_unfair_lock — the only lock
-    // safe for real-time audio threads (no priority inversion, no blocking).
 
     private let rhvoiceEngine: RHVoiceEngine
-
-    // Protected by unfairLock — render thread reads, background thread writes
-    private var outputData: [Float] = []
-    private var outputOffset: Int = 0
-    private var synthesisCompleted: Bool = false
-    private var unfairLock = os_unfair_lock()
+    private let audioBuffer = RHVoiceAudioBuffer()
 
     // Pre-buffer threshold: 100ms at 24kHz = 2400 frames
     private let preBufferFrames: Int = 2400
@@ -97,13 +90,7 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
         let volume = defaults?.double(forKey: "volume") ?? 1.0
         let speedMultiplier = defaults?.double(forKey: "speedMultiplier") ?? 1.0
         let text = request.ssmlRepresentation
-
-        // Reset state — called on non-render thread, safe to lock briefly
-        os_unfair_lock_lock(&unfairLock)
-        outputData = []
-        outputOffset = 0
-        synthesisCompleted = false
-        os_unfair_lock_unlock(&unfairLock)
+        let requestToken = audioBuffer.beginRequest()
 
         NSLog("🎤 Synthesis: voice=\(voiceName) rate=\(rate * speedMultiplier)")
 
@@ -117,38 +104,26 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
                 volume: volume,
                 pitch: 1.0
             ) { samples, count, sampleRate in
-                var floats = [Float](repeating: 0, count: Int(count))
-                for i in 0..<Int(count) {
-                    floats[i] = Float(samples[i]) / 32768.0
-                }
-                os_unfair_lock_lock(&self.unfairLock)
-                self.outputData.append(contentsOf: floats)
-                os_unfair_lock_unlock(&self.unfairLock)
+                _ = sampleRate
+                self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
             }
 
-            os_unfair_lock_lock(&self.unfairLock)
-            self.synthesisCompleted = true
-            os_unfair_lock_unlock(&self.unfairLock)
+            self.audioBuffer.markCompleted(with: requestToken)
 
-            NSLog("✅ Synthesis complete: \(self.outputData.count) frames")
+            NSLog("✅ Synthesis complete")
         }
     }
 
     public override func cancelSpeechRequest() {
+        audioBuffer.cancelCurrentRequest()
         rhvoiceEngine.cancel()
-        os_unfair_lock_lock(&unfairLock)
-        outputData = []
-        outputOffset = 0
-        synthesisCompleted = true
-        os_unfair_lock_unlock(&unfairLock)
     }
 
     // MARK: - Render block
     // RULES:
     // 1. NO DispatchQueue.sync/async — forbidden in real-time thread
     // 2. NO usleep, semaphore, mutex — forbidden in real-time thread
-    // 3. os_unfair_lock is safe: non-blocking trylock pattern, or brief lock
-    //    since background thread holds it only for array append (microseconds)
+    // 3. Render consumes from an atomic request buffer with no shared Swift array
     // 4. If no data: return silence immediately
 
     public override var internalRenderBlock: AUInternalRenderBlock {
@@ -167,15 +142,8 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             ablPointer[0].mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float32>.size)
             ablPointer[0].mNumberChannels = 1
 
-            // Lock is held only for array read — background thread holds it
-            // only during append (microseconds). This is safe for real-time.
-            os_unfair_lock_lock(&self.unfairLock)
-            let totalFrames = self.outputData.count
-            let offset = self.outputOffset
-            let done = self.synthesisCompleted
-            os_unfair_lock_unlock(&self.unfairLock)
-
-            let available = max(totalFrames - offset, 0)
+            let available = self.audioBuffer.availableFrames()
+            let done = self.audioBuffer.isPlaybackComplete()
 
             // Pre-buffer: wait until 100ms accumulated OR synthesis is done
             if available == 0 {
@@ -192,20 +160,9 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             }
 
             // Copy frames to output
-            let toCopy = min(available, intFrameCount)
-            os_unfair_lock_lock(&self.unfairLock)
-            let currentOffset = self.outputOffset
-            let currentTotal = self.outputData.count
-            let actualCopy = min(currentTotal - currentOffset, intFrameCount)
-            if actualCopy > 0 {
-                self.outputData.withUnsafeBufferPointer { ptr in
-                    outFrames.update(from: ptr.baseAddress! + currentOffset, count: actualCopy)
-                }
-                self.outputOffset += actualCopy
-            }
-            let remaining = self.outputData.count - self.outputOffset
-            let completed = self.synthesisCompleted && remaining == 0
-            os_unfair_lock_unlock(&self.unfairLock)
+            _ = self.audioBuffer.readFrames(outFrames, maxFrames: intFrameCount)
+            let remaining = self.audioBuffer.availableFrames()
+            let completed = self.audioBuffer.isPlaybackComplete() && remaining == 0
 
             if completed {
                 actionFlags.pointee = .offlineUnitRenderAction_Complete

@@ -8,6 +8,24 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+@interface RHVoiceAudioRequestToken : NSObject
+@end
+
+@interface RHVoiceAudioBuffer : NSObject
+
+- (instancetype)init;
+- (RHVoiceAudioRequestToken *)beginRequest;
+- (void)cancelCurrentRequest;
+- (BOOL)appendSamples:(const short *)samples
+                count:(unsigned int)count
+                token:(RHVoiceAudioRequestToken *)token;
+- (void)markCompletedWithToken:(RHVoiceAudioRequestToken *)token;
+- (NSUInteger)availableFrames;
+- (NSUInteger)readFrames:(float *)destination maxFrames:(NSUInteger)maxFrames;
+- (BOOL)isPlaybackComplete;
+
+@end
+
 @interface RHVoiceEngine : NSObject
 
 - (instancetype)init;

@@ -9,6 +9,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 
 // MARK: - ThreadSafeRingBuffer (lock-free, SPSC atomic)
 
@@ -61,9 +62,144 @@ struct EngineState {
     NSCondition* dataCondition; // Condition variable to wake consumer when data arrives
 };
 
+struct AudioRequestState {
+    ThreadSafeRingBuffer<void*, 2048> queue;
+    std::atomic<size_t> queuedSamples{0};
+    std::atomic<bool> completed{true};
+    __strong NSData* currentChunk = nil;
+    size_t currentChunkOffset = 0;
+};
+
 // MARK: - Thread-local pointer to current EngineState
 
 static __thread EngineState* tls_engineState = nullptr;
+
+@interface RHVoiceAudioRequestToken () {
+@public
+    std::shared_ptr<AudioRequestState> _state;
+}
+@end
+
+@implementation RHVoiceAudioRequestToken
+@end
+
+@interface RHVoiceAudioBuffer () {
+@private
+    std::shared_ptr<AudioRequestState> _activeState;
+}
+@end
+
+@implementation RHVoiceAudioBuffer
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        auto state = std::make_shared<AudioRequestState>();
+        std::atomic_store(&_activeState, state);
+    }
+    return self;
+}
+
+- (RHVoiceAudioRequestToken *)beginRequest {
+    auto state = std::make_shared<AudioRequestState>();
+    state->completed.store(false, std::memory_order_release);
+    std::atomic_store(&_activeState, state);
+
+    RHVoiceAudioRequestToken* token = [RHVoiceAudioRequestToken new];
+    token->_state = state;
+    return token;
+}
+
+- (void)cancelCurrentRequest {
+    auto state = std::make_shared<AudioRequestState>();
+    state->completed.store(true, std::memory_order_release);
+    std::atomic_store(&_activeState, state);
+}
+
+- (BOOL)appendSamples:(const short *)samples
+                count:(unsigned int)count
+                token:(RHVoiceAudioRequestToken *)token {
+    if (!samples || count == 0 || !token) return NO;
+
+    auto tokenState = token->_state;
+    auto activeState = std::atomic_load(&_activeState);
+    if (!tokenState || tokenState.get() != activeState.get()) return NO;
+    if (tokenState->completed.load(std::memory_order_acquire)) return NO;
+
+    NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
+    void* retained = (__bridge_retained void*)chunk;
+    if (!tokenState->queue.push(retained)) {
+        CFBridgingRelease(retained);
+        return NO;
+    }
+
+    tokenState->queuedSamples.fetch_add(count, std::memory_order_release);
+    return YES;
+}
+
+- (void)markCompletedWithToken:(RHVoiceAudioRequestToken *)token {
+    if (!token) return;
+    auto tokenState = token->_state;
+    if (!tokenState) return;
+    tokenState->completed.store(true, std::memory_order_release);
+}
+
+- (NSUInteger)availableFrames {
+    auto state = std::atomic_load(&_activeState);
+    if (!state) return 0;
+    return state->queuedSamples.load(std::memory_order_acquire);
+}
+
+- (NSUInteger)readFrames:(float *)destination maxFrames:(NSUInteger)maxFrames {
+    if (!destination || maxFrames == 0) return 0;
+
+    auto state = std::atomic_load(&_activeState);
+    if (!state) return 0;
+
+    size_t copied = 0;
+    while (copied < maxFrames) {
+        if (!state->currentChunk || state->currentChunkOffset >= state->currentChunk.length / sizeof(short)) {
+            if (state->currentChunk) {
+                state->currentChunk = nil;
+                state->currentChunkOffset = 0;
+            }
+
+            void* chunkPtr = nullptr;
+            if (!state->queue.pop(chunkPtr)) break;
+
+            state->currentChunk = (__bridge_transfer NSData*)chunkPtr;
+            state->currentChunkOffset = 0;
+        }
+
+        const short* samples = (const short*)state->currentChunk.bytes;
+        const size_t totalSamples = state->currentChunk.length / sizeof(short);
+        const size_t remaining = totalSamples - state->currentChunkOffset;
+        const size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
+        for (size_t i = 0; i < toCopy; ++i) {
+            destination[copied + i] = samples[state->currentChunkOffset + i] / 32768.0f;
+        }
+
+        state->currentChunkOffset += toCopy;
+        state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
+        copied += toCopy;
+    }
+
+    return copied;
+}
+
+- (BOOL)isPlaybackComplete {
+    auto state = std::atomic_load(&_activeState);
+    if (!state) return YES;
+
+    if (state->queuedSamples.load(std::memory_order_acquire) > 0) return NO;
+    if (state->currentChunk && state->currentChunkOffset < state->currentChunk.length / sizeof(short)) {
+        return NO;
+    }
+
+    return state->completed.load(std::memory_order_acquire);
+}
+
+@end
 
 // MARK: - C Callbacks
 
@@ -100,6 +236,8 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @interface RHVoiceEngine ()
 @property (assign) RHVoice_tts_engine engine;
 @property (assign) BOOL initialized;
+@property (strong) NSCondition* activeStateCondition;
+@property (assign) EngineState* activeStreamingState;
 @end
 
 // MARK: - @implementation
@@ -111,6 +249,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (self) {
         _initialized = NO;
         _engine = NULL;
+        _activeStateCondition = [[NSCondition alloc] init];
         [self initializeEngine];
     }
     return self;
@@ -175,6 +314,22 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     return RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
                                RHVoice_message_text, &p,
                                (__bridge void*)self);
+}
+
+- (void)publishActiveState:(EngineState*)state {
+    [self.activeStateCondition lock];
+    self.activeStreamingState = state;
+    [self.activeStateCondition broadcast];
+    [self.activeStateCondition unlock];
+}
+
+- (void)clearActiveStateIfMatches:(EngineState*)state {
+    [self.activeStateCondition lock];
+    if (self.activeStreamingState == state) {
+        self.activeStreamingState = nullptr;
+        [self.activeStateCondition broadcast];
+    }
+    [self.activeStateCondition unlock];
 }
 
 // MARK: - Sync synthesize (для preview в App)
@@ -242,6 +397,8 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
                    onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
     if (!self.initialized || !text.length) return;
 
+    [self cancel];
+
     // Heap-allocated — lifetime spans both producer and consumer
     EngineState* state = new EngineState();
     state->queue = new ThreadSafeRingBuffer<void*>();
@@ -249,6 +406,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     state->sampleRate.store(24000, std::memory_order_release);
     state->synthesisDone.store(false, std::memory_order_release);
     state->dataCondition = [[NSCondition alloc] init];
+    [self publishActiveState:state];
 
     NSString* textCopy = [text copy];
     NSString* voiceCopy = [voice copy];
@@ -270,6 +428,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         [state->dataCondition lock];
         [state->dataCondition broadcast];
         [state->dataCondition unlock];
+        [self clearActiveStateIfMatches:state];
     });
 
     // Consumer loop — sleeps on NSCondition until data arrives or synthesis done
@@ -277,21 +436,25 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         void* chunkPtr = nullptr;
         if (state->queue->pop(chunkPtr)) {
             NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
-            const short* samples = (const short*)chunk.bytes;
-            unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-            int sr = state->sampleRate.load(std::memory_order_acquire);
-            if (sr <= 0) sr = 24000;
-            chunkCallback(samples, count, sr);
+            if (!state->cancelled.load(std::memory_order_acquire)) {
+                const short* samples = (const short*)chunk.bytes;
+                unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+                int sr = state->sampleRate.load(std::memory_order_acquire);
+                if (sr <= 0) sr = 24000;
+                chunkCallback(samples, count, sr);
+            }
         } else if (state->synthesisDone.load(std::memory_order_acquire)) {
             // Drain any remaining chunks after done signal
             while (state->queue->pop(chunkPtr)) {
                 if (chunkPtr) {
                     NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
-                    const short* samples = (const short*)chunk.bytes;
-                    unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-                    int sr = state->sampleRate.load(std::memory_order_acquire);
-                    if (sr <= 0) sr = 24000;
-                    chunkCallback(samples, count, sr);
+                    if (!state->cancelled.load(std::memory_order_acquire)) {
+                        const short* samples = (const short*)chunk.bytes;
+                        unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+                        int sr = state->sampleRate.load(std::memory_order_acquire);
+                        if (sr <= 0) sr = 24000;
+                        chunkCallback(samples, count, sr);
+                    }
                 }
             }
             break;
@@ -311,9 +474,22 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 }
 
 - (void)cancel {
-    if (tls_engineState) {
-        tls_engineState->cancelled.store(true, std::memory_order_release);
+    [self.activeStateCondition lock];
+    EngineState* state = self.activeStreamingState;
+    if (!state) {
+        [self.activeStateCondition unlock];
+        return;
     }
+
+    state->cancelled.store(true, std::memory_order_release);
+    [state->dataCondition lock];
+    [state->dataCondition broadcast];
+    [state->dataCondition unlock];
+
+    while (self.activeStreamingState == state) {
+        [self.activeStateCondition wait];
+    }
+    [self.activeStateCondition unlock];
 }
 
 // MARK: - Int16 → Float32
