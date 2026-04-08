@@ -486,23 +486,44 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     [self cancel];
 
     // Heap-allocated — lifetime spans both producer and consumer
-    EngineState* state = new EngineState();
-    state->queue = new ThreadSafeRingBuffer<void*>();
+    EngineState* state = new (std::nothrow) EngineState();
+    if (!state) {
+        NSLog(@"❌ synthesizeStreaming failed: EngineState allocation failed");
+        return;
+    }
+
+    state->queue = new (std::nothrow) ThreadSafeRingBuffer<void*>();
+    if (!state->queue) {
+        NSLog(@"❌ synthesizeStreaming failed: queue allocation failed");
+        delete state;
+        return;
+    }
     state->cancelled.store(false, std::memory_order_release);
     state->sampleRate.store(24000, std::memory_order_release);
     state->synthesisDone.store(false, std::memory_order_release);
     state->dataCondition = [[NSCondition alloc] init];
+    if (!state->dataCondition) {
+        NSLog(@"❌ synthesizeStreaming failed: NSCondition allocation failed");
+        delete state->queue;
+        delete state;
+        return;
+    }
     [self publishActiveState:state];
 
     NSString* textCopy = [text copy];
     NSString* voiceCopy = [voice copy];
+    __weak typeof(self) weakSelf = self;
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
         // TLS set in THIS thread — callbacks fire synchronously from RHVoice_speak here
         tls_engineState = state;
 
-        RHVoice_message msg = [self buildMessage:textCopy voice:voiceCopy
-                                            rate:rate volume:volume pitch:pitch];
+        RHVoice_message msg = nullptr;
+        if (strongSelf) {
+            msg = [strongSelf buildMessage:textCopy voice:voiceCopy
+                                      rate:rate volume:volume pitch:pitch];
+        }
         if (msg) {
             RHVoice_speak(msg);
             RHVoice_delete_message(msg);
@@ -514,7 +535,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         [state->dataCondition lock];
         [state->dataCondition broadcast];
         [state->dataCondition unlock];
-        [self clearActiveStateIfMatches:state];
+        if (strongSelf) {
+            [strongSelf clearActiveStateIfMatches:state];
+        }
     });
 
     // Consumer loop — sleeps on NSCondition until data arrives or synthesis done
