@@ -142,32 +142,21 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             ablPointer[0].mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float32>.size)
             ablPointer[0].mNumberChannels = 1
 
-            let available = self.audioBuffer.availableFrames()
-            let done = self.audioBuffer.isPlaybackComplete()
+            var completed = ObjCBool(false)
+            let rendered = self.audioBuffer.renderFrames(
+                outFrames,
+                maxFrames: UInt(intFrameCount),
+                preBufferFrames: UInt(self.preBufferFrames),
+                didComplete: &completed
+            )
 
-            // Pre-buffer: wait until 100ms accumulated OR synthesis is done
-            if available == 0 {
-                if done {
-                    actionFlags.pointee = .offlineUnitRenderAction_Complete
-                }
-                // else: return silence, VoiceOver will call again
-                return noErr
-            }
-
-            // Not enough pre-buffered yet — return silence and wait
-            if available < self.preBufferFrames && !done {
-                return noErr
-            }
-
-            // Copy frames to output
-            _ = self.audioBuffer.readFrames(outFrames, maxFrames: UInt(intFrameCount))
-            let remaining = self.audioBuffer.availableFrames()
-            let completed = self.audioBuffer.isPlaybackComplete() && remaining == 0
-
-            if completed {
+            if completed.boolValue {
                 actionFlags.pointee = .offlineUnitRenderAction_Complete
-            } else {
+            } else if rendered {
                 actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                // No data or pre-buffer not ready yet — return silence.
+                actionFlags.pointee = []
             }
 
             return noErr

@@ -22,6 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)markCompletedWithToken:(RHVoiceAudioRequestToken *)token;
 - (NSUInteger)availableFrames;
 - (NSUInteger)readFrames:(float *)destination maxFrames:(NSUInteger)maxFrames;
+- (BOOL)renderFrames:(float *)destination
+           maxFrames:(NSUInteger)maxFrames
+     preBufferFrames:(NSUInteger)preBufferFrames
+         didComplete:(BOOL *)didComplete;
 - (BOOL)isPlaybackComplete;
 
 @end

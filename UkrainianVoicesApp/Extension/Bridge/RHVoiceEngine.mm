@@ -68,11 +68,25 @@ struct AudioRequestState {
     std::atomic<bool> completed{true};
     __strong NSData* currentChunk = nil;
     size_t currentChunkOffset = 0;
+
+    ~AudioRequestState() {
+        if (currentChunk) {
+            currentChunk = nil;
+        }
+
+        void* chunkPtr = nullptr;
+        while (queue.pop(chunkPtr)) {
+            if (chunkPtr) {
+                CFBridgingRelease(chunkPtr);
+            }
+        }
+    }
 };
 
 // MARK: - Thread-local pointer to current EngineState
 
 static __thread EngineState* tls_engineState = nullptr;
+static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
 
 @interface RHVoiceAudioRequestToken () {
 @public
@@ -187,6 +201,78 @@ static __thread EngineState* tls_engineState = nullptr;
     return copied;
 }
 
+- (BOOL)renderFrames:(float *)destination
+           maxFrames:(NSUInteger)maxFrames
+     preBufferFrames:(NSUInteger)preBufferFrames
+         didComplete:(BOOL *)didComplete {
+    if (didComplete) {
+        *didComplete = NO;
+    }
+    if (!destination || maxFrames == 0) return NO;
+
+    auto state = std::atomic_load(&_activeState);
+    if (!state) {
+        if (didComplete) {
+            *didComplete = YES;
+        }
+        return NO;
+    }
+
+    const size_t available = state->queuedSamples.load(std::memory_order_acquire);
+    const bool done = state->completed.load(std::memory_order_acquire);
+
+    if (available == 0) {
+        if (didComplete) {
+            *didComplete = done;
+        }
+        return NO;
+    }
+
+    if (available < preBufferFrames && !done) {
+        return NO;
+    }
+
+    size_t copied = 0;
+    while (copied < maxFrames) {
+        if (!state->currentChunk || state->currentChunkOffset >= state->currentChunk.length / sizeof(short)) {
+            if (state->currentChunk) {
+                state->currentChunk = nil;
+                state->currentChunkOffset = 0;
+            }
+
+            void* chunkPtr = nullptr;
+            if (!state->queue.pop(chunkPtr)) break;
+
+            state->currentChunk = (__bridge_transfer NSData*)chunkPtr;
+            state->currentChunkOffset = 0;
+        }
+
+        const short* samples = (const short*)state->currentChunk.bytes;
+        const size_t totalSamples = state->currentChunk.length / sizeof(short);
+        const size_t remaining = totalSamples - state->currentChunkOffset;
+        const size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
+        for (size_t i = 0; i < toCopy; ++i) {
+            destination[copied + i] = samples[state->currentChunkOffset + i] / 32768.0f;
+        }
+
+        state->currentChunkOffset += toCopy;
+        state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
+        copied += toCopy;
+    }
+
+    bool playbackComplete = false;
+    if (state->queuedSamples.load(std::memory_order_acquire) == 0) {
+        const bool chunkExhausted = (!state->currentChunk ||
+            state->currentChunkOffset >= state->currentChunk.length / sizeof(short));
+        playbackComplete = chunkExhausted && state->completed.load(std::memory_order_acquire);
+    }
+
+    if (didComplete) {
+        *didComplete = playbackComplete;
+    }
+    return copied > 0;
+}
+
 - (BOOL)isPlaybackComplete {
     auto state = std::atomic_load(&_activeState);
     if (!state) return YES;
@@ -217,17 +303,17 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
     void* retained = (__bridge_retained void*)chunk;
 
-    // If ring buffer is full, drop chunk rather than block
+    [tls_engineState->dataCondition lock];
+    // Keep push+signal under the same condition lock so the consumer
+    // cannot miss a wakeup between its empty check and wait transition.
     if (!tls_engineState->queue->push(retained)) {
+        [tls_engineState->dataCondition unlock];
         CFBridgingRelease(retained);
         return 1;
     }
-    
-    // Signal consumer that data is available
-    [tls_engineState->dataCondition lock];
     [tls_engineState->dataCondition signal];
     [tls_engineState->dataCondition unlock];
-    
+
     return 1;
 }
 
@@ -486,8 +572,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     [state->dataCondition broadcast];
     [state->dataCondition unlock];
 
+    NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:kCancelWaitTimeoutSec];
     while (self.activeStreamingState == state) {
-        [self.activeStateCondition wait];
+        if (![self.activeStateCondition waitUntilDate:deadline]) {
+            NSLog(@"⚠️ cancel timeout after %.1f sec; continuing without blocking caller", kCancelWaitTimeoutSec);
+            break;
+        }
     }
     [self.activeStateCondition unlock];
 }
