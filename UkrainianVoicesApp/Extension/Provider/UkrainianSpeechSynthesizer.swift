@@ -160,7 +160,7 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
             }
 
             // Copy frames to output
-            _ = self.audioBuffer.readFrames(outFrames, maxFrames: intFrameCount)
+            _ = self.audioBuffer.readFrames(outFrames, maxFrames: UInt(intFrameCount))
             let remaining = self.audioBuffer.availableFrames()
             let completed = self.audioBuffer.isPlaybackComplete() && remaining == 0
 
