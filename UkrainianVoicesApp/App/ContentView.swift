@@ -19,6 +19,12 @@ private let defaultEnabledVoiceIdentifiers: Set<String> = [
     "com.rhvoice.UkrainianVoices.anatol"
 ]
 private let preferredLanguageOrder = ["Ukrainian", "English"]
+private let voiceProfileNamesByIdentifierSuffix: [String: String] = [
+    "anatol": "Anatol",
+    "marianna": "Marianna",
+    "natalia": "Natalia",
+    "volodymyr": "Volodymyr"
+]
 
 private struct VoiceDefinition: Identifiable, Hashable {
     let name: String
@@ -298,7 +304,10 @@ private final class ContentViewModel: ObservableObject {
         let appliedRate = currentSettings.useCustomSettings ? currentSettings.rate : rate
         let appliedVolume = currentSettings.useCustomSettings ? currentSettings.volume : volume
         let appliedSpeedMultiplier = currentSettings.useCustomSettings ? currentSettings.speedMultiplier : speedMultiplier
-        let voiceName = voice.identifier.components(separatedBy: ".").last ?? voice.name.lowercased()
+        let identifierSuffix = voice.identifier.components(separatedBy: ".").last?.lowercased()
+        let voiceName = identifierSuffix.flatMap { voiceProfileNamesByIdentifierSuffix[$0] } ?? voice.name
+
+        LogCollector.shared.log("Preview request voice=\(voice.name) profile=\(voiceName) textLength=\(text.count)")
 
         do {
             try playbackController.play(
@@ -410,7 +419,7 @@ struct ContentView: View {
                 #endif
             }
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .contain)
         .sheet(isPresented: $showingMailComposer) {
             #if os(iOS)
             if MFMailComposeViewController.canSendMail() {

@@ -330,6 +330,20 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 @implementation RHVoiceEngine
 
++ (NSDictionary<NSString *, NSString *> *)voiceProfileAliases {
+    static NSDictionary<NSString *, NSString *> *aliases;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        aliases = @{
+            @"anatol": @"Anatol",
+            @"marianna": @"Marianna",
+            @"natalia": @"Natalia",
+            @"volodymyr": @"Volodymyr"
+        };
+    });
+    return aliases;
+}
+
 - (instancetype)init {
     self = [super init];
     if (self) {
@@ -387,9 +401,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (RHVoice_message)buildMessage:(NSString*)text voice:(NSString*)voice
                            rate:(double)rate volume:(double)volume pitch:(double)pitch {
+    NSString* alias = [[self class] voiceProfileAliases][voice.lowercaseString];
+    NSString* normalizedVoice = alias ? alias : voice;
+
     RHVoice_synth_params p;
     memset(&p, 0, sizeof(p));
-    p.voice_profile = [voice UTF8String];
+    p.voice_profile = [normalizedVoice UTF8String];
     p.absolute_rate = rate - 1.0;
     p.relative_rate = rate;
     p.absolute_pitch = pitch - 1.0;
@@ -397,6 +414,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     p.relative_volume = volume;
 
     const char* t = [text UTF8String];
+    NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' textLength=%lu", voice, normalizedVoice, (unsigned long)text.length);
     return RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
                                RHVoice_message_text, &p,
                                (__bridge void*)self);

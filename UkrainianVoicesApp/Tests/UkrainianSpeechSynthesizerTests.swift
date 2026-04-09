@@ -48,7 +48,7 @@ class UkrainianSpeechSynthesizerTests: XCTestCase {
         let voices = synthesizer.speechVoices
         
         for voice in voices {
-            XCTAssertTrue(voice.identifier.hasPrefix("com.rhvoice.ukrainian."), 
+            XCTAssertTrue(voice.identifier.hasPrefix("com.rhvoice.UkrainianVoices."),
                          "Voice identifier should have correct prefix")
         }
     }
