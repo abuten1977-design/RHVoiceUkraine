@@ -512,10 +512,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     NSString* textCopy = [text copy];
     NSString* voiceCopy = [voice copy];
-    __weak typeof(self) weakSelf = self;
+    RHVoiceEngine* __weak weakSelf = self;
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        __strong typeof(weakSelf) strongSelf = weakSelf;
+        RHVoiceEngine* strongSelf = weakSelf;
         // TLS set in THIS thread — callbacks fire synchronously from RHVoice_speak here
         tls_engineState = state;
 
