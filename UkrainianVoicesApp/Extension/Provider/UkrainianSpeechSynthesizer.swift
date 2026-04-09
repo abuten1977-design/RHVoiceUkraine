@@ -90,6 +90,9 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
         let volume = defaults?.double(forKey: "volume") ?? 1.0
         let speedMultiplier = defaults?.double(forKey: "speedMultiplier") ?? 1.0
         let text = request.ssmlRepresentation
+
+        // Cancel any previous request first, then begin new one
+        rhvoiceEngine.cancel()
         let requestToken = audioBuffer.beginRequest()
 
         NSLog("🎤 Synthesis: voice=\(voiceName) rate=\(rate * speedMultiplier)")

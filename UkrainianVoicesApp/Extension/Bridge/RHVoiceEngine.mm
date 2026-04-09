@@ -501,7 +501,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
                    onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
     if (!self.initialized || !text.length) return;
 
-    [self cancel];
+    // NOTE: Do NOT call [self cancel] here — the caller (Swift) already called
+    // audioBuffer.beginRequest() which set up the active state. Calling cancel()
+    // would replace _activeState with a new empty state, causing render block
+    // to never receive data.
 
     // Heap-allocated — lifetime spans both producer and consumer
     EngineState* state = new (std::nothrow) EngineState();
