@@ -86,9 +86,10 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
     public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
         let voiceName = request.voice.identifier.components(separatedBy: ".").last ?? "anatol"
-        let rate = defaults?.double(forKey: "rate") ?? 0.5
-        let volume = defaults?.double(forKey: "volume") ?? 1.0
-        let speedMultiplier = defaults?.double(forKey: "speedMultiplier") ?? 1.0
+        // Use object(forKey:) to distinguish "not set" (nil) from explicit 0.0
+        let rate = (defaults?.object(forKey: "rate") as? Double) ?? 0.5
+        let volume = (defaults?.object(forKey: "volume") as? Double) ?? 1.0
+        let speedMultiplier = (defaults?.object(forKey: "speedMultiplier") as? Double) ?? 1.0
         let text = request.ssmlRepresentation
 
         // Cancel any previous request first, then begin new one

@@ -388,7 +388,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     RHVoice_init_params params;
     memset(&params, 0, sizeof(params));
     params.data_path = [voicesPath UTF8String];
-    params.config_path = [voicesPath UTF8String];
+    params.config_path = NULL; // Let RHVoice use built-in config; setting it to Voices path causes init failure
     params.callbacks = callbacks;
 
     self.engine = RHVoice_new_tts_engine(&params);
