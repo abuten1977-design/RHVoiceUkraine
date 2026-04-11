@@ -17,16 +17,16 @@ targets:
     postBuildScripts:
       - name: Copy Voices
         script: |
-          echo "📦 Copying Voices to bundle..."
-          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
-          VOICES_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Voices"
+          echo "📦 Copying RHVoiceData to bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          DATA_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/RHVoiceData"
           
-          if [ -d "$VOICES_SRC" ]; then
-            cp -r "$VOICES_SRC" "$VOICES_DST"
-            echo "✅ Voices copied: $(find "$VOICES_DST" -type f | wc -l) files"
-            ls -la "$VOICES_DST"
+          if [ -d "$DATA_SRC" ]; then
+            cp -r "$DATA_SRC" "$DATA_DST"
+            echo "✅ RHVoiceData copied: $(find "$DATA_DST" -type f | wc -l) files"
+            ls -la "$DATA_DST"
           else
-            echo "❌ Voices not found: $VOICES_SRC"
+            echo "❌ RHVoiceData not found: $DATA_SRC"
             exit 1
           fi
         basedOnDependencyAnalysis: false
@@ -62,15 +62,15 @@ targets:
     postBuildScripts:
       - name: Copy Voices to Extension
         script: |
-          echo "📦 Copying Voices to Extension bundle..."
-          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
-          VOICES_DST="${BUILT_PRODUCTS_DIR}/UkrainianVoicesExtension.appex/Voices"
+          echo "📦 Copying RHVoiceData to Extension bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          DATA_DST="${BUILT_PRODUCTS_DIR}/UkrainianVoicesExtension.appex/RHVoiceData"
           
-          if [ -d "$VOICES_SRC" ]; then
-            cp -r "$VOICES_SRC" "$VOICES_DST"
-            echo "✅ Voices copied to Extension: $(find "$VOICES_DST" -type f | wc -l) files"
+          if [ -d "$DATA_SRC" ]; then
+            cp -r "$DATA_SRC" "$DATA_DST"
+            echo "✅ RHVoiceData copied to Extension: $(find "$DATA_DST" -type f | wc -l) files"
           else
-            echo "❌ Voices not found: $VOICES_SRC"
+            echo "❌ RHVoiceData not found: $DATA_SRC"
             exit 1
           fi
         basedOnDependencyAnalysis: false

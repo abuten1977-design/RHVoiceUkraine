@@ -359,26 +359,30 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (self.initialized) return YES;
 
     NSBundle* bundle = [NSBundle bundleForClass:[self class]];
-    NSString* voicesPath = [[bundle resourcePath] stringByAppendingPathComponent:@"Voices"];
-
+    NSFileManager* fm = [NSFileManager defaultManager];
     BOOL isDir = NO;
-    if (![[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDir] || !isDir) {
-        voicesPath = [bundle pathForResource:@"Voices" ofType:nil];
-        if (!voicesPath) {
-            // Fallback: try main bundle (for App target, not Extension)
-            NSBundle* mainBundle = [NSBundle mainBundle];
-            voicesPath = [[mainBundle resourcePath] stringByAppendingPathComponent:@"Voices"];
-            if (![[NSFileManager defaultManager] fileExistsAtPath:voicesPath isDirectory:&isDir] || !isDir) {
-                voicesPath = [mainBundle pathForResource:@"Voices" ofType:nil];
-                if (!voicesPath) {
-                    NSLog(@"❌ Voices not found in bundleForClass or mainBundle");
-                    return NO;
-                }
-            }
+
+    // Try RHVoiceData first (contains both languages/ and voices/ subdirs)
+    NSString* dataPath = [[bundle resourcePath] stringByAppendingPathComponent:@"RHVoiceData"];
+    if (![fm fileExistsAtPath:dataPath isDirectory:&isDir] || !isDir) {
+        dataPath = [bundle pathForResource:@"RHVoiceData" ofType:nil];
+    }
+
+    // Fallback: legacy Voices-only path (won't have language data, but try anyway)
+    if (!dataPath) {
+        dataPath = [[bundle resourcePath] stringByAppendingPathComponent:@"Voices"];
+        if (![fm fileExistsAtPath:dataPath isDirectory:&isDir] || !isDir) {
+            dataPath = [bundle pathForResource:@"Voices" ofType:nil];
         }
     }
 
-    NSLog(@"✅ Voices: %@", voicesPath);
+    if (!dataPath) {
+        NSLog(@"❌ RHVoiceData not found in bundle: %@", bundle.resourcePath);
+        return NO;
+    }
+
+    NSLog(@"✅ RHVoice data path: %@", dataPath);
+    NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
@@ -387,12 +391,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     RHVoice_init_params params;
     memset(&params, 0, sizeof(params));
-    params.data_path = [voicesPath UTF8String];
-    params.config_path = NULL; // Let RHVoice use built-in config; setting it to Voices path causes init failure
+    params.data_path = [dataPath UTF8String];
+    params.config_path = NULL;
     params.callbacks = callbacks;
 
     self.engine = RHVoice_new_tts_engine(&params);
-    if (!self.engine) { NSLog(@"❌ Engine init failed"); return NO; }
+    if (!self.engine) { NSLog(@"❌ Engine init failed for data_path: %@", dataPath); return NO; }
 
     self.initialized = YES;
     NSLog(@"✅ Engine ready");
