@@ -1,0 +1,55 @@
+name: Build RHVoice Mac
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: UkrainianVoicesApp
+        run: xcodegen generate
+
+      - name: Build macOS app
+        working-directory: UkrainianVoicesApp
+        run: |
+          xcodebuild \
+            -scheme UkrainianVoicesMac \
+            -configuration Debug \
+            -destination "platform=macOS" \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty || true
+
+      - name: Package macOS app
+        working-directory: UkrainianVoicesApp
+        run: |
+          APP_PATH=$(find build -name "UkrainianVoicesMac.app" -maxdepth 6 | head -1)
+          echo "Found app: $APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "❌ App not found"
+            find build -name "*.app" | head -10
+            exit 1
+          fi
+          mkdir -p mac_build
+          cp -r "$APP_PATH" mac_build/
+          echo "✅ App packaged"
+          ls -la mac_build/
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-debug-build
+          path: UkrainianVoicesApp/mac_build/
+          retention-days: 3
