@@ -11,8 +11,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          ref: ci-ios-unsigned-manual-build
 
       - name: Install xcodegen
         run: brew install xcodegen
@@ -35,6 +33,7 @@ jobs:
             | xcpretty || true
 
       - name: Package macOS app
+        if: always()
         working-directory: UkrainianVoicesApp
         run: |
           APP_PATH=$(find build -name "UkrainianVoicesMac.app" -maxdepth 6 | head -1)
@@ -47,8 +46,10 @@ jobs:
           mkdir -p mac_build
           cp -r "$APP_PATH" mac_build/
           echo "✅ App packaged"
+          ls -la mac_build/
 
       - name: Upload macOS artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: macos-debug-build
