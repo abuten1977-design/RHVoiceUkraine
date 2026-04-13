@@ -164,7 +164,7 @@ targets:
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
