@@ -118,7 +118,12 @@ targets:
       - name: Embed RHVoice dylibs
         script: |
           echo "📦 Embedding macOS RHVoice dylibs..."
-          DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          # Try arm64 first, fallback to x86_64
+          if [ -d "${SRCROOT}/Extension/Libraries_macos_arm64" ]; then
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
+          else
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          fi
           DYLIB_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
 
           mkdir -p "$DYLIB_DST"
@@ -179,7 +184,11 @@ targets:
       - name: Embed RHVoice dylibs in extension
         script: |
           echo "📦 Embedding RHVoice dylibs in extension..."
-          DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          if [ -d "${SRCROOT}/Extension/Libraries_macos_arm64" ]; then
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
+          else
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          fi
           DYLIB_DST="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Frameworks"
 
           mkdir -p "$DYLIB_DST"
