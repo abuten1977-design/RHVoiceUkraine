@@ -33,6 +33,7 @@ jobs:
             | xcpretty || true
 
       - name: Package macOS app
+        if: always()
         working-directory: UkrainianVoicesApp
         run: |
           APP_PATH=$(find build -name "UkrainianVoicesMac.app" -maxdepth 6 | head -1)
@@ -48,6 +49,7 @@ jobs:
           ls -la mac_build/
 
       - name: Upload macOS artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: macos-debug-build
