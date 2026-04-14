@@ -290,6 +290,11 @@ static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
 // MARK: - C Callbacks
 
 static int set_sample_rate_callback(int sample_rate, void* user_data) {
+    EngineState* state = static_cast<EngineState*>(user_data);
+    if (state) {
+        state->sampleRate.store(sample_rate, std::memory_order_release);
+    }
+    // Also update TLS if available
     if (tls_engineState) {
         tls_engineState->sampleRate.store(sample_rate, std::memory_order_release);
     }
@@ -297,23 +302,29 @@ static int set_sample_rate_callback(int sample_rate, void* user_data) {
 }
 
 static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
-    if (!tls_engineState) return 1;
-    if (tls_engineState->cancelled.load(std::memory_order_acquire)) return 0;
+    // Prefer user_data over TLS — works across threads
+    EngineState* state = static_cast<EngineState*>(user_data);
+    if (!state) state = tls_engineState;
+    if (!state) return 1;
+    if (state->cancelled.load(std::memory_order_acquire)) return 0;
 
     NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
     void* retained = (__bridge_retained void*)chunk;
 
-    [tls_engineState->dataCondition lock];
-    // Keep push+signal under the same condition lock so the consumer
-    // cannot miss a wakeup between its empty check and wait transition.
-    if (!tls_engineState->queue->push(retained)) {
-        [tls_engineState->dataCondition unlock];
-        CFBridgingRelease(retained);
-        return 1;
+    if (state->dataCondition) {
+        [state->dataCondition lock];
+        if (!state->queue->push(retained)) {
+            [state->dataCondition unlock];
+            CFBridgingRelease(retained);
+            return 1;
+        }
+        [state->dataCondition signal];
+        [state->dataCondition unlock];
+    } else {
+        if (!state->queue->push(retained)) {
+            CFBridgingRelease(retained);
+        }
     }
-    [tls_engineState->dataCondition signal];
-    [tls_engineState->dataCondition unlock];
-
     return 1;
 }
 
@@ -404,24 +415,31 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 }
 
 - (RHVoice_message)buildMessage:(NSString*)text voice:(NSString*)voice
-                           rate:(double)rate volume:(double)volume pitch:(double)pitch {
+                           rate:(double)rate volume:(double)volume pitch:(double)pitch
+                          state:(EngineState*)state {
     NSString* alias = [[self class] voiceProfileAliases][voice.lowercaseString];
     NSString* normalizedVoice = alias ? alias : voice;
 
     RHVoice_synth_params p;
     memset(&p, 0, sizeof(p));
     p.voice_profile = [normalizedVoice UTF8String];
-    p.absolute_rate = rate - 1.0;
-    p.relative_rate = rate;
-    p.absolute_pitch = pitch - 1.0;
-    p.relative_pitch = pitch;
-    p.relative_volume = volume;
+    double mappedRate = rate > 0 ? rate * 2.0 : 1.0;
+    p.absolute_rate = 0.0;
+    p.relative_rate = mappedRate;
+    p.absolute_pitch = 0.0;
+    p.relative_pitch = pitch > 0 ? pitch : 1.0;
+    p.relative_volume = volume > 0 ? volume : 1.0;
 
     const char* t = [text UTF8String];
-    NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' textLength=%lu", voice, normalizedVoice, (unsigned long)text.length);
-    return RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
+    NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' rate=%.2f→%.2f textLength=%lu",
+          voice, normalizedVoice, rate, mappedRate, (unsigned long)text.length);
+    RHVoice_message msg = RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
                                RHVoice_message_text, &p,
-                               (__bridge void*)self);
+                               (void*)state);  // Pass EngineState as user_data
+    if (!msg) {
+        NSLog(@"❌ RHVoice_new_message returned NULL for voice='%@'", normalizedVoice);
+    }
+    return msg;
 }
 
 - (void)publishActiveState:(EngineState*)state {
@@ -462,7 +480,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // Set TLS in current thread — RHVoice_speak is synchronous, callbacks fire here
     tls_engineState = &state;
 
-    RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch];
+    RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch state:&state];
     if (!msg) {
         NSLog(@"❌ buildMessage failed for voice '%@'", voice);
         tls_engineState = nullptr;
@@ -547,7 +565,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         RHVoice_message msg = nullptr;
         if (strongSelf) {
             msg = [strongSelf buildMessage:textCopy voice:voiceCopy
-                                      rate:rate volume:volume pitch:pitch];
+                                      rate:rate volume:volume pitch:pitch state:state];
         }
         if (msg) {
             RHVoice_speak(msg);
