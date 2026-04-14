@@ -302,6 +302,7 @@ static int set_sample_rate_callback(int sample_rate, void* user_data) {
 }
 
 static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
+    NSLog(@"🔊 play_speech_callback: count=%u user_data=%p tls=%p", count, user_data, tls_engineState);
     // Prefer user_data over TLS — works across threads
     EngineState* state = static_cast<EngineState*>(user_data);
     if (!state) state = tls_engineState;
@@ -409,8 +410,20 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     self.engine = RHVoice_new_tts_engine(&params);
     if (!self.engine) { NSLog(@"❌ Engine init failed for data_path: %@", dataPath); return NO; }
 
+    // Verify voices loaded
+    unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
+    unsigned int nProfiles = RHVoice_get_number_of_voice_profiles(self.engine);
+    NSLog(@"✅ Engine ready: %u voices, %u profiles", nVoices, nProfiles);
+    
+    // Log available voice profiles
+    char const* const* profiles = RHVoice_get_voice_profiles(self.engine);
+    if (profiles) {
+        for (int i = 0; profiles[i]; i++) {
+            NSLog(@"   Profile[%d]: %s", i, profiles[i]);
+        }
+    }
+
     self.initialized = YES;
-    NSLog(@"✅ Engine ready");
     return YES;
 }
 
