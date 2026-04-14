@@ -5,7 +5,9 @@
 
 import SwiftUI
 import AVFoundation
+#if os(iOS)
 import MessageUI
+#endif
 
 #if os(macOS)
 import AppKit

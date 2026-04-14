@@ -4,7 +4,9 @@
 //
 
 import Foundation
+#if os(iOS)
 import MessageUI
+#endif
 import SwiftUI
 
 class LogCollector: NSObject, MFMailComposeViewControllerDelegate {
