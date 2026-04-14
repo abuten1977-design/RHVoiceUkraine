@@ -99,6 +99,7 @@ targets:
       - path: App
         excludes:
           - Info-iOS.plist
+      - Extension/Bridge
     postBuildScripts:
       - name: Copy Voices
         script: |
