@@ -149,6 +149,10 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
+        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
     dependencies:
       - target: UkrainianVoicesExtensionMac
       - sdk: AVFoundation.framework
