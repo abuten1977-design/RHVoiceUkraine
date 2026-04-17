@@ -181,6 +181,7 @@ targets:
     dependencies:
       - target: UkrainianVoicesExtensionMac
       - target: RHVoiceKitMac
+        embed: true
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
 

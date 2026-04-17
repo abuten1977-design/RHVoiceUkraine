@@ -22,6 +22,7 @@ jobs:
       - name: Build macOS app
         working-directory: UkrainianVoicesApp
         run: |
+          set -euxo pipefail
           xcodebuild \
             -scheme UkrainianVoicesMac \
             -configuration Debug \
@@ -31,7 +32,7 @@ jobs:
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
-            | xcpretty || true
+            | xcpretty
 
       - name: Package macOS app
         if: always()
