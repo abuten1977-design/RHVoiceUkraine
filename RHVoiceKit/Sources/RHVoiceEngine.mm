@@ -481,6 +481,16 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     return msg;
 }
 
+- (RHVoice_message)buildDefaultMessage:(NSString*)text state:(EngineState*)state {
+    const char* t = [text UTF8String];
+    return RHVoice_new_message(self.engine,
+                               t,
+                               (unsigned int)strlen(t),
+                               RHVoice_message_text,
+                               NULL,
+                               (void*)state);
+}
+
 - (void)publishActiveState:(EngineState*)state {
     [self.activeStateCondition lock];
     self.activeStreamingState = state;
@@ -526,8 +536,25 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         return nil;
     }
 
-    RHVoice_speak(msg);
+    int speakResult = RHVoice_speak(msg);
     RHVoice_delete_message(msg);
+
+    if (speakResult == 0) {
+        NSLog(@"❌ RHVoice_speak returned 0 for voice '%@', retrying with default profile", voice);
+        RHVoice_message fallbackMsg = [self buildDefaultMessage:text state:&state];
+        if (fallbackMsg) {
+            speakResult = RHVoice_speak(fallbackMsg);
+            RHVoice_delete_message(fallbackMsg);
+            NSLog(@"ℹ️ Fallback RHVoice_speak result=%d sampleRate=%d", speakResult,
+                  state.sampleRate.load(std::memory_order_acquire));
+        } else {
+            NSLog(@"❌ Failed to create fallback RHVoice message");
+        }
+    } else {
+        NSLog(@"ℹ️ RHVoice_speak result=%d sampleRate=%d", speakResult,
+              state.sampleRate.load(std::memory_order_acquire));
+    }
+
     tls_engineState = nullptr;
 
     // Collect all chunks
