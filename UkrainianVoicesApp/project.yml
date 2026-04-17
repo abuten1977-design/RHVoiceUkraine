@@ -11,6 +11,8 @@ targets:
     platform: macOS
     sources:
       - path: ../RHVoiceKit/Sources
+    resources:
+      - path: Extension/Resources/RHVoiceData
     headers:
       public:
         - ../RHVoiceKit/Sources/RHVoiceKit.h
