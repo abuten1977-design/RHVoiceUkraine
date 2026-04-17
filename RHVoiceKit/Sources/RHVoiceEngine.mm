@@ -370,30 +370,56 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (BOOL)initializeEngine {
     if (self.initialized) return YES;
 
-    NSBundle* bundle = [NSBundle bundleForClass:[self class]];
+    // When RHVoiceEngine lives inside a framework, resources may be in:
+    // - the host app bundle (preferred for app/extension packaging)
+    // - the framework bundle (optional)
+    NSArray<NSBundle*>* candidateBundles = @[
+        [NSBundle mainBundle],
+        [NSBundle bundleForClass:[self class]]
+    ];
     NSFileManager* fm = [NSFileManager defaultManager];
     BOOL isDir = NO;
 
-    // Try RHVoiceData first (contains both languages/ and voices/ subdirs)
-    NSString* dataPath = [[bundle resourcePath] stringByAppendingPathComponent:@"RHVoiceData"];
-    if (![fm fileExistsAtPath:dataPath isDirectory:&isDir] || !isDir) {
-        dataPath = [bundle pathForResource:@"RHVoiceData" ofType:nil];
-    }
+    NSString* dataPath = nil;
+    NSBundle* resolvedBundle = nil;
+    for (NSBundle* b in candidateBundles) {
+        // Try RHVoiceData first (contains both languages/ and voices/ subdirs)
+        NSString* candidate = [[b resourcePath] stringByAppendingPathComponent:@"RHVoiceData"];
+        if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+            dataPath = candidate;
+            resolvedBundle = b;
+            break;
+        }
+        candidate = [b pathForResource:@"RHVoiceData" ofType:nil];
+        if (candidate && [fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+            dataPath = candidate;
+            resolvedBundle = b;
+            break;
+        }
 
-    // Fallback: legacy Voices-only path (won't have language data, but try anyway)
-    if (!dataPath) {
-        dataPath = [[bundle resourcePath] stringByAppendingPathComponent:@"Voices"];
-        if (![fm fileExistsAtPath:dataPath isDirectory:&isDir] || !isDir) {
-            dataPath = [bundle pathForResource:@"Voices" ofType:nil];
+        // Fallback: legacy Voices-only path (won't have language data, but try anyway)
+        candidate = [[b resourcePath] stringByAppendingPathComponent:@"Voices"];
+        if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+            dataPath = candidate;
+            resolvedBundle = b;
+            break;
+        }
+        candidate = [b pathForResource:@"Voices" ofType:nil];
+        if (candidate && [fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+            dataPath = candidate;
+            resolvedBundle = b;
+            break;
         }
     }
 
     if (!dataPath) {
-        NSLog(@"❌ RHVoiceData not found in bundle: %@", bundle.resourcePath);
+        NSLog(@"❌ RHVoiceData not found in app/framework bundles. main=%@ framework=%@",
+              [NSBundle mainBundle].resourcePath,
+              [NSBundle bundleForClass:[self class]].resourcePath);
         return NO;
     }
 
-    NSLog(@"✅ RHVoice data path: %@", dataPath);
+    NSLog(@"✅ RHVoice data path: %@ (bundle=%@)", dataPath, resolvedBundle.resourcePath);
     NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
 
     RHVoice_callbacks callbacks;

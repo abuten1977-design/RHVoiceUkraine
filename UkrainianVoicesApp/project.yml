@@ -130,18 +130,18 @@ targets:
         excludes:
           - Info-iOS.plist
     postBuildScripts:
-      - name: Copy Voices
+      - name: Copy RHVoiceData
         script: |
-          echo "📦 Copying Voices to macOS bundle..."
-          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
-          VOICES_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/Voices"
+          echo "📦 Copying RHVoiceData to macOS bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          DATA_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/RHVoiceData"
           
-          if [ -d "$VOICES_SRC" ]; then
+          if [ -d "$DATA_SRC" ]; then
             mkdir -p "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
-            cp -r "$VOICES_SRC" "$VOICES_DST"
-            echo "✅ Voices copied: $(find "$VOICES_DST" -type f | wc -l) files"
+            cp -r "$DATA_SRC" "$DATA_DST"
+            echo "✅ RHVoiceData copied: $(find "$DATA_DST" -type f | wc -l) files"
           else
-            echo "❌ Voices not found: $VOICES_SRC"
+            echo "❌ RHVoiceData not found: $DATA_SRC"
             exit 1
           fi
         basedOnDependencyAnalysis: false
