@@ -6,6 +6,31 @@ options:
     iOS: "16.0"
 
 targets:
+  RHVoiceKitMac:
+    type: framework
+    platform: macOS
+    sources:
+      - path: ../RHVoiceKit/Sources
+    headers:
+      public:
+        - ../RHVoiceKit/Sources/RHVoiceKit.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine+Parameters.h
+    settings:
+      base:
+        PRODUCT_NAME: RHVoiceKit
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoiceKit
+        INFOPLIST_FILE: ../RHVoiceKit/Info.plist
+        DEFINES_MODULE: YES
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+
   UkrainianVoices:
     type: application
     platform: iOS
