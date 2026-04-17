@@ -389,12 +389,8 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     }
 
     if (!dataPath) {
-        NSLog(@"❌ RHVoiceData not found in bundle: %@", bundle.resourcePath);
         return NO;
     }
-
-    NSLog(@"✅ RHVoice data path: %@", dataPath);
-    NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
@@ -408,12 +404,13 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     params.callbacks = callbacks;
 
     self.engine = RHVoice_new_tts_engine(&params);
-    if (!self.engine) { NSLog(@"❌ Engine init failed for data_path: %@", dataPath); return NO; }
+    if (!self.engine) { return NO; }
 
     // Verify voices loaded
     unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
     unsigned int nProfiles = RHVoice_get_number_of_voice_profiles(self.engine);
-    NSLog(@"✅ Engine ready: %u voices, %u profiles", nVoices, nProfiles);
+    (void)nVoices;
+    (void)nProfiles;
 
     self.initialized = YES;
     return YES;
