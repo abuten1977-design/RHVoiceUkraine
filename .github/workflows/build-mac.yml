@@ -103,6 +103,7 @@ jobs:
           }
           CPP
           clang++ -std=c++17 /tmp/rhvoice_ci_smoke.cpp \
+            -arch x86_64 \
             -I RHVoice/src/include \
             -L UkrainianVoicesApp/Extension/Libraries_macos_x86_64 \
             -lRHVoice -lRHVoice_core -lRHVoice_audio \
