@@ -18,6 +18,8 @@
 #include <iterator>
 #include <algorithm>
 #include <functional>
+#include <cstdlib>
+#include <iostream>
 
 #include "core/engine.hpp"
 #include "core/document.hpp"
@@ -28,6 +30,26 @@
 #include "RHVoice.h"
 
 using namespace RHVoice;
+
+namespace {
+  bool diag_enabled()
+  {
+    const char* v = std::getenv("RHVOICE_DIAG");
+    return v && *v;
+  }
+
+  void diag_log(const char* where, const std::exception& e)
+  {
+    if (!diag_enabled()) return;
+    std::cerr << "[RHVoice] exception in " << where << ": " << e.what() << std::endl;
+  }
+
+  void diag_log_unknown(const char* where)
+  {
+    if (!diag_enabled()) return;
+    std::cerr << "[RHVoice] unknown exception in " << where << std::endl;
+  }
+}
 
 struct RHVoice_message_struct: public client
 {
@@ -339,6 +361,12 @@ RHVoice_message RHVoice_new_message(RHVoice_tts_engine tts_engine,const char* te
     }
   catch(const std::exception& e)
     {
+      diag_log("RHVoice_new_message", e);
+      return 0;
+    }
+  catch(...)
+    {
+      diag_log_unknown("RHVoice_new_message");
       return 0;
     }
 }
@@ -351,6 +379,12 @@ RHVoice_message RHVoice_new_message_w(RHVoice_tts_engine tts_engine,const wchar_
     }
   catch(const std::exception& e)
     {
+      diag_log("RHVoice_new_message_w", e);
+      return 0;
+    }
+  catch(...)
+    {
+      diag_log_unknown("RHVoice_new_message_w");
       return 0;
     }
 }
@@ -374,6 +408,12 @@ int RHVoice_speak(RHVoice_message message)
     }
   catch(const std::exception& e)
     {
+      diag_log("RHVoice_speak", e);
+      return 0;
+    }
+  catch(...)
+    {
+      diag_log_unknown("RHVoice_speak");
       return 0;
     }
 }
