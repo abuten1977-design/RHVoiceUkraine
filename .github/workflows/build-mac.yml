@@ -44,15 +44,15 @@ jobs:
             find build -name "*.app" | head -10
             exit 1
           fi
-          mkdir -p mac_build
-          cp -r "$APP_PATH" mac_build/
+          mkdir -p ../mac_build
+          cp -r "$APP_PATH" ../mac_build/
           echo "✅ App packaged"
-          ls -la mac_build/
+          ls -la ../mac_build/
 
       - name: Upload macOS artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: macos-debug-build
-          path: UkrainianVoicesApp/mac_build/
+          path: mac_build/
           retention-days: 3
