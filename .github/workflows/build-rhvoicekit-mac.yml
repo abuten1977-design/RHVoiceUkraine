@@ -1,0 +1,56 @@
+name: Build RHVoiceKit (macOS)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-framework:
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: UkrainianVoicesApp
+        run: xcodegen generate
+
+      - name: Build RHVoiceKitMac framework
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          xcodebuild \
+            -scheme RHVoiceKitMac \
+            -configuration Debug \
+            -destination "platform=macOS,arch=x86_64" \
+            -derivedDataPath build \
+            ARCHS="x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package RHVoiceKit.framework
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          FRAMEWORK_PATH=$(find build -name "RHVoiceKit.framework" -maxdepth 8 | head -1)
+          echo "Found framework: $FRAMEWORK_PATH"
+          test -n "$FRAMEWORK_PATH"
+          mkdir -p rhvoicekit_mac
+          cp -R "$FRAMEWORK_PATH" rhvoicekit_mac/
+          ls -la rhvoicekit_mac/
+
+      - name: Upload macOS framework artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rhvoicekit-macos-framework
+          path: UkrainianVoicesApp/rhvoicekit_mac/
+          retention-days: 7
+
