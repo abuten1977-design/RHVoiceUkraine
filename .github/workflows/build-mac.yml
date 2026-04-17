@@ -12,8 +12,102 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install xcodegen
-        run: brew install xcodegen
+      - name: Install build tools
+        run: brew install xcodegen cmake boost
+
+      - name: Build RHVoice x86_64 dylibs
+        run: |
+          set -euxo pipefail
+          cd RHVoice
+          rm -rf build_macos_x86_64
+          mkdir -p build_macos_x86_64
+          cd build_macos_x86_64
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
+          cmake --build . --config Release --parallel
+
+      - name: Stage fresh RHVoice dylibs
+        run: |
+          set -euxo pipefail
+          cp RHVoice/build_macos_x86_64/src/lib/libRHVoice.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
+          cp RHVoice/build_macos_x86_64/src/core/libRHVoice_core.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
+          cp RHVoice/build_macos_x86_64/src/audio/libRHVoice_audio.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
+          file UkrainianVoicesApp/Extension/Libraries_macos_x86_64/*.dylib
+
+      - name: Smoke test RHVoice synth
+        run: |
+          set -euxo pipefail
+          cat > /tmp/rhvoice_ci_smoke.cpp <<'CPP'
+          #include <cstring>
+          #include <iostream>
+          #include <vector>
+          #include "RHVoice.h"
+
+          static std::vector<short> audio;
+
+          int set_sample_rate_callback(int, void*) { return 1; }
+          int play_speech_callback(const short* samples, unsigned int count, void*) {
+            audio.insert(audio.end(), samples, samples + count);
+            return 1;
+          }
+          void done_callback(void*) {}
+
+          int main() {
+            RHVoice_callbacks callbacks = {};
+            callbacks.set_sample_rate = set_sample_rate_callback;
+            callbacks.play_speech = play_speech_callback;
+            callbacks.done = done_callback;
+
+            RHVoice_init_params params = {};
+            params.data_path = "UkrainianVoicesApp/Extension/Resources/RHVoiceData";
+            params.config_path = NULL;
+            params.callbacks = callbacks;
+            params.options = RHVoice_preload_voices;
+
+            RHVoice_tts_engine engine = RHVoice_new_tts_engine(&params);
+            if (!engine) {
+              std::cerr << "FAIL engine" << std::endl;
+              return 2;
+            }
+
+            RHVoice_synth_params synth = {};
+            synth.voice_profile = "Anatol";
+            synth.relative_rate = 1.0;
+            synth.relative_pitch = 1.0;
+            synth.relative_volume = 1.0;
+
+            const char* text = "Hello test";
+            RHVoice_message msg = RHVoice_new_message(
+              engine,
+              text,
+              (unsigned int)strlen(text),
+              RHVoice_message_text,
+              &synth,
+              NULL
+            );
+            if (!msg) {
+              std::cerr << "FAIL message" << std::endl;
+              RHVoice_delete_tts_engine(engine);
+              return 3;
+            }
+
+            const int ok = RHVoice_speak(msg);
+            RHVoice_delete_message(msg);
+            RHVoice_delete_tts_engine(engine);
+            std::cout << "SPEAK=" << ok << " AUDIO=" << audio.size() << std::endl;
+            return (ok && !audio.empty()) ? 0 : 4;
+          }
+          CPP
+          clang++ -std=c++17 /tmp/rhvoice_ci_smoke.cpp \
+            -I RHVoice/src/include \
+            -L UkrainianVoicesApp/Extension/Libraries_macos_x86_64 \
+            -lRHVoice -lRHVoice_core -lRHVoice_audio \
+            -o /tmp/rhvoice_ci_smoke
+          DYLD_LIBRARY_PATH=UkrainianVoicesApp/Extension/Libraries_macos_x86_64 /tmp/rhvoice_ci_smoke
 
       - name: Generate Xcode project
         working-directory: UkrainianVoicesApp
