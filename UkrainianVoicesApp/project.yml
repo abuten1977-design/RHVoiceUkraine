@@ -13,6 +13,9 @@ targets:
       - path: ../RHVoiceKit/Sources
     resources:
       - path: Extension/Resources/RHVoiceData
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
     headers:
       public:
         - ../RHVoiceKit/Sources/RHVoiceKit.h
