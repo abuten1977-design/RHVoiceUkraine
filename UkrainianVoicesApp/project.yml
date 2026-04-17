@@ -148,11 +148,12 @@ targets:
       - name: Embed RHVoice dylibs
         script: |
           echo "📦 Embedding macOS RHVoice dylibs..."
-          # Try arm64 first, fallback to x86_64
-          if [ -d "${SRCROOT}/Extension/Libraries_macos_arm64" ]; then
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
-          else
+          # Choose dylibs matching the build architecture.
+          # GitHub runners are often arm64 even when building x86_64, so don't use `uname -m`.
+          if echo "${ARCHS:-}" | grep -q "x86_64"; then
             DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          else
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
           fi
           DYLIB_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
 
@@ -228,10 +229,10 @@ targets:
       - name: Embed RHVoice dylibs in extension
         script: |
           echo "📦 Embedding RHVoice dylibs in extension..."
-          if [ -d "${SRCROOT}/Extension/Libraries_macos_arm64" ]; then
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
-          else
+          if echo "${ARCHS:-}" | grep -q "x86_64"; then
             DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          else
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
           fi
           DYLIB_DST="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Frameworks"
 
