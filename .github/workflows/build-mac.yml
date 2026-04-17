@@ -36,7 +36,11 @@ jobs:
           cp RHVoice/build_macos_x86_64/src/lib/libRHVoice.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
           cp RHVoice/build_macos_x86_64/src/core/libRHVoice_core.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
           cp RHVoice/build_macos_x86_64/src/audio/libRHVoice_audio.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          file UkrainianVoicesApp/Extension/Libraries_macos_x86_64/*.dylib
+          cd UkrainianVoicesApp/Extension/Libraries_macos_x86_64
+          ln -sf libRHVoice.dylib libRHVoice..dylib
+          ln -sf libRHVoice_core.dylib libRHVoice_core..dylib
+          ln -sf libRHVoice_audio.dylib libRHVoice_audio..dylib
+          file ./*.dylib
 
       - name: Smoke test RHVoice synth
         run: |
