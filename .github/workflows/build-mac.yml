@@ -112,7 +112,7 @@ jobs:
             -L UkrainianVoicesApp/Extension/Libraries_macos_x86_64 \
             -lRHVoice -lRHVoice_core -lRHVoice_audio \
             -o /tmp/rhvoice_ci_smoke
-          DYLD_LIBRARY_PATH=UkrainianVoicesApp/Extension/Libraries_macos_x86_64 /tmp/rhvoice_ci_smoke
+          RHVOICE_DIAG=1 DYLD_LIBRARY_PATH=UkrainianVoicesApp/Extension/Libraries_macos_x86_64 /tmp/rhvoice_ci_smoke
 
       - name: Generate Xcode project
         working-directory: UkrainianVoicesApp
