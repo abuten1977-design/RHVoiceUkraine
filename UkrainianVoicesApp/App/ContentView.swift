@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AVFoundation
+import RHVoiceKit
 #if os(iOS)
 import MessageUI
 #endif
