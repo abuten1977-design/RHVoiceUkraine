@@ -5,7 +5,6 @@
 
 import SwiftUI
 #if os(macOS)
-import AppKit
 import RHVoiceKit
 #endif
 
@@ -17,7 +16,6 @@ struct UkrainianVoicesApp: App {
     init() {
         #if os(macOS)
         if CommandLine.arguments.contains("--self-test") {
-            NSApp.setActivationPolicy(.prohibited)
             Task { @MainActor in
                 await RHVoiceSelfTestRunner.runAndExit()
             }

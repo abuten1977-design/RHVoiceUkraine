@@ -1,10 +1,6 @@
 import Foundation
 import RHVoiceKit
 
-#if os(macOS)
-import AppKit
-#endif
-
 @MainActor
 enum RHVoiceSelfTestRunner {
     static func runAndExit() async {
@@ -38,11 +34,6 @@ enum RHVoiceSelfTestRunner {
             fputs(out, stderr)
         }
 
-        #if os(macOS)
-        NSApp.terminate(nil)
-        #else
         exit(0)
-        #endif
     }
 }
-
