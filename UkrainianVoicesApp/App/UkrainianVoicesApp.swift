@@ -13,9 +13,11 @@ import RHVoiceKit
 
 @main
 struct UkrainianVoicesApp: App {
+    private let isSelfTestMode = CommandLine.arguments.contains("--self-test")
+
     init() {
         #if os(macOS)
-        if CommandLine.arguments.contains("--self-test") {
+        if isSelfTestMode {
             Task { @MainActor in
                 await RHVoiceSelfTestRunner.runAndExit()
             }
@@ -25,7 +27,12 @@ struct UkrainianVoicesApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if isSelfTestMode {
+                Text("Running RHVoice self-test…")
+                    .padding()
+            } else {
+                ContentView()
+            }
         }
     }
 }

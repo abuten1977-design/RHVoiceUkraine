@@ -8,6 +8,9 @@ enum RHVoiceSelfTestRunner {
         var lines: [String] = []
         lines.append("RHVoice self-test started: \(Date())")
 
+        // Give SwiftUI a moment to finish launching its runtime.
+        try? await Task.sleep(nanoseconds: 200_000_000)
+
         let engine = RHVoiceEngine()
         let voices: [(name: String, sample: String)] = [
             ("Anatol", "Привіт! Це тест голосу Анатол."),
