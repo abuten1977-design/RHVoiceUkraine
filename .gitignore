@@ -36,6 +36,7 @@ RHVoice_sources.tar.gz
 # Test Files
 *.wav
 *.txt
+!UkrainianVoicesApp/Extension/Resources/RHVoiceData/voices/**/bpf.txt
 !CMakeLists.txt
 !README.md
 !*.md
