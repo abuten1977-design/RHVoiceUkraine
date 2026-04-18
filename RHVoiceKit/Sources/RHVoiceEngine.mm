@@ -441,11 +441,18 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     unsigned int nProfiles = RHVoice_get_number_of_voice_profiles(self.engine);
     NSLog(@"✅ Engine ready: %u voices, %u profiles", nVoices, nProfiles);
     
-    // Log available voice profiles
+    // Log available voice profiles.
+    // IMPORTANT: Don't assume the returned list is NULL-terminated; use the reported count.
+    // Otherwise we can walk past the end and crash inside NSLog("%s", ...).
     char const* const* profiles = RHVoice_get_voice_profiles(self.engine);
     if (profiles) {
-        for (int i = 0; profiles[i]; i++) {
-            NSLog(@"   Profile[%d]: %s", i, profiles[i]);
+        for (unsigned int i = 0; i < nProfiles; i++) {
+            const char* name = profiles[i];
+            if (name && name[0] != '\0') {
+                NSLog(@"   Profile[%u]: %s", i, name);
+            } else {
+                NSLog(@"   Profile[%u]: (null)", i);
+            }
         }
     }
 
