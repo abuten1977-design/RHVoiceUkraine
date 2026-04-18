@@ -9,7 +9,6 @@ import AppKit
 import RHVoiceKit
 #endif
 
-@MainActor
 #if os(macOS)
 private final class MacAppDelegate: NSObject, NSApplicationDelegate {
     var isSelfTestMode = false
