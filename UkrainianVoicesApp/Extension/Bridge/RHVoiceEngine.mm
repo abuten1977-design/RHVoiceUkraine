@@ -489,7 +489,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         return nil;
     }
 
+    NSLog(@"▶️ RHVoice_speak begin voice='%@'", voice);
     RHVoice_speak(msg);
+    NSLog(@"⏹️ RHVoice_speak end voice='%@'", voice);
     RHVoice_delete_message(msg);
     tls_engineState = nullptr;
 

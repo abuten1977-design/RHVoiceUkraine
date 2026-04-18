@@ -7,6 +7,7 @@ enum RHVoiceSelfTestRunner {
         let logPath = "/tmp/rhvoice_selftest.log"
         var lines: [String] = []
         lines.append("RHVoice self-test started: \(Date())")
+        fputs("RHVoice self-test started\n", stderr)
 
         // Give SwiftUI a moment to finish launching its runtime.
         try? await Task.sleep(nanoseconds: 200_000_000)
@@ -20,11 +21,19 @@ enum RHVoiceSelfTestRunner {
         ]
 
         for v in voices {
+            let start = Date()
+            let startLine = "START voice=\(v.name) at=\(start)"
+            lines.append(startLine)
+            fputs("\(startLine)\n", stderr)
             let buffer = engine.synthesize(v.sample, voice: v.name, rate: 0.5, volume: 1.0, pitch: 1.0)
             if let buffer {
-                lines.append("OK voice=\(v.name) frames=\(buffer.frameLength) sampleRate=\(Int(buffer.format.sampleRate))")
+                let okLine = "OK voice=\(v.name) frames=\(buffer.frameLength) sampleRate=\(Int(buffer.format.sampleRate)) duration=\(Date().timeIntervalSince(start))"
+                lines.append(okLine)
+                fputs("\(okLine)\n", stderr)
             } else {
-                lines.append("FAIL voice=\(v.name) buffer=nil")
+                let failLine = "FAIL voice=\(v.name) buffer=nil duration=\(Date().timeIntervalSince(start))"
+                lines.append(failLine)
+                fputs("\(failLine)\n", stderr)
             }
         }
 
