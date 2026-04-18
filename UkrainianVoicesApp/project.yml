@@ -277,37 +277,3 @@ targets:
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
-    dependencies:
-      - sdk: AVFoundation.framework
-      - sdk: AVFAudio.framework
-      - sdk: AudioToolbox.framework
-    postBuildScripts:
-      - name: Embed RHVoice dylibs in extension
-        script: |
-          echo "📦 Embedding RHVoice dylibs in extension..."
-          if echo "${ARCHS:-}" | grep -q "x86_64"; then
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
-          else
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
-          fi
-          DYLIB_DST="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Frameworks"
-
-          mkdir -p "$DYLIB_DST"
-
-          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
-            if [ ! -f "$DYLIB_SRC/$lib" ]; then
-              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
-              exit 1
-            fi
-            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
-            echo "✅ Embedded $lib into extension"
-          done
-
-          # Create double-dot symlinks for dyld compatibility.
-          cd "$DYLIB_DST"
-          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
-            base="${lib%.dylib}"
-            ln -sf "$lib" "${base}..dylib"
-            echo "✅ Symlink ${base}..dylib -> $lib"
-          done
-        basedOnDependencyAnalysis: false
