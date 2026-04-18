@@ -390,6 +390,13 @@ struct ContentView: View {
         }
 #if os(macOS)
         .frame(minWidth: 760, minHeight: 820)
+        .onAppear {
+            DispatchQueue.main.async {
+                NSApp.setActivationPolicy(.regular)
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.windows.first?.makeKeyAndOrderFront(nil)
+            }
+        }
 #endif
         .sheet(item: $model.editingVoice) { voice in
             VoiceSettingsSheet(
