@@ -208,9 +208,24 @@ targets:
       - Extension/Models
       - Extension/Services
       - Extension/Views
-    resources:
-      - path: Extension/Resources/RHVoiceData
     postBuildScripts:
+      - name: Copy RHVoiceData to Extension
+        script: |
+          echo "📦 Copying RHVoiceData to macOS extension bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          EXT_PATH="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.appex"
+          DATA_DST="${EXT_PATH}/Contents/Resources/RHVoiceData"
+
+          if [ ! -d "$DATA_SRC" ]; then
+            echo "❌ RHVoiceData not found: $DATA_SRC"
+            exit 1
+          fi
+
+          mkdir -p "${EXT_PATH}/Contents/Resources"
+          rm -rf "$DATA_DST"
+          cp -r "$DATA_SRC" "$DATA_DST"
+          echo "✅ RHVoiceData copied to Extension: $(find "$DATA_DST" -type f | wc -l) files"
+        basedOnDependencyAnalysis: false
       - name: Embed RHVoice dylibs to Extension
         script: |
           echo "📦 Embedding macOS RHVoice dylibs into extension..."
