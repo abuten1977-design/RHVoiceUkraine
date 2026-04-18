@@ -7,7 +7,7 @@ import AVFoundation
 import AVFAudio
 import CoreAudio
 
-@available(iOS 16.0, *)
+@available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 

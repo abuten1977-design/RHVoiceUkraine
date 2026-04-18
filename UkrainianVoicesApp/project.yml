@@ -181,6 +181,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
         INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/UkrainianVoicesMac.entitlements
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
@@ -207,10 +208,50 @@ targets:
       - Extension/Models
       - Extension/Services
       - Extension/Views
+    resources:
+      - path: Extension/Resources/RHVoiceData
+    postBuildScripts:
+      - name: Embed RHVoice dylibs to Extension
+        script: |
+          echo "📦 Embedding macOS RHVoice dylibs into extension..."
+          # Choose dylibs matching the build architecture.
+          if echo "${ARCHS:-}" | grep -q "x86_64"; then
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          else
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
+          fi
+
+          EXT_PATH="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.appex"
+          DYLIB_DST="${EXT_PATH}/Contents/Frameworks"
+          mkdir -p "$DYLIB_DST"
+
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            if [ ! -f "$DYLIB_SRC/$lib" ]; then
+              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
+              exit 1
+            fi
+            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
+            echo "✅ Embedded $lib"
+          done
+
+          cd "$DYLIB_DST"
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            base="${lib%.dylib}"
+            ln -sf "$lib" "${base}..dylib"
+            echo "✅ Symlink ${base}..dylib -> $lib"
+          done
+        basedOnDependencyAnalysis: false
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+      - sdk: AudioToolbox.framework
+      - sdk: CoreAudio.framework
+      - sdk: CoreAudioKit.framework
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac.Extension
         INFOPLIST_FILE: Extension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtensionMac.entitlements
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
