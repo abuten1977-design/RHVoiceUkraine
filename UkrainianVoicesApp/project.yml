@@ -213,7 +213,7 @@ targets:
         script: |
           echo "📦 Copying RHVoiceData to macOS extension bundle..."
           DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
-          EXT_PATH="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.appex"
+          EXT_PATH="${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}"
           DATA_DST="${EXT_PATH}/Contents/Resources/RHVoiceData"
 
           if [ ! -d "$DATA_SRC" ]; then
@@ -236,7 +236,7 @@ targets:
             DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
           fi
 
-          EXT_PATH="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.appex"
+          EXT_PATH="${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}"
           DYLIB_DST="${EXT_PATH}/Contents/Frameworks"
           mkdir -p "$DYLIB_DST"
 
