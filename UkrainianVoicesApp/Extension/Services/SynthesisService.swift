@@ -7,6 +7,7 @@
 
 import Foundation
 import AVFoundation
+import RHVoiceKit
 
 public class SynthesisService {
     public static let shared = SynthesisService()

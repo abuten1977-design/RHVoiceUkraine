@@ -6,6 +6,34 @@ options:
     iOS: "16.0"
 
 targets:
+  RHVoiceKit:
+    type: framework
+    platform: iOS
+    sources:
+      - path: ../RHVoiceKit/Sources
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+    headers:
+      public:
+        - ../RHVoiceKit/Sources/RHVoiceKit.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine+Parameters.h
+    settings:
+      base:
+        PRODUCT_NAME: RHVoiceKit
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoiceKit
+        INFOPLIST_FILE: ../RHVoiceKit/Info.plist
+        DEFINES_MODULE: YES
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: ""
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+
   RHVoiceKitMac:
     type: framework
     platform: macOS
@@ -43,7 +71,6 @@ targets:
       - path: App
         excludes:
           - Info.plist
-      - Extension/Bridge
     postBuildScripts:
       - name: Copy Voices
         script: |
@@ -72,11 +99,12 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
-        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
     dependencies:
       - target: UkrainianVoicesExtension
+      - target: RHVoiceKit
+        embed: true
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
     
@@ -85,7 +113,6 @@ targets:
     platform: iOS
     sources:
       - Extension/Provider
-      - Extension/Bridge
       - Extension/Models
       - Extension/Services
       - Extension/Views
@@ -111,13 +138,14 @@ targets:
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
-        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
     dependencies:
+      - target: RHVoiceKit
+        embed: true
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
       - sdk: AudioToolbox.framework
@@ -207,7 +235,6 @@ targets:
     platform: macOS
     sources:
       - Extension/Provider
-      - Extension/Bridge
       - Extension/Models
       - Extension/Services
       - Extension/Views
@@ -260,6 +287,8 @@ targets:
           done
         basedOnDependencyAnalysis: false
     dependencies:
+      - target: RHVoiceKitMac
+        embed: true
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
       - sdk: AudioToolbox.framework
@@ -272,7 +301,6 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtensionMac.entitlements
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
-        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
         CODE_SIGN_STYLE: Manual

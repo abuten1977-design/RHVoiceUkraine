@@ -6,6 +6,7 @@
 import AVFoundation
 import AVFAudio
 import CoreAudio
+import RHVoiceKit
 
 @available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
