@@ -5,11 +5,15 @@
 
 ## Зачем это нужно
 
-На macOS 13.7.8 extension с entitlement
-`com.apple.developer.speech-synthesis-provider`
-считается **restricted** и без подходящего provisioning profile система его не запускает (в логах будет `no eligible provisioning profiles found`).
+Для текущей macOS линии мы больше **не используем** entitlement
+`com.apple.developer.speech-synthesis-provider`.
 
-Поэтому нам нужен **реально подписанный** `.appex` с **встроенным provisioning profile**.
+Рабочая гипотеза после проверки Apple docs и логов: этот entitlement был лишним и сам превращал extension в restricted-код.
+
+Поэтому сейчас цель проще:
+- обычная подпись app/appex
+- sandbox + app group
+- без дополнительного provisioning profile ради speech provider
 
 ## Что требуется подготовить (один раз)
 
@@ -21,17 +25,9 @@
 - `MACOS_CODESIGN_P12_BASE64` — base64 от файла `.p12`
 - `MACOS_CODESIGN_P12_PASSWORD` — пароль от `.p12`
 
-### 2) Provisioning profiles (2 штуки)
+### 2) Signing identity
 
-Нужны `.mobileprovision`:
-- для app: `com.rhvoice.UkrainianVoices.mac`
-- для extension: `com.rhvoice.UkrainianVoices.mac.Extension`
-
-Важно: профили должны быть для той же Team и должны разрешать entitlement(ы) extension, включая `com.apple.developer.speech-synthesis-provider`.
-
-Секреты GitHub:
-- `MACOS_APP_PROFILE_BASE64` — base64 `.mobileprovision` для app
-- `MACOS_EXT_PROFILE_BASE64` — base64 `.mobileprovision` для extension
+Нужны только:
 - `MACOS_TEAM_ID` — Team ID
 - `MACOS_CODE_SIGN_IDENTITY` — строка identity, например `Apple Development: Andriy Butenko (ABCDE12345)`
 
@@ -43,12 +39,8 @@
 
 ## Что проверить на Mac после установки
 
-1) Внутри extension должен появиться provisioning profile:
-- `…/UkrainianVoicesMac.app/Contents/PlugIns/UkrainianVoicesExtensionMac.appex/Contents/embedded.provisionprofile`
-
-2) Логи больше не должны содержать:
+1) Логи больше не должны содержать:
 - `Disallowing … no eligible provisioning profiles found`
 - `Restricted entitlements not validated`
 
-3) После нажатия “Apply enabled voices to system” должны появиться голоса в VoiceOver.
-
+2) После нажатия “Apply enabled voices to system” должны появиться голоса в VoiceOver.

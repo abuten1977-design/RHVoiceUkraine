@@ -10,7 +10,7 @@
 
 Для этого удобно собирать `RHVoiceKit` как `XCFramework`, чтобы не размножать разные копии `RHVoiceEngine` по проекту.
 
-Важно: это **не решает** macOS‑проблему с restricted entitlement `com.apple.developer.speech-synthesis-provider` — это отдельная тема подписи/профилей. Но это стабилизирует код движка.
+Важно: это не заменяет сборку/подпись готового приложения. `XCFramework` решает только общую кодовую базу движка.
 
 ## Что внутри
 
@@ -27,4 +27,3 @@ GitHub Actions workflow:
 
 Artifact name:
 - `rhvoicekit-xcframework`
-
