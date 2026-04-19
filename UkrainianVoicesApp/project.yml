@@ -188,6 +188,9 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
+        # For CI / signed builds (e.g. GitHub Actions). Leave empty by default.
+        # When set, Xcode embeds provisioning profile and restricted entitlements can be validated by macOS.
+        PROVISIONING_PROFILE: "$(UV_MAC_APP_PROFILE_UUID)"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
@@ -275,5 +278,7 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
+        # For CI / signed builds (e.g. GitHub Actions). Leave empty by default.
+        PROVISIONING_PROFILE: "$(UV_MAC_EXT_PROFILE_UUID)"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
