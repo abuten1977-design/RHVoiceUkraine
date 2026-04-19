@@ -104,8 +104,7 @@ jobs:
             UV_MAC_APP_PROFILE_UUID="$UV_MAC_APP_PROFILE_UUID" \
             UV_MAC_EXT_PROFILE_UUID="$UV_MAC_EXT_PROFILE_UUID" \
             clean archive \
-            -archivePath build_signed/UkrainianVoicesMac.xcarchive \
-            | xcpretty
+            -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
       - name: Package signed macOS app
         working-directory: UkrainianVoicesApp
@@ -143,4 +142,3 @@ jobs:
             echo "- \`MACOS_TEAM_ID\`"
             echo "- \`MACOS_CODE_SIGN_IDENTITY\` (e.g. \`Apple Development: ...\`)"
           } >> "$GITHUB_STEP_SUMMARY"
-
