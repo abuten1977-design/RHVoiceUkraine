@@ -1,0 +1,144 @@
+name: Build RHVoice Mac (Signed)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-rhvoice-mac-signed-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-mac-signed:
+    runs-on: macos-14
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install build tools
+        run: brew install xcodegen cmake boost
+
+      - name: Import signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.MACOS_CODESIGN_P12_BASE64 }}
+          p12-password: ${{ secrets.MACOS_CODESIGN_P12_PASSWORD }}
+
+      - name: Install provisioning profiles (app + extension)
+        env:
+          APP_PROFILE_BASE64: ${{ secrets.MACOS_APP_PROFILE_BASE64 }}
+          EXT_PROFILE_BASE64: ${{ secrets.MACOS_EXT_PROFILE_BASE64 }}
+        run: |
+          set -euxo pipefail
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          echo "$APP_PROFILE_BASE64" | base64 --decode > /tmp/uv_mac_app.mobileprovision
+          echo "$EXT_PROFILE_BASE64" | base64 --decode > /tmp/uv_mac_ext.mobileprovision
+
+          APP_UUID=$(/usr/bin/security cms -D -i /tmp/uv_mac_app.mobileprovision | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
+          EXT_UUID=$(/usr/bin/security cms -D -i /tmp/uv_mac_ext.mobileprovision | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
+
+          cp /tmp/uv_mac_app.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$APP_UUID.mobileprovision"
+          cp /tmp/uv_mac_ext.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$EXT_UUID.mobileprovision"
+
+          echo "UV_MAC_APP_PROFILE_UUID=$APP_UUID" >> "$GITHUB_ENV"
+          echo "UV_MAC_EXT_PROFILE_UUID=$EXT_UUID" >> "$GITHUB_ENV"
+
+          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles"
+
+      - name: Build RHVoice x86_64 dylibs
+        run: |
+          set -euxo pipefail
+          cd RHVoice
+          rm -rf build_macos_x86_64
+          mkdir -p build_macos_x86_64
+          cd build_macos_x86_64
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
+          cmake --build . --config Release --parallel
+
+      - name: Stage fresh RHVoice dylibs
+        run: |
+          set -euxo pipefail
+          cp RHVoice/build_macos_x86_64/src/lib/libRHVoice.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
+          cp RHVoice/build_macos_x86_64/src/core/libRHVoice_core.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
+          cp RHVoice/build_macos_x86_64/src/audio/libRHVoice_audio.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
+          cd UkrainianVoicesApp/Extension/Libraries_macos_x86_64
+          ln -sf libRHVoice.dylib libRHVoice..dylib
+          ln -sf libRHVoice_core.dylib libRHVoice_core..dylib
+          ln -sf libRHVoice_audio.dylib libRHVoice_audio..dylib
+          file ./*.dylib
+
+      - name: Generate Xcode project
+        working-directory: UkrainianVoicesApp
+        run: xcodegen generate
+
+      - name: Archive signed macOS app
+        env:
+          TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
+          SIGN_ID: ${{ secrets.MACOS_CODE_SIGN_IDENTITY }}
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          xcodebuild \
+            -scheme UkrainianVoicesMac \
+            -configuration Release \
+            -destination "platform=macOS,arch=x86_64" \
+            -derivedDataPath build_signed \
+            ARCHS="x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_IDENTITY="$SIGN_ID" \
+            UV_MAC_APP_PROFILE_UUID="$UV_MAC_APP_PROFILE_UUID" \
+            UV_MAC_EXT_PROFILE_UUID="$UV_MAC_EXT_PROFILE_UUID" \
+            clean archive \
+            -archivePath build_signed/UkrainianVoicesMac.xcarchive
+
+      - name: Package signed macOS app
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
+          test -d "$APP_PATH"
+          mkdir -p ../mac_signed_build
+          cp -r "$APP_PATH" ../mac_signed_build/
+          cd ../mac_signed_build
+          ditto -c -k --sequesterRsrc --keepParent UkrainianVoicesMac.app UkrainianVoicesMac.app.zip
+          ls -la UkrainianVoicesMac.app.zip
+
+      - name: Upload signed macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-signed-build
+          path: ${{ github.workspace }}/mac_signed_build/UkrainianVoicesMac.app.zip
+          retention-days: 3
+
+      - name: Summary
+        run: |
+          {
+            echo "## macOS signed build ready"
+            echo ""
+            echo "- Artifact: \`macos-signed-build\`"
+            echo "- Signing: Manual (certificate + provisioning profiles)"
+            echo "- Scheme: \`UkrainianVoicesMac\` (x86_64)"
+            echo ""
+            echo "Required secrets:"
+            echo "- \`MACOS_CODESIGN_P12_BASE64\`"
+            echo "- \`MACOS_CODESIGN_P12_PASSWORD\`"
+            echo "- \`MACOS_APP_PROFILE_BASE64\` (macOS App profile for \`com.rhvoice.UkrainianVoices.mac\`)"
+            echo "- \`MACOS_EXT_PROFILE_BASE64\` (macOS App Extension profile for \`com.rhvoice.UkrainianVoices.mac.Extension\`)"
+            echo "- \`MACOS_TEAM_ID\`"
+            echo "- \`MACOS_CODE_SIGN_IDENTITY\` (e.g. \`Apple Development: ...\`)"
+          } >> "$GITHUB_STEP_SUMMARY"

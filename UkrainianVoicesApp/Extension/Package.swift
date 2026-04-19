@@ -6,6 +6,9 @@ let package = Package(
     platforms: [
         .iOS(.v16)
     ],
+    dependencies: [
+        .package(url: "https://github.com/getsentry/sentry-cocoa", from: "8.0.0")
+    ],
     products: [
         .library(
             name: "UkrainianVoicesExtension",
@@ -15,7 +18,7 @@ let package = Package(
     targets: [
         .target(
             name: "UkrainianVoicesExtension",
-            dependencies: ["RHVoiceBridge"],
+            dependencies: ["RHVoiceBridge", .product(name: "Sentry", package: "sentry-cocoa")],
             path: "Provider",
             resources: [
                 .copy("../Resources/Voices")

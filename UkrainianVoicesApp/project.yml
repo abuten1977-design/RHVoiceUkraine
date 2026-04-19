@@ -2,34 +2,96 @@ name: UkrainianVoices
 options:
   bundleIdPrefix: com.rhvoice
   deploymentTarget:
+    macOS: "13.0"
     iOS: "16.0"
 
 targets:
+  RHVoiceKit:
+    type: framework
+    platform: iOS
+    sources:
+      - path: ../RHVoiceKit/Sources
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+    headers:
+      public:
+        - ../RHVoiceKit/Sources/RHVoiceKit.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine+Parameters.h
+    settings:
+      base:
+        PRODUCT_NAME: RHVoiceKit
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoiceKit
+        INFOPLIST_FILE: ../RHVoiceKit/Info.plist
+        DEFINES_MODULE: YES
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: ""
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+
+  RHVoiceKitMac:
+    type: framework
+    platform: macOS
+    sources:
+      - path: ../RHVoiceKit/Sources
+    resources:
+      - path: Extension/Resources/RHVoiceData
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+    headers:
+      public:
+        - ../RHVoiceKit/Sources/RHVoiceKit.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine.h
+        - ../RHVoiceKit/Sources/RHVoiceEngine+Parameters.h
+    settings:
+      base:
+        PRODUCT_NAME: RHVoiceKit
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoiceKit
+        INFOPLIST_FILE: ../RHVoiceKit/Info.plist
+        DEFINES_MODULE: YES
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+
   UkrainianVoices:
     type: application
     platform: iOS
     sources:
-      - App
+      - path: App
+        excludes:
+          - Info.plist
     postBuildScripts:
       - name: Copy Voices
         script: |
-          echo "📦 Copying Voices to bundle..."
-          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
-          VOICES_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Voices"
+          echo "📦 Copying RHVoiceData to bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          DATA_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/RHVoiceData"
           
-          if [ -d "$VOICES_SRC" ]; then
-            cp -r "$VOICES_SRC" "$VOICES_DST"
-            echo "✅ Voices copied: $(find "$VOICES_DST" -type f | wc -l) files"
-            ls -la "$VOICES_DST"
+          if [ -d "$DATA_SRC" ]; then
+            cp -r "$DATA_SRC" "$DATA_DST"
+            echo "✅ RHVoiceData copied: $(find "$DATA_DST" -type f | wc -l) files"
+            ls -la "$DATA_DST"
           else
-            echo "❌ Voices not found: $VOICES_SRC"
+            echo "❌ RHVoiceData not found: $DATA_SRC"
             exit 1
           fi
         basedOnDependencyAnalysis: false
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices
-        INFOPLIST_FILE: App/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR
+        INFOPLIST_FILE: App/Info-iOS.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
@@ -37,31 +99,214 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
     dependencies:
       - target: UkrainianVoicesExtension
+      - target: RHVoiceKit
+        embed: true
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
     
   UkrainianVoicesExtension:
-    type: framework
+    type: app-extension
     platform: iOS
     sources:
       - Extension/Provider
-      - Extension/Bridge
+      - Extension/Models
+      - Extension/Services
+      - Extension/Views
+    postBuildScripts:
+      - name: Copy Voices to Extension
+        script: |
+          echo "📦 Copying RHVoiceData to Extension bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          DATA_DST="${BUILT_PRODUCTS_DIR}/UkrainianVoicesExtension.appex/RHVoiceData"
+          
+          if [ -d "$DATA_SRC" ]; then
+            cp -r "$DATA_SRC" "$DATA_DST"
+            echo "✅ RHVoiceData copied to Extension: $(find "$DATA_DST" -type f | wc -l) files"
+          else
+            echo "❌ RHVoiceData not found: $DATA_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
-        INFOPLIST_FILE: Extension/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR.Extension
+        INFOPLIST_FILE: Extension/Info-iOS.plist
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
-        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
     dependencies:
+      - target: RHVoiceKit
+        embed: true
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
       - sdk: AudioToolbox.framework
+
+  UkrainianVoicesMac:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+        excludes:
+          - Info-iOS.plist
+    postBuildScripts:
+      - name: Copy RHVoiceData
+        script: |
+          echo "📦 Copying RHVoiceData to macOS bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          DATA_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/RHVoiceData"
+          
+          if [ -d "$DATA_SRC" ]; then
+            mkdir -p "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
+            cp -r "$DATA_SRC" "$DATA_DST"
+            echo "✅ RHVoiceData copied: $(find "$DATA_DST" -type f | wc -l) files"
+          else
+            echo "❌ RHVoiceData not found: $DATA_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
+      - name: Embed RHVoice dylibs
+        script: |
+          echo "📦 Embedding macOS RHVoice dylibs..."
+          # Choose dylibs matching the build architecture.
+          # GitHub runners are often arm64 even when building x86_64, so don't use `uname -m`.
+          if echo "${ARCHS:-}" | grep -q "x86_64"; then
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          else
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
+          fi
+          DYLIB_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
+
+          mkdir -p "$DYLIB_DST"
+
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            if [ ! -f "$DYLIB_SRC/$lib" ]; then
+              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
+              exit 1
+            fi
+            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
+            echo "✅ Embedded $lib"
+          done
+
+          # Some builds reference dylibs with a double-dot name (e.g. libRHVoice..dylib).
+          # Create symlinks so dyld can resolve @rpath/libRHVoice..dylib.
+          cd "$DYLIB_DST"
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            base="${lib%.dylib}"
+            ln -sf "$lib" "${base}..dylib"
+            echo "✅ Symlink ${base}..dylib -> $lib"
+          done
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/UkrainianVoicesMac.entitlements
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        # For CI / signed builds (e.g. GitHub Actions). Leave empty by default.
+        # When set, Xcode embeds provisioning profile and restricted entitlements can be validated by macOS.
+        PROVISIONING_PROFILE: "$(UV_MAC_APP_PROFILE_UUID)"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+    dependencies:
+      - target: UkrainianVoicesExtensionMac
+      - target: RHVoiceKitMac
+        embed: true
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+
+  UkrainianVoicesExtensionMac:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Extension/Provider
+      - Extension/Models
+      - Extension/Services
+      - Extension/Views
+    postBuildScripts:
+      - name: Copy RHVoiceData to Extension
+        script: |
+          echo "📦 Copying RHVoiceData to macOS extension bundle..."
+          DATA_SRC="${SRCROOT}/Extension/Resources/RHVoiceData"
+          EXT_PATH="${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}"
+          DATA_DST="${EXT_PATH}/Contents/Resources/RHVoiceData"
+
+          if [ ! -d "$DATA_SRC" ]; then
+            echo "❌ RHVoiceData not found: $DATA_SRC"
+            exit 1
+          fi
+
+          mkdir -p "${EXT_PATH}/Contents/Resources"
+          rm -rf "$DATA_DST"
+          cp -r "$DATA_SRC" "$DATA_DST"
+          echo "✅ RHVoiceData copied to Extension: $(find "$DATA_DST" -type f | wc -l) files"
+        basedOnDependencyAnalysis: false
+      - name: Embed RHVoice dylibs to Extension
+        script: |
+          echo "📦 Embedding macOS RHVoice dylibs into extension..."
+          # Choose dylibs matching the build architecture.
+          if echo "${ARCHS:-}" | grep -q "x86_64"; then
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
+          else
+            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
+          fi
+
+          EXT_PATH="${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}"
+          DYLIB_DST="${EXT_PATH}/Contents/Frameworks"
+          mkdir -p "$DYLIB_DST"
+
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            if [ ! -f "$DYLIB_SRC/$lib" ]; then
+              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
+              exit 1
+            fi
+            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
+            echo "✅ Embedded $lib"
+          done
+
+          cd "$DYLIB_DST"
+          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
+            base="${lib%.dylib}"
+            ln -sf "$lib" "${base}..dylib"
+            echo "✅ Symlink ${base}..dylib -> $lib"
+          done
+        basedOnDependencyAnalysis: false
+    dependencies:
+      - target: RHVoiceKitMac
+        embed: true
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+      - sdk: AudioToolbox.framework
+      - sdk: CoreAudio.framework
+      - sdk: CoreAudioKit.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac.Extension
+        INFOPLIST_FILE: Extension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtensionMac.entitlements
+        SWIFT_VERSION: "5.0"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        # For CI / signed builds (e.g. GitHub Actions). Leave empty by default.
+        PROVISIONING_PROFILE: "$(UV_MAC_EXT_PROFILE_UUID)"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"

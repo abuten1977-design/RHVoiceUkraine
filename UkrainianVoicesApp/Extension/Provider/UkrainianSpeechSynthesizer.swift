@@ -2,194 +2,169 @@
 //  UkrainianSpeechSynthesizer.swift
 //  Ukrainian Voices Extension
 //
-//  РЕАЛЬНИЙ синтез з RHVoice!
-//
 
 import AVFoundation
 import AVFAudio
+import CoreAudio
+import RHVoiceKit
 
-@available(iOS 16.0, *)
+@available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
-    
-    // MARK: - Properties
-    
-    private var currentRequest: AVSpeechSynthesisProviderRequest?
-    private let synthesisQueue = DispatchQueue(label: "com.rhvoice.ukrainian.synthesis", qos: .userInitiated)
-    private var audioBuffer: AVAudioPCMBuffer?
-    private var framePosition: AVAudioFramePosition = 0
-    
-    // РЕАЛЬНИЙ RHVoice engine!
+
+    // MARK: - Audio setup
+
+    private var outputBus: AUAudioUnitBus
+    private var _outputBusses: AUAudioUnitBusArray!
+
+    // MARK: - Synthesis state
+
     private let rhvoiceEngine: RHVoiceEngine
-    
-    // Голоси
+    private let audioBuffer = RHVoiceAudioBuffer()
+
+    // Pre-buffer threshold: 100ms at 24kHz = 2400 frames
+    private let preBufferFrames: Int = 2400
+
+    // MARK: - Settings
+
+    private let appGroup = "group.rhvoice.UkrainianVoices.shared"
+    private let defaults: UserDefaults?
     private var _speechVoices: [AVSpeechSynthesisProviderVoice] = []
-    
-    // MARK: - Initialization
-    
+
+    // MARK: - Init
+
     public override init(componentDescription: AudioComponentDescription,
-                        options: AudioComponentInstantiationOptions = []) throws {
+                         options: AudioComponentInstantiationOptions = []) throws {
         self.rhvoiceEngine = RHVoiceEngine()
+        self.defaults = UserDefaults(suiteName: appGroup)
+
+        let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                   sampleRate: 24000.0,
+                                   channels: 1,
+                                   interleaved: true)!
+        self.outputBus = try AUAudioUnitBus(format: format)
+
         try super.init(componentDescription: componentDescription, options: options)
-        
-        // Ініціалізуємо голоси
+
+        _outputBusses = AUAudioUnitBusArray(audioUnit: self,
+                                            busType: .output,
+                                            busses: [outputBus])
+
         _speechVoices = [
-            AVSpeechSynthesisProviderVoice(
-                name: "Anatol",
-                identifier: "com.rhvoice.ukrainian.anatol",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
-            ),
-            AVSpeechSynthesisProviderVoice(
-                name: "Natalia",
-                identifier: "com.rhvoice.ukrainian.natalia",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
-            ),
-            AVSpeechSynthesisProviderVoice(
-                name: "Marianna",
-                identifier: "com.rhvoice.ukrainian.marianna",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
-            ),
-            AVSpeechSynthesisProviderVoice(
-                name: "Volodymyr",
-                identifier: "com.rhvoice.ukrainian.volodymyr",
-                primaryLanguages: ["uk-UA"],
-                supportedLanguages: ["uk-UA"]
-            )
+            AVSpeechSynthesisProviderVoice(name: "Anatol",
+                identifier: "com.rhvoice.UkrainianVoices.anatol",
+                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+            AVSpeechSynthesisProviderVoice(name: "Natalia",
+                identifier: "com.rhvoice.UkrainianVoices.natalia",
+                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+            AVSpeechSynthesisProviderVoice(name: "Marianna",
+                identifier: "com.rhvoice.UkrainianVoices.marianna",
+                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+            AVSpeechSynthesisProviderVoice(name: "Volodymyr",
+                identifier: "com.rhvoice.UkrainianVoices.volodymyr",
+                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"])
         ]
-        
-        NSLog("✅ UkrainianSpeechSynthesizer initialized with REAL RHVoice!")
     }
-    
-    // MARK: - AVSpeechSynthesisProviderAudioUnit
-    
+
+    public override var outputBusses: AUAudioUnitBusArray {
+        return _outputBusses
+    }
+
+    // MARK: - Voice list
+
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { return _speechVoices }
+        get {
+            guard let enabledIds = defaults?.stringArray(forKey: "enabledVoiceIdentifiers"),
+                  !enabledIds.isEmpty else {
+                return _speechVoices
+            }
+            return _speechVoices.filter { enabledIds.contains($0.identifier) }
+        }
         set { _speechVoices = newValue }
     }
-    
+
+    // MARK: - Synthesis request
+
     public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
-        currentRequest = request
-        
-        NSLog("🎤 Synthesis request received")
-        
-        // Асинхронний РЕАЛЬНИЙ синтез
-        synthesisQueue.async { [weak self] in
+        let voiceName = request.voice.identifier.components(separatedBy: ".").last ?? "anatol"
+        // Use object(forKey:) to distinguish "not set" (nil) from explicit 0.0
+        let rate = (defaults?.object(forKey: "rate") as? Double) ?? 0.5
+        let volume = (defaults?.object(forKey: "volume") as? Double) ?? 1.0
+        let speedMultiplier = (defaults?.object(forKey: "speedMultiplier") as? Double) ?? 1.0
+        let text = request.ssmlRepresentation
+
+        // Cancel any previous request first, then begin new one
+        rhvoiceEngine.cancel()
+        let requestToken = audioBuffer.beginRequest()
+
+        NSLog("🎤 Synthesis: voice=\(voiceName) rate=\(rate * speedMultiplier)")
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
-            
-            // Параметри (використовуємо дефолтні значення, бо API не надає їх напряму)
-            let rate = 1.0
-            let volume = 1.0
-            let pitch = 1.0
-            
-            // Ім'я голосу
-            let voiceIdentifier = request.voice.identifier
-            let voiceName = self.extractVoiceName(from: voiceIdentifier)
-            
-            // Текст
-            let text = request.ssmlRepresentation
-            
-            NSLog("🗣️ Synthesizing: voice=\(voiceName)")
-            NSLog("📝 Text: \(text.prefix(50))...")
-            
-            // РЕАЛЬНИЙ синтез через RHVoice!
-            if let buffer = self.rhvoiceEngine.synthesize(
+
+            self.rhvoiceEngine.synthesizeStreaming(
                 text,
                 voice: voiceName,
-                rate: rate,
+                rate: rate * speedMultiplier,
                 volume: volume,
-                pitch: pitch
-            ) {
-                self.audioBuffer = buffer
-                self.framePosition = 0
-                NSLog("✅ Synthesis successful! Buffer: \(buffer.frameLength) frames")
-            } else {
-                NSLog("❌ Synthesis failed!")
-                self.audioBuffer = nil
+                pitch: 1.0
+            ) { samples, count, sampleRate in
+                _ = sampleRate
+                self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
             }
+
+            self.audioBuffer.markCompleted(with: requestToken)
+
+            NSLog("✅ Synthesis complete")
         }
     }
-    
+
     public override func cancelSpeechRequest() {
-        NSLog("🛑 Synthesis cancelled")
-        currentRequest = nil
-        audioBuffer = nil
-        framePosition = 0
+        audioBuffer.cancelCurrentRequest()
+        rhvoiceEngine.cancel()
     }
-    
-    // MARK: - AUAudioUnit Render
-    
+
+    // MARK: - Render block
+    // RULES:
+    // 1. NO DispatchQueue.sync/async — forbidden in real-time thread
+    // 2. NO usleep, semaphore, mutex — forbidden in real-time thread
+    // 3. Render consumes from an atomic request buffer with no shared Swift array
+    // 4. If no data: return silence immediately
+
     public override var internalRenderBlock: AUInternalRenderBlock {
-        return { [weak self] (
-            actionFlags,
-            timestamp,
-            frameCount,
-            outputBusNumber,
-            outputAudioBufferList,
-            realtimeEventListHead,
-            pullInputBlock
-        ) in
+        return { [weak self] (actionFlags, timestamp, frameCount, outputBusNumber,
+                              outputAudioBufferList, renderEvents, pullInputBlock) in
             guard let self = self else { return kAudioUnitErr_NoConnection }
-            
-            guard let buffer = self.audioBuffer else {
-                // Тиша, якщо немає буфера
-                let ablPointer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
-                for bufferIndex in 0..<ablPointer.count {
-                    if let targetBuffer = ablPointer[bufferIndex].mData {
-                        memset(targetBuffer, 0, Int(ablPointer[bufferIndex].mDataByteSize))
-                    }
-                }
-                return noErr
-            }
-            
+
+            let intFrameCount = Int(frameCount)
             let ablPointer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
-            
-            for bufferIndex in 0..<ablPointer.count {
-                guard let targetBuffer = ablPointer[bufferIndex].mData else { continue }
-                
-                let targetBufferPointer = targetBuffer.assumingMemoryBound(to: Float.self)
-                let sourceBufferPointer = buffer.floatChannelData![bufferIndex]
-                
-                let framesToCopy = min(
-                    Int(frameCount),
-                    Int(buffer.frameLength) - Int(self.framePosition)
-                )
-                
-                if framesToCopy > 0 {
-                    memcpy(
-                        targetBufferPointer,
-                        sourceBufferPointer.advanced(by: Int(self.framePosition)),
-                        framesToCopy * MemoryLayout<Float>.size
-                    )
-                    self.framePosition += AVAudioFramePosition(framesToCopy)
-                }
-                
-                // Заповнюємо залишок нулями
-                if framesToCopy < frameCount {
-                    memset(
-                        targetBufferPointer.advanced(by: framesToCopy),
-                        0,
-                        Int(frameCount - UInt32(framesToCopy)) * MemoryLayout<Float>.size
-                    )
-                }
-            }
-            
-            // Сигналізуємо про завершення
-            if self.framePosition >= buffer.frameLength {
+
+            guard let mData = ablPointer[0].mData else { return kAudioUnitErr_InvalidParameter }
+            let outFrames = mData.assumingMemoryBound(to: Float32.self)
+
+            // Always zero-fill first — guarantees silence if we return early
+            outFrames.update(repeating: 0, count: intFrameCount)
+            ablPointer[0].mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float32>.size)
+            ablPointer[0].mNumberChannels = 1
+
+            var completed = ObjCBool(false)
+            let rendered = self.audioBuffer.renderFrames(
+                outFrames,
+                maxFrames: UInt(intFrameCount),
+                preBufferFrames: UInt(self.preBufferFrames),
+                didComplete: &completed
+            )
+
+            if completed.boolValue {
                 actionFlags.pointee = .offlineUnitRenderAction_Complete
-                NSLog("🏁 Rendering complete")
+            } else if rendered {
+                actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                // No data or pre-buffer not ready yet — return silence.
+                actionFlags.pointee = []
             }
-            
+
             return noErr
         }
-    }
-    
-    // MARK: - Helper Methods
-    
-    private func extractVoiceName(from identifier: String) -> String {
-        let components = identifier.components(separatedBy: ".")
-        return components.last ?? "anatol"
     }
 }

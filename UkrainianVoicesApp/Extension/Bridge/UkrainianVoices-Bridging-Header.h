@@ -7,5 +7,6 @@
 #define UkrainianVoices_Bridging_Header_h
 
 #import "RHVoiceEngine.h"
+#import "RHVoiceEngine+Parameters.h"
 
 #endif /* UkrainianVoices_Bridging_Header_h */
