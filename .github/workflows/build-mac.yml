@@ -22,6 +22,7 @@ jobs:
       - name: Build macOS app
         working-directory: UkrainianVoicesApp
         run: |
+          set -euxo pipefail
           xcodebuild \
             -scheme UkrainianVoicesMac \
             -configuration Debug \
@@ -30,13 +31,13 @@ jobs:
             ARCHS="x86_64" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            | xcpretty || true
+            CODE_SIGNING_REQUIRED=NO
 
       - name: Package macOS app
         if: always()
         working-directory: UkrainianVoicesApp
         run: |
+          set -euxo pipefail
           APP_PATH=$(find build -name "UkrainianVoicesMac.app" -maxdepth 6 | head -1)
           echo "Found app: $APP_PATH"
           if [ -z "$APP_PATH" ]; then
@@ -44,15 +45,16 @@ jobs:
             find build -name "*.app" | head -10
             exit 1
           fi
-          mkdir -p mac_build
-          cp -r "$APP_PATH" mac_build/
-          echo "✅ App packaged"
-          ls -la mac_build/
+          mkdir -p ../mac_build
+          cp -r "$APP_PATH" ../mac_build/
+          cd ../mac_build
+          ditto -c -k --sequesterRsrc --keepParent UkrainianVoicesMac.app UkrainianVoicesMac.app.zip
+          ls -la UkrainianVoicesMac.app.zip
 
       - name: Upload macOS artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: macos-debug-build
-          path: UkrainianVoicesApp/mac_build/
+          path: ${{ github.workspace }}/mac_build/UkrainianVoicesMac.app.zip
           retention-days: 3
