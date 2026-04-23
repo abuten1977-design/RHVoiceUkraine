@@ -21,14 +21,13 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
     private let rhvoiceEngine: RHVoiceEngine
     private let audioBuffer = RHVoiceAudioBuffer()
+    private let runtimeCoordinator = RHVoiceRuntimeCoordinator()
 
     // Pre-buffer threshold: 100ms at 24kHz = 2400 frames
     private let preBufferFrames: Int = 2400
 
     // MARK: - Settings
 
-    private let appGroup = "group.rhvoice.UkrainianVoices.shared"
-    private let defaults: UserDefaults?
     private var _speechVoices: [AVSpeechSynthesisProviderVoice] = []
 
     // MARK: - Init
@@ -36,7 +35,6 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     public override init(componentDescription: AudioComponentDescription,
                          options: AudioComponentInstantiationOptions = []) throws {
         self.rhvoiceEngine = RHVoiceEngine()
-        self.defaults = UserDefaults(suiteName: appGroup)
 
         let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
                                    sampleRate: 24000.0,
@@ -50,20 +48,14 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
                                             busType: .output,
                                             busses: [outputBus])
 
-        _speechVoices = [
-            AVSpeechSynthesisProviderVoice(name: "Anatol",
-                identifier: "com.rhvoice.UkrainianVoices.anatol",
-                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
-            AVSpeechSynthesisProviderVoice(name: "Natalia",
-                identifier: "com.rhvoice.UkrainianVoices.natalia",
-                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
-            AVSpeechSynthesisProviderVoice(name: "Marianna",
-                identifier: "com.rhvoice.UkrainianVoices.marianna",
-                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
-            AVSpeechSynthesisProviderVoice(name: "Volodymyr",
-                identifier: "com.rhvoice.UkrainianVoices.volodymyr",
-                primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"])
-        ]
+        _speechVoices = RHVoiceSharedSettings.voiceCatalog.map {
+            AVSpeechSynthesisProviderVoice(
+                name: $0.name,
+                identifier: $0.identifier,
+                primaryLanguages: [$0.language],
+                supportedLanguages: [$0.language]
+            )
+        }
     }
 
     public override var outputBusses: AUAudioUnitBusArray {
@@ -74,8 +66,9 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
         get {
-            guard let enabledIds = defaults?.stringArray(forKey: "enabledVoiceIdentifiers"),
-                  !enabledIds.isEmpty else {
+            let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+            let enabledIds = snapshot.enabledVoiceIdentifiers
+            guard !enabledIds.isEmpty else {
                 return _speechVoices
             }
             return _speechVoices.filter { enabledIds.contains($0.identifier) }
@@ -86,42 +79,51 @@ public class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     // MARK: - Synthesis request
 
     public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
-        let voiceName = request.voice.identifier.components(separatedBy: ".").last ?? "anatol"
-        // Use object(forKey:) to distinguish "not set" (nil) from explicit 0.0
-        let rate = (defaults?.object(forKey: "rate") as? Double) ?? 0.5
-        let volume = (defaults?.object(forKey: "volume") as? Double) ?? 1.0
-        let speedMultiplier = (defaults?.object(forKey: "speedMultiplier") as? Double) ?? 1.0
-        let text = request.ssmlRepresentation
+        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        let synthesisRequest = RHVoiceSynthesisRequestFactory.systemRequest(
+            text: request.ssmlRepresentation,
+            voiceIdentifier: request.voice.identifier,
+            snapshot: snapshot
+        )
+        let runtimeToken = runtimeCoordinator.begin(synthesisRequest)
 
         // Cancel any previous request first, then begin new one
         rhvoiceEngine.cancel()
         let requestToken = audioBuffer.beginRequest()
 
-        NSLog("🎤 Synthesis: voice=\(voiceName) rate=\(rate * speedMultiplier)")
+        NSLog("🎤 Synthesis: voice=\(synthesisRequest.voiceProfileName) rate=\(synthesisRequest.settings.rate * synthesisRequest.settings.speedMultiplier)")
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
 
             self.rhvoiceEngine.synthesizeStreaming(
-                text,
-                voice: voiceName,
-                rate: rate * speedMultiplier,
-                volume: volume,
+                synthesisRequest.text,
+                voice: synthesisRequest.voiceProfileName,
+                rate: synthesisRequest.settings.rate * synthesisRequest.settings.speedMultiplier,
+                volume: synthesisRequest.settings.volume,
                 pitch: 1.0
             ) { samples, count, sampleRate in
                 _ = sampleRate
+                guard self.runtimeCoordinator.isCurrent(runtimeToken) else { return }
                 self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
             }
 
-            self.audioBuffer.markCompleted(with: requestToken)
+            if self.runtimeCoordinator.isCurrent(runtimeToken) {
+                self.audioBuffer.markCompleted(with: requestToken)
+                self.runtimeCoordinator.markCompleted(runtimeToken)
+            }
 
             NSLog("✅ Synthesis complete")
         }
     }
 
     public override func cancelSpeechRequest() {
+        let runtimeToken = runtimeCoordinator.beginCancel()
         audioBuffer.cancelCurrentRequest()
         rhvoiceEngine.cancel()
+        if let runtimeToken {
+            runtimeCoordinator.markCancelled(runtimeToken)
+        }
     }
 
     // MARK: - Render block

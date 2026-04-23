@@ -14,25 +14,18 @@ import MessageUI
 import AppKit
 #endif
 
-private let appGroup = "group.rhvoice.UkrainianVoices.shared"
+private let appGroup = RHVoiceSharedSettings.appGroupID
 private let defaults = UserDefaults(suiteName: appGroup) ?? .standard
-private let enabledVoiceIdentifiersKey = "enabledVoiceIdentifiers"
-private let selectedVoiceIdentifierKey = "selectedVoiceIdentifier"
-private let defaultEnabledVoiceIdentifiers: Set<String> = [
-    "com.rhvoice.UkrainianVoices.anatol"
-]
+private let enabledVoiceIdentifiersKey = RHVoiceSharedSettings.enabledVoiceIdentifiersKey
+private let selectedVoiceIdentifierKey = RHVoiceSharedSettings.selectedVoiceIdentifierKey
+private let defaultEnabledVoiceIdentifiers = RHVoiceSharedSettings.defaultEnabledVoiceIdentifiers
 private let preferredLanguageOrder = ["Ukrainian", "English"]
-private let voiceProfileNamesByIdentifierSuffix: [String: String] = [
-    "anatol": "Anatol",
-    "marianna": "Marianna",
-    "natalia": "Natalia",
-    "volodymyr": "Volodymyr"
-]
 
 private struct VoiceDefinition: Identifiable, Hashable {
     let name: String
     let identifier: String
     let language: String
+    let profileName: String
     let sampleText: String
 
     var id: String { identifier }
@@ -44,6 +37,14 @@ private struct VoiceDefinition: Identifiable, Hashable {
         default: return language
         }
     }
+
+    init(_ descriptor: RHVoiceVoiceDescriptor) {
+        self.name = descriptor.name
+        self.identifier = descriptor.identifier
+        self.language = descriptor.language
+        self.profileName = descriptor.profileName
+        self.sampleText = descriptor.sampleText
+    }
 }
 
 private struct VoiceSettingsState: Equatable {
@@ -54,12 +55,7 @@ private struct VoiceSettingsState: Equatable {
     var sentencePause = 0.0
 }
 
-private let voiceCatalog: [VoiceDefinition] = [
-    .init(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol", language: "uk-UA", sampleText: "Привіт! Це тест голосу Анатол."),
-    .init(name: "Marianna", identifier: "com.rhvoice.UkrainianVoices.marianna", language: "uk-UA", sampleText: "Привіт! Це тест голосу Маріанна."),
-    .init(name: "Natalia", identifier: "com.rhvoice.UkrainianVoices.natalia", language: "uk-UA", sampleText: "Привіт! Це тест голосу Наталія."),
-    .init(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr", language: "uk-UA", sampleText: "Привіт! Це тест голосу Володимир.")
-]
+private let voiceCatalog: [VoiceDefinition] = RHVoiceSharedSettings.voiceCatalog.map(VoiceDefinition.init)
 
 @MainActor
 private final class PreviewPlaybackController {
@@ -147,12 +143,13 @@ private final class ContentViewModel: ObservableObject {
     private let playbackController = PreviewPlaybackController()
 
     init() {
-        let storedEnabled = Set(defaults.stringArray(forKey: enabledVoiceIdentifiersKey) ?? Array(defaultEnabledVoiceIdentifiers))
-        let storedSelected = defaults.string(forKey: selectedVoiceIdentifierKey) ?? "com.rhvoice.UkrainianVoices.anatol"
-        let initialRate = defaults.object(forKey: "rate") as? Double ?? 0.5
-        let initialVolume = defaults.object(forKey: "volume") as? Double ?? 1.0
-        let initialSpeedMultiplier = defaults.object(forKey: "speedMultiplier") as? Double ?? 1.0
-        let initialSentencePause = defaults.object(forKey: "sentencePause") as? Double ?? 0.0
+        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        let storedEnabled = Set(snapshot.enabledVoiceIdentifiers)
+        let storedSelected = snapshot.selectedVoiceIdentifier
+        let initialRate = snapshot.generalSettings.rate
+        let initialVolume = snapshot.generalSettings.volume
+        let initialSpeedMultiplier = snapshot.generalSettings.speedMultiplier
+        let initialSentencePause = snapshot.generalSettings.sentencePause
 
         self.rate = initialRate
         self.volume = initialVolume
@@ -162,7 +159,16 @@ private final class ContentViewModel: ObservableObject {
         self.enabledVoiceIdentifiers = storedEnabled.isEmpty ? defaultEnabledVoiceIdentifiers : storedEnabled
         self.selectedVoiceIdentifier = storedSelected
         self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
-            (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause))
+            if let stored = snapshot.perVoiceSettings[voice.identifier] {
+                return (voice.identifier, VoiceSettingsState(
+                    useCustomSettings: stored.useCustomSettings,
+                    rate: stored.settings.rate,
+                    volume: stored.settings.volume,
+                    speedMultiplier: stored.settings.speedMultiplier,
+                    sentencePause: stored.settings.sentencePause
+                ))
+            }
+            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause))
         })
 
         normalizeSelection()
@@ -214,7 +220,7 @@ private final class ContentViewModel: ObservableObject {
         } else {
             enabledVoiceIdentifiers.remove(voice.identifier)
             if selectedVoiceIdentifier == voice.identifier {
-                selectedVoiceIdentifier = enabledVoices.first?.identifier ?? "com.rhvoice.UkrainianVoices.anatol"
+                selectedVoiceIdentifier = enabledVoices.first?.identifier ?? RHVoiceSharedSettings.defaultVoiceIdentifier
             }
         }
         persistVoiceState()
@@ -265,7 +271,7 @@ private final class ContentViewModel: ObservableObject {
 
     func resetToRecommendedVoices() {
         enabledVoiceIdentifiers = defaultEnabledVoiceIdentifiers
-        selectedVoiceIdentifier = "com.rhvoice.UkrainianVoices.anatol"
+        selectedVoiceIdentifier = RHVoiceSharedSettings.defaultVoiceIdentifier
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
         setStatus("Recommended voices restored: Anatol.")
@@ -299,6 +305,7 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(settings.volume, forKey: "\(prefix).volume")
         defaults.set(settings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
         defaults.set(settings.sentencePause, forKey: "\(prefix).sentencePause")
+        persistSharedSnapshot()
     }
 
     private func previewVoice(_ voice: VoiceDefinition, overrideText: String? = nil) {
@@ -307,8 +314,7 @@ private final class ContentViewModel: ObservableObject {
         let appliedRate = currentSettings.useCustomSettings ? currentSettings.rate : rate
         let appliedVolume = currentSettings.useCustomSettings ? currentSettings.volume : volume
         let appliedSpeedMultiplier = currentSettings.useCustomSettings ? currentSettings.speedMultiplier : speedMultiplier
-        let identifierSuffix = voice.identifier.components(separatedBy: ".").last?.lowercased()
-        let voiceName = identifierSuffix.flatMap { voiceProfileNamesByIdentifierSuffix[$0] } ?? voice.name
+        let voiceName = voice.profileName
 
         LogCollector.shared.log("Preview request voice=\(voice.name) profile=\(voiceName) textLength=\(text.count)")
 
@@ -334,24 +340,73 @@ private final class ContentViewModel: ObservableObject {
     private func persistVoiceState() {
         defaults.set(Array(enabledVoiceIdentifiers).sorted(), forKey: enabledVoiceIdentifiersKey)
         defaults.set(selectedVoiceIdentifier, forKey: selectedVoiceIdentifierKey)
+        persistSharedSnapshot()
     }
 
     private func persistGeneralSettings() {
-        defaults.set(rate, forKey: "rate")
-        defaults.set(volume, forKey: "volume")
-        defaults.set(speedMultiplier, forKey: "speedMultiplier")
-        defaults.set(sentencePause, forKey: "sentencePause")
+        defaults.set(rate, forKey: RHVoiceSharedSettings.rateKey)
+        defaults.set(volume, forKey: RHVoiceSharedSettings.volumeKey)
+        defaults.set(speedMultiplier, forKey: RHVoiceSharedSettings.speedMultiplierKey)
+        defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
+        persistSharedSnapshot()
     }
 
     private func normalizeSelection() {
         if !enabledVoiceIdentifiers.contains(selectedVoiceIdentifier) {
-            selectedVoiceIdentifier = enabledVoices.first?.identifier ?? "com.rhvoice.UkrainianVoices.anatol"
+            selectedVoiceIdentifier = enabledVoices.first?.identifier ?? RHVoiceSharedSettings.defaultVoiceIdentifier
         }
     }
 
     private func setStatus(_ message: String) {
         statusMessage = message
         announce(message)
+    }
+
+    private func persistSharedSnapshot() {
+        let settings = RHVoiceSpeechSettings(
+            rate: rate,
+            volume: volume,
+            speedMultiplier: speedMultiplier,
+            sentencePause: sentencePause
+        )
+        let perVoice = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice -> (String, RHVoicePerVoiceSettings) in
+            let state = voiceSettingsByIdentifier[voice.identifier] ?? VoiceSettingsState(
+                useCustomSettings: false,
+                rate: settings.rate,
+                volume: settings.volume,
+                speedMultiplier: settings.speedMultiplier,
+                sentencePause: settings.sentencePause
+            )
+            return (
+                voice.identifier,
+                RHVoicePerVoiceSettings(
+                    useCustomSettings: state.useCustomSettings,
+                    settings: RHVoiceSpeechSettings(
+                        rate: state.rate,
+                        volume: state.volume,
+                        speedMultiplier: state.speedMultiplier,
+                        sentencePause: state.sentencePause
+                    )
+                )
+            )
+        })
+        let previousRevision = RHVoiceSharedSettingsStore.loadSnapshot().revision
+        let snapshot = RHVoiceSharedSettingsSnapshot(
+            schemaVersion: 1,
+            revision: previousRevision + 1,
+            updatedAt: Date(),
+            voiceCatalog: RHVoiceSharedSettings.voiceCatalog,
+            enabledVoiceIdentifiers: Array(enabledVoiceIdentifiers).sorted(),
+            selectedVoiceIdentifier: selectedVoiceIdentifier,
+            generalSettings: settings,
+            perVoiceSettings: perVoice
+        )
+
+        do {
+            try RHVoiceSharedSettingsStore.saveSnapshot(snapshot)
+        } catch {
+            setStatus("Could not save shared settings: \(error.localizedDescription)")
+        }
     }
 
     private static func loadStoredSettings(

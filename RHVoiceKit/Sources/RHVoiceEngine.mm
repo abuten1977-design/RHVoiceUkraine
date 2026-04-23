@@ -11,7 +11,9 @@
 #include <cstring>
 #include <memory>
 
-// MARK: - ThreadSafeRingBuffer (lock-free, SPSC atomic)
+// MARK: - ThreadSafeRingBuffer
+// Internal SPSC queue used by the Stage 4 hybrid model:
+// producer writes retained PCM chunks, consumer reads them as frames.
 
 template<typename T, size_t Capacity = 1024>
 class ThreadSafeRingBuffer {
@@ -88,6 +90,34 @@ struct AudioRequestState {
 static __thread EngineState* tls_engineState = nullptr;
 static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
 
+static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
+    NSArray<NSBundle*>* candidateBundles = @[
+        [NSBundle mainBundle],
+        [NSBundle bundleForClass:engineClass]
+    ];
+    NSFileManager* fm = [NSFileManager defaultManager];
+    BOOL isDir = NO;
+
+    for (NSBundle* bundle in candidateBundles) {
+        NSArray<NSString*>* resourceNames = @[@"RHVoiceData", @"Voices"];
+        for (NSString* resourceName in resourceNames) {
+            NSString* candidate = [[bundle resourcePath] stringByAppendingPathComponent:resourceName];
+            if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+                if (resolvedBundle) *resolvedBundle = bundle;
+                return candidate;
+            }
+
+            candidate = [bundle pathForResource:resourceName ofType:nil];
+            if (candidate && [fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+                if (resolvedBundle) *resolvedBundle = bundle;
+                return candidate;
+            }
+        }
+    }
+
+    return nil;
+}
+
 @interface RHVoiceAudioRequestToken () {
 @public
     std::shared_ptr<AudioRequestState> _state;
@@ -155,6 +185,10 @@ static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
     if (!token) return;
     auto tokenState = token->_state;
     if (!tokenState) return;
+
+    auto activeState = std::atomic_load(&_activeState);
+    if (tokenState.get() != activeState.get()) return;
+
     tokenState->completed.store(true, std::memory_order_release);
 }
 
@@ -370,47 +404,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (BOOL)initializeEngine {
     if (self.initialized) return YES;
 
-    // When RHVoiceEngine lives inside a framework, resources may be in:
-    // - the host app bundle (preferred for app/extension packaging)
-    // - the framework bundle (optional)
-    NSArray<NSBundle*>* candidateBundles = @[
-        [NSBundle mainBundle],
-        [NSBundle bundleForClass:[self class]]
-    ];
     NSFileManager* fm = [NSFileManager defaultManager];
-    BOOL isDir = NO;
-
-    NSString* dataPath = nil;
     NSBundle* resolvedBundle = nil;
-    for (NSBundle* b in candidateBundles) {
-        // Try RHVoiceData first (contains both languages/ and voices/ subdirs)
-        NSString* candidate = [[b resourcePath] stringByAppendingPathComponent:@"RHVoiceData"];
-        if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
-            dataPath = candidate;
-            resolvedBundle = b;
-            break;
-        }
-        candidate = [b pathForResource:@"RHVoiceData" ofType:nil];
-        if (candidate && [fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
-            dataPath = candidate;
-            resolvedBundle = b;
-            break;
-        }
-
-        // Fallback: legacy Voices-only path (won't have language data, but try anyway)
-        candidate = [[b resourcePath] stringByAppendingPathComponent:@"Voices"];
-        if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
-            dataPath = candidate;
-            resolvedBundle = b;
-            break;
-        }
-        candidate = [b pathForResource:@"Voices" ofType:nil];
-        if (candidate && [fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
-            dataPath = candidate;
-            resolvedBundle = b;
-            break;
-        }
-    }
+    NSString* dataPath = RHVoiceResolveDataPath([self class], &resolvedBundle);
 
     if (!dataPath) {
         NSLog(@"❌ RHVoiceData not found in app/framework bundles. main=%@ framework=%@",

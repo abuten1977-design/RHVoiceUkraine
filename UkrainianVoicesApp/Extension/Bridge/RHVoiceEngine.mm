@@ -11,7 +11,9 @@
 #include <cstring>
 #include <memory>
 
-// MARK: - ThreadSafeRingBuffer (lock-free, SPSC atomic)
+// MARK: - ThreadSafeRingBuffer
+// Internal SPSC queue used by the Stage 4 hybrid model:
+// producer writes retained PCM chunks, consumer reads them as frames.
 
 template<typename T, size_t Capacity = 1024>
 class ThreadSafeRingBuffer {
@@ -88,6 +90,34 @@ struct AudioRequestState {
 static __thread EngineState* tls_engineState = nullptr;
 static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
 
+static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
+    NSArray<NSBundle*>* candidateBundles = @[
+        [NSBundle mainBundle],
+        [NSBundle bundleForClass:engineClass]
+    ];
+    NSFileManager* fm = [NSFileManager defaultManager];
+    BOOL isDir = NO;
+
+    for (NSBundle* bundle in candidateBundles) {
+        NSArray<NSString*>* resourceNames = @[@"RHVoiceData", @"Voices"];
+        for (NSString* resourceName in resourceNames) {
+            NSString* candidate = [[bundle resourcePath] stringByAppendingPathComponent:resourceName];
+            if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+                if (resolvedBundle) *resolvedBundle = bundle;
+                return candidate;
+            }
+
+            candidate = [bundle pathForResource:resourceName ofType:nil];
+            if (candidate && [fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+                if (resolvedBundle) *resolvedBundle = bundle;
+                return candidate;
+            }
+        }
+    }
+
+    return nil;
+}
+
 @interface RHVoiceAudioRequestToken () {
 @public
     std::shared_ptr<AudioRequestState> _state;
@@ -155,6 +185,10 @@ static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
     if (!token) return;
     auto tokenState = token->_state;
     if (!tokenState) return;
+
+    auto activeState = std::atomic_load(&_activeState);
+    if (tokenState.get() != activeState.get()) return;
+
     tokenState->completed.store(true, std::memory_order_release);
 }
 
@@ -370,27 +404,19 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (BOOL)initializeEngine {
     if (self.initialized) return YES;
 
-    NSBundle* bundle = [NSBundle bundleForClass:[self class]];
     NSFileManager* fm = [NSFileManager defaultManager];
-    BOOL isDir = NO;
-
-    // Try RHVoiceData first (contains both languages/ and voices/ subdirs)
-    NSString* dataPath = [[bundle resourcePath] stringByAppendingPathComponent:@"RHVoiceData"];
-    if (![fm fileExistsAtPath:dataPath isDirectory:&isDir] || !isDir) {
-        dataPath = [bundle pathForResource:@"RHVoiceData" ofType:nil];
-    }
-
-    // Fallback: legacy Voices-only path (won't have language data, but try anyway)
-    if (!dataPath) {
-        dataPath = [[bundle resourcePath] stringByAppendingPathComponent:@"Voices"];
-        if (![fm fileExistsAtPath:dataPath isDirectory:&isDir] || !isDir) {
-            dataPath = [bundle pathForResource:@"Voices" ofType:nil];
-        }
-    }
+    NSBundle* resolvedBundle = nil;
+    NSString* dataPath = RHVoiceResolveDataPath([self class], &resolvedBundle);
 
     if (!dataPath) {
+        NSLog(@"❌ RHVoiceData not found in app/framework bundles. main=%@ framework=%@",
+              [NSBundle mainBundle].resourcePath,
+              [NSBundle bundleForClass:[self class]].resourcePath);
         return NO;
     }
+
+    NSLog(@"✅ RHVoice data path: %@ (bundle=%@)", dataPath, resolvedBundle.resourcePath);
+    NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
@@ -404,13 +430,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     params.callbacks = callbacks;
 
     self.engine = RHVoice_new_tts_engine(&params);
-    if (!self.engine) { return NO; }
+    if (!self.engine) { NSLog(@"❌ Engine init failed for data_path: %@", dataPath); return NO; }
 
     // Verify voices loaded
     unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
     unsigned int nProfiles = RHVoice_get_number_of_voice_profiles(self.engine);
-    (void)nVoices;
-    (void)nProfiles;
+    NSLog(@"✅ Engine ready: %u voices, %u profiles", nVoices, nProfiles);
 
     self.initialized = YES;
     return YES;
