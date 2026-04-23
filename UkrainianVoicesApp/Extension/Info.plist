@@ -32,14 +32,15 @@
 					<key>manufacturer</key>
 					<string>RHVo</string>
 					<key>name</key>
-					<string>Ukrainian Voices</string>
+					<string>RHVo: RHVoice Ukrainian Speech Synthesizer</string>
 					<key>sandboxSafe</key>
 					<true/>
 					<key>subtype</key>
 					<string>rhvc</string>
 					<key>tags</key>
 					<array>
-						<string>Speech Synthesizer</string>
+						<string>Synthesizer</string>
+						<string>Speech</string>
 					</array>
 					<key>type</key>
 					<string>ausp</string>

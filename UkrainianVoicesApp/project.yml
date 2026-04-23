@@ -304,6 +304,7 @@ targets:
         INFOPLIST_FILE: Extension/Info.plist
         CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtensionMac.entitlements
         SWIFT_VERSION: "5.0"
+        DEFINES_MODULE: YES
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
         OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
@@ -313,4 +314,5 @@ targets:
         # For CI / signed builds (e.g. GitHub Actions). Leave empty by default.
         PROVISIONING_PROFILE: "$(UV_MAC_EXT_PROFILE_UUID)"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
+        ENABLE_DEBUG_DYLIB: NO
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"

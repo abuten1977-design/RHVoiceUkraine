@@ -1,6 +1,7 @@
 import CoreAudioKit
 import Foundation
 
+@objc(AudioUnitFactory)
 public final class AudioUnitFactory: NSObject, AUAudioUnitFactory {
     private var audioUnit: AUAudioUnit?
 
