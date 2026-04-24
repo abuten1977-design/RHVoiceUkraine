@@ -155,7 +155,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             }
         }
         for parameter in parameterTree.allParameters where parameter.unit != .indexed {
-            parameter.value = parameterTree.implementorValueProvider?(parameter) ?? 0
+            parameter.value = parameterTree.implementorValueProvider(parameter)
         }
         self.parameterTree = parameterTree
     }
@@ -261,7 +261,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         let frames = data.assumingMemoryBound(to: Float.self)
         let requestedFrames = Int(frameCount)
-        frames.assign(repeating: 0, count: requestedFrames)
+        frames.update(repeating: 0, count: requestedFrames)
         audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
         audioBuffers[0].mNumberChannels = 1
 
@@ -274,7 +274,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         if count > 0 {
             output.withUnsafeBufferPointer { buffer in
                 guard let baseAddress = buffer.baseAddress else { return }
-                frames.assign(from: baseAddress.advanced(by: outputOffset), count: count)
+                frames.update(from: baseAddress.advanced(by: outputOffset), count: count)
             }
             audioBuffers[0].mDataByteSize = UInt32(count * MemoryLayout<Float>.size)
             outputOffset += count
