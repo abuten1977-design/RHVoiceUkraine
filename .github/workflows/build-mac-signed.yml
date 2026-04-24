@@ -113,10 +113,8 @@ jobs:
           APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
           test -d "$APP_PATH"
           mkdir -p ../mac_signed_build
-          cp -r "$APP_PATH" ../mac_signed_build/
-          cd ../mac_signed_build
-          ditto -c -k --sequesterRsrc --keepParent UkrainianVoicesMac.app UkrainianVoicesMac.app.zip
-          ls -la UkrainianVoicesMac.app.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.zip
+          ls -la ../mac_signed_build/UkrainianVoicesMac.app.zip
 
       - name: Upload signed macOS artifact
         uses: actions/upload-artifact@v4

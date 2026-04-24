@@ -152,10 +152,8 @@ jobs:
             exit 1
           fi
           mkdir -p ../mac_build
-          cp -r "$APP_PATH" ../mac_build/
-          cd ../mac_build
-          ditto -c -k --sequesterRsrc --keepParent UkrainianVoicesMac.app UkrainianVoicesMac.app.zip
-          ls -la UkrainianVoicesMac.app.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_build/UkrainianVoicesMac.app.zip
+          ls -la ../mac_build/UkrainianVoicesMac.app.zip
 
       - name: Upload macOS artifact
         if: always()

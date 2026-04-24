@@ -44,7 +44,7 @@ jobs:
           echo "Found framework: $FRAMEWORK_PATH"
           test -n "$FRAMEWORK_PATH"
           mkdir -p rhvoicekit_mac
-          cp -R "$FRAMEWORK_PATH" rhvoicekit_mac/
+          ditto "$FRAMEWORK_PATH" "rhvoicekit_mac/RHVoiceKit.framework"
           ls -la rhvoicekit_mac/
 
       - name: Upload macOS framework artifact
@@ -53,4 +53,3 @@ jobs:
           name: rhvoicekit-macos-framework
           path: UkrainianVoicesApp/rhvoicekit_mac/
           retention-days: 7
-
