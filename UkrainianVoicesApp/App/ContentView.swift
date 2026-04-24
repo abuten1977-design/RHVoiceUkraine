@@ -21,6 +21,11 @@ private let selectedVoiceIdentifierKey = RHVoiceSharedSettings.selectedVoiceIden
 private let defaultEnabledVoiceIdentifiers = RHVoiceSharedSettings.defaultEnabledVoiceIdentifiers
 private let preferredLanguageOrder = ["Ukrainian", "English"]
 
+private struct SpeechComponentDiagnosticReport: Equatable {
+    let summary: String
+    let details: [String]
+}
+
 private struct VoiceDefinition: Identifiable, Hashable {
     let name: String
     let identifier: String
@@ -139,6 +144,8 @@ private final class ContentViewModel: ObservableObject {
     @Published var editingVoice: VoiceDefinition?
     @Published var isPreviewPlaying = false
     @Published var statusMessage = ""
+    @Published var isRunningSpeechComponentDiagnostics = false
+    @Published var speechComponentDiagnosticReport: SpeechComponentDiagnosticReport?
 
     private let playbackController = PreviewPlaybackController()
 
@@ -277,6 +284,72 @@ private final class ContentViewModel: ObservableObject {
         setStatus("Recommended voices restored: Anatol.")
     }
 
+    func runSpeechComponentDiagnostics() {
+#if os(macOS)
+        isRunningSpeechComponentDiagnostics = true
+        speechComponentDiagnosticReport = nil
+        setStatus("Running speech component diagnostics...")
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            let flags = AudioComponentFlags([.sandboxSafe, .isV3AudioUnit]).rawValue
+            let description = AudioComponentDescription(
+                componentType: kAudioUnitType_SpeechSynthesizer,
+                componentSubType: fourCharCode("rhvc"),
+                componentManufacturer: fourCharCode("RHVo"),
+                componentFlags: flags,
+                componentFlagsMask: flags
+            )
+
+            let manager = AVAudioUnitComponentManager.shared()
+            let components = manager.components(matching: description)
+            var details = [String]()
+            details.append("Query type=ausp subtype=rhvc manufacturer=RHVo")
+            details.append("Matching components: \(components.count)")
+
+            if components.isEmpty {
+                details.append("No speech synthesizer components matched the expected AudioComponentDescription.")
+                finishSpeechComponentDiagnostics(
+                    summary: "System did not return any RHVoice speech components.",
+                    details: details
+                )
+                return
+            }
+
+            for component in components {
+                let desc = component.audioComponentDescription
+                details.append("Component: \(component.name)")
+                details.append("  type=\(fourCharString(desc.componentType)) subtype=\(fourCharString(desc.componentSubType)) manufacturer=\(fourCharString(desc.componentManufacturer))")
+                details.append("  version=\(desc.componentVersion) flags=\(desc.componentFlags) mask=\(desc.componentFlagsMask)")
+
+                do {
+                    _ = try await AVAudioUnit.instantiate(
+                        with: desc,
+                        options: [.loadOutOfProcess]
+                    )
+                    details.append("  instantiate=OK")
+                    finishSpeechComponentDiagnostics(
+                        summary: "System found and instantiated the RHVoice speech component.",
+                        details: details
+                    )
+                    return
+                } catch {
+                    let nsError = error as NSError
+                    details.append("  instantiate=FAIL domain=\(nsError.domain) code=\(nsError.code) message=\(nsError.localizedDescription)")
+                }
+            }
+
+            finishSpeechComponentDiagnostics(
+                summary: "System found the RHVoice speech component, but instantiation failed.",
+                details: details
+            )
+        }
+#else
+        setStatus("Speech component diagnostics are available on macOS only.")
+#endif
+    }
+
     func updateGeneralRate(_ value: Double) {
         rate = value
         persistGeneralSettings()
@@ -359,7 +432,15 @@ private final class ContentViewModel: ObservableObject {
 
     private func setStatus(_ message: String) {
         statusMessage = message
+        LogCollector.shared.log(message)
         announce(message)
+    }
+
+    private func finishSpeechComponentDiagnostics(summary: String, details: [String]) {
+        isRunningSpeechComponentDiagnostics = false
+        speechComponentDiagnosticReport = SpeechComponentDiagnosticReport(summary: summary, details: details)
+        details.forEach { LogCollector.shared.log("Speech diagnostics: \($0)") }
+        setStatus(summary)
     }
 
     private func persistSharedSnapshot() {
@@ -427,6 +508,20 @@ private final class ContentViewModel: ObservableObject {
     }
 }
 
+private func fourCharCode(_ string: String) -> OSType {
+    string.utf8.reduce(0) { ($0 << 8) + OSType($1) }
+}
+
+private func fourCharString(_ code: OSType) -> String {
+    let bytes: [UInt8] = [
+        UInt8((code >> 24) & 0xFF),
+        UInt8((code >> 16) & 0xFF),
+        UInt8((code >> 8) & 0xFF),
+        UInt8(code & 0xFF)
+    ]
+    return String(bytes: bytes, encoding: .macOSRoman) ?? "\(code)"
+}
+
 struct ContentView: View {
     @State private var showingMailComposer = false
     @StateObject private var model = ContentViewModel()
@@ -436,6 +531,9 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 20) {
                 headerSection
                 overviewSection
+#if os(macOS)
+                diagnosticsSection
+#endif
                 voicesSection
                 previewSection
                 generalSettingsSection
@@ -576,6 +674,52 @@ struct ContentView: View {
             }
         }
     }
+
+#if os(macOS)
+    private var diagnosticsSection: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Speech component diagnostics")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+
+                Text("Checks whether macOS can find and instantiate the RHVoice speech component using the same Audio Unit lookup path as working reference apps.")
+                    .foregroundColor(.secondary)
+
+                Button(model.isRunningSpeechComponentDiagnostics ? "Running diagnostics..." : "Run speech component diagnostics") {
+                    model.runSpeechComponentDiagnostics()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(model.isRunningSpeechComponentDiagnostics)
+                .accessibilityLabel("Run speech component diagnostics")
+                .accessibilityHint("Finds the RHVoice speech component and tries to instantiate it.")
+
+                if let report = model.speechComponentDiagnosticReport {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(report.summary)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(Array(report.details.enumerated()), id: \.offset) { item in
+                                    Text(item.element)
+                                        .font(.system(.caption, design: .monospaced))
+                                        .textSelection(.enabled)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(minHeight: 120, maxHeight: 220)
+                        .padding(10)
+                        .background(.quaternary.opacity(0.35), in: RoundedRectangle(cornerRadius: 10))
+                    }
+                }
+            }
+        }
+    }
+#endif
 
     private var previewSection: some View {
         GroupBox {
