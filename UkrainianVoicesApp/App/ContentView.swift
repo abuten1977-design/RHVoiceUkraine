@@ -321,7 +321,7 @@ private final class ContentViewModel: ObservableObject {
                 let desc = component.audioComponentDescription
                 details.append("Component: \(component.name)")
                 details.append("  type=\(fourCharString(desc.componentType)) subtype=\(fourCharString(desc.componentSubType)) manufacturer=\(fourCharString(desc.componentManufacturer))")
-                details.append("  version=\(desc.componentVersion) flags=\(desc.componentFlags) mask=\(desc.componentFlagsMask)")
+                details.append("  flags=\(desc.componentFlags) mask=\(desc.componentFlagsMask)")
 
                 do {
                     _ = try await AVAudioUnit.instantiate(
