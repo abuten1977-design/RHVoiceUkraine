@@ -116,6 +116,24 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.zip
           ls -la ../mac_signed_build/UkrainianVoicesMac.app.zip
 
+      - name: Validate signed macOS artifact (static + signature gate)
+        run: |
+          set -euxo pipefail
+          rm -rf /tmp/uv_macos_signed_artifact_check
+          mkdir -p /tmp/uv_macos_signed_artifact_check
+          unzip -q mac_signed_build/UkrainianVoicesMac.app.zip -d /tmp/uv_macos_signed_artifact_check
+          APP_PATH="/tmp/uv_macos_signed_artifact_check/UkrainianVoicesMac.app"
+          EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+
+          bash scripts/validate_macos_artifact.sh "$APP_PATH"
+
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
+
+          EXT_ENT="$(codesign -d --entitlements :- "$EXT_PATH" 2>/dev/null || true)"
+          echo "$EXT_ENT"
+          echo "$EXT_ENT" | grep -q "com.apple.security.app-sandbox"
+
       - name: Upload signed macOS artifact
         uses: actions/upload-artifact@v4
         with:

@@ -155,6 +155,15 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_build/UkrainianVoicesMac.app.zip
           ls -la ../mac_build/UkrainianVoicesMac.app.zip
 
+      - name: Validate packaged macOS artifact (static gate)
+        if: always()
+        run: |
+          set -euxo pipefail
+          rm -rf /tmp/uv_macos_artifact_check
+          mkdir -p /tmp/uv_macos_artifact_check
+          unzip -q mac_build/UkrainianVoicesMac.app.zip -d /tmp/uv_macos_artifact_check
+          bash scripts/validate_macos_artifact.sh /tmp/uv_macos_artifact_check/UkrainianVoicesMac.app
+
       - name: Upload macOS artifact
         if: always()
         uses: actions/upload-artifact@v4
