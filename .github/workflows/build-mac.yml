@@ -123,6 +123,24 @@ jobs:
         working-directory: UkrainianVoicesApp
         run: xcodegen generate
 
+      - name: Create Boost unified include
+        run: |
+          BOOST_ROOT="RHVoice/external/libs/boost"
+          UNIFIED="$BOOST_ROOT/unified_include"
+          rm -rf "$UNIFIED"
+          mkdir -p "$UNIFIED/boost"
+          for dir in "$BOOST_ROOT"/libs/*/include/boost; do
+            if [ -d "$dir" ]; then
+              for item in "$dir"/*; do
+                base=$(basename "$item")
+                if [ ! -e "$UNIFIED/boost/$base" ]; then
+                  cp -R "$item" "$UNIFIED/boost/$base"
+                fi
+              done
+            fi
+          done
+          echo "Boost unified: $(ls "$UNIFIED/boost/" | wc -l) entries"
+
       - name: Build macOS app
         working-directory: UkrainianVoicesApp
         run: |
