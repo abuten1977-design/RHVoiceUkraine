@@ -131,15 +131,10 @@ jobs:
           mkdir -p "$UNIFIED/boost"
           for dir in "$BOOST_ROOT"/libs/*/include/boost; do
             if [ -d "$dir" ]; then
-              for item in "$dir"/*; do
-                base=$(basename "$item")
-                if [ ! -e "$UNIFIED/boost/$base" ]; then
-                  cp -R "$item" "$UNIFIED/boost/$base"
-                fi
-              done
+              rsync -a "$dir/" "$UNIFIED/boost/"
             fi
           done
-          echo "Boost unified: $(ls "$UNIFIED/boost/" | wc -l) entries"
+          echo "Boost unified: $(find "$UNIFIED/boost/" -maxdepth 1 | wc -l) top-level entries"
 
       - name: Build macOS app
         working-directory: UkrainianVoicesApp
