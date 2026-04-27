@@ -15,32 +15,38 @@ private enum RHVoiceParameter: AUParameterAddress {
 @available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
-    private let rhvoiceEngine: RHVoiceEngine
+    // Engine is lazy — created only when synthesis is actually requested.
+    // This keeps init() lightweight for macOS component discovery (auval).
+    private lazy var rhvoiceEngine: RHVoiceEngine = RHVoiceEngine()
     private let outputBus: AUAudioUnitBus
     private let outputMutex = DispatchSemaphore(value: 1)
-    private let availableVoices: [AVSpeechSynthesisProviderVoice]
+
+    // Static voice list — no dependency on shared settings at init time.
+    private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
+        AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Natalia", identifier: "com.rhvoice.UkrainianVoices.natalia",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Marianna", identifier: "com.rhvoice.UkrainianVoices.marianna",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+    ]
 
     private var outputBussesStorage: AUAudioUnitBusArray!
     private var output: [Float] = []
     private var outputOffset = 0
 
-    private var rateValue: AUValue
-    private var volumeValue: AUValue
-    private var speedMultiplierValue: AUValue
-    private var sentencePauseValue: AUValue
+    private var rateValue: AUValue = 0.5
+    private var volumeValue: AUValue = 1.0
+    private var speedMultiplierValue: AUValue = 1.0
+    private var sentencePauseValue: AUValue = 0.0
 
     @objc
     public override init(
         componentDescription: AudioComponentDescription,
         options: AudioComponentInstantiationOptions = []
     ) throws {
-        let settings = RHVoiceSpeechSettings.recommended
-        self.rhvoiceEngine = RHVoiceEngine()
-        self.rateValue = AUValue(settings.rate)
-        self.volumeValue = AUValue(settings.volume)
-        self.speedMultiplierValue = AUValue(settings.speedMultiplier)
-        self.sentencePauseValue = AUValue(settings.sentencePause)
-
         let basicDescription = AudioStreamBasicDescription(
             mSampleRate: 24000.0,
             mFormatID: kAudioFormatLinearPCM,
@@ -55,14 +61,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let formatDescription = try CMAudioFormatDescription(audioStreamBasicDescription: basicDescription)
         let format = AVAudioFormat(cmAudioFormatDescription: formatDescription)
         self.outputBus = try AUAudioUnitBus(format: format)
-        self.availableVoices = RHVoiceSharedSettings.voiceCatalog.map {
-            AVSpeechSynthesisProviderVoice(
-                name: $0.name,
-                identifier: $0.identifier,
-                primaryLanguages: [$0.language],
-                supportedLanguages: [$0.language]
-            )
-        }
 
         try super.init(componentDescription: componentDescription, options: options)
 
@@ -72,92 +70,29 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             busses: [outputBus]
         )
 
-        let parameterTree = AUParameterTree.createTree(withChildren: [
-            AUParameterTree.createGroup(
-                withIdentifier: "rhvoice",
-                name: "RHVoice",
-                children: [
-                    AUParameterTree.createParameter(
-                        withIdentifier: "rate",
-                        name: "Rate",
-                        address: RHVoiceParameter.rate.rawValue,
-                        min: 0.1,
-                        max: 2.0,
-                        unit: .rate,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "volume",
-                        name: "Volume",
-                        address: RHVoiceParameter.volume.rawValue,
-                        min: 0.0,
-                        max: 1.0,
-                        unit: .linearGain,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "speedMultiplier",
-                        name: "Speed Multiplier",
-                        address: RHVoiceParameter.speedMultiplier.rawValue,
-                        min: 0.5,
-                        max: 5.0,
-                        unit: .ratio,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "sentencePause",
-                        name: "Sentence Pause",
-                        address: RHVoiceParameter.sentencePause.rawValue,
-                        min: 0.0,
-                        max: 2000.0,
-                        unit: .milliseconds,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    )
-                ]
-            )
-        ])
-        parameterTree.implementorValueProvider = { [weak self] parameter in
+        // Minimal parameter tree — no groups, just flat parameters
+        let rateParam = AUParameterTree.createParameter(
+            withIdentifier: "rate", name: "Rate",
+            address: RHVoiceParameter.rate.rawValue,
+            min: 0.1, max: 2.0, unit: .rate, unitName: nil,
+            valueStrings: nil, dependentParameters: nil)
+        let volumeParam = AUParameterTree.createParameter(
+            withIdentifier: "volume", name: "Volume",
+            address: RHVoiceParameter.volume.rawValue,
+            min: 0.0, max: 1.0, unit: .linearGain, unitName: nil,
+            valueStrings: nil, dependentParameters: nil)
+
+        let tree = AUParameterTree.createTree(withChildren: [rateParam, volumeParam])
+        tree.implementorValueProvider = { [weak self] param in
             guard let self else { return 0 }
-            switch parameter.address {
-            case RHVoiceParameter.rate.rawValue:
-                return self.rateValue
-            case RHVoiceParameter.volume.rawValue:
-                return self.volumeValue
-            case RHVoiceParameter.speedMultiplier.rawValue:
-                return self.speedMultiplierValue
-            case RHVoiceParameter.sentencePause.rawValue:
-                return self.sentencePauseValue
-            default:
-                return 0
-            }
+            return param.address == RHVoiceParameter.rate.rawValue ? self.rateValue : self.volumeValue
         }
-        parameterTree.implementorValueObserver = { [weak self] parameter, value in
+        tree.implementorValueObserver = { [weak self] param, value in
             guard let self else { return }
-            switch parameter.address {
-            case RHVoiceParameter.rate.rawValue:
-                self.rateValue = value
-            case RHVoiceParameter.volume.rawValue:
-                self.volumeValue = value
-            case RHVoiceParameter.speedMultiplier.rawValue:
-                self.speedMultiplierValue = value
-            case RHVoiceParameter.sentencePause.rawValue:
-                self.sentencePauseValue = value
-            default:
-                break
-            }
+            if param.address == RHVoiceParameter.rate.rawValue { self.rateValue = value }
+            else if param.address == RHVoiceParameter.volume.rawValue { self.volumeValue = value }
         }
-        for parameter in parameterTree.allParameters where parameter.unit != .indexed {
-            parameter.value = parameterTree.implementorValueProvider(parameter)
-        }
-        self.parameterTree = parameterTree
+        self.parameterTree = tree
     }
 
     public override var outputBusses: AUAudioUnitBusArray {
@@ -169,7 +104,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { availableVoices }
+        get { Self.staticVoices }
         set { }
     }
 
@@ -217,27 +152,19 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     public override func messageChannel(for channelName: String) -> AUMessageChannel {
         final class MessageChannel: AUMessageChannel {
             var callHostBlock: CallHostBlock? { get { nil } set {} }
-            private let voices: [RHVoiceVoiceDescriptor]
-
-            init(voices: [RHVoiceVoiceDescriptor]) {
-                self.voices = voices
-            }
 
             func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
-                var response: [AnyHashable: Any] = [:]
-
                 if message["initHost"] as? Bool == true {
-                    response["voiceIds"] = voices.map(\.identifier)
-                    response["voiceNames"] = voices.map(\.name)
-                    response["primaryLanguages"] = voices.map(\.language)
+                    return [
+                        "voiceIds": UkrainianSpeechSynthesizer.staticVoices.map(\.identifier),
+                        "voiceNames": UkrainianSpeechSynthesizer.staticVoices.map(\.name),
+                        "primaryLanguages": UkrainianSpeechSynthesizer.staticVoices.map { $0.primaryLanguages.first ?? "uk-UA" }
+                    ]
                 }
-
-                return response
+                return [:]
             }
         }
-
-        _ = channelName
-        return MessageChannel(voices: RHVoiceSharedSettings.voiceCatalog)
+        return MessageChannel()
     }
 
     private func performRender(
