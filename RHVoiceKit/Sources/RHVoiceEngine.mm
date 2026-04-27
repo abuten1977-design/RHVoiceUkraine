@@ -426,7 +426,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     RHVoice_init_params params;
     memset(&params, 0, sizeof(params));
     params.data_path = [dataPath UTF8String];
-    params.config_path = NULL;
+    params.config_path = [dataPath UTF8String];
     params.callbacks = callbacks;
 
     @try {
