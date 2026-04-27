@@ -44,6 +44,9 @@ targets:
           - "CMakeLists.txt*"
           - "SConscript"
           - "config.h.in"
+          - "emoji_data.cpp"
+          - "unidata.cpp"
+          - "userdict_parser.c"
       - path: ../RHVoice/src/lib
         excludes:
           - "CMakeLists.txt*"
