@@ -429,7 +429,11 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     params.config_path = NULL;
     params.callbacks = callbacks;
 
-    self.engine = RHVoice_new_tts_engine(&params);
+    @try {
+        self.engine = RHVoice_new_tts_engine(&params);
+    } @catch (NSException *exception) {
+        NSLog(@"❌ Engine threw NSException: %@ — %@", exception.name, exception.reason);
+    }
     if (!self.engine) {
         NSLog(@"❌ Engine init failed for data_path: %@", dataPath);
         // Diagnostic: check subdirectories

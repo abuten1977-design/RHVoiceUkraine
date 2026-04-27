@@ -312,6 +312,7 @@ RHVoice_tts_engine RHVoice_new_tts_engine(const RHVoice_init_params* init_params
     }
   catch(const std::exception& e)
     {
+      fprintf(stderr, "RHVoice_new_tts_engine EXCEPTION: %s\n", e.what());
       return 0;
     }
 }
