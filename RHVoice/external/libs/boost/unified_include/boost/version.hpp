@@ -1,0 +1,1 @@
+/home/butenhome/aiwork/copilot/RHVoiceUkraine_clean/RHVoice/external/libs/boost/libs/config/include/boost/version.hpp

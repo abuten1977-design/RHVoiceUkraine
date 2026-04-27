@@ -39,6 +39,28 @@ targets:
     platform: macOS
     sources:
       - path: ../RHVoiceKit/Sources
+      - path: ../RHVoice/src/core
+        excludes:
+          - "CMakeLists.txt*"
+          - "SConscript"
+          - "config.h.in"
+          - "emoji_data.cpp"
+          - "unidata.cpp"
+          - "userdict_parser.c"
+      - path: ../RHVoice/src/lib
+        excludes:
+          - "CMakeLists.txt*"
+          - "SConscript"
+          - "lib.def"
+      - path: ../RHVoice/src/hts_engine
+        excludes:
+          - "CMakeLists.txt*"
+          - "SConscript"
+      - path: ../RHVoice/external/libs/sonic
+        excludes:
+          - "CMakeLists.txt*"
+          - "SConscript"
+          - "*.h"
     resources:
       - path: Extension/Resources/RHVoiceData
     dependencies:
@@ -60,9 +82,8 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
-        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include"
+        GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0"
 
   UkrainianVoices:
     type: application
@@ -176,38 +197,6 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
-      - name: Embed RHVoice dylibs
-        script: |
-          echo "📦 Embedding macOS RHVoice dylibs..."
-          # Choose dylibs matching the build architecture.
-          # GitHub runners are often arm64 even when building x86_64, so don't use `uname -m`.
-          if echo "${ARCHS:-}" | grep -q "x86_64"; then
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
-          else
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
-          fi
-          DYLIB_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Frameworks"
-
-          mkdir -p "$DYLIB_DST"
-
-          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
-            if [ ! -f "$DYLIB_SRC/$lib" ]; then
-              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
-              exit 1
-            fi
-            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
-            echo "✅ Embedded $lib"
-          done
-
-          # Some builds reference dylibs with a double-dot name (e.g. libRHVoice..dylib).
-          # Create symlinks so dyld can resolve @rpath/libRHVoice..dylib.
-          cd "$DYLIB_DST"
-          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
-            base="${lib%.dylib}"
-            ln -sf "$lib" "${base}..dylib"
-            echo "✅ Symlink ${base}..dylib -> $lib"
-          done
-        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
@@ -223,8 +212,6 @@ targets:
         # When set, Xcode embeds provisioning profile and restricted entitlements can be validated by macOS.
         PROVISIONING_PROFILE: "$(UV_MAC_APP_PROFILE_UUID)"
         MACOSX_DEPLOYMENT_TARGET: "13.0"
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
-        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
     dependencies:
       - target: UkrainianVoicesExtensionMac
@@ -260,36 +247,6 @@ targets:
           cp -r "$DATA_SRC" "$DATA_DST"
           echo "✅ RHVoiceData copied to Extension: $(find "$DATA_DST" -type f | wc -l) files"
         basedOnDependencyAnalysis: false
-      - name: Embed RHVoice dylibs to Extension
-        script: |
-          echo "📦 Embedding macOS RHVoice dylibs into extension..."
-          # Choose dylibs matching the build architecture.
-          if echo "${ARCHS:-}" | grep -q "x86_64"; then
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_x86_64"
-          else
-            DYLIB_SRC="${SRCROOT}/Extension/Libraries_macos_arm64"
-          fi
-
-          EXT_PATH="${TARGET_BUILD_DIR}/${FULL_PRODUCT_NAME}"
-          DYLIB_DST="${EXT_PATH}/Contents/Frameworks"
-          mkdir -p "$DYLIB_DST"
-
-          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
-            if [ ! -f "$DYLIB_SRC/$lib" ]; then
-              echo "❌ Missing macOS dylib: $DYLIB_SRC/$lib"
-              exit 1
-            fi
-            cp -f "$DYLIB_SRC/$lib" "$DYLIB_DST/$lib"
-            echo "✅ Embedded $lib"
-          done
-
-          cd "$DYLIB_DST"
-          for lib in libRHVoice.dylib libRHVoice_core.dylib libRHVoice_audio.dylib; do
-            base="${lib%.dylib}"
-            ln -sf "$lib" "${base}..dylib"
-            echo "✅ Symlink ${base}..dylib -> $lib"
-          done
-        basedOnDependencyAnalysis: false
     dependencies:
       - target: RHVoiceKitMac
         embed: true
@@ -306,8 +263,6 @@ targets:
         SWIFT_VERSION: "5.0"
         DEFINES_MODULE: YES
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries_macos_x86_64 $(SRCROOT)/Extension/Libraries_macos_arm64"
-        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
