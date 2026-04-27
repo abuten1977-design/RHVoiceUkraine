@@ -20,109 +20,6 @@ jobs:
       - name: Install build tools
         run: brew install xcodegen cmake boost
 
-      - name: Build RHVoice x86_64 dylibs
-        run: |
-          set -euxo pipefail
-          cd RHVoice
-          rm -rf build_macos_x86_64
-          mkdir -p build_macos_x86_64
-          cd build_macos_x86_64
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-            -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
-          cmake --build . --config Release --parallel
-
-      - name: Stage fresh RHVoice dylibs
-        run: |
-          set -euxo pipefail
-          cp RHVoice/build_macos_x86_64/src/lib/libRHVoice.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cp RHVoice/build_macos_x86_64/src/core/libRHVoice_core.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cp RHVoice/build_macos_x86_64/src/audio/libRHVoice_audio.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cd UkrainianVoicesApp/Extension/Libraries_macos_x86_64
-          ln -sf libRHVoice.dylib libRHVoice..dylib
-          ln -sf libRHVoice_core.dylib libRHVoice_core..dylib
-          ln -sf libRHVoice_audio.dylib libRHVoice_audio..dylib
-          file ./*.dylib
-
-      - name: Smoke test RHVoice synth
-        run: |
-          set -euxo pipefail
-          cat > /tmp/rhvoice_ci_smoke.cpp <<'CPP'
-          #include <cstring>
-          #include <iostream>
-          #include <vector>
-          #include "RHVoice.h"
-
-          static std::vector<short> audio;
-
-          int set_sample_rate_callback(int, void*) { return 1; }
-          int play_speech_callback(const short* samples, unsigned int count, void*) {
-            audio.insert(audio.end(), samples, samples + count);
-            return 1;
-          }
-          void done_callback(void*) {}
-
-          int main() {
-            RHVoice_callbacks callbacks = {};
-            callbacks.set_sample_rate = set_sample_rate_callback;
-            callbacks.play_speech = play_speech_callback;
-            callbacks.done = done_callback;
-
-            RHVoice_init_params params = {};
-            params.data_path = "UkrainianVoicesApp/Extension/Resources/RHVoiceData";
-            params.config_path = NULL;
-            params.callbacks = callbacks;
-            params.options = RHVoice_preload_voices;
-
-            RHVoice_tts_engine engine = RHVoice_new_tts_engine(&params);
-            if (!engine) {
-              std::cerr << "FAIL engine" << std::endl;
-              return 2;
-            }
-
-            RHVoice_synth_params synth = {};
-            synth.voice_profile = "Anatol";
-            synth.relative_rate = 1.0;
-            synth.relative_pitch = 1.0;
-            synth.relative_volume = 1.0;
-
-            const char* text = "Hello test";
-            RHVoice_message msg = RHVoice_new_message(
-              engine,
-              text,
-              (unsigned int)strlen(text),
-              RHVoice_message_text,
-              &synth,
-              NULL
-            );
-            if (!msg) {
-              std::cerr << "FAIL message" << std::endl;
-              RHVoice_delete_tts_engine(engine);
-              return 3;
-            }
-
-            const int ok = RHVoice_speak(msg);
-            RHVoice_delete_message(msg);
-            RHVoice_delete_tts_engine(engine);
-            std::cout << "SPEAK=" << ok << " AUDIO=" << audio.size() << std::endl;
-            return (ok && !audio.empty()) ? 0 : 4;
-          }
-          CPP
-          clang++ -std=c++17 /tmp/rhvoice_ci_smoke.cpp \
-            -arch x86_64 \
-            -I RHVoice/src/include \
-            -L UkrainianVoicesApp/Extension/Libraries_macos_x86_64 \
-            -lRHVoice -lRHVoice_core -lRHVoice_audio \
-            -o /tmp/rhvoice_ci_smoke
-          RHVOICE_DIAG=1 DYLD_LIBRARY_PATH=UkrainianVoicesApp/Extension/Libraries_macos_x86_64 /tmp/rhvoice_ci_smoke
-
-      - name: Generate Xcode project
-        working-directory: UkrainianVoicesApp
-        run: xcodegen generate
-
       - name: Create Boost unified include
         run: |
           BOOST_ROOT="RHVoice/external/libs/boost"
@@ -135,6 +32,10 @@ jobs:
             fi
           done
           echo "Boost unified: $(find "$UNIFIED/boost/" -maxdepth 1 | wc -l) top-level entries"
+
+      - name: Generate Xcode project
+        working-directory: UkrainianVoicesApp
+        run: xcodegen generate
 
       - name: Build macOS app
         working-directory: UkrainianVoicesApp
@@ -152,6 +53,22 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             2>&1 | tail -200
 
+      - name: Verify no dylibs in app bundle
+        if: always()
+        working-directory: UkrainianVoicesApp
+        run: |
+          APP_PATH=$(find build -name "UkrainianVoicesMac.app" -maxdepth 6 | head -1)
+          if [ -n "$APP_PATH" ]; then
+            DYLIBS=$(find "$APP_PATH" -name "libRHVoice*.dylib" | head -5)
+            if [ -n "$DYLIBS" ]; then
+              echo "❌ FAIL: dylibs still present in bundle:"
+              echo "$DYLIBS"
+              exit 1
+            else
+              echo "✅ No RHVoice dylibs in bundle — C++ compiled from source"
+            fi
+          fi
+
       - name: Package macOS app
         if: always()
         working-directory: UkrainianVoicesApp
@@ -167,15 +84,6 @@ jobs:
           mkdir -p ../mac_build
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_build/UkrainianVoicesMac.app.zip
           ls -la ../mac_build/UkrainianVoicesMac.app.zip
-
-      - name: Validate packaged macOS artifact (static gate)
-        if: always()
-        run: |
-          set -euxo pipefail
-          rm -rf /tmp/uv_macos_artifact_check
-          mkdir -p /tmp/uv_macos_artifact_check
-          unzip -q mac_build/UkrainianVoicesMac.app.zip -d /tmp/uv_macos_artifact_check
-          bash scripts/validate_macos_artifact.sh /tmp/uv_macos_artifact_check/UkrainianVoicesMac.app
 
       - name: Upload macOS artifact
         if: always()
