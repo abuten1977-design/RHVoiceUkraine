@@ -430,7 +430,27 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     params.callbacks = callbacks;
 
     self.engine = RHVoice_new_tts_engine(&params);
-    if (!self.engine) { NSLog(@"❌ Engine init failed for data_path: %@", dataPath); return NO; }
+    if (!self.engine) {
+        NSLog(@"❌ Engine init failed for data_path: %@", dataPath);
+        // Diagnostic: check subdirectories
+        NSString* langPath = [dataPath stringByAppendingPathComponent:@"languages"];
+        NSString* voicePath = [dataPath stringByAppendingPathComponent:@"voices"];
+        NSLog(@"❌ languages/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:langPath],
+              [fm contentsOfDirectoryAtPath:langPath error:nil]);
+        NSLog(@"❌ voices/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:voicePath],
+              [fm contentsOfDirectoryAtPath:voicePath error:nil]);
+        NSString* ukPath = [langPath stringByAppendingPathComponent:@"Ukrainian"];
+        NSLog(@"❌ Ukrainian/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:ukPath],
+              [fm contentsOfDirectoryAtPath:ukPath error:nil]);
+        NSString* anatol = [voicePath stringByAppendingPathComponent:@"anatol"];
+        NSLog(@"❌ anatol/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:anatol],
+              [fm contentsOfDirectoryAtPath:anatol error:nil]);
+        return NO;
+    }
 
     // Verify voices loaded
     unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
