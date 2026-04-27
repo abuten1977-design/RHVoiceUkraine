@@ -44,9 +44,6 @@ targets:
           - "CMakeLists.txt*"
           - "SConscript"
           - "config.h.in"
-          - "emoji_data.cpp"
-          - "unidata.cpp"
-          - "userdict_parser.c"
       - path: ../RHVoice/src/lib
         excludes:
           - "CMakeLists.txt*"
@@ -56,6 +53,16 @@ targets:
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
+      - path: ../RHVoice/src/audio
+        excludes:
+          - "CMakeLists.txt*"
+          - "SConscript"
+          - "libao.cpp"
+          - "libao.hpp"
+          - "portaudio.cpp"
+          - "portaudio.hpp"
+          - "pulse.cpp"
+          - "pulse.hpp"
       - path: ../RHVoice/external/libs/sonic
         excludes:
           - "CMakeLists.txt*"
@@ -85,7 +92,7 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/audio $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include"
         GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0"
         OTHER_CPLUSPLUSFLAGS: "-D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION -Wno-deprecated-declarations"
         GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: NO
