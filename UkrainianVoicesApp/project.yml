@@ -61,6 +61,9 @@ targets:
           - "CMakeLists.txt*"
           - "SConscript"
           - "*.h"
+          - "main.c"
+          - "spectrogram.c"
+          - "wave.c"
     resources:
       - path: Extension/Resources/RHVoiceData
     dependencies:
