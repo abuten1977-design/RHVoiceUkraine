@@ -19,7 +19,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     // This keeps init() lightweight for macOS component discovery (auval).
     private lazy var rhvoiceEngine: RHVoiceEngine = RHVoiceEngine()
     private let outputBus: AUAudioUnitBus
-    private let outputMutex = DispatchSemaphore(value: 1)
+
+    // Lock-free audio buffer — replaces DispatchSemaphore + [Float] array
+    private let audioBuffer = RHVoiceAudioBuffer()
+    private let preBufferFrames: Int = 2400
 
     // Static voice list — no dependency on shared settings at init time.
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
@@ -34,8 +37,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     ]
 
     private var outputBussesStorage: AUAudioUnitBusArray!
-    private var output: [Float] = []
-    private var outputOffset = 0
 
     private var rateValue: AUValue = 0.5
     private var volumeValue: AUValue = 1.0
@@ -110,43 +111,31 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
         let request = resolvedRequest(for: speechRequest)
-        cancelSpeechRequest()
 
-        let audioBuffer = rhvoiceEngine.synthesize(
-            request.text,
-            voice: request.voiceProfileName,
-            rate: request.settings.rate * request.settings.speedMultiplier,
-            volume: request.settings.volume,
-            pitch: 1.0
-        )
+        // Cancel previous synthesis, then begin a new lock-free request
+        rhvoiceEngine.cancel()
+        let requestToken = audioBuffer.beginRequest()
 
-        outputMutex.wait()
-        defer { outputMutex.signal() }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
 
-        output.removeAll(keepingCapacity: false)
-        outputOffset = 0
+            self.rhvoiceEngine.synthesizeStreaming(
+                request.text,
+                voice: request.voiceProfileName,
+                rate: request.settings.rate * request.settings.speedMultiplier,
+                volume: request.settings.volume,
+                pitch: 1.0
+            ) { samples, count, _ in
+                self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
+            }
 
-        guard
-            let audioBuffer,
-            audioBuffer.frameLength > 0,
-            let channelData = audioBuffer.floatChannelData
-        else {
-            return
+            self.audioBuffer.markCompleted(with: requestToken)
         }
-
-        let samples = UnsafeBufferPointer(
-            start: channelData[0],
-            count: Int(audioBuffer.frameLength)
-        )
-        output.append(contentsOf: samples)
     }
 
     public override func cancelSpeechRequest() {
+        audioBuffer.cancelCurrentRequest()
         rhvoiceEngine.cancel()
-        outputMutex.wait()
-        output.removeAll(keepingCapacity: false)
-        outputOffset = 0
-        outputMutex.signal()
     }
 
     public override func messageChannel(for channelName: String) -> AUMessageChannel {
@@ -167,6 +156,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         return MessageChannel()
     }
 
+    // MARK: - Render (lock-free, no semaphore, no mutex, no usleep)
+
     private func performRender(
         actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
         timestamp: UnsafePointer<AudioTimeStamp>,
@@ -176,11 +167,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         renderEvents: UnsafePointer<AURenderEvent>?,
         renderPull: AURenderPullInputBlock?
     ) -> AUAudioUnitStatus {
-        _ = timestamp
-        _ = outputBusNumber
-        _ = renderEvents
-        _ = renderPull
-
         let audioBuffers = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
         guard let data = audioBuffers[0].mData else {
             return kAudioUnitErr_InvalidParameter
@@ -188,30 +174,23 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         let frames = data.assumingMemoryBound(to: Float.self)
         let requestedFrames = Int(frameCount)
+
+        // Zero-fill guarantees silence if renderFrames returns no data
         frames.update(repeating: 0, count: requestedFrames)
         audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
         audioBuffers[0].mNumberChannels = 1
 
-        outputMutex.wait()
-        defer { outputMutex.signal() }
+        var completed = ObjCBool(false)
+        let rendered = audioBuffer.renderFrames(
+            frames,
+            maxFrames: UInt(requestedFrames),
+            preBufferFrames: UInt(preBufferFrames),
+            didComplete: &completed
+        )
 
-        let availableCount = max(0, output.count - outputOffset)
-        let count = min(availableCount, requestedFrames)
-
-        if count > 0 {
-            output.withUnsafeBufferPointer { buffer in
-                guard let baseAddress = buffer.baseAddress else { return }
-                frames.update(from: baseAddress.advanced(by: outputOffset), count: count)
-            }
-            audioBuffers[0].mDataByteSize = UInt32(count * MemoryLayout<Float>.size)
-            outputOffset += count
-        }
-
-        if outputOffset >= output.count {
+        if completed.boolValue {
             actionFlags.pointee = .offlineUnitRenderAction_Complete
-            output.removeAll(keepingCapacity: false)
-            outputOffset = 0
-        } else if count > 0 {
+        } else if rendered {
             actionFlags.pointee = .offlineUnitRenderAction_Render
         } else {
             actionFlags.pointee = []
