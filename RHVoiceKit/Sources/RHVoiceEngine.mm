@@ -495,19 +495,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     // For SSML: let prosody tags control rate/pitch/volume (set relative to 1.0)
     // For plain text: apply our rate parameter
-    if (isSSML) {
-        p.absolute_rate = 0.0;
-        p.relative_rate = rate > 0 ? rate * 2.0 : 1.0;
-        p.absolute_pitch = 0.0;
-        p.relative_pitch = pitch > 0 ? pitch : 1.0;
-        p.relative_volume = volume > 0 ? volume : 1.0;
-    } else {
-        p.absolute_rate = 0.0;
-        p.relative_rate = rate > 0 ? rate * 2.0 : 1.0;
-        p.absolute_pitch = 0.0;
-        p.relative_pitch = pitch > 0 ? pitch : 1.0;
-        p.relative_volume = volume > 0 ? volume : 1.0;
-    }
+    // absolute_rate: -1.0 (slowest) to 1.0 (fastest), 0.0 = normal
+    // Map our rate (0.0-1.0, default 0.5) to absolute_rate (-1.0 to 1.0)
+    double absRate = (rate - 0.5) * 2.0;  // 0.0→-1.0, 0.5→0.0, 1.0→1.0
+    p.absolute_rate = fmax(-1.0, fmin(1.0, absRate));
+    p.relative_rate = 1.0;
+    p.absolute_pitch = 0.0;
+    p.relative_pitch = pitch > 0 ? pitch : 1.0;
+    p.relative_volume = volume > 0 ? volume : 1.0;
 
     const char* t = [text UTF8String];
     NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' rate=%.2f isSSML=%d textLength=%lu",
