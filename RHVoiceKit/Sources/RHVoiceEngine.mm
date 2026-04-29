@@ -57,11 +57,22 @@ private:
 // MARK: - EngineState (heap-allocated, shared between C callback and ObjC)
 
 struct EngineState {
-    ThreadSafeRingBuffer<void*>* queue;
+    ThreadSafeRingBuffer<void*>* queue = nullptr;
     std::atomic<bool> cancelled{false};
     std::atomic<int> sampleRate{24000};
     std::atomic<bool> synthesisDone{false};
-    NSCondition* dataCondition; // Condition variable to wake consumer when data arrives
+    NSCondition* dataCondition = nil;
+
+    ~EngineState() {
+        // Drain and release any remaining chunks
+        if (queue) {
+            void* chunkPtr = nullptr;
+            while (queue->pop(chunkPtr)) {
+                if (chunkPtr) CFBridgingRelease(chunkPtr);
+            }
+            delete queue;
+        }
+    }
 };
 
 struct AudioRequestState {
@@ -636,17 +647,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // would replace _activeState with a new empty state, causing render block
     // to never receive data.
 
-    // Heap-allocated — lifetime spans both producer and consumer
-    EngineState* state = new (std::nothrow) EngineState();
-    if (!state) {
-        NSLog(@"❌ synthesizeStreaming failed: EngineState allocation failed");
-        return;
-    }
+    // Heap-allocated with shared_ptr — prevents use-after-free between producer and consumer
+    auto state = std::make_shared<EngineState>();
 
     state->queue = new (std::nothrow) ThreadSafeRingBuffer<void*>();
     if (!state->queue) {
         NSLog(@"❌ synthesizeStreaming failed: queue allocation failed");
-        delete state;
         return;
     }
     state->cancelled.store(false, std::memory_order_release);
@@ -655,25 +661,25 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     state->dataCondition = [[NSCondition alloc] init];
     if (!state->dataCondition) {
         NSLog(@"❌ synthesizeStreaming failed: NSCondition allocation failed");
-        delete state->queue;
-        delete state;
         return;
     }
-    [self publishActiveState:state];
+    [self publishActiveState:state.get()];
 
     NSString* textCopy = [text copy];
     NSString* voiceCopy = [voice copy];
     RHVoiceEngine* __weak weakSelf = self;
 
+    // Producer holds its own shared_ptr copy — state lives until both threads are done
+    auto producerState = state;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         RHVoiceEngine* strongSelf = weakSelf;
         // TLS set in THIS thread — callbacks fire synchronously from RHVoice_speak here
-        tls_engineState = state;
+        tls_engineState = producerState.get();
 
         RHVoice_message msg = nullptr;
         if (strongSelf) {
             msg = [strongSelf buildMessage:textCopy voice:voiceCopy
-                                      rate:rate volume:volume pitch:pitch state:state];
+                                      rate:rate volume:volume pitch:pitch state:producerState.get()];
         }
         if (msg) {
             RHVoice_speak(msg);
@@ -682,13 +688,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
         tls_engineState = nullptr;
         // Signal consumer that production is complete
-        state->synthesisDone.store(true, std::memory_order_release);
-        [state->dataCondition lock];
-        [state->dataCondition broadcast];
-        [state->dataCondition unlock];
+        producerState->synthesisDone.store(true, std::memory_order_release);
+        [producerState->dataCondition lock];
+        [producerState->dataCondition broadcast];
+        [producerState->dataCondition unlock];
         if (strongSelf) {
-            [strongSelf clearActiveStateIfMatches:state];
+            [strongSelf clearActiveStateIfMatches:producerState.get()];
         }
+        // producerState released here — if consumer already done, state is destroyed
     });
 
     // Consumer loop — sleeps on NSCondition until data arrives or synthesis done
@@ -729,8 +736,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         }
     }
 
-    delete state->queue;
-    delete state;
+    // state released here via shared_ptr — destroyed when producer also finishes
 }
 
 - (void)cancel {
