@@ -40,6 +40,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private var rateValue: AUValue = 0.5
     private var volumeValue: AUValue = 1.0
+    private var pitchValue: AUValue = 1.0
     private var speedMultiplierValue: AUValue = 1.0
     private var sentencePauseValue: AUValue = 0.0
 
@@ -82,16 +83,30 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             address: RHVoiceParameter.volume.rawValue,
             min: 0.0, max: 1.0, unit: .linearGain, unitName: nil,
             valueStrings: nil, dependentParameters: nil)
+        let pitchParam = AUParameterTree.createParameter(
+            withIdentifier: "pitch", name: "Pitch",
+            address: RHVoiceParameter.speedMultiplier.rawValue,
+            min: 0.5, max: 2.0, unit: .customUnit, unitName: nil,
+            valueStrings: nil, dependentParameters: nil)
 
-        let tree = AUParameterTree.createTree(withChildren: [rateParam, volumeParam])
+        let tree = AUParameterTree.createTree(withChildren: [rateParam, volumeParam, pitchParam])
         tree.implementorValueProvider = { [weak self] param in
             guard let self else { return 0 }
-            return param.address == RHVoiceParameter.rate.rawValue ? self.rateValue : self.volumeValue
+            switch param.address {
+            case RHVoiceParameter.rate.rawValue: return self.rateValue
+            case RHVoiceParameter.volume.rawValue: return self.volumeValue
+            case RHVoiceParameter.speedMultiplier.rawValue: return self.pitchValue
+            default: return 0
+            }
         }
         tree.implementorValueObserver = { [weak self] param, value in
             guard let self else { return }
-            if param.address == RHVoiceParameter.rate.rawValue { self.rateValue = value }
-            else if param.address == RHVoiceParameter.volume.rawValue { self.volumeValue = value }
+            switch param.address {
+            case RHVoiceParameter.rate.rawValue: self.rateValue = value
+            case RHVoiceParameter.volume.rawValue: self.volumeValue = value
+            case RHVoiceParameter.speedMultiplier.rawValue: self.pitchValue = value
+            default: break
+            }
         }
         self.parameterTree = tree
     }
@@ -128,7 +143,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 voice: request.voiceProfileName,
                 rate: request.settings.rate * request.settings.speedMultiplier,
                 volume: request.settings.volume,
-                pitch: 1.0
+                pitch: request.settings.pitch
             ) { samples, count, _ in
                 self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
             }
@@ -225,7 +240,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                     rate: Double(rateValue),
                     volume: Double(volumeValue),
                     speedMultiplier: Double(speedMultiplierValue),
-                    sentencePause: Double(sentencePauseValue)
+                    sentencePause: Double(sentencePauseValue),
+                    pitch: Double(pitchValue)
                 ),
                 source: .system
             )

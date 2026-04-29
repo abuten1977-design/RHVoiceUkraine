@@ -448,7 +448,8 @@ private final class ContentViewModel: ObservableObject {
             rate: rate,
             volume: volume,
             speedMultiplier: speedMultiplier,
-            sentencePause: sentencePause
+            sentencePause: sentencePause,
+            pitch: 1.0
         )
         let perVoice = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice -> (String, RHVoicePerVoiceSettings) in
             let state = voiceSettingsByIdentifier[voice.identifier] ?? VoiceSettingsState(
@@ -466,7 +467,8 @@ private final class ContentViewModel: ObservableObject {
                         rate: state.rate,
                         volume: state.volume,
                         speedMultiplier: state.speedMultiplier,
-                        sentencePause: state.sentencePause
+                        sentencePause: state.sentencePause,
+                        pitch: 1.0
                     )
                 )
             )

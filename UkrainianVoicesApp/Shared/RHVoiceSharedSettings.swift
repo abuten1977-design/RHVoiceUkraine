@@ -10,6 +10,7 @@ enum RHVoiceSharedSettings {
     static let volumeKey = "volume"
     static let speedMultiplierKey = "speedMultiplier"
     static let sentencePauseKey = "sentencePause"
+    static let pitchKey = "pitch"
 
     static let defaultVoiceIdentifier = "com.rhvoice.UkrainianVoices.anatol"
     static let defaultEnabledVoiceIdentifiers: Set<String> = [defaultVoiceIdentifier]
@@ -37,12 +38,14 @@ struct RHVoiceSpeechSettings: Codable, Equatable {
     var volume: Double
     var speedMultiplier: Double
     var sentencePause: Double
+    var pitch: Double
 
     static let recommended = RHVoiceSpeechSettings(
         rate: 0.5,
         volume: 1.0,
         speedMultiplier: 1.0,
-        sentencePause: 0.0
+        sentencePause: 0.0,
+        pitch: 1.0
     )
 }
 
@@ -135,7 +138,8 @@ enum RHVoiceSharedSettingsStore {
             rate: defaults?.object(forKey: RHVoiceSharedSettings.rateKey) as? Double ?? RHVoiceSpeechSettings.recommended.rate,
             volume: defaults?.object(forKey: RHVoiceSharedSettings.volumeKey) as? Double ?? RHVoiceSpeechSettings.recommended.volume,
             speedMultiplier: defaults?.object(forKey: RHVoiceSharedSettings.speedMultiplierKey) as? Double ?? RHVoiceSpeechSettings.recommended.speedMultiplier,
-            sentencePause: defaults?.object(forKey: RHVoiceSharedSettings.sentencePauseKey) as? Double ?? RHVoiceSpeechSettings.recommended.sentencePause
+            sentencePause: defaults?.object(forKey: RHVoiceSharedSettings.sentencePauseKey) as? Double ?? RHVoiceSpeechSettings.recommended.sentencePause,
+            pitch: defaults?.object(forKey: RHVoiceSharedSettings.pitchKey) as? Double ?? RHVoiceSpeechSettings.recommended.pitch
         )
         let enabled = defaults?.stringArray(forKey: RHVoiceSharedSettings.enabledVoiceIdentifiersKey)
             ?? Array(RHVoiceSharedSettings.defaultEnabledVoiceIdentifiers)
@@ -158,7 +162,8 @@ enum RHVoiceSharedSettingsStore {
                         rate: defaults?.object(forKey: "\(prefix).rate") as? Double ?? general.rate,
                         volume: defaults?.object(forKey: "\(prefix).volume") as? Double ?? general.volume,
                         speedMultiplier: defaults?.object(forKey: "\(prefix).speedMultiplier") as? Double ?? general.speedMultiplier,
-                        sentencePause: defaults?.object(forKey: "\(prefix).sentencePause") as? Double ?? general.sentencePause
+                        sentencePause: defaults?.object(forKey: "\(prefix).sentencePause") as? Double ?? general.sentencePause,
+                        pitch: defaults?.object(forKey: "\(prefix).pitch") as? Double ?? general.pitch
                     )
                     return (descriptor.identifier, RHVoicePerVoiceSettings(useCustomSettings: custom, settings: settings))
                 }
