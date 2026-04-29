@@ -493,20 +493,23 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // Detect SSML: VoiceOver sends rate/pitch/volume via SSML prosody tags
     BOOL isSSML = [text containsString:@"<"];
 
-    // For SSML: let prosody tags control rate/pitch/volume (set relative to 1.0)
-    // For plain text: apply our rate parameter
-    // absolute_rate: -1.0 (slowest) to 1.0 (fastest), 0.0 = normal
-    // Map our rate (0.0-1.0, default 0.5) to absolute_rate (-1.0 to 1.0)
-    double absRate = (rate - 0.5) * 2.0;  // 0.0→-1.0, 0.5→0.0, 1.0→1.0
-    p.absolute_rate = fmax(-1.0, fmin(1.0, absRate));
-    p.relative_rate = 1.0;
-    p.absolute_pitch = 0.0;
-    p.relative_pitch = pitch > 0 ? pitch : 1.0;
+    // Map our rate (0.0-1.0, default 0.5) to Polish format (0.5-2.0, default 1.0)
+    // Formula: polishRate = rate * 3.0 + 0.5  →  0.0→0.5, 0.5→2.0, but that's too fast
+    // Simpler: polishRate = 0.5 + rate * 1.5  →  0.0→0.5, 0.5→1.25, 1.0→2.0
+    double polishRate = 0.5 + rate * 1.5;
+    double polishPitch = 0.5 + pitch * 0.5;  // pitch 0-2 → 0.5-1.5
+
+    // Polish project formula (proven to work):
+    p.absolute_rate = (polishRate - 1.0);     // -0.5..1.0
+    p.relative_rate = polishRate;              // 0.5..2.0
+    p.absolute_pitch = (polishPitch - 1.0);   // -0.5..0.5
+    p.relative_pitch = polishPitch;            // 0.5..1.5
     p.relative_volume = volume > 0 ? volume : 1.0;
 
     const char* t = [text UTF8String];
-    NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' rate=%.2f isSSML=%d textLength=%lu",
-          voice, normalizedVoice, rate, isSSML, (unsigned long)text.length);
+    NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
+          normalizedVoice, rate, p.absolute_rate, p.relative_rate,
+          pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
 
     RHVoice_message_type msgType = isSSML ? RHVoice_message_ssml : RHVoice_message_text;
 
