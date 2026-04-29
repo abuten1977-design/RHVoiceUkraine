@@ -99,7 +99,7 @@ struct AudioRequestState {
 // MARK: - Thread-local pointer to current EngineState
 
 static __thread EngineState* tls_engineState = nullptr;
-static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
+static constexpr NSTimeInterval kCancelWaitTimeoutSec = 0.3;
 
 static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
     NSArray<NSBundle*>* candidateBundles = @[
