@@ -514,10 +514,11 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (RHVoice_message)buildDefaultMessage:(NSString*)text state:(EngineState*)state {
     const char* t = [text UTF8String];
+    RHVoice_message_type msgType = [text containsString:@"<"] ? RHVoice_message_ssml : RHVoice_message_text;
     return RHVoice_new_message(self.engine,
                                t,
                                (unsigned int)strlen(t),
-                               RHVoice_message_text,
+                               msgType,
                                NULL,
                                (void*)state);
 }
