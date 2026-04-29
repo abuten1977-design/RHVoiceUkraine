@@ -497,10 +497,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // For plain text: apply our rate parameter
     if (isSSML) {
         p.absolute_rate = 0.0;
-        p.relative_rate = 1.0;
+        p.relative_rate = rate > 0 ? rate * 2.0 : 1.0;
         p.absolute_pitch = 0.0;
-        p.relative_pitch = 1.0;
-        p.relative_volume = 1.0;
+        p.relative_pitch = pitch > 0 ? pitch : 1.0;
+        p.relative_volume = volume > 0 ? volume : 1.0;
     } else {
         p.absolute_rate = 0.0;
         p.relative_rate = rate > 0 ? rate * 2.0 : 1.0;
