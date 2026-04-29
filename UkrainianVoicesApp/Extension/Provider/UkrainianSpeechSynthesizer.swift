@@ -23,7 +23,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     // Lock-free audio buffer — replaces DispatchSemaphore + [Float] array
     private let audioBuffer = RHVoiceAudioBuffer()
-    private let preBufferFrames: Int = 1200
+    private let preBufferFrames: Int = 800 // 33ms at 24kHz
 
     // Static voice list — no dependency on shared settings at init time.
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
@@ -118,6 +118,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     public override func allocateRenderResources() throws {
         try super.allocateRenderResources()
+        // Warm up the engine to avoid lazy initialization delay during the first speech request
+        _ = self.rhvoiceEngine
     }
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
@@ -236,6 +238,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         // rateValue default = 0.5 → multiplier 1.0 (neutral)
         let voRateMultiplier  = Double(rateValue) / 0.5
         let voPitchMultiplier = Double(pitchValue) / 1.0
+
+        NSLog("ðŸ“Š SNAPSHOT volume=%.2f base.volume=%.2f volumeValue=%.2f", 
+              snapshot.generalSettings.volume, base.volume, volumeValue)
 
         return RHVoiceSynthesisRequest(
             text: speechRequest.ssmlRepresentation,

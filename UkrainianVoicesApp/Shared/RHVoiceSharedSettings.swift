@@ -177,9 +177,10 @@ enum RHVoiceSharedSettingsStore {
     }
 
     private static func snapshotFileURL() -> URL? {
-        FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID)?
-            .appendingPathComponent(RHVoiceSharedSettings.snapshotFileName)
+        let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID)
+        let url = containerURL?.appendingPathComponent(RHVoiceSharedSettings.snapshotFileName)
+        NSLog("ðŸ“ SNAPSHOT URL: \(url?.path ?? "nil") (Group: \(RHVoiceSharedSettings.appGroupID))")
+        return url
     }
 }
 

@@ -79,6 +79,7 @@ struct AudioRequestState {
     ThreadSafeRingBuffer<void*, 2048> queue;
     std::atomic<size_t> queuedSamples{0};
     std::atomic<bool> completed{true};
+    std::atomic<bool> startedPlaying{false};
     __strong NSData* currentChunk = nil;
     size_t currentChunkOffset = 0;
 
@@ -99,7 +100,7 @@ struct AudioRequestState {
 // MARK: - Thread-local pointer to current EngineState
 
 static __thread EngineState* tls_engineState = nullptr;
-static constexpr NSTimeInterval kCancelWaitTimeoutSec = 0.3;
+static constexpr NSTimeInterval kCancelWaitTimeoutSec = 0.15; // Reduced from 0.3 to decrease latency during rapid navigation
 
 static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
     NSArray<NSBundle*>* candidateBundles = @[
@@ -141,6 +142,7 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
 @interface RHVoiceAudioBuffer () {
 @private
     std::shared_ptr<AudioRequestState> _activeState;
+    float _lastFrame;
 }
 @end
 
@@ -151,6 +153,7 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     if (self) {
         auto state = std::make_shared<AudioRequestState>();
         std::atomic_store(&_activeState, state);
+        _lastFrame = 0.0f;
     }
     return self;
 }
@@ -270,11 +273,31 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
         if (didComplete) {
             *didComplete = done;
         }
+        if (!done) {
+            state->startedPlaying.store(false, std::memory_order_release);
+        }
+        
+        // --- FADE OUT TO PREVENT CLICK ---
+        if (std::abs(_lastFrame) > 0.0001f) {
+            const int fadeFrames = std::min((int)maxFrames, 128);
+            for (int i = 0; i < fadeFrames; ++i) {
+                float s = _lastFrame * (1.0f - (float)i / fadeFrames);
+                destination[i] = s;
+            }
+            _lastFrame = 0.0f;
+            return YES; // We rendered a fade-out
+        }
+        // ----------------------------------
+        
         return NO;
     }
 
-    if (available < preBufferFrames && !done) {
-        return NO;
+    // Hysteresis: only wait for preBufferFrames if we haven't started yet
+    if (!state->startedPlaying.load(std::memory_order_acquire)) {
+        if (available < preBufferFrames && !done) {
+            return NO;
+        }
+        state->startedPlaying.store(true, std::memory_order_release);
     }
 
     size_t copied = 0;
@@ -303,6 +326,10 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
         state->currentChunkOffset += toCopy;
         state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
         copied += toCopy;
+    }
+
+    if (copied > 0) {
+        _lastFrame = destination[copied - 1];
     }
 
     bool playbackComplete = false;
@@ -504,16 +531,16 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // Detect SSML: VoiceOver sends rate/pitch/volume via SSML prosody tags
     BOOL isSSML = [text containsString:@"<"];
 
-    // Map our rate (0.0-1.0, default 0.5) to Polish format (0.5-2.0, default 1.0)
-    // Map rate (0.0-1.0, default 0.5) → polishRate (0.5-2.0, default 1.0)
-    double polishRate = fmax(0.5, rate * 2.0);
-    double polishPitch = 0.5 + pitch * 0.5;  // pitch 0-2 → 0.5-1.5
+    // Map rate (default 1.0) to Polish format (0.5-2.0, default 1.0)
+    // The input 'rate' is already a multiplier where 1.0 is neutral.
+    double polishRate = fmax(0.2, fmin(5.0, rate)); 
+    double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5)); // pitch 1.0 -> 1.0
 
     // Polish project formula (proven to work):
-    p.absolute_rate = (polishRate - 1.0);     // -0.5..1.0
-    p.relative_rate = polishRate;              // 0.5..2.0
-    p.absolute_pitch = (polishPitch - 1.0);   // -0.5..0.5
-    p.relative_pitch = polishPitch;            // 0.5..1.5
+    p.absolute_rate = (polishRate - 1.0);     // 1.0 -> 0.0 (neutral)
+    p.relative_rate = polishRate;              // 1.0 -> 1.0 (neutral)
+    p.absolute_pitch = (polishPitch - 1.0);   // 1.0 -> 0.0 (neutral)
+    p.relative_pitch = polishPitch;            // 1.0 -> 1.0 (neutral)
     p.relative_volume = volume > 0 ? volume : 1.0;
 
     const char* t = [text UTF8String];
@@ -699,36 +726,35 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     // Consumer loop — sleeps on NSCondition until data arrives or synthesis done
     while (true) {
+        if (state->cancelled.load(std::memory_order_acquire)) break;
+
         void* chunkPtr = nullptr;
         if (state->queue->pop(chunkPtr)) {
             NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
-            if (!state->cancelled.load(std::memory_order_acquire)) {
-                const short* samples = (const short*)chunk.bytes;
-                unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-                int sr = state->sampleRate.load(std::memory_order_acquire);
-                if (sr <= 0) sr = 24000;
-                chunkCallback(samples, count, sr);
-            }
+            const short* samples = (const short*)chunk.bytes;
+            unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+            int sr = state->sampleRate.load(std::memory_order_acquire);
+            if (sr <= 0) sr = 24000;
+            chunkCallback(samples, count, sr);
         } else if (state->synthesisDone.load(std::memory_order_acquire)) {
             // Drain any remaining chunks after done signal
             while (state->queue->pop(chunkPtr)) {
                 if (chunkPtr) {
                     NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
-                    if (!state->cancelled.load(std::memory_order_acquire)) {
-                        const short* samples = (const short*)chunk.bytes;
-                        unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-                        int sr = state->sampleRate.load(std::memory_order_acquire);
-                        if (sr <= 0) sr = 24000;
-                        chunkCallback(samples, count, sr);
-                    }
+                    const short* samples = (const short*)chunk.bytes;
+                    unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+                    int sr = state->sampleRate.load(std::memory_order_acquire);
+                    if (sr <= 0) sr = 24000;
+                    chunkCallback(samples, count, sr);
                 }
             }
             break;
         } else {
             // No data yet and not done — sleep until signaled
             [state->dataCondition lock];
-            // Double-check condition to avoid spurious wakeup issues
-            if (state->queue->is_empty() && !state->synthesisDone.load(std::memory_order_acquire)) {
+            if (state->queue->is_empty() && 
+                !state->synthesisDone.load(std::memory_order_acquire) &&
+                !state->cancelled.load(std::memory_order_acquire)) {
                 [state->dataCondition wait];
             }
             [state->dataCondition unlock];
