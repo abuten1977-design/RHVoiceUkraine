@@ -121,6 +121,7 @@ enum RHVoiceSharedSettingsStore {
             defaults.set(snapshot.generalSettings.volume, forKey: RHVoiceSharedSettings.volumeKey)
             defaults.set(snapshot.generalSettings.speedMultiplier, forKey: RHVoiceSharedSettings.speedMultiplierKey)
             defaults.set(snapshot.generalSettings.sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
+            defaults.set(snapshot.generalSettings.pitch, forKey: RHVoiceSharedSettings.pitchKey)
         }
     }
 

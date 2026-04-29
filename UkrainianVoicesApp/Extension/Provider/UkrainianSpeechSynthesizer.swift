@@ -10,6 +10,7 @@ private enum RHVoiceParameter: AUParameterAddress {
     case volume = 2
     case speedMultiplier = 3
     case sentencePause = 4
+    case pitch = 5
 }
 
 @available(iOS 16.0, macOS 13.0, *)
@@ -85,7 +86,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             valueStrings: nil, dependentParameters: nil)
         let pitchParam = AUParameterTree.createParameter(
             withIdentifier: "pitch", name: "Pitch",
-            address: RHVoiceParameter.speedMultiplier.rawValue,
+            address: RHVoiceParameter.pitch.rawValue,
             min: 0.5, max: 2.0, unit: .customUnit, unitName: nil,
             valueStrings: nil, dependentParameters: nil)
 
@@ -95,7 +96,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             switch param.address {
             case RHVoiceParameter.rate.rawValue: return self.rateValue
             case RHVoiceParameter.volume.rawValue: return self.volumeValue
-            case RHVoiceParameter.speedMultiplier.rawValue: return self.pitchValue
+            case RHVoiceParameter.pitch.rawValue: return self.pitchValue
             default: return 0
             }
         }
@@ -104,7 +105,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             switch param.address {
             case RHVoiceParameter.rate.rawValue: self.rateValue = value
             case RHVoiceParameter.volume.rawValue: self.volumeValue = value
-            case RHVoiceParameter.speedMultiplier.rawValue: self.pitchValue = value
+            case RHVoiceParameter.pitch.rawValue: self.pitchValue = value
             default: break
             }
         }
