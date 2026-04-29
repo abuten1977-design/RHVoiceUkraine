@@ -23,7 +23,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     // Lock-free audio buffer — replaces DispatchSemaphore + [Float] array
     private let audioBuffer = RHVoiceAudioBuffer()
-    private let preBufferFrames: Int = 512
+    private let preBufferFrames: Int = 1200
 
     // Static voice list — no dependency on shared settings at init time.
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
@@ -135,17 +135,21 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         rhvoiceEngine.cancel()
         let requestToken = audioBuffer.beginRequest()
 
-        // No extra async — synthesizeStreaming runs producer in background internally
-        rhvoiceEngine.synthesizeStreaming(
-            request.text,
-            voice: request.voiceProfileName,
-            rate: request.settings.rate * request.settings.speedMultiplier,
-            volume: request.settings.volume,
-            pitch: request.settings.pitch
-        ) { samples, count, _ in
-            self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+
+            self.rhvoiceEngine.synthesizeStreaming(
+                request.text,
+                voice: request.voiceProfileName,
+                rate: request.settings.rate * request.settings.speedMultiplier,
+                volume: request.settings.volume,
+                pitch: request.settings.pitch
+            ) { samples, count, _ in
+                self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
+            }
+
+            self.audioBuffer.markCompleted(with: requestToken)
         }
-        self.audioBuffer.markCompleted(with: requestToken)
     }
 
     public override func cancelSpeechRequest() {
