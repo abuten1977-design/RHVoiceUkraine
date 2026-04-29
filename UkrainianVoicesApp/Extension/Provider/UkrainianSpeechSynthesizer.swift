@@ -226,32 +226,26 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private func resolvedRequest(
         for speechRequest: AVSpeechSynthesisProviderRequest
     ) -> RHVoiceSynthesisRequest {
-        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
         let identifier = speechRequest.voice.identifier
 
-        guard snapshot.voiceCatalog.contains(where: { $0.identifier == identifier }) else {
-            let fallback = RHVoiceSharedSettings.voiceCatalog.first {
-                $0.identifier == identifier
-            } ?? RHVoiceSharedSettings.voiceCatalog.first!
-            return RHVoiceSynthesisRequest(
-                text: speechRequest.ssmlRepresentation,
-                voiceIdentifier: fallback.identifier,
-                voiceProfileName: fallback.profileName,
-                settings: RHVoiceSpeechSettings(
-                    rate: Double(rateValue),
-                    volume: Double(volumeValue),
-                    speedMultiplier: Double(speedMultiplierValue),
-                    sentencePause: Double(sentencePauseValue),
-                    pitch: Double(pitchValue)
-                ),
-                source: .system
-            )
-        }
+        // Find voice profile name from catalog
+        let descriptor = RHVoiceSharedSettings.voiceCatalog.first {
+            $0.identifier == identifier
+        } ?? RHVoiceSharedSettings.voiceCatalog.first!
 
-        return RHVoiceSynthesisRequestFactory.systemRequest(
+        // Always use AU parameter values — VoiceOver updates these via parameterTree
+        return RHVoiceSynthesisRequest(
             text: speechRequest.ssmlRepresentation,
-            voiceIdentifier: identifier,
-            snapshot: snapshot
+            voiceIdentifier: descriptor.identifier,
+            voiceProfileName: descriptor.profileName,
+            settings: RHVoiceSpeechSettings(
+                rate: Double(rateValue),
+                volume: Double(volumeValue),
+                speedMultiplier: 1.0,
+                sentencePause: 0.0,
+                pitch: Double(pitchValue)
+            ),
+            source: .system
         )
     }
 }
