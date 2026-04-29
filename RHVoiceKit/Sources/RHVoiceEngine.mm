@@ -489,19 +489,31 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     RHVoice_synth_params p;
     memset(&p, 0, sizeof(p));
     p.voice_profile = [normalizedVoice UTF8String];
-    double mappedRate = rate > 0 ? rate * 2.0 : 1.0;
-    p.absolute_rate = 0.0;
-    p.relative_rate = mappedRate;
-    p.absolute_pitch = 0.0;
-    p.relative_pitch = pitch > 0 ? pitch : 1.0;
-    p.relative_volume = volume > 0 ? volume : 1.0;
+
+    // Detect SSML: VoiceOver sends rate/pitch/volume via SSML prosody tags
+    BOOL isSSML = [text containsString:@"<"];
+
+    // For SSML: let prosody tags control rate/pitch/volume (set relative to 1.0)
+    // For plain text: apply our rate parameter
+    if (isSSML) {
+        p.absolute_rate = 0.0;
+        p.relative_rate = 1.0;
+        p.absolute_pitch = 0.0;
+        p.relative_pitch = 1.0;
+        p.relative_volume = 1.0;
+    } else {
+        p.absolute_rate = 0.0;
+        p.relative_rate = rate > 0 ? rate * 2.0 : 1.0;
+        p.absolute_pitch = 0.0;
+        p.relative_pitch = pitch > 0 ? pitch : 1.0;
+        p.relative_volume = volume > 0 ? volume : 1.0;
+    }
 
     const char* t = [text UTF8String];
-    NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' rate=%.2f→%.2f textLength=%lu",
-          voice, normalizedVoice, rate, mappedRate, (unsigned long)text.length);
+    NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' rate=%.2f isSSML=%d textLength=%lu",
+          voice, normalizedVoice, rate, isSSML, (unsigned long)text.length);
 
-    // Detect SSML: if text contains XML-like tags, treat as SSML
-    RHVoice_message_type msgType = [text containsString:@"<"] ? RHVoice_message_ssml : RHVoice_message_text;
+    RHVoice_message_type msgType = isSSML ? RHVoice_message_ssml : RHVoice_message_text;
 
     RHVoice_message msg = RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
                                msgType, &p,

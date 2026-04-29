@@ -112,6 +112,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
         let request = resolvedRequest(for: speechRequest)
 
+        NSLog("🎤 synthesize: voice=%@ rate=%.2f vol=%.2f speed=%.2f text=%d chars",
+              request.voiceProfileName, request.settings.rate, request.settings.volume,
+              request.settings.speedMultiplier, request.text.count)
+
         // Cancel previous synthesis, then begin a new lock-free request
         rhvoiceEngine.cancel()
         let requestToken = audioBuffer.beginRequest()
