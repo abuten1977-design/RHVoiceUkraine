@@ -533,7 +533,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     // Map rate (default 1.0) to Polish format (0.5-2.0, default 1.0)
     // The input 'rate' is already a multiplier where 1.0 is neutral.
-    double polishRate = fmax(0.2, fmin(5.0, rate)); 
+    double polishRate = fmax(0.5, rate * 2.0); 
     double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5)); // pitch 1.0 -> 1.0
 
     // Polish project formula (proven to work):
