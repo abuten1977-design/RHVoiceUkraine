@@ -505,9 +505,8 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     BOOL isSSML = [text containsString:@"<"];
 
     // Map our rate (0.0-1.0, default 0.5) to Polish format (0.5-2.0, default 1.0)
-    // Formula: polishRate = rate * 3.0 + 0.5  →  0.0→0.5, 0.5→2.0, but that's too fast
-    // Simpler: polishRate = 0.5 + rate * 1.5  →  0.0→0.5, 0.5→1.25, 1.0→2.0
-    double polishRate = 0.5 + rate * 1.5;
+    // Map rate (0.0-1.0, default 0.5) → polishRate (0.5-2.0, default 1.0)
+    double polishRate = fmax(0.5, rate * 2.0);
     double polishPitch = 0.5 + pitch * 0.5;  // pitch 0-2 → 0.5-1.5
 
     // Polish project formula (proven to work):
