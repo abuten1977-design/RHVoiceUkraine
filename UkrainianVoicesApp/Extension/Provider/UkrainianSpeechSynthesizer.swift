@@ -128,29 +128,24 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
         let request = resolvedRequest(for: speechRequest)
 
-        NSLog("🎤 synthesize: voice=%@ rate=%.2f vol=%.2f speed=%.2f text=%d chars",
+        NSLog("🎤 synthesize: voice=%@ rate=%.2f vol=%.2f pitch=%.2f text=%d chars",
               request.voiceProfileName, request.settings.rate, request.settings.volume,
-              request.settings.speedMultiplier, request.text.count)
+              request.settings.pitch, request.text.count)
 
-        // Cancel previous synthesis, then begin a new lock-free request
         rhvoiceEngine.cancel()
         let requestToken = audioBuffer.beginRequest()
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self else { return }
-
-            self.rhvoiceEngine.synthesizeStreaming(
-                request.text,
-                voice: request.voiceProfileName,
-                rate: request.settings.rate * request.settings.speedMultiplier,
-                volume: request.settings.volume,
-                pitch: request.settings.pitch
-            ) { samples, count, _ in
-                self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
-            }
-
-            self.audioBuffer.markCompleted(with: requestToken)
+        // No extra async — synthesizeStreaming runs producer in background internally
+        rhvoiceEngine.synthesizeStreaming(
+            request.text,
+            voice: request.voiceProfileName,
+            rate: request.settings.rate * request.settings.speedMultiplier,
+            volume: request.settings.volume,
+            pitch: request.settings.pitch
+        ) { samples, count, _ in
+            self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
         }
+        self.audioBuffer.markCompleted(with: requestToken)
     }
 
     public override func cancelSpeechRequest() {
