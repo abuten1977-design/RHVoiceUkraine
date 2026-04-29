@@ -499,8 +499,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     const char* t = [text UTF8String];
     NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' rate=%.2f→%.2f textLength=%lu",
           voice, normalizedVoice, rate, mappedRate, (unsigned long)text.length);
+
+    // Detect SSML: if text contains XML-like tags, treat as SSML
+    RHVoice_message_type msgType = [text containsString:@"<"] ? RHVoice_message_ssml : RHVoice_message_text;
+
     RHVoice_message msg = RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
-                               RHVoice_message_text, &p,
+                               msgType, &p,
                                (void*)state);  // Pass EngineState as user_data
     if (!msg) {
         NSLog(@"❌ RHVoice_new_message returned NULL for voice='%@'", normalizedVoice);
