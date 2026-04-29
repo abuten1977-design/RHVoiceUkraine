@@ -222,23 +222,27 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         for speechRequest: AVSpeechSynthesisProviderRequest
     ) -> RHVoiceSynthesisRequest {
         let identifier = speechRequest.voice.identifier
+        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
 
-        // Find voice profile name from catalog
-        let descriptor = RHVoiceSharedSettings.voiceCatalog.first {
-            $0.identifier == identifier
-        } ?? RHVoiceSharedSettings.voiceCatalog.first!
+        let descriptor = snapshot.voiceCatalog.first { $0.identifier == identifier }
+            ?? RHVoiceSharedSettings.voiceCatalog.first!
 
-        // Always use AU parameter values — VoiceOver updates these via parameterTree
+        let base = snapshot.effectiveSettings(for: descriptor.identifier)
+
+        // rateValue default = 0.5 → multiplier 1.0 (neutral)
+        let voRateMultiplier  = Double(rateValue) / 0.5
+        let voPitchMultiplier = Double(pitchValue) / 1.0
+
         return RHVoiceSynthesisRequest(
             text: speechRequest.ssmlRepresentation,
             voiceIdentifier: descriptor.identifier,
             voiceProfileName: descriptor.profileName,
             settings: RHVoiceSpeechSettings(
-                rate: Double(rateValue),
-                volume: Double(volumeValue),
+                rate:            base.rate * voRateMultiplier,
+                volume:          base.volume * Double(volumeValue),
                 speedMultiplier: 1.0,
-                sentencePause: 0.0,
-                pitch: Double(pitchValue)
+                sentencePause:   0.0,
+                pitch:           base.pitch * voPitchMultiplier
             ),
             source: .system
         )
