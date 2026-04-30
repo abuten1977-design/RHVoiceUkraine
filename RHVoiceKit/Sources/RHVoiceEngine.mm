@@ -142,7 +142,6 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
 @interface RHVoiceAudioBuffer () {
 @private
     std::shared_ptr<AudioRequestState> _activeState;
-    float _lastFrame;
 }
 @end
 
@@ -153,7 +152,6 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     if (self) {
         auto state = std::make_shared<AudioRequestState>();
         std::atomic_store(&_activeState, state);
-        _lastFrame = 0.0f;
     }
     return self;
 }
@@ -277,17 +275,6 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
             state->startedPlaying.store(false, std::memory_order_release);
         }
         
-        // --- FADE OUT TO PREVENT CLICK ---
-        if (std::abs(_lastFrame) > 0.0001f) {
-            const int fadeFrames = std::min((int)maxFrames, 128);
-            for (int i = 0; i < fadeFrames; ++i) {
-                float s = _lastFrame * (1.0f - (float)i / fadeFrames);
-                destination[i] = s;
-            }
-            _lastFrame = 0.0f;
-            return YES; // We rendered a fade-out
-        }
-        // ----------------------------------
         
         return NO;
     }
@@ -328,8 +315,6 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
         copied += toCopy;
     }
 
-    if (copied > 0) {
-        _lastFrame = destination[copied - 1];
     }
 
     bool playbackComplete = false;
