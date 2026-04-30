@@ -40,6 +40,23 @@ struct RHVoiceSpeechSettings: Codable, Equatable {
     var sentencePause: Double
     var pitch: Double
 
+    init(rate: Double, volume: Double, speedMultiplier: Double, sentencePause: Double, pitch: Double) {
+        self.rate = rate
+        self.volume = volume
+        self.speedMultiplier = speedMultiplier
+        self.sentencePause = sentencePause
+        self.pitch = pitch
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        rate            = try c.decode(Double.self, forKey: .rate)
+        volume          = try c.decode(Double.self, forKey: .volume)
+        speedMultiplier = try c.decode(Double.self, forKey: .speedMultiplier)
+        sentencePause   = try c.decode(Double.self, forKey: .sentencePause)
+        pitch           = (try? c.decode(Double.self, forKey: .pitch)) ?? 1.0
+    }
+
     static let recommended = RHVoiceSpeechSettings(
         rate: 0.5,
         volume: 1.0,
