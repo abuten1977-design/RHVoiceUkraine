@@ -595,7 +595,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (!msg) {
         NSLog(@"❌ buildMessage failed for voice '%@'", voice);
         tls_engineState = nullptr;
-        state.queue = nullptr;
         return nil;
     }
 
@@ -619,7 +618,6 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     }
 
     tls_engineState = nullptr;
-    state.queue = nullptr;
 
     // Collect all chunks
     NSMutableData* audioBuffer = [NSMutableData new];
