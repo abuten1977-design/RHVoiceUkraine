@@ -1,0 +1,144 @@
+name: UkrainianVoices
+options:
+  bundleIdPrefix: com.rhvoice
+  deploymentTarget:
+    macOS: "13.0"
+
+targets:
+  UkrainianVoices:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    postBuildScripts:
+      - name: Copy Voices
+        script: |
+          echo "📦 Copying Voices to bundle..."
+          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
+          VOICES_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Voices"
+
+          if [ -d "$VOICES_SRC" ]; then
+            cp -r "$VOICES_SRC" "$VOICES_DST"
+            echo "✅ Voices copied: $(find "$VOICES_DST" -type f | wc -l) files"
+            ls -la "$VOICES_DST"
+          else
+            echo "❌ Voices not found: $VOICES_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices
+        INFOPLIST_FILE: App/Info.plist
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
+    dependencies:
+      - target: UkrainianVoicesExtension
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+
+  UkrainianVoicesExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Extension/Provider
+      - Extension/Bridge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.Extension
+        INFOPLIST_FILE: Extension/Info.plist
+        SWIFT_VERSION: "5.0"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        DEFINES_MODULE: YES
+        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+      - sdk: AudioToolbox.framework
+
+  UkrainianVoicesMac:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    postBuildScripts:
+      - name: Copy Voices
+        script: |
+          echo "📦 Copying Voices to macOS bundle..."
+          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
+          VOICES_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/Voices"
+
+          if [ -d "$VOICES_SRC" ]; then
+            mkdir -p "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
+            cp -r "$VOICES_SRC" "$VOICES_DST"
+            echo "✅ Voices copied: $(find "$VOICES_DST" -type f | wc -l) files"
+          else
+            echo "❌ Voices not found: $VOICES_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
+        INFOPLIST_FILE: App/Info.plist
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+    dependencies:
+      - target: UkrainianVoicesExtensionMac
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+
+  UkrainianVoicesExtensionMac:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Extension/Provider
+      - Extension/Bridge
+    postBuildScripts:
+      - name: Copy Voices To Extension
+        script: |
+          echo "📦 Copying Voices to extension bundle..."
+          VOICES_SRC="${SRCROOT}/Extension/Resources/Voices"
+          VOICES_DST="${BUILT_PRODUCTS_DIR}/${FULL_PRODUCT_NAME}/Contents/Resources/Voices"
+
+          if [ -d "$VOICES_SRC" ]; then
+            mkdir -p "${BUILT_PRODUCTS_DIR}/${FULL_PRODUCT_NAME}/Contents/Resources"
+            cp -r "$VOICES_SRC" "$VOICES_DST"
+            echo "✅ Extension voices copied: $(find "$VOICES_DST" -type f | wc -l) files"
+          else
+            echo "❌ Voices not found: $VOICES_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac.Extension
+        INFOPLIST_FILE: Extension/Info.plist
+        SWIFT_VERSION: "5.0"
+        CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+        SWIFT_OBJC_BRIDGING_HEADER: Extension/Bridge/UkrainianVoices-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: AVFAudio.framework
+      - sdk: AudioToolbox.framework

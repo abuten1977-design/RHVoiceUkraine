@@ -151,9 +151,6 @@ targets:
     sources:
       - Shared
       - Extension/Provider
-      - Extension/Models
-      - Extension/Services
-      - Extension/Views
     postBuildScripts:
       - name: Copy Voices to Extension
         script: |
@@ -241,9 +238,6 @@ targets:
     sources:
       - Shared
       - Extension/Provider
-      - Extension/Models
-      - Extension/Services
-      - Extension/Views
     postBuildScripts:
       - name: Copy RHVoiceData to Extension
         script: |

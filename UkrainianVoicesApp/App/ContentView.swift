@@ -137,6 +137,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var rate: Double
     @Published var volume: Double
     @Published var speedMultiplier: Double
+    @Published var pitch: Double
     @Published var sentencePause: Double
     @Published var testText: String
     @Published var enabledVoiceIdentifiers: Set<String>
@@ -162,6 +163,7 @@ private final class ContentViewModel: ObservableObject {
         self.rate = initialRate
         self.volume = initialVolume
         self.speedMultiplier = initialSpeedMultiplier
+        self.pitch = 1.0
         self.sentencePause = initialSentencePause
         self.testText = "Привіт! Це тест українського голосу."
         self.enabledVoiceIdentifiers = storedEnabled.isEmpty ? defaultEnabledVoiceIdentifiers : storedEnabled

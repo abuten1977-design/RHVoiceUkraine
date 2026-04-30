@@ -315,8 +315,6 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
         copied += toCopy;
     }
 
-    }
-
     bool playbackComplete = false;
     if (state->queuedSamples.load(std::memory_order_acquire) == 0) {
         const bool chunkExhausted = (!state->currentChunk ||
