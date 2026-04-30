@@ -58,6 +58,7 @@ private struct VoiceSettingsState: Equatable {
     var volume = 1.0
     var speedMultiplier = 1.0
     var sentencePause = 0.0
+    var pitch = 1.0
 }
 
 private let voiceCatalog: [VoiceDefinition] = RHVoiceSharedSettings.voiceCatalog.map(VoiceDefinition.init)
@@ -449,7 +450,7 @@ private final class ContentViewModel: ObservableObject {
             volume: volume,
             speedMultiplier: speedMultiplier,
             sentencePause: sentencePause,
-            pitch: 1.0
+            pitch: pitch
         )
         let perVoice = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice -> (String, RHVoicePerVoiceSettings) in
             let state = voiceSettingsByIdentifier[voice.identifier] ?? VoiceSettingsState(
@@ -468,7 +469,7 @@ private final class ContentViewModel: ObservableObject {
                         volume: state.volume,
                         speedMultiplier: state.speedMultiplier,
                         sentencePause: state.sentencePause,
-                        pitch: 1.0
+                        pitch: state.pitch
                     )
                 )
             )
