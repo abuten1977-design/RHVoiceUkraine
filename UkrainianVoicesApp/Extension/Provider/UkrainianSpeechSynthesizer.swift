@@ -123,7 +123,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { Self.staticVoices }
+        get {
+            let enabled = Set(RHVoiceSharedSettingsStore.loadSnapshot().enabledVoiceIdentifiers)
+            return Self.staticVoices.filter { enabled.contains($0.identifier) }
+        }
         set { }
     }
 
