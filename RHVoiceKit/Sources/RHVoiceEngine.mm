@@ -63,6 +63,8 @@ struct EngineState {
     std::atomic<bool> synthesisDone{false};
     NSCondition* dataCondition = nil;
 
+    bool ownsQueue = false; // true only when queue is heap-allocated
+
     ~EngineState() {
         // Drain and release any remaining chunks
         if (queue) {
@@ -70,7 +72,7 @@ struct EngineState {
             while (queue->pop(chunkPtr)) {
                 if (chunkPtr) CFBridgingRelease(chunkPtr);
             }
-            delete queue;
+            if (ownsQueue) delete queue;
         }
     }
 };
@@ -660,6 +662,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     auto state = std::make_shared<EngineState>();
 
     state->queue = new (std::nothrow) ThreadSafeRingBuffer<void*>();
+    state->ownsQueue = true;
     if (!state->queue) {
         NSLog(@"❌ synthesizeStreaming failed: queue allocation failed");
         return;
