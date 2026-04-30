@@ -23,7 +23,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     // Lock-free audio buffer — replaces DispatchSemaphore + [Float] array
     private let audioBuffer = RHVoiceAudioBuffer()
-    private let preBufferFrames: Int = 800 // 33ms at 24kHz
+    private let preBufferFrames: Int = 1200 // 50ms at 24kHz
 
     // Static voice list — no dependency on shared settings at init time.
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [

@@ -102,7 +102,7 @@ struct AudioRequestState {
 // MARK: - Thread-local pointer to current EngineState
 
 static __thread EngineState* tls_engineState = nullptr;
-static constexpr NSTimeInterval kCancelWaitTimeoutSec = 0.15; // Reduced from 0.3 to decrease latency during rapid navigation
+static constexpr NSTimeInterval kCancelWaitTimeoutSec = 0.3; // Reduced from 0.3 to decrease latency during rapid navigation
 
 static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
     NSArray<NSBundle*>* candidateBundles = @[
@@ -359,7 +359,6 @@ static int set_sample_rate_callback(int sample_rate, void* user_data) {
 }
 
 static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
-    NSLog(@"🔊 play_speech_callback: count=%u user_data=%p tls=%p", count, user_data, tls_engineState);
     // Prefer user_data over TLS — works across threads
     EngineState* state = static_cast<EngineState*>(user_data);
     if (!state) state = tls_engineState;
@@ -516,17 +515,23 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // Detect SSML: VoiceOver sends rate/pitch/volume via SSML prosody tags
     BOOL isSSML = [text containsString:@"<"];
 
-    // Map rate (default 1.0) to Polish format (0.5-2.0, default 1.0)
-    // The input 'rate' is already a multiplier where 1.0 is neutral.
-    double polishRate = fmax(0.5, rate * 2.0); 
-    double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5)); // pitch 1.0 -> 1.0
-
-    // Polish project formula (proven to work):
-    p.absolute_rate = (polishRate - 1.0);     // 1.0 -> 0.0 (neutral)
-    p.relative_rate = polishRate;              // 1.0 -> 1.0 (neutral)
-    p.absolute_pitch = (polishPitch - 1.0);   // 1.0 -> 0.0 (neutral)
-    p.relative_pitch = polishPitch;            // 1.0 -> 1.0 (neutral)
-    p.relative_volume = volume > 0 ? volume : 1.0;
+    if (isSSML) {
+        // For SSML (VoiceOver): let prosody tags control everything
+        p.absolute_rate = 0.0;
+        p.relative_rate = 1.0;
+        p.absolute_pitch = 0.0;
+        p.relative_pitch = 1.0;
+        p.relative_volume = 1.0;
+    } else {
+        // For plain text (Preview): apply our parameters
+        double polishRate = fmax(0.5, rate * 2.0);
+        double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5));
+        p.absolute_rate = (polishRate - 1.0);
+        p.relative_rate = polishRate;
+        p.absolute_pitch = (polishPitch - 1.0);
+        p.relative_pitch = polishPitch;
+        p.relative_volume = volume > 0 ? volume : 1.0;
+    }
 
     const char* t = [text UTF8String];
     NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
