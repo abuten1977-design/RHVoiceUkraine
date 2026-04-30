@@ -515,23 +515,15 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     // Detect SSML: VoiceOver sends rate/pitch/volume via SSML prosody tags
     BOOL isSSML = [text containsString:@"<"];
 
-    if (isSSML) {
-        // For SSML (VoiceOver): let prosody tags control everything
-        p.absolute_rate = 0.0;
-        p.relative_rate = 1.0;
-        p.absolute_pitch = 0.0;
-        p.relative_pitch = 1.0;
-        p.relative_volume = 1.0;
-    } else {
-        // For plain text (Preview): apply our parameters
-        double polishRate = fmax(0.5, rate * 2.0);
-        double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5));
-        p.absolute_rate = (polishRate - 1.0);
-        p.relative_rate = polishRate;
-        p.absolute_pitch = (polishPitch - 1.0);
-        p.relative_pitch = polishPitch;
-        p.relative_volume = volume > 0 ? volume : 1.0;
-    }
+    // Apply rate/volume/pitch from arguments for both SSML and plain text.
+    // For SSML, these combine with prosody tags from VoiceOver.
+    double polishRate = fmax(0.5, rate * 2.0);
+    double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5));
+    p.absolute_rate = (polishRate - 1.0);
+    p.relative_rate = polishRate;
+    p.absolute_pitch = (polishPitch - 1.0);
+    p.relative_pitch = polishPitch;
+    p.relative_volume = volume > 0 ? volume : 1.0;
 
     const char* t = [text UTF8String];
     NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
