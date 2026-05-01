@@ -5,6 +5,12 @@ import CoreMedia
 import Foundation
 import RHVoiceKit
 
+private func rhLog(_ msg: String) {
+    msg.withCString { RHVoiceDebugLogString($0) }
+}
+
+
+
 private enum RHVoiceParameter: AUParameterAddress {
     case rate = 1
     case volume = 2
@@ -138,6 +144,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let reqId = requestCounter
         let request = resolvedRequest(for: speechRequest)
 
+        rhLog("req#\(reqId) START voice=\(request.voiceProfileName) rate=\(String(format: "%.2f", request.settings.rate)) vol=\(String(format: "%.2f", request.settings.volume)) pitch=\(String(format: "%.2f", request.settings.pitch)) text=\(request.text.count) chars")
         NSLog("[RHVOICE_TIMING] req#%d START voice=%@ rate=%.2f vol=%.2f pitch=%.2f text=%d chars",
               reqId, request.voiceProfileName, request.settings.rate, request.settings.volume,
               request.settings.pitch, request.text.count)
@@ -256,6 +263,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let base = snapshot.effectiveSettings(for: descriptor.identifier)
 
         // rateValue default = 0.5 → multiplier 1.0 (neutral)
+        let ssmlPreview = String(speechRequest.ssmlRepresentation.prefix(300))
+        rhLog("ssml: \(ssmlPreview)")
         let voRateMultiplier  = Double(rateValue) / 0.5
         let voPitchMultiplier = Double(pitchValue) / 1.0
 

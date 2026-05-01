@@ -55,6 +55,7 @@
 		506745DB112D1532C9C2AD8D /* HTS_audio.c in Sources */ = {isa = PBXBuildFile; fileRef = 5C706F38FB146185F548F3E0 /* HTS_audio.c */; };
 		528AD249739E87451E97CB8A /* test1.txt in Resources */ = {isa = PBXBuildFile; fileRef = 38CD5A7254D0DBADFF9D55B6 /* test1.txt */; };
 		5361E5B92C79BCBFCA644B77 /* RHVoiceSelfTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */; };
+		558426A951B1C697BDA0B9FA /* RHVoiceDebugLog.h in Headers */ = {isa = PBXBuildFile; fileRef = CF590FCC455E291882CD25AF /* RHVoiceDebugLog.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		55BCB58D8FE2879B5D774927 /* HTS_model.c in Sources */ = {isa = PBXBuildFile; fileRef = D9B1B6E0153C29DDB84C39D7 /* HTS_model.c */; };
 		57F36CDA85F309EA50A78B64 /* sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = 972E54B65169F1EEB09D9645 /* sonic.wav */; };
 		596D90DFE36FEF695B3D6181 /* speech_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8EA50BC82A343E987BC1AEFC /* speech_processor.cpp */; };
@@ -72,6 +73,7 @@
 		65E83ABCFC9224E4B64235B6 /* file_playback_stream_impl.hpp in Headers */ = {isa = PBXBuildFile; fileRef = DD5D18C426012296F4AAE4AA /* file_playback_stream_impl.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		66DF2F4B0C67C03907A5177E /* talking_2x.wav in Resources */ = {isa = PBXBuildFile; fileRef = B97939715AC87B468AB65EF4 /* talking_2x.wav */; };
 		68046B4DCA60D004A3C6C9F0 /* userdict_parser.h in Headers */ = {isa = PBXBuildFile; fileRef = B547480B11C0C06964299A03 /* userdict_parser.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		683E381520860F908B564DF7 /* RHVoiceDebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */; };
 		69CFD1576CC03A0FD18C4A04 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
 		6B281419A96C86424E7D7C78 /* tts_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 06A9E11FCA9BC2991F48D26C /* tts_api.cpp */; };
 		6C64251246F751F94A5357A7 /* libsonic0.symbols in Resources */ = {isa = PBXBuildFile; fileRef = FB6528FFD6007398E0C9C7BD /* libsonic0.symbols */; };
@@ -96,6 +98,7 @@
 		849280A82CEB04B6CB260F8B /* lts.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D793177FFBA9248834095E39 /* lts.cpp */; };
 		85E622A8948437D510BE7EDF /* AudioUnitFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CC4DAD0268908920F9C1C4E /* AudioUnitFactory.swift */; };
 		87E06907937D4AB5E50F1E82 /* UkrainianSpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F339A4B56DB55C2CE79DBDC /* UkrainianSpeechSynthesizer.swift */; };
+		8C4B3A1C1A2069883F12A894 /* RHVoiceDebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */; };
 		8D61794AF26BAD75C29E7EF0 /* engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 619859F40F0EF60E2D0033FF /* engine.cpp */; };
 		8DEBB67F90F1B1BA4E20B9AD /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = E135D3DEF710767D79216462 /* utils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8E8BB496F5F02186BFB9A0D4 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
@@ -117,6 +120,7 @@
 		A438418C31E53466BD483E71 /* RHVoiceSynthesisRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86D222599D638CDE7C241F5D /* RHVoiceSynthesisRuntime.swift */; };
 		A4CA3CBF3C1C6B56AB5D51F7 /* AudioUnitFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CC4DAD0268908920F9C1C4E /* AudioUnitFactory.swift */; };
 		A6768833DB1136E0A4C1BD90 /* stereo_test.wav in Resources */ = {isa = PBXBuildFile; fileRef = 52A6FA8233FE41C30B5E3A9D /* stereo_test.wav */; };
+		A7245F4F0940699EB68B2B14 /* RHVoiceDebugLog.h in Headers */ = {isa = PBXBuildFile; fileRef = CF590FCC455E291882CD25AF /* RHVoiceDebugLog.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A7290E22EBE504C879490643 /* RHVoiceEngine+Parameters.mm in Sources */ = {isa = PBXBuildFile; fileRef = BE98A52657921CE121E04C75 /* RHVoiceEngine+Parameters.mm */; };
 		A7DB5A18B34F793284C1D7C6 /* index.md in Resources */ = {isa = PBXBuildFile; fileRef = 5857D122CD97ED9ACCC4EA3A /* index.md */; };
 		A7E87F9ACBC7BB68B8CEBED9 /* HTS_engine.c in Sources */ = {isa = PBXBuildFile; fileRef = 2F2B38FFF37C6926470366CF /* HTS_engine.c */; };
@@ -378,6 +382,7 @@
 		9F8283EE1B43A4D36C178161 /* brazilian_portuguese.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = brazilian_portuguese.cpp; sourceTree = "<group>"; };
 		A0E3AE90E9AC7EB61A4ADB07 /* copyright */ = {isa = PBXFileReference; path = copyright; sourceTree = "<group>"; };
 		A221799EFC8865EDA8E3A5EA /* Main.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = Main.java; sourceTree = "<group>"; };
+		A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RHVoiceDebugLog.m; sourceTree = "<group>"; };
 		A3C3AF4B8B9151C3159D3D12 /* soundstretch.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = soundstretch.wav; sourceTree = "<group>"; };
 		A98A3D0A7D9319EE30E040C2 /* rules */ = {isa = PBXFileReference; path = rules; sourceTree = "<group>"; };
 		AD4A7F8E301506474EEA5261 /* playback_stream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = playback_stream.cpp; sourceTree = "<group>"; };
@@ -400,6 +405,7 @@
 		CDCB7806B0857EAE8DDDF1DE /* sonic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sonic.c; sourceTree = "<group>"; };
 		CE3DD68D3AB8E680055D89C0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		CEE81E11B972201DDAAE7C24 /* data_only_language.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = data_only_language.cpp; sourceTree = "<group>"; };
+		CF590FCC455E291882CD25AF /* RHVoiceDebugLog.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RHVoiceDebugLog.h; sourceTree = "<group>"; };
 		CF7C8FFB74AC79C3DFF3FC43 /* HTS_pstream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_pstream.c; sourceTree = "<group>"; };
 		CF7E3AEF6CC5D8F62AD22078 /* RHVoiceKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RHVoiceKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D00217A3EB0AA03BFA65831B /* config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
@@ -539,6 +545,8 @@
 			children = (
 				BCF2A00B910754AE0FFEF88D /* RHVoice_common.h */,
 				80832B21A94FE2AB793DA2C6 /* RHVoice.h */,
+				CF590FCC455E291882CD25AF /* RHVoiceDebugLog.h */,
+				A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */,
 				E54153AD541703234B228072 /* RHVoiceEngine.h */,
 				DA4BEFD7AB65DCD7844523D6 /* RHVoiceEngine.mm */,
 				D90479C4C5ADDA34A6450D8D /* RHVoiceEngine+Parameters.h */,
@@ -779,6 +787,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1F200EBD9621AD8B9A944143 /* RHVoice.h in Headers */,
+				A7245F4F0940699EB68B2B14 /* RHVoiceDebugLog.h in Headers */,
 				7FB7FAA514541523A1CAEAAA /* RHVoiceEngine+Parameters.h in Headers */,
 				5DDBDB8F1A2A38EBEE73F5DE /* RHVoiceEngine.h in Headers */,
 				7D6A4D3DEE0E1858C7E5C319 /* RHVoiceKit.h in Headers */,
@@ -793,6 +802,7 @@
 				318CF975335D55F6E4924ABA /* HTS_engine.h in Headers */,
 				072668F837F98ED34904ACC8 /* HTS_hidden.h in Headers */,
 				2940F1F3A3B009F6AE501C72 /* RHVoice.h in Headers */,
+				558426A951B1C697BDA0B9FA /* RHVoiceDebugLog.h in Headers */,
 				B49E17AB786E2EE016D12E5B /* RHVoiceEngine+Parameters.h in Headers */,
 				FCB227211839F9F4105AAB4D /* RHVoiceEngine.h in Headers */,
 				A4221CAD67A474E040D3088C /* RHVoiceKit.h in Headers */,
@@ -1180,6 +1190,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				683E381520860F908B564DF7 /* RHVoiceDebugLog.m in Sources */,
 				02C6688C43F47A69F8650CF9 /* RHVoiceEngine+Parameters.mm in Sources */,
 				184BB8C61E94E9F02C83CFC5 /* RHVoiceEngine.mm in Sources */,
 			);
@@ -1209,6 +1220,7 @@
 				2BF768D36BC34DDBA3C8B5E0 /* HTS_pstream.c in Sources */,
 				F836E22B4C1993AF1B33C57C /* HTS_sstream.c in Sources */,
 				5BF03E478CA771F2626D32C7 /* HTS_vocoder.c in Sources */,
+				8C4B3A1C1A2069883F12A894 /* RHVoiceDebugLog.m in Sources */,
 				A7290E22EBE504C879490643 /* RHVoiceEngine+Parameters.mm in Sources */,
 				406B177A72A200287312998E /* RHVoiceEngine.mm in Sources */,
 				9BC2808B4A1A87594B13876D /* audio.cpp in Sources */,

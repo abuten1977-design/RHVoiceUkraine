@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include "RHVoiceDebugLog.h"
 
 // MARK: - ThreadSafeRingBuffer
 // Internal SPSC queue used by the Stage 4 hybrid model:
@@ -537,8 +538,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     const char* t = [text UTF8String];
     NSString* textPreview = text.length > 300 ? [text substringToIndex:300] : text;
     NSLog(@"[RHVOICE_TIMING] buildMessage text preview: %@", textPreview);
+    RHVoiceDebugLogWrite("buildMessage text: %s", [textPreview UTF8String]);
     NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
           normalizedVoice, rate, p.absolute_rate, p.relative_rate,
+          pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
+    RHVoiceDebugLogWrite("buildMessage voice=%s rate=%.2f->abs=%.2f/rel=%.2f pitch=%.2f->abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
+          [normalizedVoice UTF8String], rate, p.absolute_rate, p.relative_rate,
           pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
 
     RHVoice_message_type msgType = isSSML ? RHVoice_message_ssml : RHVoice_message_text;
@@ -765,6 +770,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     if (!state) {
         [self.activeStateCondition unlock];
         NSLog(@"[RHVOICE_TIMING] cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+        RHVoiceDebugLogWrite("cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
         return;
     }
 
@@ -777,6 +783,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     }
     [self.activeStateCondition unlock];
     NSLog(@"[RHVOICE_TIMING] cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+    RHVoiceDebugLogWrite("cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
 }
 
 // MARK: - Int16 → Float32
