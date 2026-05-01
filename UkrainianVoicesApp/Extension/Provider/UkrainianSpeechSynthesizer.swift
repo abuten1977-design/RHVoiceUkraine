@@ -233,21 +233,22 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         rhLog("ssml: \(ssmlPreview)")
         rhLog("snapshot rev=\(snapshot.revision) updated=\(snapshot.updatedAt)")
 
-        NSLog("📊 SNAPSHOT base.rate=%.2f base.volume=%.2f base.pitch=%.2f",
-              base.rate, base.volume, base.pitch)
-
-        rhLog("final: rate=\(String(format: "%.2f", base.rate)) vol=\(String(format: "%.2f", base.volume)) pitch=\(String(format: "%.2f", base.pitch))")
+        // VoiceOver controls rate/volume/pitch via SSML prosody.
+        // App controls only speedMultiplier and sentencePause.
+        // rate/volume/pitch passed as neutral (0.5/1.0/1.0) so buildMessage SSML branch stays neutral.
+        NSLog("📊 VO final: speedMultiplier=%.2f sentencePause=%.2f, rate/volume/pitch controlled by SSML",
+              base.speedMultiplier, base.sentencePause)
 
         return RHVoiceSynthesisRequest(
             text: speechRequest.ssmlRepresentation,
             voiceIdentifier: descriptor.identifier,
             voiceProfileName: descriptor.profileName,
             settings: RHVoiceSpeechSettings(
-                rate:            base.rate,
-                volume:          base.volume,
+                rate:            0.5,
+                volume:          1.0,
                 speedMultiplier: base.speedMultiplier,
                 sentencePause:   base.sentencePause,
-                pitch:           base.pitch
+                pitch:           1.0
             ),
             source: .system
         )
