@@ -288,6 +288,7 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
             return NO;
         }
         state->startedPlaying.store(true, std::memory_order_release);
+        RHVoiceDebugLogWrite("renderFrames: first audio, available=%zu preBuffer=%zu", available, preBufferFrames);
     }
 
     size_t copied = 0;
@@ -325,6 +326,9 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
         playbackComplete = chunkExhausted && state->completed.load(std::memory_order_acquire);
     }
 
+    if (playbackComplete) {
+        RHVoiceDebugLogWrite("renderFrames: playback complete, copied=%zu", copied);
+    }
     if (didComplete) {
         *didComplete = playbackComplete;
     }

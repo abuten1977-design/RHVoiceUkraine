@@ -150,16 +150,22 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
               request.settings.pitch, request.text.count)
 
         rhvoiceEngine.cancel()
-        NSLog("[RHVOICE_TIMING] req#%d cancel done: %.1f ms", reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000)
+        let tCancel = (CFAbsoluteTimeGetCurrent()-t0)*1000
+        NSLog("[RHVOICE_TIMING] req#%d cancel done: %.1f ms", reqId, tCancel)
+        rhLog("req#\(reqId) cancel done: \(String(format: "%.1f", tCancel)) ms")
 
         let requestToken = audioBuffer.beginRequest()
-        NSLog("[RHVOICE_TIMING] req#%d beginRequest: %.1f ms", reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000)
+        let tBegin = (CFAbsoluteTimeGetCurrent()-t0)*1000
+        NSLog("[RHVOICE_TIMING] req#%d beginRequest: %.1f ms", reqId, tBegin)
+        rhLog("req#\(reqId) beginRequest: \(String(format: "%.1f", tBegin)) ms")
 
         var firstChunk = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
             let tStream = CFAbsoluteTimeGetCurrent()
-            NSLog("[RHVOICE_TIMING] req#%d streaming start: %.1f ms from request", reqId, (tStream-t0)*1000)
+            let tStreamMs = (tStream-t0)*1000
+            NSLog("[RHVOICE_TIMING] req#%d streaming start: %.1f ms from request", reqId, tStreamMs)
+            rhLog("req#\(reqId) streaming start: \(String(format: "%.1f", tStreamMs)) ms")
 
             self.rhvoiceEngine.synthesizeStreaming(
                 request.text,
@@ -170,14 +176,18 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             ) { samples, count, _ in
                 if firstChunk {
                     firstChunk = false
+                    let tChunk = (CFAbsoluteTimeGetCurrent()-t0)*1000
                     NSLog("[RHVOICE_TIMING] req#%d first chunk: %.1f ms from request, %u samples",
-                          reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000, count)
+                          reqId, tChunk, count)
+                    rhLog("req#\(reqId) first chunk: \(String(format: "%.1f", tChunk)) ms, \(count) samples")
                 }
                 self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
             }
 
             self.audioBuffer.markCompleted(with: requestToken)
-            NSLog("[RHVOICE_TIMING] req#%d completed: %.1f ms from request", reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000)
+            let tDone = (CFAbsoluteTimeGetCurrent()-t0)*1000
+            NSLog("[RHVOICE_TIMING] req#%d completed: %.1f ms from request", reqId, tDone)
+            rhLog("req#\(reqId) completed: \(String(format: "%.1f", tDone)) ms")
         }
     }
 
@@ -263,13 +273,20 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let base = snapshot.effectiveSettings(for: descriptor.identifier)
 
         // rateValue default = 0.5 → multiplier 1.0 (neutral)
+        rhLog("voice.id: \(identifier) voice.name: \(speechRequest.voice.name)")
         let ssmlPreview = String(speechRequest.ssmlRepresentation.prefix(300))
         rhLog("ssml: \(ssmlPreview)")
+        rhLog("snapshot rev=\(snapshot.revision) updated=\(snapshot.updatedAt)")
         let voRateMultiplier  = Double(rateValue) / 0.5
         let voPitchMultiplier = Double(pitchValue) / 1.0
 
         NSLog("ðŸ“Š SNAPSHOT volume=%.2f base.volume=%.2f volumeValue=%.2f", 
               snapshot.generalSettings.volume, base.volume, volumeValue)
+
+        let finalRate = base.rate * voRateMultiplier
+        let finalVol = base.volume * Double(volumeValue)
+        let finalPitch = base.pitch * voPitchMultiplier
+        rhLog("final: rate=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVol)) pitch=\(String(format: "%.2f", finalPitch))")
 
         return RHVoiceSynthesisRequest(
             text: speechRequest.ssmlRepresentation,
