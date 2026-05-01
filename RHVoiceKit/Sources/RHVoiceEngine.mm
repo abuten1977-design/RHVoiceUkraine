@@ -521,13 +521,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     BOOL isSSML = [text containsString:@"<"];
 
     if (isSSML) {
-        // For SSML: rate is already a multiplier from app settings.
-        // Use only relative_rate (not absolute) to avoid conflict with SSML prosody.
+        // VoiceOver controls rate/pitch/volume via SSML prosody tags — stay neutral
         p.absolute_rate = 0.0;
-        p.relative_rate = fmax(0.5, rate);  // rate as-is, no *2.0
+        p.relative_rate = 1.0;
         p.absolute_pitch = 0.0;
-        p.relative_pitch = fmax(0.5, pitch);
-        p.relative_volume = volume > 0 ? volume : 1.0;
+        p.relative_pitch = 1.0;
+        p.relative_volume = 1.0;
     } else {
         // For plain text (Preview): full Polish formula
         double polishRate = fmax(0.5, rate * 2.0);
