@@ -79,43 +79,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             busses: [outputBus]
         )
 
-        // Minimal parameter tree — no groups, just flat parameters
-        let rateParam = AUParameterTree.createParameter(
-            withIdentifier: "rate", name: "Rate",
-            address: RHVoiceParameter.rate.rawValue,
-            min: 0.1, max: 2.0, unit: .rate, unitName: nil,
-            valueStrings: nil, dependentParameters: nil)
-        let volumeParam = AUParameterTree.createParameter(
-            withIdentifier: "volume", name: "Volume",
-            address: RHVoiceParameter.volume.rawValue,
-            min: 0.0, max: 1.0, unit: .linearGain, unitName: nil,
-            valueStrings: nil, dependentParameters: nil)
-        let pitchParam = AUParameterTree.createParameter(
-            withIdentifier: "pitch", name: "Pitch",
-            address: RHVoiceParameter.pitch.rawValue,
-            min: 0.5, max: 2.0, unit: .customUnit, unitName: nil,
-            valueStrings: nil, dependentParameters: nil)
-
-        let tree = AUParameterTree.createTree(withChildren: [rateParam, volumeParam, pitchParam])
-        tree.implementorValueProvider = { [weak self] param in
-            guard let self else { return 0 }
-            switch param.address {
-            case RHVoiceParameter.rate.rawValue: return self.rateValue
-            case RHVoiceParameter.volume.rawValue: return self.volumeValue
-            case RHVoiceParameter.pitch.rawValue: return self.pitchValue
-            default: return 0
-            }
-        }
-        tree.implementorValueObserver = { [weak self] param, value in
-            guard let self else { return }
-            switch param.address {
-            case RHVoiceParameter.rate.rawValue: self.rateValue = value
-            case RHVoiceParameter.volume.rawValue: self.volumeValue = value
-            case RHVoiceParameter.pitch.rawValue: self.pitchValue = value
-            default: break
-            }
-        }
-        self.parameterTree = tree
+        // No AUParameterTree — settings come from App Group snapshot.
+        // Having rate/volume/pitch parameters here breaks VoiceOver quick settings
+        // (VO+Cmd+Shift+arrows shows numbers instead of language/voice selection).
     }
 
     public override var outputBusses: AUAudioUnitBusArray {
