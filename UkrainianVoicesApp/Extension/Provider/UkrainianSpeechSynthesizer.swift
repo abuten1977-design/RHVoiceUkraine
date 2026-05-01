@@ -224,28 +224,33 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     /// Modify SSML prosody rate by multiplying with app speedMultiplier.
-    /// VoiceOver sends rate="224%", speedMultiplier=2.0 → final rate="448%", capped at 500%.
+    /// VoiceOver sends rate="423.99997%", speedMultiplier=2.0 → final rate="500.00%", capped at 500%.
     private static func applySpeedMultiplier(to ssml: String, multiplier: Double) -> String {
-        guard multiplier != 1.0, ssml.contains("rate=\"") else {
-            NSLog("📊 SSML speed: multiplier=%.2f, no change needed", multiplier)
+        guard multiplier != 1.0 else {
+            rhLog("SSML speed: multiplier=1.0, no change")
+            return ssml
+        }
+        guard ssml.contains("rate=\"") else {
+            rhLog("SSML speed: no prosody rate found")
             return ssml
         }
 
-        var result = ssml
-        // Match rate="NNN%" pattern
-        let pattern = try? NSRegularExpression(pattern: #"rate="(\d+)%""#)
-        if let match = pattern?.firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
-           let range = Range(match.range(at: 1), in: ssml),
-           let originalRate = Double(ssml[range]) {
-            let newRate = min(originalRate * multiplier, 500.0)
-            let newRateStr = String(format: "%.0f", newRate)
-            result = (result as NSString).replacingCharacters(
-                in: match.range,
-                with: "rate=\"\(newRateStr)%\""
-            )
-            NSLog("📊 SSML speed: original=%d%% × multiplier=%.1f → final=%@%%",
-                  Int(originalRate), multiplier, newRateStr)
+        // Match decimal and integer: rate="423.99997%" or rate="224%"
+        let pattern = try? NSRegularExpression(pattern: #"rate="([0-9]+(?:\.[0-9]+)?)%""#)
+        guard let match = pattern?.firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
+              let valueRange = Range(match.range(at: 1), in: ssml),
+              let originalRate = Double(ssml[valueRange]) else {
+            rhLog("SSML speed: unparseable rate")
+            return ssml
         }
+
+        let finalRate = min(originalRate * multiplier, 500.0)
+        let finalStr = String(format: "%.2f", finalRate)
+        let result = (ssml as NSString).replacingCharacters(
+            in: match.range,
+            with: "rate=\"\(finalStr)%\""
+        )
+        rhLog("SSML speed: original=\(String(format: "%.2f", originalRate))% × multiplier=\(String(format: "%.2f", multiplier)) → final=\(finalStr)%")
         return result
     }
 
