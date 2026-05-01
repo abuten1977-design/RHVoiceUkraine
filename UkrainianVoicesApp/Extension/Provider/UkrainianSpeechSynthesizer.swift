@@ -123,10 +123,16 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             NSLog("[RHVOICE_TIMING] req#%d streaming start: %.1f ms from request", reqId, tStreamMs)
             rhLog("req#\(reqId) streaming start: \(String(format: "%.1f", tStreamMs)) ms")
 
+            // Apply app speedMultiplier by modifying SSML prosody rate
+            let finalText = Self.applySpeedMultiplier(
+                to: request.text,
+                multiplier: request.settings.speedMultiplier
+            )
+
             self.rhvoiceEngine.synthesizeStreaming(
-                request.text,
+                finalText,
                 voice: request.voiceProfileName,
-                rate: request.settings.rate * request.settings.speedMultiplier,
+                rate: request.settings.rate,
                 volume: request.settings.volume,
                 pitch: request.settings.pitch
             ) { samples, count, _ in
@@ -215,6 +221,32 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     public override var internalRenderBlock: AUInternalRenderBlock {
         performRender
+    }
+
+    /// Modify SSML prosody rate by multiplying with app speedMultiplier.
+    /// VoiceOver sends rate="224%", speedMultiplier=2.0 → final rate="448%", capped at 500%.
+    private static func applySpeedMultiplier(to ssml: String, multiplier: Double) -> String {
+        guard multiplier != 1.0, ssml.contains("rate=\"") else {
+            NSLog("📊 SSML speed: multiplier=%.2f, no change needed", multiplier)
+            return ssml
+        }
+
+        var result = ssml
+        // Match rate="NNN%" pattern
+        let pattern = try? NSRegularExpression(pattern: #"rate="(\d+)%""#)
+        if let match = pattern?.firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
+           let range = Range(match.range(at: 1), in: ssml),
+           let originalRate = Double(ssml[range]) {
+            let newRate = min(originalRate * multiplier, 500.0)
+            let newRateStr = String(format: "%.0f", newRate)
+            result = (result as NSString).replacingCharacters(
+                in: match.range,
+                with: "rate=\"\(newRateStr)%\""
+            )
+            NSLog("📊 SSML speed: original=%d%% × multiplier=%.1f → final=%@%%",
+                  Int(originalRate), multiplier, newRateStr)
+        }
+        return result
     }
 
     private func resolvedRequest(
