@@ -130,18 +130,29 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         set { }
     }
 
+    private var requestCounter: Int = 0
+
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+        let t0 = CFAbsoluteTimeGetCurrent()
+        requestCounter += 1
+        let reqId = requestCounter
         let request = resolvedRequest(for: speechRequest)
 
-        NSLog("🎤 synthesize: voice=%@ rate=%.2f vol=%.2f pitch=%.2f text=%d chars",
-              request.voiceProfileName, request.settings.rate, request.settings.volume,
+        NSLog("[RHVOICE_TIMING] req#%d START voice=%@ rate=%.2f vol=%.2f pitch=%.2f text=%d chars",
+              reqId, request.voiceProfileName, request.settings.rate, request.settings.volume,
               request.settings.pitch, request.text.count)
 
         rhvoiceEngine.cancel()
-        let requestToken = audioBuffer.beginRequest()
+        NSLog("[RHVOICE_TIMING] req#%d cancel done: %.1f ms", reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000)
 
+        let requestToken = audioBuffer.beginRequest()
+        NSLog("[RHVOICE_TIMING] req#%d beginRequest: %.1f ms", reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000)
+
+        var firstChunk = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
+            let tStream = CFAbsoluteTimeGetCurrent()
+            NSLog("[RHVOICE_TIMING] req#%d streaming start: %.1f ms from request", reqId, (tStream-t0)*1000)
 
             self.rhvoiceEngine.synthesizeStreaming(
                 request.text,
@@ -150,10 +161,16 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 volume: request.settings.volume,
                 pitch: request.settings.pitch
             ) { samples, count, _ in
+                if firstChunk {
+                    firstChunk = false
+                    NSLog("[RHVOICE_TIMING] req#%d first chunk: %.1f ms from request, %u samples",
+                          reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000, count)
+                }
                 self.audioBuffer.appendSamples(samples, count: count, token: requestToken)
             }
 
             self.audioBuffer.markCompleted(with: requestToken)
+            NSLog("[RHVOICE_TIMING] req#%d completed: %.1f ms from request", reqId, (CFAbsoluteTimeGetCurrent()-t0)*1000)
         }
     }
 

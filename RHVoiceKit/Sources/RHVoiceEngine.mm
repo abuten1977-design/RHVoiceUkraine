@@ -748,26 +748,24 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 }
 
 - (void)cancel {
+    CFAbsoluteTime t0 = CFAbsoluteTimeGetCurrent();
     [self.activeStateCondition lock];
     EngineState* state = self.activeStreamingState;
     if (!state) {
         [self.activeStateCondition unlock];
+        NSLog(@"[RHVOICE_TIMING] cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
         return;
     }
 
+    // Non-blocking: set flag and wake consumer, don't wait
     state->cancelled.store(true, std::memory_order_release);
-    [state->dataCondition lock];
-    [state->dataCondition broadcast];
-    [state->dataCondition unlock];
-
-    NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:kCancelWaitTimeoutSec];
-    while (self.activeStreamingState == state) {
-        if (![self.activeStateCondition waitUntilDate:deadline]) {
-            NSLog(@"⚠️ cancel timeout after %.1f sec; continuing without blocking caller", kCancelWaitTimeoutSec);
-            break;
-        }
+    if (state->dataCondition) {
+        [state->dataCondition lock];
+        [state->dataCondition broadcast];
+        [state->dataCondition unlock];
     }
     [self.activeStateCondition unlock];
+    NSLog(@"[RHVOICE_TIMING] cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
 }
 
 // MARK: - Int16 → Float32
