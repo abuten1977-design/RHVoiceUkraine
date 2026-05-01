@@ -11,14 +11,6 @@ private func rhLog(_ msg: String) {
 
 
 
-private enum RHVoiceParameter: AUParameterAddress {
-    case rate = 1
-    case volume = 2
-    case speedMultiplier = 3
-    case sentencePause = 4
-    case pitch = 5
-}
-
 @available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
@@ -45,11 +37,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private var outputBussesStorage: AUAudioUnitBusArray!
 
-    private var rateValue: AUValue = 0.5
-    private var volumeValue: AUValue = 1.0
-    private var pitchValue: AUValue = 1.0
-    private var speedMultiplierValue: AUValue = 1.0
-    private var sentencePauseValue: AUValue = 0.0
+    // AU parameter values removed — settings come only from App Group snapshot.
+    // Having AUValue properties here caused VoiceOver to expose numeric parameters
+    // in quick settings (VO+Cmd+Shift+arrows showed percentages instead of voices).
 
     @objc
     public override init(
@@ -238,32 +228,26 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         let base = snapshot.effectiveSettings(for: descriptor.identifier)
 
-        // rateValue default = 0.5 → multiplier 1.0 (neutral)
         rhLog("voice.id: \(identifier) voice.name: \(speechRequest.voice.name)")
         let ssmlPreview = String(speechRequest.ssmlRepresentation.prefix(300))
         rhLog("ssml: \(ssmlPreview)")
         rhLog("snapshot rev=\(snapshot.revision) updated=\(snapshot.updatedAt)")
-        let voRateMultiplier  = Double(rateValue) / 0.5
-        let voPitchMultiplier = Double(pitchValue) / 1.0
 
-        NSLog("ðŸ“Š SNAPSHOT volume=%.2f base.volume=%.2f volumeValue=%.2f", 
-              snapshot.generalSettings.volume, base.volume, volumeValue)
+        NSLog("📊 SNAPSHOT base.rate=%.2f base.volume=%.2f base.pitch=%.2f",
+              base.rate, base.volume, base.pitch)
 
-        let finalRate = base.rate * voRateMultiplier
-        let finalVol = base.volume * Double(volumeValue)
-        let finalPitch = base.pitch * voPitchMultiplier
-        rhLog("final: rate=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVol)) pitch=\(String(format: "%.2f", finalPitch))")
+        rhLog("final: rate=\(String(format: "%.2f", base.rate)) vol=\(String(format: "%.2f", base.volume)) pitch=\(String(format: "%.2f", base.pitch))")
 
         return RHVoiceSynthesisRequest(
             text: speechRequest.ssmlRepresentation,
             voiceIdentifier: descriptor.identifier,
             voiceProfileName: descriptor.profileName,
             settings: RHVoiceSpeechSettings(
-                rate:            base.rate * voRateMultiplier,
-                volume:          base.volume * Double(volumeValue),
-                speedMultiplier: 1.0,
-                sentencePause:   0.0,
-                pitch:           base.pitch * voPitchMultiplier
+                rate:            base.rate,
+                volume:          base.volume,
+                speedMultiplier: base.speedMultiplier,
+                sentencePause:   base.sentencePause,
+                pitch:           base.pitch
             ),
             source: .system
         )
