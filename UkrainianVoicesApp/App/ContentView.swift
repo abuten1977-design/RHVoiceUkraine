@@ -840,21 +840,26 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(voice.name)
                         .font(.headline)
+                        .accessibilityLabel("\(voice.name), \(voice.languageTitle)\(isEnabled ? ", enabled" : ", disabled")\(isPreviewVoice ? ", current preview voice" : "")")
                     Text(voice.languageTitle)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .accessibilityHidden(true)
                     Text(isEnabled ? "Enabled for system registration" : "Disabled")
                         .font(.caption)
                         .foregroundColor(isEnabled ? .secondary : .orange)
+                        .accessibilityHidden(true)
                     if isPreviewVoice {
                         Text("Current preview voice")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .accessibilityHidden(true)
                     }
                     if settings.useCustomSettings {
                         Text("Individual settings enabled")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                            .accessibilityHidden(true)
                     }
                 }
 
