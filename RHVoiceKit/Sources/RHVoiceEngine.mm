@@ -82,7 +82,9 @@ struct AudioRequestState {
     ThreadSafeRingBuffer<void*, 2048> queue;
     std::atomic<size_t> queuedSamples{0};
     std::atomic<bool> completed{true};
+    std::atomic<bool> cancelling{false};
     std::atomic<bool> startedPlaying{false};
+    std::atomic<size_t> cancelFadeFramesRemaining{0};
     __strong NSData* currentChunk = nil;
     size_t currentChunkOffset = 0;
 
@@ -104,6 +106,7 @@ struct AudioRequestState {
 
 static __thread EngineState* tls_engineState = nullptr;
 static constexpr NSTimeInterval kCancelWaitTimeoutSec = 0.3; // Reduced from 0.3 to decrease latency during rapid navigation
+static constexpr size_t kCancelFadeFrames = 240; // 10 ms at 24 kHz
 
 static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
     NSArray<NSBundle*>* candidateBundles = @[
@@ -170,9 +173,17 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
 }
 
 - (void)cancelCurrentRequest {
-    auto state = std::make_shared<AudioRequestState>();
-    state->completed.store(true, std::memory_order_release);
-    std::atomic_store(&_activeState, state);
+    auto oldState = std::atomic_load(&_activeState);
+    if (oldState) {
+        const bool hasBufferedAudio =
+            oldState->queuedSamples.load(std::memory_order_acquire) > 0;
+
+        oldState->completed.store(true, std::memory_order_release);
+        if (hasBufferedAudio) {
+            oldState->cancelling.store(true, std::memory_order_release);
+            oldState->cancelFadeFramesRemaining.store(kCancelFadeFrames, std::memory_order_release);
+        }
+    }
 }
 
 - (BOOL)appendSamples:(const short *)samples
@@ -184,6 +195,7 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     auto activeState = std::atomic_load(&_activeState);
     if (!tokenState || tokenState.get() != activeState.get()) return NO;
     if (tokenState->completed.load(std::memory_order_acquire)) return NO;
+    if (tokenState->cancelling.load(std::memory_order_acquire)) return NO;
 
     NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
     void* retained = (__bridge_retained void*)chunk;
@@ -269,6 +281,7 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
 
     const size_t available = state->queuedSamples.load(std::memory_order_acquire);
     const bool done = state->completed.load(std::memory_order_acquire);
+    const bool cancelling = state->cancelling.load(std::memory_order_acquire);
 
     if (available == 0) {
         if (didComplete) {
@@ -284,7 +297,7 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
 
     // Hysteresis: only wait for preBufferFrames if we haven't started yet
     if (!state->startedPlaying.load(std::memory_order_acquire)) {
-        if (available < preBufferFrames && !done) {
+        if (!cancelling && available < preBufferFrames && !done) {
             return NO;
         }
         state->startedPlaying.store(true, std::memory_order_release);
@@ -293,6 +306,11 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
 
     size_t copied = 0;
     while (copied < maxFrames) {
+        size_t fadeRemaining = state->cancelFadeFramesRemaining.load(std::memory_order_acquire);
+        if (state->cancelling.load(std::memory_order_acquire) && fadeRemaining == 0) break;
+        if (!state->cancelling.load(std::memory_order_acquire) &&
+            state->queuedSamples.load(std::memory_order_acquire) == 0 &&
+            state->completed.load(std::memory_order_acquire)) break;
         if (!state->currentChunk || state->currentChunkOffset >= state->currentChunk.length / sizeof(short)) {
             if (state->currentChunk) {
                 state->currentChunk = nil;
@@ -309,18 +327,33 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
         const short* samples = (const short*)state->currentChunk.bytes;
         const size_t totalSamples = state->currentChunk.length / sizeof(short);
         const size_t remaining = totalSamples - state->currentChunkOffset;
-        const size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
+        size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
+        if (state->cancelling.load(std::memory_order_acquire)) {
+            fadeRemaining = state->cancelFadeFramesRemaining.load(std::memory_order_acquire);
+            if (fadeRemaining == 0) break;
+            toCopy = std::min(toCopy, fadeRemaining);
+        }
         for (size_t i = 0; i < toCopy; ++i) {
-            destination[copied + i] = samples[state->currentChunkOffset + i] / 32768.0f;
+            float sample = samples[state->currentChunkOffset + i] / 32768.0f;
+            if (state->cancelling.load(std::memory_order_acquire)) {
+                const float gain = (float)(fadeRemaining - i) / (float)kCancelFadeFrames;
+                sample *= gain;
+            }
+            destination[copied + i] = sample;
         }
 
         state->currentChunkOffset += toCopy;
         state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
+        if (state->cancelling.load(std::memory_order_acquire)) {
+            state->cancelFadeFramesRemaining.fetch_sub(toCopy, std::memory_order_acq_rel);
+        }
         copied += toCopy;
     }
 
     bool playbackComplete = false;
-    if (state->queuedSamples.load(std::memory_order_acquire) == 0) {
+    if (state->cancelling.load(std::memory_order_acquire)) {
+        playbackComplete = state->cancelFadeFramesRemaining.load(std::memory_order_acquire) == 0 || copied == 0;
+    } else if (state->queuedSamples.load(std::memory_order_acquire) == 0) {
         const bool chunkExhausted = (!state->currentChunk ||
             state->currentChunkOffset >= state->currentChunk.length / sizeof(short));
         playbackComplete = chunkExhausted && state->completed.load(std::memory_order_acquire);
@@ -521,12 +554,15 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     BOOL isSSML = [text containsString:@"<"];
 
     if (isSSML) {
-        // VoiceOver controls rate/pitch/volume via SSML prosody tags — stay neutral
+        // Rate/volume extracted from SSML prosody, passed via parameters
         p.absolute_rate = 0.0;
-        p.relative_rate = 1.0;
+        p.relative_rate = rate;
+        if (rate > 2.0) {
+            p.flags = RHVoice_synth_flag_dont_clip_rate;
+        }
         p.absolute_pitch = 0.0;
         p.relative_pitch = 1.0;
-        p.relative_volume = 1.0;
+        p.relative_volume = volume > 0 ? volume : 1.0;
     } else {
         // For plain text (Preview): full Polish formula
         double polishRate = fmax(0.5, rate * 2.0);
