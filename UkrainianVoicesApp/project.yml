@@ -180,7 +180,7 @@ targets:
         DEVELOPMENT_TEAM: ""
     dependencies:
       - target: RHVoiceKit
-        embed: true
+        embed: false
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
       - sdk: AudioToolbox.framework
