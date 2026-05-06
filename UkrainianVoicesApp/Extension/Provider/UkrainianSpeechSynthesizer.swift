@@ -75,7 +75,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
         get {
             let enabled = Set(RHVoiceSharedSettingsStore.loadSnapshot().enabledVoiceIdentifiers)
-            return Self.staticVoices.filter { enabled.contains($0.identifier) }
+            let filtered = Self.staticVoices.filter { enabled.contains($0.identifier) }
+            return filtered.isEmpty ? Self.staticVoices : filtered
         }
         set { }
     }
@@ -215,17 +216,22 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
         outputOffset += toCopy
         let done = outputOffset >= outputData.count
+        if done {
+            synthesisComplete = true
+        }
         lock.unlock()
 
         if done {
-            // Fade out last 128 samples to avoid click
-            let fadeLen = min(toCopy, 128)
-            if fadeLen > 0 {
+            // Fade out to avoid click — skip for short utterances
+            let fadeLen = min(32, toCopy / 4)
+            if fadeLen > 0 && outputData.count > 256 {
                 for i in 0..<fadeLen {
                     frames[toCopy - fadeLen + i] *= Float(fadeLen - 1 - i) / Float(fadeLen)
                 }
             }
-            actionFlags.pointee = .offlineUnitRenderAction_Complete
+            // This render call still contains valid audio. Signal completion on the
+            // next empty render call so hosts do not discard the final buffer.
+            actionFlags.pointee = .offlineUnitRenderAction_Render
         } else {
             actionFlags.pointee = .offlineUnitRenderAction_Render
         }

@@ -136,7 +136,6 @@
 		BB88614F5FDFB2564827E172 /* brazilian_portuguese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9F8283EE1B43A4D36C178161 /* brazilian_portuguese.cpp */; };
 		BBFD5EC0A87665EAC722501F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3DD68D3AB8E680055D89C0 /* ContentView.swift */; };
 		BF892D809EDB453B3FBA2F20 /* voice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5DF5993E3398006C1ED4470B /* voice.cpp */; };
-		C07B3BB7F782D1056B560087 /* RHVoiceKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = CF7E3AEF6CC5D8F62AD22078 /* RHVoiceKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C0AE845367CCAF2F333B20C5 /* RHVoiceKitMac.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5C7259148889146602EF0F2 /* RHVoiceKitMac.framework */; };
 		C10E4861C2A4A4B557E33602 /* tts_api.h in Headers */ = {isa = PBXBuildFile; fileRef = 6CA2096CE4E6D02EFFEF0A6F /* tts_api.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C25CBEAA8FF204E1F22231BC /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9435D1BF5C88934351ABD065 /* AudioToolbox.framework */; };
@@ -256,17 +255,6 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		6817447BCF7E4D1D80430EDB /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				C07B3BB7F782D1056B560087 /* RHVoiceKit.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		7ACD8A0F94E24B4DFCAB87F6 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -318,6 +306,7 @@
 		2D242D2A1B73FCADBFCFF188 /* hts_label.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_label.cpp; sourceTree = "<group>"; };
 		2DCCDE88EED1E768E6F29F28 /* Sonic.java */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.java; path = Sonic.java; sourceTree = "<group>"; };
 		2EAFE6E1D6D572BFC4769FBA /* Makefile */ = {isa = PBXFileReference; path = Makefile; sourceTree = "<group>"; };
+		2EC63F14A01F136EE58D64D6 /* UkrainianVoices.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UkrainianVoices.entitlements; sourceTree = "<group>"; };
 		2F2B38FFF37C6926470366CF /* HTS_engine.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_engine.c; sourceTree = "<group>"; };
 		319A46139369C11035B125E3 /* model_answer_cache.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = model_answer_cache.cpp; sourceTree = "<group>"; };
 		381DE1F4A1240BEFD94775BE /* changelog.vinux */ = {isa = PBXFileReference; path = changelog.vinux; sourceTree = "<group>"; };
@@ -691,6 +680,7 @@
 				035B0174D04FD47EBF569D03 /* Info.plist.bak_codex_20260328_launchfix */,
 				E0F2F4E3D8D190EFCE06439F /* LogCollector.swift */,
 				CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */,
+				2EC63F14A01F136EE58D64D6 /* UkrainianVoices.entitlements */,
 				594274F7B6015E8B24736D5A /* UkrainianVoicesApp.swift */,
 				27AAEFFB7795A1A1803B81C2 /* UkrainianVoicesMac.entitlements */,
 			);
@@ -827,7 +817,6 @@
 				8FF10A0EA0713C42FCD6B788 /* Sources */,
 				F3017479FD7D24536AD64653 /* Resources */,
 				598BD4A283E1C569D0930B4B /* Frameworks */,
-				6817447BCF7E4D1D80430EDB /* Embed Frameworks */,
 				6F85D53FFFA931268CBBB2B5 /* Copy Voices to Extension */,
 			);
 			buildRules = (
@@ -1430,6 +1419,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/UkrainianVoices.entitlements;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1500,6 +1490,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/UkrainianVoices.entitlements;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
@@ -1586,6 +1577,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Extension/UkrainianVoicesExtension.entitlements;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
 				DEFINES_MODULE = YES;
@@ -1597,7 +1589,6 @@
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Extension/Libraries";
-				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.ukraine.app.5NNZPP8CRR.Extension;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
@@ -1672,6 +1663,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CODE_SIGN_ENTITLEMENTS = Extension/UkrainianVoicesExtension.entitlements;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Manual;
 				DEFINES_MODULE = YES;
@@ -1683,7 +1675,6 @@
 					"@executable_path/../../Frameworks",
 				);
 				LIBRARY_SEARCH_PATHS = "$(SRCROOT)/Extension/Libraries";
-				OTHER_LDFLAGS = "-lRHVoice -lRHVoice_core -lRHVoice_audio";
 				PRODUCT_BUNDLE_IDENTIFIER = com.rhvoice.ukraine.app.5NNZPP8CRR.Extension;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
