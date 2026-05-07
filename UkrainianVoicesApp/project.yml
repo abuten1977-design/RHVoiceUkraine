@@ -176,6 +176,7 @@ targets:
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
         LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
+        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio -lstdc++"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
