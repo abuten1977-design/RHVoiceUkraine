@@ -130,7 +130,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 self.audioBuffer.appendSamples(samples, count: count, token: token)
             }
 
-            self.audioBuffer.markCompleted(withToken: token)
+            self.audioBuffer.markCompleted(with: token)
             rhLog("req#\(reqId) streaming synthesis COMPLETE")
         }
     }
