@@ -126,7 +126,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 volume: effectiveVolume,
                 pitch: pitch
             ) { samples, count, sampleRate in
-                guard let samples = samples, count > 0 else { return }
+                guard count > 0 else { return }
                 self.audioBuffer.appendSamples(samples, count: count, token: token)
             }
 
