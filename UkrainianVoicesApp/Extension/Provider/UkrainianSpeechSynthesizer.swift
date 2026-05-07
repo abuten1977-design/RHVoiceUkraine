@@ -103,11 +103,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         rhLog("req#\(reqId) ssmlRate=\(String(format: "%.2f", ssmlRate)) → mapped=\(String(format: "%.2f", mappedRate)) × mult=\(String(format: "%.2f", request.settings.speedMultiplier)) → rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", ssmlVolume))")
 
         // Synchronous synthesis — all audio ready before render starts
+        let effectiveVolume = ssmlVolume * request.settings.volume
         guard let pcmBuffer = rhvoiceEngine.synthesize(
             request.text,
             voice: request.voiceProfileName,
             rate: cappedRate,
-            volume: ssmlVolume,
+            volume: effectiveVolume,
             pitch: request.settings.pitch
         ) else {
             rhLog("req#\(reqId) synthesis FAILED")
@@ -229,9 +230,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                     frames[toCopy - fadeLen + i] *= Float(fadeLen - 1 - i) / Float(fadeLen)
                 }
             }
-            // This render call still contains valid audio. Signal completion on the
-            // next empty render call so hosts do not discard the final buffer.
-            actionFlags.pointee = .offlineUnitRenderAction_Render
+            actionFlags.pointee = .offlineUnitRenderAction_Complete
         } else {
             actionFlags.pointee = .offlineUnitRenderAction_Render
         }
@@ -283,11 +282,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             voiceIdentifier: descriptor.identifier,
             voiceProfileName: descriptor.profileName,
             settings: RHVoiceSpeechSettings(
-                rate:            0.5,
-                volume:          1.0,
+                rate:            base.rate,
+                volume:          base.volume,
                 speedMultiplier: base.speedMultiplier,
                 sentencePause:   base.sentencePause,
-                pitch:           1.0
+                pitch:           base.pitch
             ),
             source: .system
         )

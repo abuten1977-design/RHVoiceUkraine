@@ -557,11 +557,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         // Rate/volume extracted from SSML prosody, passed via parameters
         p.absolute_rate = 0.0;
         p.relative_rate = rate;
-        if (rate > 2.0) {
-            p.flags = RHVoice_synth_flag_dont_clip_rate;
-        }
+        p.flags = RHVoice_synth_flag_dont_clip_rate;
         p.absolute_pitch = 0.0;
-        p.relative_pitch = 1.0;
+        p.relative_pitch = pitch > 0 ? pitch : 1.0;
         p.relative_volume = volume > 0 ? volume : 1.0;
     } else {
         // For plain text (Preview): full Polish formula
