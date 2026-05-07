@@ -15,11 +15,18 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private lazy var rhvoiceEngine: RHVoiceEngine = RHVoiceEngine()
     private let outputBus: AUAudioUnitBus
 
-    // Simple buffer model (like eSpeak): flat array + read offset
+    #if os(iOS)
+    // Streaming model: lock-free SPSC ring buffer
+    private lazy var audioBuffer: RHVoiceAudioBuffer = RHVoiceAudioBuffer()
+    private var currentToken: RHVoiceAudioRequestToken?
+    private let synthesisQueue = DispatchQueue(label: "com.rhvoice.synthesis.streaming", qos: .userInitiated)
+    #else
+    // Synchronous model: flat array + read offset
     private var outputData: [Float] = []
     private var outputOffset: Int = 0
     private var synthesisComplete: Bool = true
     private let lock = NSLock()
+    #endif
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -83,8 +90,51 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private var requestCounter: Int = 0
 
-    // MARK: - Synthesize (sync, like eSpeak)
+    // MARK: - Synthesize
 
+    #if os(iOS)
+    public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+        requestCounter += 1
+        let reqId = requestCounter
+        let request = resolvedRequest(for: speechRequest)
+
+        rhLog("req#\(reqId) START voice=\(request.voiceProfileName) text=\(request.text.count) chars")
+
+        let ssmlRate = Self.extractSSMLRate(from: request.text)
+        let ssmlVolume = Self.extractSSMLVolume(from: request.text)
+        let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
+        let effectiveRate = mappedRate * request.settings.speedMultiplier
+        let cappedRate = min(effectiveRate, 4.0)
+        let effectiveVolume = ssmlVolume * request.settings.volume
+
+        rhLog("req#\(reqId) ssmlRate=\(String(format: "%.2f", ssmlRate)) → mapped=\(String(format: "%.2f", mappedRate)) × mult=\(String(format: "%.2f", request.settings.speedMultiplier)) → rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume))")
+
+        let token = audioBuffer.beginRequest()
+        currentToken = token
+
+        let text = request.text
+        let voice = request.voiceProfileName
+        let pitch = request.settings.pitch
+
+        synthesisQueue.async { [weak self] in
+            guard let self = self else { return }
+
+            self.rhvoiceEngine.synthesizeStreaming(
+                text,
+                voice: voice,
+                rate: cappedRate,
+                volume: effectiveVolume,
+                pitch: pitch
+            ) { samples, count, sampleRate in
+                guard let samples = samples, count > 0 else { return }
+                self.audioBuffer.appendSamples(samples, count: count, token: token)
+            }
+
+            self.audioBuffer.markCompleted(withToken: token)
+            rhLog("req#\(reqId) streaming synthesis COMPLETE")
+        }
+    }
+    #else
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
         let t0 = CFAbsoluteTimeGetCurrent()
         requestCounter += 1
@@ -142,7 +192,16 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         synthesisComplete = false
         lock.unlock()
     }
+    #endif
 
+    #if os(iOS)
+    public override func cancelSpeechRequest() {
+        rhLog("cancelSpeechRequest (streaming)")
+        rhvoiceEngine.cancel()
+        audioBuffer.cancelCurrentRequest()
+        currentToken = nil
+    }
+    #else
     public override func cancelSpeechRequest() {
         rhLog("cancelSpeechRequest")
         rhvoiceEngine.cancel()
@@ -152,6 +211,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         synthesisComplete = true
         lock.unlock()
     }
+    #endif
 
     public override func messageChannel(for channelName: String) -> AUMessageChannel {
         final class MessageChannel: AUMessageChannel {
@@ -171,8 +231,45 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         return MessageChannel()
     }
 
-    // MARK: - Render (simple array + offset, like eSpeak)
+    // MARK: - Render
 
+    #if os(iOS)
+    private func performRender(
+        actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
+        timestamp: UnsafePointer<AudioTimeStamp>,
+        frameCount: AUAudioFrameCount,
+        outputBusNumber: Int,
+        outputAudioBufferList: UnsafeMutablePointer<AudioBufferList>,
+        renderEvents: UnsafePointer<AURenderEvent>?,
+        renderPull: AURenderPullInputBlock?
+    ) -> AUAudioUnitStatus {
+        let audioBuffers = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
+        guard let data = audioBuffers[0].mData else {
+            return kAudioUnitErr_InvalidParameter
+        }
+
+        let frames = data.assumingMemoryBound(to: Float.self)
+        let requestedFrames = Int(frameCount)
+
+        frames.update(repeating: 0, count: requestedFrames)
+        audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
+        audioBuffers[0].mNumberChannels = 1
+
+        var didComplete: ObjCBool = false
+        audioBuffer.renderFrames(
+            frames,
+            maxFrames: UInt(requestedFrames),
+            preBufferFrames: 2400,
+            didComplete: &didComplete
+        )
+
+        actionFlags.pointee = didComplete.boolValue
+            ? .offlineUnitRenderAction_Complete
+            : .offlineUnitRenderAction_Render
+
+        return noErr
+    }
+    #else
     private func performRender(
         actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
         timestamp: UnsafePointer<AudioTimeStamp>,
@@ -237,6 +334,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         return noErr
     }
+    #endif
 
     public override var internalRenderBlock: AUInternalRenderBlock {
         performRender
