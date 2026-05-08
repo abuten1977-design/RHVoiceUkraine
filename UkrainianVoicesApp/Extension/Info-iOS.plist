@@ -39,8 +39,7 @@
                     <string>rhvc</string>
                     <key>tags</key>
                     <array>
-                        <string>Synthesizer</string>
-                        <string>Speech</string>
+                        <string>Speech Synthesizer</string>
                     </array>
                     <key>type</key>
                     <string>ausp</string>
