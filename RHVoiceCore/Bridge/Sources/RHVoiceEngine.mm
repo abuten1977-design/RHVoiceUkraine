@@ -1,0 +1,853 @@
+//
+//  RHVoiceEngine.mm
+//  Ukrainian Voices Extension
+//
+
+#import "RHVoiceEngine.h"
+#include "RHVoice.h"
+#import <AVFoundation/AVFoundation.h>
+#include <atomic>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include "RHVoiceDebugLog.h"
+
+// MARK: - ThreadSafeRingBuffer
+// Internal SPSC queue used by the Stage 4 hybrid model:
+// producer writes retained PCM chunks, consumer reads them as frames.
+
+template<typename T, size_t Capacity = 1024>
+class ThreadSafeRingBuffer {
+public:
+    ThreadSafeRingBuffer() = default;
+    ThreadSafeRingBuffer(const ThreadSafeRingBuffer&) = delete;
+    ThreadSafeRingBuffer& operator=(const ThreadSafeRingBuffer&) = delete;
+
+    bool push(T value) {
+        const size_t w = writeIndex.load(std::memory_order_relaxed);
+        const size_t next = (w + 1) % Capacity;
+        if (next == readIndex.load(std::memory_order_acquire)) return false; // full
+        buffer[w] = value;
+        writeIndex.store(next, std::memory_order_release);
+        return true;
+    }
+
+    bool pop(T& value) {
+        const size_t r = readIndex.load(std::memory_order_relaxed);
+        if (r == writeIndex.load(std::memory_order_acquire)) return false; // empty
+        value = buffer[r];
+        readIndex.store((r + 1) % Capacity, std::memory_order_release);
+        return true;
+    }
+
+    bool is_empty() const {
+        return readIndex.load(std::memory_order_acquire) == writeIndex.load(std::memory_order_acquire);
+    }
+
+    void reset() {
+        writeIndex.store(0, std::memory_order_release);
+        readIndex.store(0, std::memory_order_release);
+    }
+
+private:
+    std::atomic<size_t> writeIndex{0};
+    std::atomic<size_t> readIndex{0};
+    T buffer[Capacity];
+};
+
+// MARK: - EngineState (heap-allocated, shared between C callback and ObjC)
+
+struct EngineState {
+    ThreadSafeRingBuffer<void*>* queue = nullptr;
+    std::atomic<bool> cancelled{false};
+    std::atomic<int> sampleRate{24000};
+    std::atomic<bool> synthesisDone{false};
+    NSCondition* dataCondition = nil;
+
+    bool ownsQueue = false; // true only when queue is heap-allocated
+
+    ~EngineState() {
+        // Drain and release any remaining chunks
+        if (queue) {
+            void* chunkPtr = nullptr;
+            while (queue->pop(chunkPtr)) {
+                if (chunkPtr) CFBridgingRelease(chunkPtr);
+            }
+            if (ownsQueue) delete queue;
+        }
+    }
+};
+
+struct AudioRequestState {
+    ThreadSafeRingBuffer<void*, 2048> queue;
+    std::atomic<size_t> queuedSamples{0};
+    std::atomic<bool> completed{true};
+    std::atomic<bool> cancelling{false};
+    std::atomic<bool> startedPlaying{false};
+    std::atomic<size_t> cancelFadeFramesRemaining{0};
+    __strong NSData* currentChunk = nil;
+    size_t currentChunkOffset = 0;
+
+    ~AudioRequestState() {
+        if (currentChunk) {
+            currentChunk = nil;
+        }
+
+        void* chunkPtr = nullptr;
+        while (queue.pop(chunkPtr)) {
+            if (chunkPtr) {
+                CFBridgingRelease(chunkPtr);
+            }
+        }
+    }
+};
+
+// MARK: - Thread-local pointer to current EngineState
+
+static __thread EngineState* tls_engineState = nullptr;
+static constexpr NSTimeInterval kCancelWaitTimeoutSec = 0.3; // Reduced from 0.3 to decrease latency during rapid navigation
+static constexpr size_t kCancelFadeFrames = 240; // 10 ms at 24 kHz
+
+static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
+    NSArray<NSBundle*>* candidateBundles = @[
+        [NSBundle mainBundle],
+        [NSBundle bundleForClass:engineClass]
+    ];
+    NSFileManager* fm = [NSFileManager defaultManager];
+    BOOL isDir = NO;
+
+    for (NSBundle* bundle in candidateBundles) {
+        NSArray<NSString*>* resourceNames = @[@"RHVoiceData", @"Voices"];
+        for (NSString* resourceName in resourceNames) {
+            NSString* candidate = [[bundle resourcePath] stringByAppendingPathComponent:resourceName];
+            if ([fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+                if (resolvedBundle) *resolvedBundle = bundle;
+                return candidate;
+            }
+
+            candidate = [bundle pathForResource:resourceName ofType:nil];
+            if (candidate && [fm fileExistsAtPath:candidate isDirectory:&isDir] && isDir) {
+                if (resolvedBundle) *resolvedBundle = bundle;
+                return candidate;
+            }
+        }
+    }
+
+    return nil;
+}
+
+@interface RHVoiceAudioRequestToken () {
+@public
+    std::shared_ptr<AudioRequestState> _state;
+}
+@end
+
+@implementation RHVoiceAudioRequestToken
+@end
+
+@interface RHVoiceAudioBuffer () {
+@private
+    std::shared_ptr<AudioRequestState> _activeState;
+}
+@end
+
+@implementation RHVoiceAudioBuffer
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        auto state = std::make_shared<AudioRequestState>();
+        std::atomic_store(&_activeState, state);
+    }
+    return self;
+}
+
+- (RHVoiceAudioRequestToken *)beginRequest {
+    auto state = std::make_shared<AudioRequestState>();
+    state->completed.store(false, std::memory_order_release);
+    std::atomic_store(&_activeState, state);
+
+    RHVoiceAudioRequestToken* token = [RHVoiceAudioRequestToken new];
+    token->_state = state;
+    return token;
+}
+
+- (void)cancelCurrentRequest {
+    auto oldState = std::atomic_load(&_activeState);
+    if (oldState) {
+        const bool hasBufferedAudio =
+            oldState->queuedSamples.load(std::memory_order_acquire) > 0;
+
+        oldState->completed.store(true, std::memory_order_release);
+        if (hasBufferedAudio) {
+            oldState->cancelling.store(true, std::memory_order_release);
+            oldState->cancelFadeFramesRemaining.store(kCancelFadeFrames, std::memory_order_release);
+        }
+    }
+}
+
+- (BOOL)appendSamples:(const short *)samples
+                count:(unsigned int)count
+                token:(RHVoiceAudioRequestToken *)token {
+    if (!samples || count == 0 || !token) return NO;
+
+    auto tokenState = token->_state;
+    auto activeState = std::atomic_load(&_activeState);
+    if (!tokenState || tokenState.get() != activeState.get()) return NO;
+    if (tokenState->completed.load(std::memory_order_acquire)) return NO;
+    if (tokenState->cancelling.load(std::memory_order_acquire)) return NO;
+
+    NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
+    void* retained = (__bridge_retained void*)chunk;
+    if (!tokenState->queue.push(retained)) {
+        CFBridgingRelease(retained);
+        return NO;
+    }
+
+    tokenState->queuedSamples.fetch_add(count, std::memory_order_release);
+    return YES;
+}
+
+- (void)markCompletedWithToken:(RHVoiceAudioRequestToken *)token {
+    if (!token) return;
+    auto tokenState = token->_state;
+    if (!tokenState) return;
+
+    auto activeState = std::atomic_load(&_activeState);
+    if (tokenState.get() != activeState.get()) return;
+
+    tokenState->completed.store(true, std::memory_order_release);
+}
+
+- (NSUInteger)availableFrames {
+    auto state = std::atomic_load(&_activeState);
+    if (!state) return 0;
+    return state->queuedSamples.load(std::memory_order_acquire);
+}
+
+- (NSUInteger)readFrames:(float *)destination maxFrames:(NSUInteger)maxFrames {
+    if (!destination || maxFrames == 0) return 0;
+
+    auto state = std::atomic_load(&_activeState);
+    if (!state) return 0;
+
+    size_t copied = 0;
+    while (copied < maxFrames) {
+        if (!state->currentChunk || state->currentChunkOffset >= state->currentChunk.length / sizeof(short)) {
+            if (state->currentChunk) {
+                state->currentChunk = nil;
+                state->currentChunkOffset = 0;
+            }
+
+            void* chunkPtr = nullptr;
+            if (!state->queue.pop(chunkPtr)) break;
+
+            state->currentChunk = (__bridge_transfer NSData*)chunkPtr;
+            state->currentChunkOffset = 0;
+        }
+
+        const short* samples = (const short*)state->currentChunk.bytes;
+        const size_t totalSamples = state->currentChunk.length / sizeof(short);
+        const size_t remaining = totalSamples - state->currentChunkOffset;
+        const size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
+        for (size_t i = 0; i < toCopy; ++i) {
+            destination[copied + i] = samples[state->currentChunkOffset + i] / 32768.0f;
+        }
+
+        state->currentChunkOffset += toCopy;
+        state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
+        copied += toCopy;
+    }
+
+    return copied;
+}
+
+- (BOOL)renderFrames:(float *)destination
+           maxFrames:(NSUInteger)maxFrames
+     preBufferFrames:(NSUInteger)preBufferFrames
+         didComplete:(BOOL *)didComplete {
+    if (didComplete) {
+        *didComplete = NO;
+    }
+    if (!destination || maxFrames == 0) return NO;
+
+    auto state = std::atomic_load(&_activeState);
+    if (!state) {
+        if (didComplete) {
+            *didComplete = YES;
+        }
+        return NO;
+    }
+
+    const size_t available = state->queuedSamples.load(std::memory_order_acquire);
+    const bool done = state->completed.load(std::memory_order_acquire);
+    const bool cancelling = state->cancelling.load(std::memory_order_acquire);
+
+    if (available == 0) {
+        if (didComplete) {
+            *didComplete = done;
+        }
+        if (!done) {
+            state->startedPlaying.store(false, std::memory_order_release);
+        }
+        
+        
+        return NO;
+    }
+
+    // Hysteresis: only wait for preBufferFrames if we haven't started yet
+    if (!state->startedPlaying.load(std::memory_order_acquire)) {
+        if (!cancelling && available < preBufferFrames && !done) {
+            return NO;
+        }
+        state->startedPlaying.store(true, std::memory_order_release);
+        RHVoiceDebugLogWrite("renderFrames: first audio, available=%zu preBuffer=%zu", available, preBufferFrames);
+    }
+
+    size_t copied = 0;
+    while (copied < maxFrames) {
+        size_t fadeRemaining = state->cancelFadeFramesRemaining.load(std::memory_order_acquire);
+        if (state->cancelling.load(std::memory_order_acquire) && fadeRemaining == 0) break;
+        if (!state->cancelling.load(std::memory_order_acquire) &&
+            state->queuedSamples.load(std::memory_order_acquire) == 0 &&
+            state->completed.load(std::memory_order_acquire)) break;
+        if (!state->currentChunk || state->currentChunkOffset >= state->currentChunk.length / sizeof(short)) {
+            if (state->currentChunk) {
+                state->currentChunk = nil;
+                state->currentChunkOffset = 0;
+            }
+
+            void* chunkPtr = nullptr;
+            if (!state->queue.pop(chunkPtr)) break;
+
+            state->currentChunk = (__bridge_transfer NSData*)chunkPtr;
+            state->currentChunkOffset = 0;
+        }
+
+        const short* samples = (const short*)state->currentChunk.bytes;
+        const size_t totalSamples = state->currentChunk.length / sizeof(short);
+        const size_t remaining = totalSamples - state->currentChunkOffset;
+        size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
+        if (state->cancelling.load(std::memory_order_acquire)) {
+            fadeRemaining = state->cancelFadeFramesRemaining.load(std::memory_order_acquire);
+            if (fadeRemaining == 0) break;
+            toCopy = std::min(toCopy, fadeRemaining);
+        }
+        for (size_t i = 0; i < toCopy; ++i) {
+            float sample = samples[state->currentChunkOffset + i] / 32768.0f;
+            if (state->cancelling.load(std::memory_order_acquire)) {
+                const float gain = (float)(fadeRemaining - i) / (float)kCancelFadeFrames;
+                sample *= gain;
+            }
+            destination[copied + i] = sample;
+        }
+
+        state->currentChunkOffset += toCopy;
+        state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
+        if (state->cancelling.load(std::memory_order_acquire)) {
+            state->cancelFadeFramesRemaining.fetch_sub(toCopy, std::memory_order_acq_rel);
+        }
+        copied += toCopy;
+    }
+
+    bool playbackComplete = false;
+    if (state->cancelling.load(std::memory_order_acquire)) {
+        playbackComplete = state->cancelFadeFramesRemaining.load(std::memory_order_acquire) == 0 || copied == 0;
+    } else if (state->queuedSamples.load(std::memory_order_acquire) == 0) {
+        const bool chunkExhausted = (!state->currentChunk ||
+            state->currentChunkOffset >= state->currentChunk.length / sizeof(short));
+        playbackComplete = chunkExhausted && state->completed.load(std::memory_order_acquire);
+    }
+
+    if (playbackComplete) {
+        RHVoiceDebugLogWrite("renderFrames: playback complete, copied=%zu", copied);
+    }
+    if (didComplete) {
+        *didComplete = playbackComplete;
+    }
+    return copied > 0;
+}
+
+- (BOOL)isPlaybackComplete {
+    auto state = std::atomic_load(&_activeState);
+    if (!state) return YES;
+
+    if (state->queuedSamples.load(std::memory_order_acquire) > 0) return NO;
+    if (state->currentChunk && state->currentChunkOffset < state->currentChunk.length / sizeof(short)) {
+        return NO;
+    }
+
+    return state->completed.load(std::memory_order_acquire);
+}
+
+@end
+
+// MARK: - C Callbacks
+
+static int set_sample_rate_callback(int sample_rate, void* user_data) {
+    EngineState* state = static_cast<EngineState*>(user_data);
+    if (state) {
+        state->sampleRate.store(sample_rate, std::memory_order_release);
+    }
+    // Also update TLS if available
+    if (tls_engineState) {
+        tls_engineState->sampleRate.store(sample_rate, std::memory_order_release);
+    }
+    return 1;
+}
+
+static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
+    // Prefer user_data over TLS — works across threads
+    EngineState* state = static_cast<EngineState*>(user_data);
+    if (!state) state = tls_engineState;
+    if (!state) return 1;
+    if (state->cancelled.load(std::memory_order_acquire)) return 0;
+
+    NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
+    void* retained = (__bridge_retained void*)chunk;
+
+    if (state->dataCondition) {
+        [state->dataCondition lock];
+        if (!state->queue->push(retained)) {
+            [state->dataCondition unlock];
+            CFBridgingRelease(retained);
+            return 1;
+        }
+        [state->dataCondition signal];
+        [state->dataCondition unlock];
+    } else {
+        if (!state->queue->push(retained)) {
+            CFBridgingRelease(retained);
+        }
+    }
+    return 1;
+}
+
+// MARK: - @interface
+
+@interface RHVoiceEngine ()
+@property (assign) RHVoice_tts_engine engine;
+@property (assign) BOOL initialized;
+@property (strong) NSCondition* activeStateCondition;
+@property (assign) EngineState* activeStreamingState;
+@end
+
+// MARK: - @implementation
+
+@implementation RHVoiceEngine
+
++ (NSDictionary<NSString *, NSString *> *)voiceProfileAliases {
+    static NSDictionary<NSString *, NSString *> *aliases;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        aliases = @{
+            @"anatol": @"Anatol",
+            @"marianna": @"Marianna",
+            @"natalia": @"Natalia",
+            @"volodymyr": @"Volodymyr"
+        };
+    });
+    return aliases;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _initialized = NO;
+        _engine = NULL;
+        _activeStateCondition = [[NSCondition alloc] init];
+        [self initializeEngine];
+    }
+    return self;
+}
+
+- (BOOL)initializeEngine {
+    if (self.initialized) return YES;
+
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSBundle* resolvedBundle = nil;
+    NSString* dataPath = RHVoiceResolveDataPath([self class], &resolvedBundle);
+
+    if (!dataPath) {
+        NSLog(@"❌ RHVoiceData not found in app/framework bundles. main=%@ framework=%@",
+              [NSBundle mainBundle].resourcePath,
+              [NSBundle bundleForClass:[self class]].resourcePath);
+        return NO;
+    }
+
+    NSLog(@"✅ RHVoice data path: %@ (bundle=%@)", dataPath, resolvedBundle.resourcePath);
+    NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
+
+    RHVoice_callbacks callbacks;
+    memset(&callbacks, 0, sizeof(callbacks));
+    callbacks.set_sample_rate = set_sample_rate_callback;
+    callbacks.play_speech = play_speech_callback;
+
+    RHVoice_init_params params;
+    memset(&params, 0, sizeof(params));
+    params.data_path = [dataPath UTF8String];
+    params.config_path = [dataPath UTF8String];
+    params.callbacks = callbacks;
+
+    @try {
+        self.engine = RHVoice_new_tts_engine(&params);
+    } @catch (NSException *exception) {
+        NSLog(@"❌ Engine threw NSException: %@ — %@", exception.name, exception.reason);
+    }
+    if (!self.engine) {
+        NSLog(@"❌ Engine init failed for data_path: %@", dataPath);
+        // Diagnostic: check subdirectories
+        NSString* langPath = [dataPath stringByAppendingPathComponent:@"languages"];
+        NSString* voicePath = [dataPath stringByAppendingPathComponent:@"voices"];
+        NSLog(@"❌ languages/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:langPath],
+              [fm contentsOfDirectoryAtPath:langPath error:nil]);
+        NSLog(@"❌ voices/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:voicePath],
+              [fm contentsOfDirectoryAtPath:voicePath error:nil]);
+        NSString* ukPath = [langPath stringByAppendingPathComponent:@"Ukrainian"];
+        NSLog(@"❌ Ukrainian/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:ukPath],
+              [fm contentsOfDirectoryAtPath:ukPath error:nil]);
+        NSString* anatol = [voicePath stringByAppendingPathComponent:@"anatol"];
+        NSLog(@"❌ anatol/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:anatol],
+              [fm contentsOfDirectoryAtPath:anatol error:nil]);
+        return NO;
+    }
+
+    // Verify voices loaded
+    unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
+    unsigned int nProfiles = RHVoice_get_number_of_voice_profiles(self.engine);
+    NSLog(@"✅ Engine ready: %u voices, %u profiles", nVoices, nProfiles);
+    
+    // Log available voice profiles.
+    // IMPORTANT: Don't assume the returned list is NULL-terminated; use the reported count.
+    // Otherwise we can walk past the end and crash inside NSLog("%s", ...).
+    char const* const* profiles = RHVoice_get_voice_profiles(self.engine);
+    if (profiles) {
+        for (unsigned int i = 0; i < nProfiles; i++) {
+            const char* name = profiles[i];
+            if (name && name[0] != '\0') {
+                NSLog(@"   Profile[%u]: %s", i, name);
+            } else {
+                NSLog(@"   Profile[%u]: (null)", i);
+            }
+        }
+    }
+
+    self.initialized = YES;
+    return YES;
+}
+
+- (RHVoice_message)buildMessage:(NSString*)text voice:(NSString*)voice
+                           rate:(double)rate volume:(double)volume pitch:(double)pitch
+                          state:(EngineState*)state {
+    NSString* alias = [[self class] voiceProfileAliases][voice.lowercaseString];
+    NSString* normalizedVoice = alias ? alias : voice;
+
+    RHVoice_synth_params p;
+    memset(&p, 0, sizeof(p));
+    p.voice_profile = [normalizedVoice UTF8String];
+
+    // Detect SSML: VoiceOver sends rate/pitch/volume via SSML prosody tags
+    BOOL isSSML = [text containsString:@"<"];
+
+    if (isSSML) {
+        // Rate/volume extracted from SSML prosody, passed via parameters
+        p.absolute_rate = 0.0;
+        p.relative_rate = rate;
+        p.flags = RHVoice_synth_flag_dont_clip_rate;
+        p.absolute_pitch = 0.0;
+        p.relative_pitch = pitch > 0 ? pitch : 1.0;
+        p.relative_volume = volume > 0 ? volume : 1.0;
+    } else {
+        // For plain text (Preview): full Polish formula
+        double polishRate = fmax(0.5, rate * 2.0);
+        double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5));
+        p.absolute_rate = (polishRate - 1.0);
+        p.relative_rate = polishRate;
+        p.absolute_pitch = (polishPitch - 1.0);
+        p.relative_pitch = polishPitch;
+        p.relative_volume = volume > 0 ? volume : 1.0;
+    }
+
+    const char* t = [text UTF8String];
+    NSString* textPreview = text.length > 300 ? [text substringToIndex:300] : text;
+    NSLog(@"[RHVOICE_TIMING] buildMessage text preview: %@", textPreview);
+    RHVoiceDebugLogWrite("buildMessage text: %s", [textPreview UTF8String]);
+    NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
+          normalizedVoice, rate, p.absolute_rate, p.relative_rate,
+          pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
+    RHVoiceDebugLogWrite("buildMessage voice=%s rate=%.2f->abs=%.2f/rel=%.2f pitch=%.2f->abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
+          [normalizedVoice UTF8String], rate, p.absolute_rate, p.relative_rate,
+          pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
+
+    RHVoice_message_type msgType = isSSML ? RHVoice_message_ssml : RHVoice_message_text;
+
+    RHVoice_message msg = RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
+                               msgType, &p,
+                               (void*)state);  // Pass EngineState as user_data
+    if (!msg) {
+        NSLog(@"❌ RHVoice_new_message returned NULL for voice='%@'", normalizedVoice);
+    }
+    return msg;
+}
+
+- (RHVoice_message)buildDefaultMessage:(NSString*)text state:(EngineState*)state {
+    const char* t = [text UTF8String];
+    RHVoice_message_type msgType = [text containsString:@"<"] ? RHVoice_message_ssml : RHVoice_message_text;
+    return RHVoice_new_message(self.engine,
+                               t,
+                               (unsigned int)strlen(t),
+                               msgType,
+                               NULL,
+                               (void*)state);
+}
+
+- (void)publishActiveState:(EngineState*)state {
+    [self.activeStateCondition lock];
+    self.activeStreamingState = state;
+    [self.activeStateCondition broadcast];
+    [self.activeStateCondition unlock];
+}
+
+- (void)clearActiveStateIfMatches:(EngineState*)state {
+    [self.activeStateCondition lock];
+    if (self.activeStreamingState == state) {
+        self.activeStreamingState = nullptr;
+        [self.activeStateCondition broadcast];
+    }
+    [self.activeStateCondition unlock];
+}
+
+// MARK: - Sync synthesize (для preview в App)
+
+- (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
+                                    rate:(double)rate volume:(double)volume pitch:(double)pitch {
+    NSLog(@"🔍 synthesize called: initialized=%d, text='%@', voice='%@'", self.initialized, text, voice);
+    
+    if (!self.initialized || !text.length) {
+        NSLog(@"❌ synthesize failed: initialized=%d, textLength=%lu", self.initialized, (unsigned long)text.length);
+        return nil;
+    }
+
+    ThreadSafeRingBuffer<void*> queue;
+    EngineState state;
+    state.queue = &queue;
+    state.cancelled.store(false, std::memory_order_release);
+    state.sampleRate.store(24000, std::memory_order_release);
+    state.synthesisDone.store(false, std::memory_order_release);
+    state.dataCondition = nil; // Not used in sync mode
+
+    // Set TLS in current thread — RHVoice_speak is synchronous, callbacks fire here
+    tls_engineState = &state;
+
+    RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch state:&state];
+    if (!msg) {
+        NSLog(@"❌ buildMessage failed for voice '%@'", voice);
+        tls_engineState = nullptr;
+        return nil;
+    }
+
+    int speakResult = RHVoice_speak(msg);
+    RHVoice_delete_message(msg);
+
+    if (speakResult == 0) {
+        NSLog(@"❌ RHVoice_speak returned 0 for voice '%@', retrying with default profile", voice);
+        RHVoice_message fallbackMsg = [self buildDefaultMessage:text state:&state];
+        if (fallbackMsg) {
+            speakResult = RHVoice_speak(fallbackMsg);
+            RHVoice_delete_message(fallbackMsg);
+            NSLog(@"ℹ️ Fallback RHVoice_speak result=%d sampleRate=%d", speakResult,
+                  state.sampleRate.load(std::memory_order_acquire));
+        } else {
+            NSLog(@"❌ Failed to create fallback RHVoice message");
+        }
+    } else {
+        NSLog(@"ℹ️ RHVoice_speak result=%d sampleRate=%d", speakResult,
+              state.sampleRate.load(std::memory_order_acquire));
+    }
+
+    tls_engineState = nullptr;
+
+    // Collect all chunks
+    NSMutableData* audioBuffer = [NSMutableData new];
+    void* chunkPtr;
+    while (queue.pop(chunkPtr)) {
+        if (chunkPtr) {
+            NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
+            [audioBuffer appendData:chunk];
+        }
+    }
+
+    if (!audioBuffer.length) {
+        NSLog(@"❌ No audio data synthesized");
+        return nil;
+    }
+
+    int sr = state.sampleRate.load(std::memory_order_acquire);
+    if (sr <= 0) sr = 24000;
+    
+    NSLog(@"✅ Synthesized %lu bytes at %d Hz", (unsigned long)audioBuffer.length, sr);
+    return [self pcmBufferFrom:audioBuffer sampleRate:sr];
+}
+
+// MARK: - Streaming synthesize (для VoiceOver Extension)
+// Producer: RHVoice_speak runs in background thread, callbacks push to ring buffer.
+// Consumer: caller's thread (synthesizeSpeechRequest background queue) drains ring buffer.
+// NSCondition wakes consumer when data arrives — no spin-lock, no CPU burn.
+
+- (void)synthesizeStreaming:(NSString*)text voice:(NSString*)voice
+                      rate:(double)rate volume:(double)volume pitch:(double)pitch
+                   onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
+    if (!self.initialized || !text.length) return;
+
+    // NOTE: Do NOT call [self cancel] here — the caller (Swift) already called
+    // audioBuffer.beginRequest() which set up the active state. Calling cancel()
+    // would replace _activeState with a new empty state, causing render block
+    // to never receive data.
+
+    // Heap-allocated with shared_ptr — prevents use-after-free between producer and consumer
+    auto state = std::make_shared<EngineState>();
+
+    state->queue = new (std::nothrow) ThreadSafeRingBuffer<void*>();
+    state->ownsQueue = true;
+    if (!state->queue) {
+        NSLog(@"❌ synthesizeStreaming failed: queue allocation failed");
+        return;
+    }
+    state->cancelled.store(false, std::memory_order_release);
+    state->sampleRate.store(24000, std::memory_order_release);
+    state->synthesisDone.store(false, std::memory_order_release);
+    state->dataCondition = [[NSCondition alloc] init];
+    if (!state->dataCondition) {
+        NSLog(@"❌ synthesizeStreaming failed: NSCondition allocation failed");
+        return;
+    }
+    [self publishActiveState:state.get()];
+
+    NSString* textCopy = [text copy];
+    NSString* voiceCopy = [voice copy];
+    RHVoiceEngine* __weak weakSelf = self;
+
+    // Producer holds its own shared_ptr copy — state lives until both threads are done
+    auto producerState = state;
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
+        RHVoiceEngine* strongSelf = weakSelf;
+        // TLS set in THIS thread — callbacks fire synchronously from RHVoice_speak here
+        tls_engineState = producerState.get();
+
+        RHVoice_message msg = nullptr;
+        if (strongSelf) {
+            msg = [strongSelf buildMessage:textCopy voice:voiceCopy
+                                      rate:rate volume:volume pitch:pitch state:producerState.get()];
+        }
+        if (msg) {
+            RHVoice_speak(msg);
+            RHVoice_delete_message(msg);
+        }
+
+        tls_engineState = nullptr;
+        // Signal consumer that production is complete
+        producerState->synthesisDone.store(true, std::memory_order_release);
+        [producerState->dataCondition lock];
+        [producerState->dataCondition broadcast];
+        [producerState->dataCondition unlock];
+        if (strongSelf) {
+            [strongSelf clearActiveStateIfMatches:producerState.get()];
+        }
+        // producerState released here — if consumer already done, state is destroyed
+    });
+
+    // Consumer loop — sleeps on NSCondition until data arrives or synthesis done
+    while (true) {
+        if (state->cancelled.load(std::memory_order_acquire)) break;
+
+        void* chunkPtr = nullptr;
+        if (state->queue->pop(chunkPtr)) {
+            NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
+            const short* samples = (const short*)chunk.bytes;
+            unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+            int sr = state->sampleRate.load(std::memory_order_acquire);
+            if (sr <= 0) sr = 24000;
+            chunkCallback(samples, count, sr);
+        } else if (state->synthesisDone.load(std::memory_order_acquire)) {
+            // Drain any remaining chunks after done signal
+            while (state->queue->pop(chunkPtr)) {
+                if (chunkPtr) {
+                    NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
+                    const short* samples = (const short*)chunk.bytes;
+                    unsigned int count = (unsigned int)(chunk.length / sizeof(short));
+                    int sr = state->sampleRate.load(std::memory_order_acquire);
+                    if (sr <= 0) sr = 24000;
+                    chunkCallback(samples, count, sr);
+                }
+            }
+            break;
+        } else {
+            // No data yet and not done — sleep until signaled
+            [state->dataCondition lock];
+            if (state->queue->is_empty() && 
+                !state->synthesisDone.load(std::memory_order_acquire) &&
+                !state->cancelled.load(std::memory_order_acquire)) {
+                [state->dataCondition wait];
+            }
+            [state->dataCondition unlock];
+        }
+    }
+
+    // state released here via shared_ptr — destroyed when producer also finishes
+}
+
+- (void)cancel {
+    CFAbsoluteTime t0 = CFAbsoluteTimeGetCurrent();
+    [self.activeStateCondition lock];
+    EngineState* state = self.activeStreamingState;
+    if (!state) {
+        [self.activeStateCondition unlock];
+        NSLog(@"[RHVOICE_TIMING] cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+        RHVoiceDebugLogWrite("cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+        return;
+    }
+
+    // Non-blocking: set flag and wake consumer, don't wait
+    state->cancelled.store(true, std::memory_order_release);
+    if (state->dataCondition) {
+        [state->dataCondition lock];
+        [state->dataCondition broadcast];
+        [state->dataCondition unlock];
+    }
+    [self.activeStateCondition unlock];
+    NSLog(@"[RHVOICE_TIMING] cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+    RHVoiceDebugLogWrite("cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+}
+
+// MARK: - Int16 → Float32
+
+- (AVAudioPCMBuffer*)pcmBufferFrom:(NSData*)data sampleRate:(int)sr {
+    AVAudioFormat* fmt = [[AVAudioFormat alloc]
+        initWithCommonFormat:AVAudioPCMFormatFloat32
+                  sampleRate:sr channels:1 interleaved:NO];
+    if (!fmt) return nil;
+
+    AVAudioFrameCount frames = (AVAudioFrameCount)(data.length / sizeof(short));
+    AVAudioPCMBuffer* buf = [[AVAudioPCMBuffer alloc] initWithPCMFormat:fmt frameCapacity:frames];
+    if (!buf) return nil;
+
+    buf.frameLength = frames;
+    const short* src = (const short*)data.bytes;
+    float* dst = buf.floatChannelData[0];
+    for (AVAudioFrameCount i = 0; i < frames; i++) {
+        dst[i] = src[i] / 32768.0f;
+    }
+    return buf;
+}
+
+- (void)dealloc {
+    if (self.engine) {
+        RHVoice_delete_tts_engine(self.engine);
+    }
+}
+
+@end

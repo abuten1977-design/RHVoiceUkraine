@@ -5,6 +5,10 @@ options:
     macOS: "13.0"
     iOS: "16.0"
 
+packages:
+  RHVoiceCore:
+    path: ../RHVoiceCore
+
 targets:
   RHVoiceKit:
     type: framework
@@ -12,6 +16,8 @@ targets:
     sources:
       - path: ../RHVoiceKit/Sources
     dependencies:
+      - package: RHVoiceCore
+        product: RHVoiceBridge
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
     headers:
@@ -31,8 +37,6 @@ targets:
         DEVELOPMENT_TEAM: ""
         IPHONEOS_DEPLOYMENT_TARGET: "16.0"
         HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
-        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
 
   RHVoiceKitMac:
     type: framework
@@ -137,8 +141,6 @@ targets:
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
-        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio"
     dependencies:
       - target: UkrainianVoicesExtension
       - target: RHVoiceKit
@@ -175,14 +177,13 @@ targets:
         SWIFT_VERSION: "5.0"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
-        LIBRARY_SEARCH_PATHS: "$(SRCROOT)/Extension/Libraries"
-        OTHER_LDFLAGS: "-lRHVoice -lRHVoice_core -lRHVoice_audio -lstdc++"
+        OTHER_LDFLAGS: "$(inherited) -lc++"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
     dependencies:
-      - target: RHVoiceKit
-        embed: false
+      - package: RHVoiceCore
+        product: RHVoiceBridge
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
       - sdk: AudioToolbox.framework

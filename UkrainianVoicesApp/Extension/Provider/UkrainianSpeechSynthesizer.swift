@@ -3,7 +3,11 @@ import AVFAudio
 import CoreAudio
 import CoreMedia
 import Foundation
+#if os(iOS)
+import RHVoiceBridge
+#else
 import RHVoiceKit
+#endif
 
 private func rhLog(_ msg: String) {
     msg.withCString { RHVoiceDebugLogString($0) }
