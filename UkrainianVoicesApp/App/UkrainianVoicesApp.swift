@@ -6,7 +6,11 @@
 import SwiftUI
 #if os(macOS)
 import AppKit
+#if os(iOS)
+import RHVoiceBridge
+#else
 import RHVoiceKit
+#endif
 #endif
 
 #if os(macOS)

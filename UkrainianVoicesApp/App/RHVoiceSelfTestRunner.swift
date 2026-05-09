@@ -1,5 +1,9 @@
 import Foundation
+#if os(iOS)
+import RHVoiceBridge
+#else
 import RHVoiceKit
+#endif
 
 @MainActor
 enum RHVoiceSelfTestRunner {

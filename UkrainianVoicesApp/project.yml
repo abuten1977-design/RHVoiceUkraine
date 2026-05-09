@@ -143,8 +143,8 @@ targets:
         DEVELOPMENT_TEAM: ""
     dependencies:
       - target: UkrainianVoicesExtension
-      - target: RHVoiceKit
-        embed: true
+      - package: RHVoiceCore
+        product: RHVoiceBridge
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
     
