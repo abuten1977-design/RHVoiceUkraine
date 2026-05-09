@@ -18,7 +18,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     // Synchronous model (like eSpeak): flat array + read offset
     private var outputData: [Float] = []
     private var outputOffset: Int = 0
-    private let lock = NSLock()
+    private let condition = NSCondition()
+    private var isSynthesizing = false
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -67,8 +68,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     public override func allocateRenderResources() throws {
+        rhLog("allocateRenderResources: START")
         try super.allocateRenderResources()
-        _ = self.rhvoiceEngine
+        let engine = self.rhvoiceEngine
+        rhLog("allocateRenderResources: engine initialized = \(engine.initialized)")
     }
 
     // Always return ALL voices (like eSpeak) — iOS caches the list
@@ -87,6 +90,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let request = resolvedRequest(for: speechRequest)
 
         rhLog("req#\(reqId) START voice=\(request.voiceProfileName) text=\(request.text.count) chars")
+        
+        if !rhvoiceEngine.initialized {
+            rhLog("req#\(reqId) WARNING: engine not initialized, attempting re-init")
+            _ = rhvoiceEngine.initializeEngine()
+        }
 
         let ssmlRate = Self.extractSSMLRate(from: request.text)
         let ssmlVolume = Self.extractSSMLVolume(from: request.text)
@@ -97,47 +105,52 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         rhLog("req#\(reqId) ssmlRate=\(String(format: "%.2f", ssmlRate)) → rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume))")
 
+        condition.lock()
+        isSynthesizing = true
+        outputData = []
+        outputOffset = 0
+        condition.unlock()
+
         // Synchronous synthesis — all audio ready before render starts
-        guard let pcmBuffer = rhvoiceEngine.synthesize(
+        let pcmBuffer = rhvoiceEngine.synthesize(
             request.text,
             voice: request.voiceProfileName,
             rate: cappedRate,
             volume: effectiveVolume,
             pitch: request.settings.pitch
-        ) else {
-            rhLog("req#\(reqId) synthesis FAILED")
-            lock.lock()
+        )
+
+        condition.lock()
+        defer {
+            isSynthesizing = false
+            condition.broadcast()
+            condition.unlock()
+            rhLog("req#\(reqId) FINISHED synthesizing state")
+        }
+
+        guard let buffer = pcmBuffer,
+              let floatData = buffer.floatChannelData?[0] else {
+            rhLog("req#\(reqId) synthesis FAILED or no data")
             outputData = []
             outputOffset = 0
-            lock.unlock()
             return
         }
 
-        let frameCount = Int(pcmBuffer.frameLength)
-        guard let floatData = pcmBuffer.floatChannelData?[0] else {
-            rhLog("req#\(reqId) no float data")
-            lock.lock()
-            outputData = []
-            outputOffset = 0
-            lock.unlock()
-            return
-        }
-
+        let frameCount = Int(buffer.frameLength)
         rhLog("req#\(reqId) synthesized \(frameCount) frames")
-
-        lock.lock()
         outputData = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
         outputOffset = 0
-        lock.unlock()
     }
 
     public override func cancelSpeechRequest() {
         rhLog("cancelSpeechRequest")
         rhvoiceEngine.cancel()
-        lock.lock()
+        condition.lock()
+        isSynthesizing = false
         outputData.removeAll()
         outputOffset = 0
-        lock.unlock()
+        condition.broadcast()
+        condition.unlock()
     }
 
     public override func messageChannel(for channelName: String) -> AUMessageChannel {
@@ -180,13 +193,27 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         frames.update(repeating: 0, count: requestedFrames)
         audioBuffers[0].mNumberChannels = 1
 
-        lock.lock()
+        condition.lock()
+        
+        if (outputData.count - outputOffset) <= 0 && isSynthesizing {
+            // Data not ready yet — return silence, iOS will call render again in ~10ms
+            condition.unlock()
+            audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
+            actionFlags.pointee = .offlineUnitRenderAction_Render
+            return noErr
+        }
+
         let available = outputData.count - outputOffset
 
         if available <= 0 {
-            lock.unlock()
+            let synthesizing = isSynthesizing
+            condition.unlock()
             audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
-            actionFlags.pointee = .offlineUnitRenderAction_Complete
+            if synthesizing {
+                actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                actionFlags.pointee = .offlineUnitRenderAction_Complete
+            }
             return noErr
         }
 
@@ -196,11 +223,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             frames.update(from: base.advanced(by: outputOffset), count: toCopy)
         }
         outputOffset += toCopy
-        let done = outputOffset >= outputData.count
+        let done = (outputOffset >= outputData.count) && !isSynthesizing
         if done {
             outputData.removeAll()
         }
-        lock.unlock()
+        condition.unlock()
 
         audioBuffers[0].mDataByteSize = UInt32(toCopy * MemoryLayout<Float>.size)
 

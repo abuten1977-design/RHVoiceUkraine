@@ -477,6 +477,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     NSLog(@"✅ RHVoice data path: %@ (bundle=%@)", dataPath, resolvedBundle.resourcePath);
     NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
+    
+    // Check permissions
+    BOOL isReadable = [fm isReadableFileAtPath:dataPath];
+    NSLog(@"ℹ️ Data path is readable: %d", isReadable);
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
