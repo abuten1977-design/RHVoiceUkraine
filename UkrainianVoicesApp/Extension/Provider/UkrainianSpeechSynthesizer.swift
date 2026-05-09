@@ -71,7 +71,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         rhLog("allocateRenderResources: START")
         try super.allocateRenderResources()
         let engine = self.rhvoiceEngine
-        rhLog("allocateRenderResources: engine initialized = \(engine.initialized)")
+        rhLog("allocateRenderResources: engine ready")
     }
 
     // Always return ALL voices (like eSpeak) — iOS caches the list
@@ -90,11 +90,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let request = resolvedRequest(for: speechRequest)
 
         rhLog("req#\(reqId) START voice=\(request.voiceProfileName) text=\(request.text.count) chars")
-        
-        if !rhvoiceEngine.initialized {
-            rhLog("req#\(reqId) WARNING: engine not initialized, attempting re-init")
-            _ = rhvoiceEngine.initializeEngine()
-        }
 
         let ssmlRate = Self.extractSSMLRate(from: request.text)
         let ssmlVolume = Self.extractSSMLVolume(from: request.text)
