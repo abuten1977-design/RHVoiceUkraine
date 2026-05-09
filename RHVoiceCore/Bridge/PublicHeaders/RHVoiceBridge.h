@@ -5,7 +5,7 @@
 
 #import <Foundation/Foundation.h>
 #import <AVFoundation/AVFoundation.h>
-#import <RHVoiceBridge/RHVoiceEngine.h>
-#import <RHVoiceBridge/RHVoiceEngine+Parameters.h>
-#import <RHVoiceBridge/RHVoiceDebugLog.h>
-#import <RHVoiceBridge/RHVoice_common.h>
+#import "RHVoiceEngine.h"
+#import "RHVoiceEngine+Parameters.h"
+#import "RHVoiceDebugLog.h"
+#import "RHVoice_common.h"
