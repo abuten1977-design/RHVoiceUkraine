@@ -104,7 +104,6 @@ let package = Package(
                 "src/core/SConscript",
                 "src/hts_engine/SConscript",
                 "src/lib/SConscript",
-                "src/pkg/SConscript",
                 "src/core/config.h.in",
                 "src/core/userdict_parser.g",
                 "src/core/.gitignore",
@@ -113,7 +112,6 @@ let package = Package(
             sources: [
                 "src/core",
                 "src/hts_engine",
-                "src/pkg",
                 "src/lib",
                 "src/audio",
             ],
