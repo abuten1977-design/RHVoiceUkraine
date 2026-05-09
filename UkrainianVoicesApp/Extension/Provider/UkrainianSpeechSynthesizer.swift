@@ -3,11 +3,7 @@ import AVFAudio
 import CoreAudio
 import CoreMedia
 import Foundation
-#if os(iOS)
 import RHVoiceBridge
-#else
-import RHVoiceKit
-#endif
 
 private func rhLog(_ msg: String) {
     msg.withCString { RHVoiceDebugLogString($0) }
@@ -19,18 +15,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private lazy var rhvoiceEngine: RHVoiceEngine = RHVoiceEngine()
     private let outputBus: AUAudioUnitBus
 
-    #if os(iOS)
-    // Streaming model: lock-free SPSC ring buffer
-    private lazy var audioBuffer: RHVoiceAudioBuffer = RHVoiceAudioBuffer()
-    private var currentToken: RHVoiceAudioRequestToken?
-    private let synthesisQueue = DispatchQueue(label: "com.rhvoice.synthesis.streaming", qos: .userInitiated)
-    #else
-    // Synchronous model: flat array + read offset
+    // Synchronous model (like eSpeak): flat array + read offset
     private var outputData: [Float] = []
     private var outputOffset: Int = 0
-    private var synthesisComplete: Bool = true
     private let lock = NSLock()
-    #endif
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -83,20 +71,16 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         _ = self.rhvoiceEngine
     }
 
+    // Always return ALL voices (like eSpeak) — iOS caches the list
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get {
-            let enabled = Set(RHVoiceSharedSettingsStore.loadSnapshot().enabledVoiceIdentifiers)
-            let filtered = Self.staticVoices.filter { enabled.contains($0.identifier) }
-            return filtered.isEmpty ? Self.staticVoices : filtered
-        }
+        get { Self.staticVoices }
         set { }
     }
 
     private var requestCounter: Int = 0
 
-    // MARK: - Synthesize
+    // MARK: - Synthesize (synchronous, like eSpeak)
 
-    #if os(iOS)
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
         requestCounter += 1
         let reqId = requestCounter
@@ -111,53 +95,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let cappedRate = min(effectiveRate, 4.0)
         let effectiveVolume = ssmlVolume * request.settings.volume
 
-        rhLog("req#\(reqId) ssmlRate=\(String(format: "%.2f", ssmlRate)) → mapped=\(String(format: "%.2f", mappedRate)) × mult=\(String(format: "%.2f", request.settings.speedMultiplier)) → rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume))")
-
-        let token = audioBuffer.beginRequest()
-        currentToken = token
-
-        let text = request.text
-        let voice = request.voiceProfileName
-        let pitch = request.settings.pitch
-
-        synthesisQueue.async { [weak self] in
-            guard let self = self else { return }
-
-            self.rhvoiceEngine.synthesizeStreaming(
-                text,
-                voice: voice,
-                rate: cappedRate,
-                volume: effectiveVolume,
-                pitch: pitch
-            ) { samples, count, sampleRate in
-                guard count > 0 else { return }
-                self.audioBuffer.appendSamples(samples, count: count, token: token)
-            }
-
-            self.audioBuffer.markCompleted(with: token)
-            rhLog("req#\(reqId) streaming synthesis COMPLETE")
-        }
-    }
-    #else
-    public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
-        let t0 = CFAbsoluteTimeGetCurrent()
-        requestCounter += 1
-        let reqId = requestCounter
-        let request = resolvedRequest(for: speechRequest)
-
-        rhLog("req#\(reqId) START voice=\(request.voiceProfileName) text=\(request.text.count) chars")
-
-        // Extract rate and volume from SSML
-        let ssmlRate = Self.extractSSMLRate(from: request.text)
-        let ssmlVolume = Self.extractSSMLVolume(from: request.text)
-        // Up to 2.0 — linear (slow→normal→fast). Above 2.0 — log curve (no sudden jump)
-        let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
-        let effectiveRate = mappedRate * request.settings.speedMultiplier
-        let cappedRate = min(effectiveRate, 4.0)
-        rhLog("req#\(reqId) ssmlRate=\(String(format: "%.2f", ssmlRate)) → mapped=\(String(format: "%.2f", mappedRate)) × mult=\(String(format: "%.2f", request.settings.speedMultiplier)) → rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", ssmlVolume))")
+        rhLog("req#\(reqId) ssmlRate=\(String(format: "%.2f", ssmlRate)) → rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume))")
 
         // Synchronous synthesis — all audio ready before render starts
-        let effectiveVolume = ssmlVolume * request.settings.volume
         guard let pcmBuffer = rhvoiceEngine.synthesize(
             request.text,
             voice: request.voiceProfileName,
@@ -169,53 +109,36 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             lock.lock()
             outputData = []
             outputOffset = 0
-            synthesisComplete = true
             lock.unlock()
             return
         }
 
-        // Convert PCM buffer to Float array
         let frameCount = Int(pcmBuffer.frameLength)
         guard let floatData = pcmBuffer.floatChannelData?[0] else {
             rhLog("req#\(reqId) no float data")
             lock.lock()
             outputData = []
             outputOffset = 0
-            synthesisComplete = true
             lock.unlock()
             return
         }
 
-        let tSynth = (CFAbsoluteTimeGetCurrent() - t0) * 1000
-        rhLog("req#\(reqId) synthesized \(frameCount) frames in \(String(format: "%.1f", tSynth)) ms")
+        rhLog("req#\(reqId) synthesized \(frameCount) frames")
 
-        // Store for render
         lock.lock()
         outputData = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
         outputOffset = 0
-        synthesisComplete = false
         lock.unlock()
     }
-    #endif
 
-    #if os(iOS)
-    public override func cancelSpeechRequest() {
-        rhLog("cancelSpeechRequest (streaming)")
-        rhvoiceEngine.cancel()
-        audioBuffer.cancelCurrentRequest()
-        currentToken = nil
-    }
-    #else
     public override func cancelSpeechRequest() {
         rhLog("cancelSpeechRequest")
         rhvoiceEngine.cancel()
         lock.lock()
-        outputData = []
+        outputData.removeAll()
         outputOffset = 0
-        synthesisComplete = true
         lock.unlock()
     }
-    #endif
 
     public override func messageChannel(for channelName: String) -> AUMessageChannel {
         final class MessageChannel: AUMessageChannel {
@@ -235,9 +158,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         return MessageChannel()
     }
 
-    // MARK: - Render
+    // MARK: - Render (like eSpeak: simple array + offset)
 
-    #if os(iOS)
     private func performRender(
         actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
         timestamp: UnsafePointer<AudioTimeStamp>,
@@ -256,58 +178,15 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let requestedFrames = Int(frameCount)
 
         frames.update(repeating: 0, count: requestedFrames)
-        audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
-        audioBuffers[0].mNumberChannels = 1
-
-        var didComplete: ObjCBool = false
-        audioBuffer.renderFrames(
-            frames,
-            maxFrames: UInt(requestedFrames),
-            preBufferFrames: 2400,
-            didComplete: &didComplete
-        )
-
-        actionFlags.pointee = didComplete.boolValue
-            ? .offlineUnitRenderAction_Complete
-            : .offlineUnitRenderAction_Render
-
-        return noErr
-    }
-    #else
-    private func performRender(
-        actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
-        timestamp: UnsafePointer<AudioTimeStamp>,
-        frameCount: AUAudioFrameCount,
-        outputBusNumber: Int,
-        outputAudioBufferList: UnsafeMutablePointer<AudioBufferList>,
-        renderEvents: UnsafePointer<AURenderEvent>?,
-        renderPull: AURenderPullInputBlock?
-    ) -> AUAudioUnitStatus {
-        let audioBuffers = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
-        guard let data = audioBuffers[0].mData else {
-            return kAudioUnitErr_InvalidParameter
-        }
-
-        let frames = data.assumingMemoryBound(to: Float.self)
-        let requestedFrames = Int(frameCount)
-
-        // Zero-fill first
-        frames.update(repeating: 0, count: requestedFrames)
-        audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
         audioBuffers[0].mNumberChannels = 1
 
         lock.lock()
         let available = outputData.count - outputOffset
-        let isComplete = synthesisComplete
 
         if available <= 0 {
             lock.unlock()
-            if isComplete {
-                actionFlags.pointee = .offlineUnitRenderAction_Complete
-            } else {
-                // Synthesis still running — send silence, keep pipeline
-                actionFlags.pointee = .offlineUnitRenderAction_Render
-            }
+            audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
+            actionFlags.pointee = .offlineUnitRenderAction_Complete
             return noErr
         }
 
@@ -319,14 +198,15 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         outputOffset += toCopy
         let done = outputOffset >= outputData.count
         if done {
-            synthesisComplete = true
+            outputData.removeAll()
         }
         lock.unlock()
 
+        audioBuffers[0].mDataByteSize = UInt32(toCopy * MemoryLayout<Float>.size)
+
         if done {
-            // Fade out to avoid click — skip for short utterances
             let fadeLen = min(32, toCopy / 4)
-            if fadeLen > 0 && outputData.count > 256 {
+            if fadeLen > 0 && toCopy > 256 {
                 for i in 0..<fadeLen {
                     frames[toCopy - fadeLen + i] *= Float(fadeLen - 1 - i) / Float(fadeLen)
                 }
@@ -338,7 +218,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         return noErr
     }
-    #endif
 
     public override var internalRenderBlock: AUInternalRenderBlock {
         performRender
