@@ -14,11 +14,12 @@ private func rhLog(_ msg: String) {
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
     private lazy var rhvoiceEngine: RHVoiceEngine = RHVoiceEngine()
     private let outputBus: AUAudioUnitBus
+    private var _outputBusses: AUAudioUnitBusArray!
 
-    // Synchronous model (like eSpeak): flat array + read offset
-    private var outputData: [Float] = []
+    // eSpeak-style: flat array + offset + semaphore
+    private var output: [Float] = []
     private var outputOffset: Int = 0
-    private let condition = NSCondition()
+    private var outputMutex = DispatchSemaphore(value: 1)
     private var isSynthesizing = false
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
@@ -31,8 +32,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         AVSpeechSynthesisProviderVoice(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr",
             primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
     ]
-
-    private var outputBussesStorage: AUAudioUnitBusArray!
 
     @objc
     public override init(
@@ -50,108 +49,175 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             mBitsPerChannel: 32,
             mReserved: 0
         )
-        let formatDescription = try CMAudioFormatDescription(audioStreamBasicDescription: basicDescription)
-        let format = AVAudioFormat(cmAudioFormatDescription: formatDescription)
+        let format = AVAudioFormat(cmAudioFormatDescription: try CMAudioFormatDescription(audioStreamBasicDescription: basicDescription))
         self.outputBus = try AUAudioUnitBus(format: format)
 
         try super.init(componentDescription: componentDescription, options: options)
 
-        self.outputBussesStorage = AUAudioUnitBusArray(
-            audioUnit: self,
-            busType: .output,
-            busses: [outputBus]
-        )
+        self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
     }
 
-    public override var outputBusses: AUAudioUnitBusArray {
-        outputBussesStorage
-    }
+    public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
 
     public override func allocateRenderResources() throws {
-        rhLog("allocateRenderResources: START")
         try super.allocateRenderResources()
-        let engine = self.rhvoiceEngine
-        rhLog("allocateRenderResources: engine ready")
+        _ = self.rhvoiceEngine
     }
 
-    // Always return ALL voices (like eSpeak) — iOS caches the list
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
         get { Self.staticVoices }
         set { }
     }
 
-    private var requestCounter: Int = 0
+    // MARK: - Render (exactly like eSpeak)
 
-    // MARK: - Synthesize (synchronous, like eSpeak)
+    private func performRender(
+        actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
+        timestamp: UnsafePointer<AudioTimeStamp>,
+        frameCount: AUAudioFrameCount,
+        outputBusNumber: Int,
+        outputAudioBufferList: UnsafeMutablePointer<AudioBufferList>,
+        renderEvents: UnsafePointer<AURenderEvent>?,
+        renderPull: AURenderPullInputBlock?
+    ) -> AUAudioUnitStatus {
+        let unsafeBuffer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
+        let frames = unsafeBuffer[0].mData!.assumingMemoryBound(to: Float.self)
+        frames.assign(repeating: 0, count: Int(frameCount))
 
-    public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
-        requestCounter += 1
-        let reqId = requestCounter
-        let request = resolvedRequest(for: speechRequest)
-
-        rhLog("req#\(reqId) START voice=\(request.voiceProfileName) text=\(request.text.count) chars")
-
-        let ssmlRate = Self.extractSSMLRate(from: request.text)
-        let ssmlVolume = Self.extractSSMLVolume(from: request.text)
-        let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
-        let effectiveRate = mappedRate * request.settings.speedMultiplier
-        let cappedRate = min(effectiveRate, 4.0)
-        let effectiveVolume = ssmlVolume * request.settings.volume
-
-        rhLog("req#\(reqId) ssmlRate=\(String(format: "%.2f", ssmlRate)) → rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume))")
-
-        condition.lock()
-        isSynthesizing = true
-        outputData = []
-        outputOffset = 0
-        condition.unlock()
-
-        // Synchronous synthesis — all audio ready before render starts
-        let pcmBuffer = rhvoiceEngine.synthesize(
-            request.text,
-            voice: request.voiceProfileName,
-            rate: cappedRate,
-            volume: effectiveVolume,
-            pitch: request.settings.pitch
-        )
-
-        condition.lock()
-        defer {
-            isSynthesizing = false
-            condition.broadcast()
-            condition.unlock()
-            rhLog("req#\(reqId) FINISHED synthesizing state")
+        self.outputMutex.wait()
+        
+        let available = self.output.count - self.outputOffset
+        
+        if available <= 0 {
+            let stillSynthesizing = self.isSynthesizing
+            self.outputMutex.signal()
+            
+            outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(Int(frameCount) * MemoryLayout<Float>.size)
+            
+            if stillSynthesizing {
+                actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                actionFlags.pointee = .offlineUnitRenderAction_Complete
+            }
+            return noErr
         }
 
-        guard let buffer = pcmBuffer,
-              let floatData = buffer.floatChannelData?[0] else {
-            rhLog("req#\(reqId) synthesis FAILED or no data")
-            outputData = []
-            outputOffset = 0
+        let count = min(available, Int(frameCount))
+        self.output.withUnsafeBufferPointer { ptr in
+            frames.assign(from: ptr.baseAddress!.advanced(by: self.outputOffset), count: count)
+        }
+        outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(count * MemoryLayout<Float>.size)
+
+        self.outputOffset += count
+        
+        let done = (self.outputOffset >= self.output.count) && !self.isSynthesizing
+        
+        if done {
+            actionFlags.pointee = .offlineUnitRenderAction_Complete
+            self.output.removeAll()
+            self.outputOffset = 0
+        } else {
+            actionFlags.pointee = .offlineUnitRenderAction_Render
+        }
+        self.outputMutex.signal()
+
+        return noErr
+    }
+
+    public override var internalRenderBlock: AUInternalRenderBlock { self.performRender }
+
+    // MARK: - Synthesize (exactly like eSpeak: sync, then store under mutex)
+
+    public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+        let text = speechRequest.ssmlRepresentation
+        let voiceId = speechRequest.voice.identifier
+
+        rhLog("synth request: voice=\(voiceId) text=\(text.count) chars")
+
+        // Resolve voice profile name
+        let profileName: String
+        if let descriptor = RHVoiceSharedSettings.voiceCatalog.first(where: { $0.identifier == voiceId }) {
+            profileName = descriptor.profileName
+        } else {
+            profileName = RHVoiceSharedSettings.voiceCatalog.first!.profileName
+        }
+
+        // Extract rate/volume from SSML
+        let ssmlRate = Self.extractSSMLRate(from: text)
+        let ssmlVolume = Self.extractSSMLVolume(from: text)
+        let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
+        let cappedRate = min(mappedRate, 4.0)
+
+        rhLog("synth: voice=\(profileName) rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", ssmlVolume))")
+
+        self.outputMutex.wait()
+        self.isSynthesizing = true
+        self.output.removeAll()
+        self.outputOffset = 0
+        self.outputMutex.signal()
+
+        // Synchronous synthesis — blocks until complete
+        var pcmBuffer = rhvoiceEngine.synthesize(
+            text,
+            voice: profileName,
+            rate: cappedRate,
+            volume: ssmlVolume,
+            pitch: 1.0
+        )
+        
+        // Fallback: if SSML synthesis failed, try plain text without tags
+        if pcmBuffer == nil && text.contains("<") {
+            let plainText = stripSSML(text)
+            rhLog("synth: SSML failed, trying fallback: \(plainText.prefix(50))...")
+            pcmBuffer = rhvoiceEngine.synthesize(
+                plainText,
+                voice: profileName,
+                rate: cappedRate,
+                volume: ssmlVolume,
+                pitch: 1.0
+            )
+        }
+
+        self.outputMutex.wait()
+        defer {
+            self.isSynthesizing = false
+            self.outputMutex.signal()
+        }
+
+        guard let buffer = pcmBuffer, let floatData = buffer.floatChannelData?[0] else {
+            rhLog("synth FAILED")
             return
         }
 
         let frameCount = Int(buffer.frameLength)
-        rhLog("req#\(reqId) synthesized \(frameCount) frames")
-        outputData = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
-        outputOffset = 0
+        let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
+
+        rhLog("synth output: \(samples.count) samples")
+
+        self.output = samples
+        self.outputOffset = 0
     }
+
+    private func stripSSML(_ ssml: String) -> String {
+        return ssml.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+    }
+
+    // MARK: - Cancel (exactly like eSpeak)
 
     public override func cancelSpeechRequest() {
-        rhLog("cancelSpeechRequest")
-        rhvoiceEngine.cancel()
-        condition.lock()
-        isSynthesizing = false
-        outputData.removeAll()
-        outputOffset = 0
-        condition.broadcast()
-        condition.unlock()
+        self.outputMutex.wait()
+        self.isSynthesizing = false
+        self.output.removeAll()
+        self.outputOffset = 0
+        rhLog("cancel")
+        self.outputMutex.signal()
     }
 
-    public override func messageChannel(for channelName: String) -> AUMessageChannel {
-        final class MessageChannel: AUMessageChannel {
-            var callHostBlock: CallHostBlock? { get { nil } set {} }
+    // MARK: - Message Channel
 
+    public override func messageChannel(for channelName: String) -> AUMessageChannel {
+        final class MC: AUMessageChannel {
+            var callHostBlock: CallHostBlock? { get { nil } set {} }
             func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
                 if message["initHost"] as? Bool == true {
                     return [
@@ -163,83 +229,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 return [:]
             }
         }
-        return MessageChannel()
-    }
-
-    // MARK: - Render (like eSpeak: simple array + offset)
-
-    private func performRender(
-        actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
-        timestamp: UnsafePointer<AudioTimeStamp>,
-        frameCount: AUAudioFrameCount,
-        outputBusNumber: Int,
-        outputAudioBufferList: UnsafeMutablePointer<AudioBufferList>,
-        renderEvents: UnsafePointer<AURenderEvent>?,
-        renderPull: AURenderPullInputBlock?
-    ) -> AUAudioUnitStatus {
-        let audioBuffers = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
-        guard let data = audioBuffers[0].mData else {
-            return kAudioUnitErr_InvalidParameter
-        }
-
-        let frames = data.assumingMemoryBound(to: Float.self)
-        let requestedFrames = Int(frameCount)
-
-        frames.update(repeating: 0, count: requestedFrames)
-        audioBuffers[0].mNumberChannels = 1
-
-        condition.lock()
-        
-        if (outputData.count - outputOffset) <= 0 && isSynthesizing {
-            // Data not ready yet — wait up to 200ms for synthesis to complete (like Piper)
-            condition.wait(until: Date(timeIntervalSinceNow: 0.2))
-        }
-
-        let available = outputData.count - outputOffset
-
-        if available <= 0 {
-            let synthesizing = isSynthesizing
-            condition.unlock()
-            audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
-            if synthesizing {
-                actionFlags.pointee = .offlineUnitRenderAction_Render
-            } else {
-                actionFlags.pointee = .offlineUnitRenderAction_Complete
-            }
-            return noErr
-        }
-
-        let toCopy = min(requestedFrames, available)
-        outputData.withUnsafeBufferPointer { buf in
-            guard let base = buf.baseAddress else { return }
-            frames.update(from: base.advanced(by: outputOffset), count: toCopy)
-        }
-        outputOffset += toCopy
-        let done = (outputOffset >= outputData.count) && !isSynthesizing
-        if done {
-            outputData.removeAll()
-        }
-        condition.unlock()
-
-        audioBuffers[0].mDataByteSize = UInt32(toCopy * MemoryLayout<Float>.size)
-
-        if done {
-            let fadeLen = min(32, toCopy / 4)
-            if fadeLen > 0 && toCopy > 256 {
-                for i in 0..<fadeLen {
-                    frames[toCopy - fadeLen + i] *= Float(fadeLen - 1 - i) / Float(fadeLen)
-                }
-            }
-            actionFlags.pointee = .offlineUnitRenderAction_Complete
-        } else {
-            actionFlags.pointee = .offlineUnitRenderAction_Render
-        }
-
-        return noErr
-    }
-
-    public override var internalRenderBlock: AUInternalRenderBlock {
-        performRender
+        return MC()
     }
 
     // MARK: - SSML parsing
@@ -258,37 +248,5 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
               let range = Range(match.range(at: 1), in: ssml),
               let db = Double(ssml[range]) else { return 1.0 }
         return max(0.1, min(2.0, pow(10.0, db / 20.0)))
-    }
-
-    // MARK: - Resolve request
-
-    private func resolvedRequest(
-        for speechRequest: AVSpeechSynthesisProviderRequest
-    ) -> RHVoiceSynthesisRequest {
-        let identifier = speechRequest.voice.identifier
-        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
-
-        let descriptor = snapshot.voiceCatalog.first { $0.identifier == identifier }
-            ?? RHVoiceSharedSettings.voiceCatalog.first!
-
-        let base = snapshot.effectiveSettings(for: descriptor.identifier)
-
-        rhLog("voice.id: \(identifier) voice.name: \(speechRequest.voice.name)")
-        let ssmlPreview = String(speechRequest.ssmlRepresentation.prefix(300))
-        rhLog("ssml: \(ssmlPreview)")
-
-        return RHVoiceSynthesisRequest(
-            text: speechRequest.ssmlRepresentation,
-            voiceIdentifier: descriptor.identifier,
-            voiceProfileName: descriptor.profileName,
-            settings: RHVoiceSpeechSettings(
-                rate:            base.rate,
-                volume:          base.volume,
-                speedMultiplier: base.speedMultiplier,
-                sentencePause:   base.sentencePause,
-                pitch:           base.pitch
-            ),
-            source: .system
-        )
     }
 }
