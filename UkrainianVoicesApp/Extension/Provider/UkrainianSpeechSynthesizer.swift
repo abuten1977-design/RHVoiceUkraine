@@ -191,11 +191,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         condition.lock()
         
         if (outputData.count - outputOffset) <= 0 && isSynthesizing {
-            // Data not ready yet — return silence, iOS will call render again in ~10ms
-            condition.unlock()
-            audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
-            actionFlags.pointee = .offlineUnitRenderAction_Render
-            return noErr
+            // Data not ready yet — wait up to 200ms for synthesis to complete (like Piper)
+            condition.wait(until: Date(timeIntervalSinceNow: 0.2))
         }
 
         let available = outputData.count - outputOffset
