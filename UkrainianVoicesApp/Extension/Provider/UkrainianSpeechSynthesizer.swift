@@ -9,12 +9,6 @@ private func rhLog(_ msg: String) {
     msg.withCString { RHVoiceDebugLogString($0) }
 }
 
-private enum RHVoiceParam: AUParameterAddress {
-    case speedMultiplier = 1
-    case volume = 2
-    case pitch = 3
-}
-
 @available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
@@ -27,11 +21,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private var outputOffset: Int = 0
     private var outputMutex = DispatchSemaphore(value: 1)
     private var isSynthesizing = false
-
-    // AUParameters (like eSpeak) — no App Group needed
-    private var paramSpeedMultiplier: AUParameter!
-    private var paramVolume: AUParameter!
-    private var paramPitch: AUParameter!
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -66,51 +55,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         try super.init(componentDescription: componentDescription, options: options)
 
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
-
-        // Setup AUParameters (like eSpeak)
-        paramSpeedMultiplier = AUParameterTree.createParameter(
-            withIdentifier: "speedMultiplier", name: "Speed Multiplier",
-            address: RHVoiceParam.speedMultiplier.rawValue,
-            min: 0.5, max: 3.0, unit: .generic, unitName: nil,
-            valueStrings: nil, dependentParameters: nil)
-        paramSpeedMultiplier.value = 1.0
-
-        paramVolume = AUParameterTree.createParameter(
-            withIdentifier: "volume", name: "Volume",
-            address: RHVoiceParam.volume.rawValue,
-            min: 0.1, max: 2.0, unit: .generic, unitName: nil,
-            valueStrings: nil, dependentParameters: nil)
-        paramVolume.value = 1.0
-
-        paramPitch = AUParameterTree.createParameter(
-            withIdentifier: "pitch", name: "Pitch",
-            address: RHVoiceParam.pitch.rawValue,
-            min: 0.5, max: 2.0, unit: .generic, unitName: nil,
-            valueStrings: nil, dependentParameters: nil)
-        paramPitch.value = 1.0
-
-        self.parameterTree = AUParameterTree.createTree(withChildren: [
-            paramSpeedMultiplier, paramVolume, paramPitch
-        ])
-
-        self.parameterTree?.implementorValueProvider = { [weak self] param in
-            guard let self = self else { return 1.0 }
-            switch param.address {
-            case RHVoiceParam.speedMultiplier.rawValue: return self.paramSpeedMultiplier.value
-            case RHVoiceParam.volume.rawValue: return self.paramVolume.value
-            case RHVoiceParam.pitch.rawValue: return self.paramPitch.value
-            default: return 1.0
-            }
-        }
-        self.parameterTree?.implementorValueObserver = { [weak self] param, value in
-            guard let self = self else { return }
-            switch param.address {
-            case RHVoiceParam.speedMultiplier.rawValue: self.paramSpeedMultiplier.value = value
-            case RHVoiceParam.volume.rawValue: self.paramVolume.value = value
-            case RHVoiceParam.pitch.rawValue: self.paramPitch.value = value
-            default: break
-            }
-        }
     }
 
     public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
@@ -125,7 +69,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         set { }
     }
 
-    // MARK: - Render (eSpeak-style)
+    // MARK: - Render (exactly like eSpeak)
 
     private func performRender(
         actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
@@ -141,14 +85,20 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         frames.assign(repeating: 0, count: Int(frameCount))
 
         self.outputMutex.wait()
-
+        
         let available = self.output.count - self.outputOffset
-
+        
         if available <= 0 {
             let stillSynthesizing = self.isSynthesizing
             self.outputMutex.signal()
+            
             outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(Int(frameCount) * MemoryLayout<Float>.size)
-            actionFlags.pointee = stillSynthesizing ? .offlineUnitRenderAction_Render : .offlineUnitRenderAction_Complete
+            
+            if stillSynthesizing {
+                actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                actionFlags.pointee = .offlineUnitRenderAction_Complete
+            }
             return noErr
         }
 
@@ -159,8 +109,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(count * MemoryLayout<Float>.size)
 
         self.outputOffset += count
+        
         let done = (self.outputOffset >= self.output.count) && !self.isSynthesizing
-
+        
         if done {
             actionFlags.pointee = .offlineUnitRenderAction_Complete
             self.output.removeAll()
@@ -175,7 +126,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     public override var internalRenderBlock: AUInternalRenderBlock { self.performRender }
 
-    // MARK: - Synthesize
+    // MARK: - Synthesize (exactly like eSpeak: sync, then store under mutex)
 
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
         let text = speechRequest.ssmlRepresentation
@@ -191,23 +142,13 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             profileName = RHVoiceSharedSettings.voiceCatalog.first!.profileName
         }
 
-        // Get parameters from AUParameterTree
-        let speedMult = Double(paramSpeedMultiplier.value)
-        let userVolume = Double(paramVolume.value)
-        let userPitch = Double(paramPitch.value)
-
-        // Extract rate/volume from SSML (VoiceOver sends these)
+        // Extract rate/volume from SSML
         let ssmlRate = Self.extractSSMLRate(from: text)
         let ssmlVolume = Self.extractSSMLVolume(from: text)
-
-        // Combine: SSML rate * speedMultiplier, log curve above 2.0
         let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
-        let effectiveRate = mappedRate * speedMult
-        let cappedRate = min(effectiveRate, 4.0)
-        let effectiveVolume = ssmlVolume * userVolume
-        let effectivePitch = userPitch
+        let cappedRate = min(mappedRate, 4.0)
 
-        rhLog("synth: voice=\(profileName) rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch))")
+        rhLog("synth: voice=\(profileName) rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", ssmlVolume))")
 
         self.outputMutex.wait()
         self.isSynthesizing = true
@@ -215,41 +156,60 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self.outputOffset = 0
         self.outputMutex.signal()
 
-        // Synchronous synthesis
-        guard let pcmBuffer = rhvoiceEngine.synthesize(
+        // Synchronous synthesis — blocks until complete
+        var pcmBuffer = rhvoiceEngine.synthesize(
             text,
             voice: profileName,
             rate: cappedRate,
-            volume: effectiveVolume,
-            pitch: effectivePitch
-        ), let floatData = pcmBuffer.floatChannelData?[0] else {
-            rhLog("synth FAILED")
-            self.outputMutex.wait()
+            volume: ssmlVolume,
+            pitch: 1.0
+        )
+        
+        // Fallback: if SSML synthesis failed, try plain text without tags
+        if pcmBuffer == nil && text.contains("<") {
+            let plainText = stripSSML(text)
+            rhLog("synth: SSML failed, trying fallback: \(plainText.prefix(50))...")
+            pcmBuffer = rhvoiceEngine.synthesize(
+                plainText,
+                voice: profileName,
+                rate: cappedRate,
+                volume: ssmlVolume,
+                pitch: 1.0
+            )
+        }
+
+        self.outputMutex.wait()
+        defer {
             self.isSynthesizing = false
             self.outputMutex.signal()
+        }
+
+        guard let buffer = pcmBuffer, let floatData = buffer.floatChannelData?[0] else {
+            rhLog("synth FAILED")
             return
         }
 
-        let frameCount = Int(pcmBuffer.frameLength)
+        let frameCount = Int(buffer.frameLength)
         let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
+
         rhLog("synth output: \(samples.count) samples")
 
-        self.outputMutex.wait()
         self.output = samples
         self.outputOffset = 0
-        self.isSynthesizing = false
-        self.outputMutex.signal()
     }
 
-    // MARK: - Cancel
+    private func stripSSML(_ ssml: String) -> String {
+        return ssml.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+    }
+
+    // MARK: - Cancel (exactly like eSpeak)
 
     public override func cancelSpeechRequest() {
-        rhLog("cancel")
-        rhvoiceEngine.cancel()
         self.outputMutex.wait()
         self.isSynthesizing = false
         self.output.removeAll()
         self.outputOffset = 0
+        rhLog("cancel")
         self.outputMutex.signal()
     }
 
@@ -257,35 +217,19 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     public override func messageChannel(for channelName: String) -> AUMessageChannel {
         final class MC: AUMessageChannel {
-            weak var unit: UkrainianSpeechSynthesizer?
             var callHostBlock: CallHostBlock? { get { nil } set {} }
             func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
-                guard let unit = unit else { return [:] }
                 if message["initHost"] as? Bool == true {
                     return [
                         "voiceIds": UkrainianSpeechSynthesizer.staticVoices.map(\.identifier),
                         "voiceNames": UkrainianSpeechSynthesizer.staticVoices.map(\.name),
-                        "speedMultiplier": unit.paramSpeedMultiplier.value,
-                        "volume": unit.paramVolume.value,
-                        "pitch": unit.paramPitch.value
+                        "primaryLanguages": UkrainianSpeechSynthesizer.staticVoices.map { $0.primaryLanguages.first ?? "uk-UA" }
                     ]
                 }
-                // Allow app to set parameters via message channel
-                if let speed = message["speedMultiplier"] as? Float {
-                    unit.paramSpeedMultiplier.value = speed
-                }
-                if let vol = message["volume"] as? Float {
-                    unit.paramVolume.value = vol
-                }
-                if let pitch = message["pitch"] as? Float {
-                    unit.paramPitch.value = pitch
-                }
-                return ["ok": true]
+                return [:]
             }
         }
-        let mc = MC()
-        mc.unit = self
-        return mc
+        return MC()
     }
 
     // MARK: - SSML parsing
