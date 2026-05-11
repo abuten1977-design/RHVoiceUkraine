@@ -145,10 +145,19 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         // Extract rate/volume from SSML
         let ssmlRate = Self.extractSSMLRate(from: text)
         let ssmlVolume = Self.extractSSMLVolume(from: text)
-        let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
-        let cappedRate = min(mappedRate, 4.0)
 
-        rhLog("synth: voice=\(profileName) rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", ssmlVolume))")
+        // Read user settings from App Group
+        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        let voiceSettings = snapshot.effectiveSettings(for: voiceId)
+
+        // Combine SSML with user settings
+        let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
+        let effectiveRate = mappedRate * voiceSettings.speedMultiplier
+        let cappedRate = min(effectiveRate, 4.0)
+        let effectiveVolume = ssmlVolume * voiceSettings.volume
+        let effectivePitch = voiceSettings.pitch
+
+        rhLog("synth: voice=\(profileName) rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch))")
 
         self.outputMutex.wait()
         self.isSynthesizing = true
@@ -161,8 +170,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             text,
             voice: profileName,
             rate: cappedRate,
-            volume: ssmlVolume,
-            pitch: 1.0
+            volume: effectiveVolume,
+            pitch: effectivePitch
         )
         
         // Fallback: if SSML synthesis failed, try plain text without tags
@@ -173,8 +182,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 plainText,
                 voice: profileName,
                 rate: cappedRate,
-                volume: ssmlVolume,
-                pitch: 1.0
+                volume: effectiveVolume,
+                pitch: effectivePitch
             )
         }
 
