@@ -138,9 +138,9 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: ""
-        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Distribution"
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
     dependencies:
       - target: UkrainianVoicesExtension
       - package: RHVoiceCore
@@ -178,9 +178,9 @@ targets:
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
         OTHER_LDFLAGS: "$(inherited) -lc++"
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: ""
-        DEVELOPMENT_TEAM: ""
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: "Apple Distribution"
+        DEVELOPMENT_TEAM: "5NNZPP8CRR"
     dependencies:
       - package: RHVoiceCore
         product: RHVoiceBridge
