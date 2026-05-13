@@ -139,6 +139,17 @@ enum RHVoiceSharedSettingsStore {
             defaults.set(snapshot.generalSettings.speedMultiplier, forKey: RHVoiceSharedSettings.speedMultiplierKey)
             defaults.set(snapshot.generalSettings.sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
             defaults.set(snapshot.generalSettings.pitch, forKey: RHVoiceSharedSettings.pitchKey)
+
+            // Also save per-voice settings so extension can read them from UserDefaults fallback
+            for (identifier, perVoice) in snapshot.perVoiceSettings {
+                let prefix = "voiceSettings.\(identifier)"
+                defaults.set(perVoice.useCustomSettings, forKey: "\(prefix).useCustomSettings")
+                defaults.set(perVoice.settings.rate, forKey: "\(prefix).rate")
+                defaults.set(perVoice.settings.volume, forKey: "\(prefix).volume")
+                defaults.set(perVoice.settings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
+                defaults.set(perVoice.settings.sentencePause, forKey: "\(prefix).sentencePause")
+                defaults.set(perVoice.settings.pitch, forKey: "\(prefix).pitch")
+            }
         }
     }
 
