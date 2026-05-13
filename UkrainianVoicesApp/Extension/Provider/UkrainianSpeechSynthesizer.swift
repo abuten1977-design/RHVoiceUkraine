@@ -4,6 +4,9 @@ import CoreAudio
 import CoreMedia
 import Foundation
 import RHVoiceBridge
+import os.log
+
+private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
 
 private func rhLog(_ msg: String) {
     msg.withCString { RHVoiceDebugLogString($0) }
@@ -158,6 +161,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let effectivePitch = voiceSettings.pitch
 
         rhLog("synth: voice=\(profileName) rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch))")
+        os_log(.info, log: paramLog, "PARAMS rate=%{public}.2f speedMult=%{public}.2f vol=%{public}.2f pitch=%{public}.2f useCustom=%{public}d", cappedRate, voiceSettings.speedMultiplier, effectiveVolume, effectivePitch, voiceSettings.speedMultiplier != 1.0 ? 1 : 0)
 
         self.outputMutex.wait()
         self.isSynthesizing = true
