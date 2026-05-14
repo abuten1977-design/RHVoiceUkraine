@@ -163,11 +163,12 @@ private final class ContentViewModel: ObservableObject {
         let initialVolume = snapshot.generalSettings.volume
         let initialSpeedMultiplier = snapshot.generalSettings.speedMultiplier
         let initialSentencePause = snapshot.generalSettings.sentencePause
+        let initialPitch = snapshot.generalSettings.pitch
 
         self.rate = initialRate
         self.volume = initialVolume
         self.speedMultiplier = initialSpeedMultiplier
-        self.pitch = 1.0
+        self.pitch = initialPitch
         self.sentencePause = initialSentencePause
         self.testText = "Привіт! Це тест українського голосу."
         self.enabledVoiceIdentifiers = storedEnabled.isEmpty ? defaultEnabledVoiceIdentifiers : storedEnabled
@@ -182,7 +183,7 @@ private final class ContentViewModel: ObservableObject {
                     sentencePause: stored.settings.sentencePause
                 ))
             }
-            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause))
+            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackPitch: initialPitch))
         })
 
         normalizeSelection()
@@ -221,7 +222,8 @@ private final class ContentViewModel: ObservableObject {
                 fallbackRate: rate,
                 fallbackVolume: volume,
                 fallbackSpeedMultiplier: speedMultiplier,
-                fallbackSentencePause: sentencePause
+                fallbackSentencePause: sentencePause,
+                fallbackPitch: pitch
             )
     }
 
@@ -504,7 +506,8 @@ private final class ContentViewModel: ObservableObject {
         fallbackRate: Double,
         fallbackVolume: Double,
         fallbackSpeedMultiplier: Double,
-        fallbackSentencePause: Double
+        fallbackSentencePause: Double,
+        fallbackPitch: Double
     ) -> VoiceSettingsState {
         let prefix = voiceSettingsKeyPrefix(for: identifier)
         return VoiceSettingsState(
@@ -512,7 +515,8 @@ private final class ContentViewModel: ObservableObject {
             rate: defaults.object(forKey: "\(prefix).rate") as? Double ?? fallbackRate,
             volume: defaults.object(forKey: "\(prefix).volume") as? Double ?? fallbackVolume,
             speedMultiplier: defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier,
-            sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause
+            sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
+            pitch: defaults.object(forKey: "\(prefix).pitch") as? Double ?? fallbackPitch
         )
     }
 }
