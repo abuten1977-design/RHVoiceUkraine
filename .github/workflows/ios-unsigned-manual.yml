@@ -57,9 +57,8 @@ jobs:
             -destination "generic/platform=iOS" \
             -derivedDataPath build \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="" \
             clean archive \
             -archivePath build/UkrainianVoices.xcarchive
