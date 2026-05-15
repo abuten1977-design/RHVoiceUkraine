@@ -145,11 +145,9 @@ jobs:
             ARCHS="x86_64" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_STYLE=Automatic \
             CODE_SIGN_IDENTITY="$MACOS_CODE_SIGN_IDENTITY" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            UV_MAC_APP_PROFILE_UUID="$UV_MAC_APP_PROFILE_UUID" \
-            UV_MAC_EXT_PROFILE_UUID="$UV_MAC_EXT_PROFILE_UUID" \
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
