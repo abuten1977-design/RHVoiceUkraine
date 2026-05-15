@@ -230,6 +230,8 @@ targets:
       - target: UkrainianVoicesExtensionMac
       - target: RHVoiceKitMac
         embed: true
+      - package: RHVoiceCore
+        product: RHVoiceBridge
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
 
@@ -260,6 +262,8 @@ targets:
     dependencies:
       - target: RHVoiceKitMac
         embed: true
+      - package: RHVoiceCore
+        product: RHVoiceBridge
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
       - sdk: AudioToolbox.framework
