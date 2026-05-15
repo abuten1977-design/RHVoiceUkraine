@@ -88,6 +88,7 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM=5NNZPP8CRR \
             CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             clean archive \
             -archivePath build/UkrainianVoices.xcarchive
 
@@ -149,11 +150,16 @@ jobs:
           set -euxo pipefail
           IPA_PATH="$(find UkrainianVoicesApp/build/export -maxdepth 2 -type f -name '*.ipa' | head -n 1)"
           test -n "$IPA_PATH"
+          ALTOOL_LOG="$RUNNER_TEMP/altool-upload.log"
           xcrun altool --upload-app \
             --type ios \
             --file "$IPA_PATH" \
             --apiKey "$ASC_KEY_ID" \
-            --apiIssuer "$ASC_ISSUER_ID"
+            --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$ALTOOL_LOG"
+          if grep -E "ERROR:|Failed to upload|The bundle version must be higher" "$ALTOOL_LOG"; then
+            echo "altool reported an upload error"
+            exit 1
+          fi
 
       - name: Summary
         run: |
