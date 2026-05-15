@@ -144,15 +144,34 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             ARCHS="x86_64" \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="$MACOS_CODE_SIGN_IDENTITY" \
+            CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
           mkdir -p build_signed/export
           cp -R build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app build_signed/export/
+
+      - name: Sign macOS app manually
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
+          EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+          test -d "$APP_PATH"
+          test -d "$EXT_PATH"
+
+          while IFS= read -r item; do
+            codesign --force --timestamp --options runtime --sign "$MACOS_CODE_SIGN_IDENTITY" "$item"
+          done < <(find "$APP_PATH" \( -name "*.framework" -o -name "*.dylib" \) -print | sort -r)
+
+          codesign --force --timestamp --options runtime \
+            --entitlements Extension/UkrainianVoicesExtensionMac.entitlements \
+            --sign "$MACOS_CODE_SIGN_IDENTITY" "$EXT_PATH"
+
+          codesign --force --timestamp --options runtime \
+            --entitlements App/UkrainianVoicesMac.entitlements \
+            --sign "$MACOS_CODE_SIGN_IDENTITY" "$APP_PATH"
 
       - name: Validate signed macOS artifact (static + signature gate)
         working-directory: UkrainianVoicesApp
