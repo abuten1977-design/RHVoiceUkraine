@@ -12,15 +12,24 @@ concurrency:
 
 jobs:
   build-ios-app:
-    name: Build iOS App (.ipa)
+    name: Build Signed iOS App and Upload to TestFlight
     runs-on: macos-latest
     timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -42,7 +51,23 @@ jobs:
           xcodegen generate
           ls -la UkrainianVoices.xcodeproj
 
-      - name: Build unsigned iPhone archive
+      - name: Prepare App Store Connect API key
+        run: |
+          set -euo pipefail
+          test -n "${ASC_KEY_ID:-}"
+          test -n "${ASC_ISSUER_ID:-}"
+          test -n "${ASC_API_KEY_BASE64:-}"
+          mkdir -p "$RUNNER_TEMP/appstoreconnect"
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          test -s "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          {
+            echo "ASC_API_KEY_PATH=$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+            echo "ASC_KEY_ID=$ASC_KEY_ID"
+            echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Build signed iPhone archive
         run: |
           set -euxo pipefail
           cd UkrainianVoicesApp
@@ -53,41 +78,88 @@ jobs:
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             -derivedDataPath build \
-            ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            DEVELOPMENT_TEAM="" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_API_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM=5NNZPP8CRR \
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             clean archive \
             -archivePath build/UkrainianVoices.xcarchive
 
-      - name: Package unsigned iPhone app
+      - name: Create export options
         run: |
           set -euxo pipefail
           cd UkrainianVoicesApp
-          test -d build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app
-          mkdir -p unsigned_artifacts/Payload
-          cp -R build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app unsigned_artifacts/Payload/
-          cd unsigned_artifacts
-          zip -qry ../UkrainianVoices-unsigned.ipa Payload
+          cat > ExportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>5NNZPP8CRR</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>manageAppVersionAndBuildNumber</key>
+            <false/>
+          </dict>
+          </plist>
+          PLIST
 
-      - name: Upload unsigned iPhone artifacts
+      - name: Export signed IPA
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodebuild -exportArchive \
+            -archivePath build/UkrainianVoices.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_API_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          find build/export -maxdepth 2 -type f -name '*.ipa' -print
+
+      - name: Upload signed iPhone artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ios-unsigned-build
+          name: ios-signed-testflight-build
           path: |
-            UkrainianVoicesApp/UkrainianVoices-unsigned.ipa
+            UkrainianVoicesApp/build/export/*.ipa
             UkrainianVoicesApp/build/UkrainianVoices.xcarchive
           if-no-files-found: error
           retention-days: 1
 
+      - name: Upload to TestFlight
+        run: |
+          set -euxo pipefail
+          IPA_PATH="$(find UkrainianVoicesApp/build/export -maxdepth 2 -type f -name '*.ipa' | head -n 1)"
+          test -n "$IPA_PATH"
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID"
+
       - name: Summary
         run: |
           {
-            echo "## iOS unsigned build ready"
+            echo "## iOS signed build uploaded"
             echo ""
             echo "- Trigger: manual only"
-            echo "- Output artifact: \`ios-unsigned-build\`"
+            echo "- Output artifact: \`ios-signed-testflight-build\`"
             echo "- Retention: 1 day"
-            echo "- Signing: disabled in CI; sign locally on Mac"
+            echo "- Signing: App Store Connect API key with Xcode automatic signing"
+            echo "- Upload: TestFlight via altool API key"
           } >> "$GITHUB_STEP_SUMMARY"
