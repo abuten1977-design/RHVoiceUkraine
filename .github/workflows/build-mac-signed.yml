@@ -61,7 +61,7 @@ jobs:
         working-directory: UkrainianVoicesApp
         run: xcodegen generate
 
-      - name: Archive signed macOS app
+      - name: Archive and export signed macOS app
         env:
           TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
         working-directory: UkrainianVoicesApp
@@ -81,16 +81,44 @@ jobs:
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=YES \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Developer ID Application" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
+
+          cat > build_signed/ExportOptions.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>developer-id</string>
+  <key>signingStyle</key>
+  <string>automatic</string>
+  <key>teamID</key>
+  <string>${TEAM_ID}</string>
+  <key>signingCertificate</key>
+  <string>Developer ID Application</string>
+  <key>stripSwiftSymbols</key>
+  <true/>
+</dict>
+</plist>
+          EOF
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath build_signed/UkrainianVoicesMac.xcarchive \
+            -exportPath build_signed/export \
+            -exportOptionsPlist build_signed/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_API_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
 
       - name: Validate signed macOS artifact (static + signature gate)
         working-directory: UkrainianVoicesApp
         run: |
           set -euxo pipefail
-          APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
           test -d "$APP_PATH"
 
           EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
@@ -120,7 +148,7 @@ jobs:
         working-directory: UkrainianVoicesApp
         run: |
           set -euxo pipefail
-          APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
           test -d "$APP_PATH"
           mkdir -p ../mac_signed_build
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
@@ -139,7 +167,7 @@ jobs:
         working-directory: UkrainianVoicesApp
         run: |
           set -euxo pipefail
-          APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
           for attempt in 1 2 3 4 5; do
             if xcrun stapler staple "$APP_PATH"; then
               break
