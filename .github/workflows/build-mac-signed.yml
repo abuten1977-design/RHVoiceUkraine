@@ -74,6 +74,7 @@ jobs:
         env:
           APP_PROFILE_BASE64: ${{ secrets.MACOS_APP_PROFILE_BASE64 }}
           EXT_PROFILE_BASE64: ${{ secrets.MACOS_EXT_PROFILE_BASE64 }}
+          TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
         run: |
           set -euo pipefail
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
@@ -85,6 +86,16 @@ jobs:
              /usr/bin/security cms -D -i "$RUNNER_TEMP/uv_mac_ext.mobileprovision" > "$RUNNER_TEMP/uv_mac_ext.plist" 2>/dev/null; then
             APP_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/uv_mac_app.plist")
             EXT_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/uv_mac_ext.plist")
+            APP_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$RUNNER_TEMP/uv_mac_app.plist" 2>/dev/null || true)
+            EXT_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$RUNNER_TEMP/uv_mac_ext.plist" 2>/dev/null || true)
+
+            if [[ "$APP_ID" != "${TEAM_ID}.com.rhvoice.UkrainianVoices.mac" ||
+                  "$EXT_ID" != "${TEAM_ID}.com.rhvoice.UkrainianVoices.mac.Extension" ]]; then
+              echo "Provisioning profile secrets do not match current macOS bundle IDs/team; continuing without explicit profile UUIDs."
+              echo "UV_MAC_APP_PROFILE_UUID=" >> "$GITHUB_ENV"
+              echo "UV_MAC_EXT_PROFILE_UUID=" >> "$GITHUB_ENV"
+              exit 0
+            fi
 
             cp "$RUNNER_TEMP/uv_mac_app.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$APP_UUID.mobileprovision"
             cp "$RUNNER_TEMP/uv_mac_ext.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$EXT_UUID.mobileprovision"
