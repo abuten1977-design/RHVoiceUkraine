@@ -213,14 +213,26 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
           ls -la ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
 
+      - name: Upload pre-notarized signed macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-signed-prenotary-build
+          path: ${{ github.workspace }}/mac_signed_build/UkrainianVoicesMac.app.notary.zip
+          retention-days: 3
+
       - name: Notarize signed macOS app
         run: |
           set -euxo pipefail
+          ZIP_PATH="mac_signed_build/UkrainianVoicesMac.app.notary.zip"
+          ls -lh "$ZIP_PATH"
+          du -h "$ZIP_PATH"
+
           SUBMISSION_JSON="$RUNNER_TEMP/notary-submit.json"
-          xcrun notarytool submit mac_signed_build/UkrainianVoicesMac.app.notary.zip \
+          /usr/bin/time -p timeout 600 xcrun notarytool submit "$ZIP_PATH" \
             --key "$ASC_API_KEY_PATH" \
             --key-id "$ASC_KEY_ID" \
             --issuer "$ASC_ISSUER_ID" \
+            --no-s3-acceleration \
             --output-format json > "$SUBMISSION_JSON"
 
           SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$SUBMISSION_JSON")"
