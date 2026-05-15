@@ -65,9 +65,30 @@ jobs:
             -T /usr/bin/security \
             -T /usr/bin/xcodebuild
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security default-keychain -d user -s "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/[ "]//g')
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
           echo "MACOS_CODE_SIGN_IDENTITY=$MACOS_CODE_SIGN_IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Install provisioning profiles
+        env:
+          APP_PROFILE_BASE64: ${{ secrets.MACOS_APP_PROFILE_BASE64 }}
+          EXT_PROFILE_BASE64: ${{ secrets.MACOS_EXT_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+
+          echo "$APP_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/uv_mac_app.mobileprovision"
+          echo "$EXT_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/uv_mac_ext.mobileprovision"
+
+          APP_UUID=$(/usr/bin/security cms -D -i "$RUNNER_TEMP/uv_mac_app.mobileprovision" | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
+          EXT_UUID=$(/usr/bin/security cms -D -i "$RUNNER_TEMP/uv_mac_ext.mobileprovision" | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
+
+          cp "$RUNNER_TEMP/uv_mac_app.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$APP_UUID.mobileprovision"
+          cp "$RUNNER_TEMP/uv_mac_ext.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$EXT_UUID.mobileprovision"
+
+          echo "UV_MAC_APP_PROFILE_UUID=$APP_UUID" >> "$GITHUB_ENV"
+          echo "UV_MAC_EXT_PROFILE_UUID=$EXT_UUID" >> "$GITHUB_ENV"
 
       - name: Create Boost unified include
         run: |
@@ -106,27 +127,16 @@ jobs:
             ARCHS="x86_64" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$MACOS_CODE_SIGN_IDENTITY" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
+            UV_MAC_APP_PROFILE_UUID="$UV_MAC_APP_PROFILE_UUID" \
+            UV_MAC_EXT_PROFILE_UUID="$UV_MAC_EXT_PROFILE_UUID" \
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
-          /usr/bin/plutil -create xml1 build_signed/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :method string developer-id" build_signed/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" build_signed/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :teamID string ${TEAM_ID}" build_signed/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :signingCertificate string ${MACOS_CODE_SIGN_IDENTITY}" build_signed/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :stripSwiftSymbols bool true" build_signed/ExportOptions.plist
-
-          xcodebuild \
-            -exportArchive \
-            -archivePath build_signed/UkrainianVoicesMac.xcarchive \
-            -exportPath build_signed/export \
-            -exportOptionsPlist build_signed/ExportOptions.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_API_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          mkdir -p build_signed/export
+          cp -R build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app build_signed/export/
 
       - name: Validate signed macOS artifact (static + signature gate)
         working-directory: UkrainianVoicesApp
