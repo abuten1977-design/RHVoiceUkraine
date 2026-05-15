@@ -227,29 +227,55 @@ jobs:
           ls -lh "$ZIP_PATH"
           du -h "$ZIP_PATH"
 
+          HISTORY_BEFORE="$RUNNER_TEMP/notary-history-before.json"
+          xcrun notarytool history \
+            --key "$ASC_API_KEY_PATH" \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" \
+            --output-format json > "$HISTORY_BEFORE" || true
+          BEFORE_ID="$(/usr/bin/python3 -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)) if __import__("os").path.getsize(p) else {}; h=d.get("history") or []; print(h[0].get("id","") if h else "")' "$HISTORY_BEFORE")"
+          echo "Previous notary submission id: ${BEFORE_ID:-none}"
+
           SUBMISSION_JSON="$RUNNER_TEMP/notary-submit.json"
           xcrun notarytool submit "$ZIP_PATH" \
             --key "$ASC_API_KEY_PATH" \
             --key-id "$ASC_KEY_ID" \
             --issuer "$ASC_ISSUER_ID" \
+            --no-wait \
             --no-s3-acceleration \
             --output-format json > "$SUBMISSION_JSON" &
           SUBMIT_PID=$!
-          SUBMIT_DEADLINE=$((SECONDS + 600))
+          SUBMIT_DEADLINE=$((SECONDS + 90))
           while kill -0 "$SUBMIT_PID" 2>/dev/null; do
             if [ "$SECONDS" -ge "$SUBMIT_DEADLINE" ]; then
-              echo "notarytool submit did not finish within 10 minutes."
+              echo "notarytool submit did not return after creating the submission; continuing via history polling."
               kill "$SUBMIT_PID" 2>/dev/null || true
               sleep 5
               kill -9 "$SUBMIT_PID" 2>/dev/null || true
               wait "$SUBMIT_PID" 2>/dev/null || true
-              exit 124
+              break
             fi
             sleep 5
           done
-          wait "$SUBMIT_PID"
+          wait "$SUBMIT_PID" || true
 
-          SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$SUBMISSION_JSON")"
+          SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys,os; p=sys.argv[1]; print((json.load(open(p)).get("id","") if os.path.getsize(p) else ""))' "$SUBMISSION_JSON")"
+          if [ -z "$SUBMISSION_ID" ]; then
+            for attempt in $(seq 1 12); do
+              HISTORY_AFTER="$RUNNER_TEMP/notary-history-after-${attempt}.json"
+              xcrun notarytool history \
+                --key "$ASC_API_KEY_PATH" \
+                --key-id "$ASC_KEY_ID" \
+                --issuer "$ASC_ISSUER_ID" \
+                --output-format json > "$HISTORY_AFTER"
+              SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys; before=sys.argv[2]; h=json.load(open(sys.argv[1])).get("history") or []; print(next((x.get("id","") for x in h if x.get("name")=="UkrainianVoicesMac.app.notary.zip" and x.get("id","") != before), ""))' "$HISTORY_AFTER" "$BEFORE_ID")"
+              if [ -n "$SUBMISSION_ID" ]; then
+                break
+              fi
+              sleep 10
+            done
+          fi
+          test -n "$SUBMISSION_ID"
           echo "Notary submission id: $SUBMISSION_ID"
 
           for attempt in $(seq 1 60); do
