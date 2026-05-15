@@ -139,7 +139,15 @@ jobs:
         run: |
           set -euxo pipefail
           APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
-          xcrun stapler staple "$APP_PATH"
+          for attempt in 1 2 3 4 5; do
+            if xcrun stapler staple "$APP_PATH"; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              exit 65
+            fi
+            sleep 30
+          done
           xcrun stapler validate "$APP_PATH"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.zip
           ls -la ../mac_signed_build/UkrainianVoicesMac.app.zip
