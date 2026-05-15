@@ -58,9 +58,13 @@ jobs:
           test -n "${ASC_ISSUER_ID:-}"
           test -n "${ASC_API_KEY_BASE64:-}"
           mkdir -p "$RUNNER_TEMP/appstoreconnect"
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
           printf '%s' "$ASC_API_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          cp "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8" "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           chmod 600 "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           test -s "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          test -s "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           {
             echo "ASC_API_KEY_PATH=$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
             echo "ASC_KEY_ID=$ASC_KEY_ID"
