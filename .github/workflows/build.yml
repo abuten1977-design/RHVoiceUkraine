@@ -84,7 +84,6 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM=5NNZPP8CRR \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             clean archive \
             -archivePath build/UkrainianVoices.xcarchive
 
