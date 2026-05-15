@@ -228,12 +228,26 @@ jobs:
           du -h "$ZIP_PATH"
 
           SUBMISSION_JSON="$RUNNER_TEMP/notary-submit.json"
-          /usr/bin/time -p timeout 600 xcrun notarytool submit "$ZIP_PATH" \
+          xcrun notarytool submit "$ZIP_PATH" \
             --key "$ASC_API_KEY_PATH" \
             --key-id "$ASC_KEY_ID" \
             --issuer "$ASC_ISSUER_ID" \
             --no-s3-acceleration \
-            --output-format json > "$SUBMISSION_JSON"
+            --output-format json > "$SUBMISSION_JSON" &
+          SUBMIT_PID=$!
+          SUBMIT_DEADLINE=$((SECONDS + 600))
+          while kill -0 "$SUBMIT_PID" 2>/dev/null; do
+            if [ "$SECONDS" -ge "$SUBMIT_DEADLINE" ]; then
+              echo "notarytool submit did not finish within 10 minutes."
+              kill "$SUBMIT_PID" 2>/dev/null || true
+              sleep 5
+              kill -9 "$SUBMIT_PID" 2>/dev/null || true
+              wait "$SUBMIT_PID" 2>/dev/null || true
+              exit 124
+            fi
+            sleep 5
+          done
+          wait "$SUBMIT_PID"
 
           SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$SUBMISSION_JSON")"
           echo "Notary submission id: $SUBMISSION_ID"
