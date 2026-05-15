@@ -29,33 +29,19 @@ jobs:
       - name: Install build tools
         run: brew install xcodegen
 
-      - name: Import signing certificate
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.MACOS_CODESIGN_P12_BASE64 }}
-          p12-password: ${{ secrets.MACOS_CODESIGN_P12_PASSWORD }}
-
-      - name: Install provisioning profiles (app + extension)
+      - name: Prepare App Store Connect API key
         env:
-          APP_PROFILE_BASE64: ${{ secrets.MACOS_APP_PROFILE_BASE64 }}
-          EXT_PROFILE_BASE64: ${{ secrets.MACOS_EXT_PROFILE_BASE64 }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           set -euxo pipefail
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-
-          echo "$APP_PROFILE_BASE64" | base64 --decode > /tmp/uv_mac_app.mobileprovision
-          echo "$EXT_PROFILE_BASE64" | base64 --decode > /tmp/uv_mac_ext.mobileprovision
-
-          APP_UUID=$(/usr/bin/security cms -D -i /tmp/uv_mac_app.mobileprovision | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
-          EXT_UUID=$(/usr/bin/security cms -D -i /tmp/uv_mac_ext.mobileprovision | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
-
-          cp /tmp/uv_mac_app.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$APP_UUID.mobileprovision"
-          cp /tmp/uv_mac_ext.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$EXT_UUID.mobileprovision"
-
-          echo "UV_MAC_APP_PROFILE_UUID=$APP_UUID" >> "$GITHUB_ENV"
-          echo "UV_MAC_EXT_PROFILE_UUID=$EXT_UUID" >> "$GITHUB_ENV"
-
-          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles"
+          KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          echo "$ASC_API_KEY_BASE64" | base64 --decode > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "ASC_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
+          echo "ASC_ISSUER_ID=$ASC_ISSUER_ID" >> "$GITHUB_ENV"
 
       - name: Create Boost unified include
         run: |
@@ -78,7 +64,6 @@ jobs:
       - name: Archive signed macOS app
         env:
           TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
-          SIGN_ID: ${{ secrets.MACOS_CODE_SIGN_IDENTITY }}
         working-directory: UkrainianVoicesApp
         run: |
           set -euxo pipefail
@@ -87,14 +72,15 @@ jobs:
             -configuration Release \
             -destination "platform=macOS,arch=x86_64" \
             -derivedDataPath build_signed \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_API_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             ARCHS="x86_64" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_IDENTITY="$SIGN_ID" \
-            UV_MAC_APP_PROFILE_UUID="$UV_MAC_APP_PROFILE_UUID" \
-            UV_MAC_EXT_PROFILE_UUID="$UV_MAC_EXT_PROFILE_UUID" \
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
@@ -139,18 +125,10 @@ jobs:
           ls -la ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
 
       - name: Notarize signed macOS app
-        env:
-          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           set -euxo pipefail
-          KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
-          echo "$ASC_API_KEY_BASE64" | base64 --decode > "$KEY_PATH"
-          chmod 600 "$KEY_PATH"
-
           xcrun notarytool submit mac_signed_build/UkrainianVoicesMac.app.notary.zip \
-            --key "$KEY_PATH" \
+            --key "$ASC_API_KEY_PATH" \
             --key-id "$ASC_KEY_ID" \
             --issuer "$ASC_ISSUER_ID" \
             --wait
@@ -178,18 +156,13 @@ jobs:
             echo "## macOS signed build ready"
             echo ""
             echo "- Artifact: \`macos-signed-build\`"
-            echo "- Signing: Manual (certificate + provisioning profiles)"
+            echo "- Signing: Xcode automatic signing with App Store Connect API key"
             echo "- Notarization: App Store Connect API key + notarytool"
             echo "- Scheme: \`UkrainianVoicesMac\` (x86_64)"
             echo "- Architecture gate: no \`libRHVoice*.dylib\` in the app bundle"
             echo ""
             echo "Required secrets:"
-            echo "- \`MACOS_CODESIGN_P12_BASE64\`"
-            echo "- \`MACOS_CODESIGN_P12_PASSWORD\`"
-            echo "- \`MACOS_APP_PROFILE_BASE64\` (macOS App profile for \`com.rhvoice.UkrainianVoices.mac\`)"
-            echo "- \`MACOS_EXT_PROFILE_BASE64\` (macOS App Extension profile for \`com.rhvoice.UkrainianVoices.mac.Extension\`)"
             echo "- \`MACOS_TEAM_ID\`"
-            echo "- \`MACOS_CODE_SIGN_IDENTITY\`"
             echo "- \`ASC_API_KEY_BASE64\`"
             echo "- \`ASC_KEY_ID\`"
             echo "- \`ASC_ISSUER_ID\`"
