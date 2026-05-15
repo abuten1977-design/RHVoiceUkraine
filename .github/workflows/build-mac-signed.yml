@@ -85,24 +85,12 @@ jobs:
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
-          cat > build_signed/ExportOptions.plist <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>method</key>
-  <string>developer-id</string>
-  <key>signingStyle</key>
-  <string>automatic</string>
-  <key>teamID</key>
-  <string>${TEAM_ID}</string>
-  <key>signingCertificate</key>
-  <string>Developer ID Application</string>
-  <key>stripSwiftSymbols</key>
-  <true/>
-</dict>
-</plist>
-          EOF
+          /usr/bin/plutil -create xml1 build_signed/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :method string developer-id" build_signed/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :signingStyle string automatic" build_signed/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :teamID string ${TEAM_ID}" build_signed/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :signingCertificate string Developer ID Application" build_signed/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :stripSwiftSymbols bool true" build_signed/ExportOptions.plist
 
           xcodebuild \
             -exportArchive \
