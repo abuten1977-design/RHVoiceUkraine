@@ -216,11 +216,48 @@ jobs:
       - name: Notarize signed macOS app
         run: |
           set -euxo pipefail
+          SUBMISSION_JSON="$RUNNER_TEMP/notary-submit.json"
           xcrun notarytool submit mac_signed_build/UkrainianVoicesMac.app.notary.zip \
             --key "$ASC_API_KEY_PATH" \
             --key-id "$ASC_KEY_ID" \
             --issuer "$ASC_ISSUER_ID" \
-            --wait
+            --output-format json > "$SUBMISSION_JSON"
+
+          SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["id"])' "$SUBMISSION_JSON")"
+          echo "Notary submission id: $SUBMISSION_ID"
+
+          for attempt in $(seq 1 60); do
+            STATUS_JSON="$RUNNER_TEMP/notary-status-${attempt}.json"
+            xcrun notarytool info "$SUBMISSION_ID" \
+              --key "$ASC_API_KEY_PATH" \
+              --key-id "$ASC_KEY_ID" \
+              --issuer "$ASC_ISSUER_ID" \
+              --output-format json > "$STATUS_JSON"
+            STATUS="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' "$STATUS_JSON")"
+            echo "Notary status attempt ${attempt}: ${STATUS}"
+
+            case "$STATUS" in
+              Accepted)
+                exit 0
+                ;;
+              Invalid|Rejected)
+                xcrun notarytool log "$SUBMISSION_ID" \
+                  --key "$ASC_API_KEY_PATH" \
+                  --key-id "$ASC_KEY_ID" \
+                  --issuer "$ASC_ISSUER_ID"
+                exit 65
+                ;;
+            esac
+
+            sleep 30
+          done
+
+          echo "Notarization did not finish within 30 minutes."
+          xcrun notarytool log "$SUBMISSION_ID" \
+            --key "$ASC_API_KEY_PATH" \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" || true
+          exit 65
 
       - name: Staple notarization and package final artifact
         working-directory: UkrainianVoicesApp
