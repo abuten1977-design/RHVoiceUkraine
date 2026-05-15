@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build-mac-signed:
-    runs-on: macos-14
+    runs-on: macos-latest
     timeout-minutes: 60
 
     steps:
@@ -21,8 +21,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Select Xcode 16
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
+
       - name: Install build tools
-        run: brew install xcodegen cmake boost
+        run: brew install xcodegen
 
       - name: Import signing certificate
         uses: apple-actions/import-codesign-certs@v3
@@ -52,32 +57,19 @@ jobs:
 
           ls -la "$HOME/Library/MobileDevice/Provisioning Profiles"
 
-      - name: Build RHVoice x86_64 dylibs
+      - name: Create Boost unified include
         run: |
           set -euxo pipefail
-          cd RHVoice
-          rm -rf build_macos_x86_64
-          mkdir -p build_macos_x86_64
-          cd build_macos_x86_64
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-            -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
-          cmake --build . --config Release --parallel
-
-      - name: Stage fresh RHVoice dylibs
-        run: |
-          set -euxo pipefail
-          cp RHVoice/build_macos_x86_64/src/lib/libRHVoice.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cp RHVoice/build_macos_x86_64/src/core/libRHVoice_core.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cp RHVoice/build_macos_x86_64/src/audio/libRHVoice_audio.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cd UkrainianVoicesApp/Extension/Libraries_macos_x86_64
-          ln -sf libRHVoice.dylib libRHVoice..dylib
-          ln -sf libRHVoice_core.dylib libRHVoice_core..dylib
-          ln -sf libRHVoice_audio.dylib libRHVoice_audio..dylib
-          file ./*.dylib
+          BOOST_ROOT="RHVoice/external/libs/boost"
+          UNIFIED="$BOOST_ROOT/unified_include"
+          rm -rf "$UNIFIED"
+          mkdir -p "$UNIFIED/boost"
+          for dir in "$BOOST_ROOT"/libs/*/include/boost; do
+            if [ -d "$dir" ]; then
+              rsync -a "$dir/" "$UNIFIED/boost/"
+            fi
+          done
+          echo "Boost unified: $(find "$UNIFIED/boost/" -maxdepth 1 | wc -l) top-level entries"
 
       - name: Generate Xcode project
         working-directory: UkrainianVoicesApp
@@ -106,33 +98,72 @@ jobs:
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
-      - name: Package signed macOS app
+      - name: Validate signed macOS artifact (static + signature gate)
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
+          test -d "$APP_PATH"
+
+          EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+
+          bash ../scripts/validate_macos_artifact.sh "$APP_PATH"
+
+          if find "$APP_PATH" -name "libRHVoice*.dylib" | grep -q .; then
+            echo "❌ FAIL: legacy RHVoice dylibs found in app bundle"
+            find "$APP_PATH" -name "libRHVoice*.dylib"
+            exit 1
+          fi
+          echo "✅ No RHVoice dylibs in app bundle — RHVoice C/C++ is compiled into RHVoiceKitMac"
+
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
+
+          APP_ENT="$(codesign -d --entitlements :- "$APP_PATH" 2>/dev/null || true)"
+          EXT_ENT="$(codesign -d --entitlements :- "$EXT_PATH" 2>/dev/null || true)"
+          echo "$APP_ENT"
+          echo "$EXT_ENT"
+          echo "$APP_ENT" | grep -q "group.rhvoice.UkrainianVoices.shared"
+          echo "$EXT_ENT" | grep -q "group.rhvoice.UkrainianVoices.shared"
+          echo "$APP_ENT" | grep -q "com.apple.security.app-sandbox"
+          echo "$EXT_ENT" | grep -q "com.apple.security.app-sandbox"
+
+      - name: Package signed macOS app for notarization
         working-directory: UkrainianVoicesApp
         run: |
           set -euxo pipefail
           APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
           test -d "$APP_PATH"
           mkdir -p ../mac_signed_build
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.zip
-          ls -la ../mac_signed_build/UkrainianVoicesMac.app.zip
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
+          ls -la ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
 
-      - name: Validate signed macOS artifact (static + signature gate)
+      - name: Notarize signed macOS app
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
         run: |
           set -euxo pipefail
-          rm -rf /tmp/uv_macos_signed_artifact_check
-          mkdir -p /tmp/uv_macos_signed_artifact_check
-          unzip -q mac_signed_build/UkrainianVoicesMac.app.zip -d /tmp/uv_macos_signed_artifact_check
-          APP_PATH="/tmp/uv_macos_signed_artifact_check/UkrainianVoicesMac.app"
-          EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+          KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          echo "$ASC_API_KEY_BASE64" | base64 --decode > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
 
-          bash scripts/validate_macos_artifact.sh "$APP_PATH"
+          xcrun notarytool submit mac_signed_build/UkrainianVoicesMac.app.notary.zip \
+            --key "$KEY_PATH" \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" \
+            --wait
 
-          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
-          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
-
-          EXT_ENT="$(codesign -d --entitlements :- "$EXT_PATH" 2>/dev/null || true)"
-          echo "$EXT_ENT"
-          echo "$EXT_ENT" | grep -q "com.apple.security.app-sandbox"
+      - name: Staple notarization and package final artifact
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
+          xcrun stapler staple "$APP_PATH"
+          xcrun stapler validate "$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.zip
+          ls -la ../mac_signed_build/UkrainianVoicesMac.app.zip
 
       - name: Upload signed macOS artifact
         uses: actions/upload-artifact@v4
@@ -148,7 +179,9 @@ jobs:
             echo ""
             echo "- Artifact: \`macos-signed-build\`"
             echo "- Signing: Manual (certificate + provisioning profiles)"
+            echo "- Notarization: App Store Connect API key + notarytool"
             echo "- Scheme: \`UkrainianVoicesMac\` (x86_64)"
+            echo "- Architecture gate: no \`libRHVoice*.dylib\` in the app bundle"
             echo ""
             echo "Required secrets:"
             echo "- \`MACOS_CODESIGN_P12_BASE64\`"
@@ -156,5 +189,8 @@ jobs:
             echo "- \`MACOS_APP_PROFILE_BASE64\` (macOS App profile for \`com.rhvoice.UkrainianVoices.mac\`)"
             echo "- \`MACOS_EXT_PROFILE_BASE64\` (macOS App Extension profile for \`com.rhvoice.UkrainianVoices.mac.Extension\`)"
             echo "- \`MACOS_TEAM_ID\`"
-            echo "- \`MACOS_CODE_SIGN_IDENTITY\` (e.g. \`Apple Development: ...\`)"
+            echo "- \`MACOS_CODE_SIGN_IDENTITY\`"
+            echo "- \`ASC_API_KEY_BASE64\`"
+            echo "- \`ASC_KEY_ID\`"
+            echo "- \`ASC_ISSUER_ID\`"
           } >> "$GITHUB_STEP_SUMMARY"
