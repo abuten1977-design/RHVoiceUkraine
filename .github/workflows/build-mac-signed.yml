@@ -68,6 +68,7 @@ jobs:
         run: |
           set -euxo pipefail
           xcodebuild \
+            -project UkrainianVoices.xcodeproj \
             -scheme UkrainianVoicesMac \
             -configuration Release \
             -destination "platform=macOS,arch=x86_64" \
