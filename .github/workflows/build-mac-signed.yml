@@ -237,29 +237,53 @@ jobs:
           echo "Previous notary submission id: ${BEFORE_ID:-none}"
 
           SUBMISSION_JSON="$RUNNER_TEMP/notary-submit.json"
-          xcrun notarytool submit "$ZIP_PATH" \
-            --key "$ASC_API_KEY_PATH" \
-            --key-id "$ASC_KEY_ID" \
-            --issuer "$ASC_ISSUER_ID" \
-            --no-wait \
-            --no-s3-acceleration \
-            --output-format json > "$SUBMISSION_JSON" &
-          SUBMIT_PID=$!
-          SUBMIT_DEADLINE=$((SECONDS + 90))
-          while kill -0 "$SUBMIT_PID" 2>/dev/null; do
-            if [ "$SECONDS" -ge "$SUBMIT_DEADLINE" ]; then
-              echo "notarytool submit did not return after creating the submission; continuing via history polling."
-              kill "$SUBMIT_PID" 2>/dev/null || true
-              sleep 5
-              kill -9 "$SUBMIT_PID" 2>/dev/null || true
-              wait "$SUBMIT_PID" 2>/dev/null || true
-              break
-            fi
-            sleep 5
-          done
-          wait "$SUBMIT_PID" || true
+          /usr/bin/python3 - "$ZIP_PATH" "$ASC_API_KEY_PATH" "$ASC_KEY_ID" "$ASC_ISSUER_ID" "$SUBMISSION_JSON" <<'PY'
+          import os
+          import signal
+          import subprocess
+          import sys
 
-          SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys,os; p=sys.argv[1]; print((json.load(open(p)).get("id","") if os.path.getsize(p) else ""))' "$SUBMISSION_JSON")"
+          zip_path, key_path, key_id, issuer_id, output_path = sys.argv[1:]
+          cmd = [
+              "xcrun", "notarytool", "submit", zip_path,
+              "--key", key_path,
+              "--key-id", key_id,
+              "--issuer", issuer_id,
+              "--no-wait",
+              "--no-s3-acceleration",
+              "--output-format", "json",
+          ]
+          with open(output_path, "wb") as out:
+              proc = subprocess.Popen(
+                  cmd,
+                  stdout=out,
+                  stderr=subprocess.STDOUT,
+                  start_new_session=True,
+              )
+              try:
+                  proc.wait(timeout=90)
+              except subprocess.TimeoutExpired:
+                  print("notarytool submit did not return after 90 seconds; continuing via history polling.", flush=True)
+                  os.killpg(proc.pid, signal.SIGTERM)
+                  try:
+                      proc.wait(timeout=10)
+                  except subprocess.TimeoutExpired:
+                      os.killpg(proc.pid, signal.SIGKILL)
+                      proc.wait()
+          PY
+
+          SUBMISSION_ID="$(/usr/bin/python3 - "$SUBMISSION_JSON" <<'PY'
+          import json
+          import os
+          import sys
+
+          path = sys.argv[1]
+          try:
+              print(json.load(open(path)).get("id", "") if os.path.getsize(path) else "")
+          except Exception:
+              print("")
+          PY
+          )"
           if [ -z "$SUBMISSION_ID" ]; then
             for attempt in $(seq 1 12); do
               HISTORY_AFTER="$RUNNER_TEMP/notary-history-after-${attempt}.json"
