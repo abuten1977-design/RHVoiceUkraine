@@ -260,11 +260,14 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         if percent <= 100.0 {
             return 0.5 + (max(0.0, percent) / 100.0) * 0.5
         }
-        // Unified speed curve for macOS and iOS (proven on macOS, task-014).
+#if os(macOS)
         let upperVoiceOverPercent = 424.0
         let upperBaseRate = 4.0
         let progress = min(max((percent - 100.0) / (upperVoiceOverPercent - 100.0), 0.0), 1.0)
         return pow(upperBaseRate, progress)
+#else
+        return pow(2.0, (percent - 100.0) / 100.0)
+#endif
     }
 
     private static func clampAccelerator(_ value: Double) -> Double {
