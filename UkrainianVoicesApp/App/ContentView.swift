@@ -63,6 +63,12 @@ private struct VoiceSettingsState: Equatable {
     var speedMultiplier = 1.0
     var sentencePause = 0.0
     var pitch = 1.0
+
+    func withSpeedMultiplier(_ value: Double) -> VoiceSettingsState {
+        var copy = self
+        copy.speedMultiplier = value
+        return copy
+    }
 }
 
 private let voiceCatalog: [VoiceDefinition] = RHVoiceSharedSettings.voiceCatalog.map(VoiceDefinition.init)
@@ -161,7 +167,7 @@ private final class ContentViewModel: ObservableObject {
         let storedSelected = snapshot.selectedVoiceIdentifier
         let initialRate = snapshot.generalSettings.rate
         let initialVolume = snapshot.generalSettings.volume
-        let initialSpeedMultiplier = snapshot.generalSettings.speedMultiplier
+        let initialSpeedMultiplier = Self.clampSpeedMultiplier(snapshot.generalSettings.speedMultiplier)
         let initialSentencePause = snapshot.generalSettings.sentencePause
         let initialPitch = snapshot.generalSettings.pitch
 
@@ -179,7 +185,7 @@ private final class ContentViewModel: ObservableObject {
                     useCustomSettings: stored.useCustomSettings,
                     rate: stored.settings.rate,
                     volume: stored.settings.volume,
-                    speedMultiplier: stored.settings.speedMultiplier,
+                    speedMultiplier: Self.clampSpeedMultiplier(stored.settings.speedMultiplier),
                     sentencePause: stored.settings.sentencePause
                 ))
             }
@@ -370,7 +376,7 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func updateGeneralSpeedMultiplier(_ value: Double) {
-        speedMultiplier = value
+        speedMultiplier = Self.clampSpeedMultiplier(value)
         persistGeneralSettings()
     }
 
@@ -380,13 +386,14 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func updateSettings(_ settings: VoiceSettingsState, for identifier: String) {
-        voiceSettingsByIdentifier[identifier] = settings
+        let normalizedSettings = settings.withSpeedMultiplier(Self.clampSpeedMultiplier(settings.speedMultiplier))
+        voiceSettingsByIdentifier[identifier] = normalizedSettings
         let prefix = voiceSettingsKeyPrefix(for: identifier)
-        defaults.set(settings.useCustomSettings, forKey: "\(prefix).useCustomSettings")
-        defaults.set(settings.rate, forKey: "\(prefix).rate")
-        defaults.set(settings.volume, forKey: "\(prefix).volume")
-        defaults.set(settings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
-        defaults.set(settings.sentencePause, forKey: "\(prefix).sentencePause")
+        defaults.set(normalizedSettings.useCustomSettings, forKey: "\(prefix).useCustomSettings")
+        defaults.set(normalizedSettings.rate, forKey: "\(prefix).rate")
+        defaults.set(normalizedSettings.volume, forKey: "\(prefix).volume")
+        defaults.set(normalizedSettings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
+        defaults.set(normalizedSettings.sentencePause, forKey: "\(prefix).sentencePause")
         persistSharedSnapshot()
     }
 
@@ -428,7 +435,7 @@ private final class ContentViewModel: ObservableObject {
     private func persistGeneralSettings() {
         defaults.set(rate, forKey: RHVoiceSharedSettings.rateKey)
         defaults.set(volume, forKey: RHVoiceSharedSettings.volumeKey)
-        defaults.set(speedMultiplier, forKey: RHVoiceSharedSettings.speedMultiplierKey)
+        defaults.set(Self.clampSpeedMultiplier(speedMultiplier), forKey: RHVoiceSharedSettings.speedMultiplierKey)
         defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
         persistSharedSnapshot()
     }
@@ -456,7 +463,7 @@ private final class ContentViewModel: ObservableObject {
         let settings = RHVoiceSpeechSettings(
             rate: rate,
             volume: volume,
-            speedMultiplier: speedMultiplier,
+            speedMultiplier: Self.clampSpeedMultiplier(speedMultiplier),
             sentencePause: sentencePause,
             pitch: pitch
         )
@@ -475,7 +482,7 @@ private final class ContentViewModel: ObservableObject {
                     settings: RHVoiceSpeechSettings(
                         rate: state.rate,
                         volume: state.volume,
-                        speedMultiplier: state.speedMultiplier,
+                        speedMultiplier: Self.clampSpeedMultiplier(state.speedMultiplier),
                         sentencePause: state.sentencePause,
                         pitch: state.pitch
                     )
@@ -514,10 +521,14 @@ private final class ContentViewModel: ObservableObject {
             useCustomSettings: defaults.object(forKey: "\(prefix).useCustomSettings") as? Bool ?? false,
             rate: defaults.object(forKey: "\(prefix).rate") as? Double ?? fallbackRate,
             volume: defaults.object(forKey: "\(prefix).volume") as? Double ?? fallbackVolume,
-            speedMultiplier: defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier,
+            speedMultiplier: Self.clampSpeedMultiplier(defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier),
             sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
             pitch: defaults.object(forKey: "\(prefix).pitch") as? Double ?? fallbackPitch
         )
+    }
+
+    private static func clampSpeedMultiplier(_ value: Double) -> Double {
+        min(max(value, 1.0), 3.0)
     }
 }
 
@@ -817,8 +828,8 @@ struct ContentView: View {
                         get: { model.speedMultiplier },
                         set: { model.updateGeneralSpeedMultiplier($0) }
                     ),
-                    range: 1...5,
-                    step: 0.5,
+                    range: 1...3,
+                    step: 0.1,
                     valueText: String(format: "%.1fx", model.speedMultiplier),
                     hint: "General speed multiplier"
                 )
@@ -957,7 +968,7 @@ private struct VoiceSettingsSheet: View {
                     if settings.useCustomSettings {
                         sliderRow(title: "Speech rate", value: $settings.rate, range: 0...1, step: 0.05, valueText: String(format: "%.0f%%", settings.rate * 100))
                         sliderRow(title: "Volume", value: $settings.volume, range: 0...1, step: 0.05, valueText: String(format: "%.0f%%", settings.volume * 100))
-                        sliderRow(title: "Speed multiplier", value: $settings.speedMultiplier, range: 1...5, step: 0.5, valueText: String(format: "%.1fx", settings.speedMultiplier))
+                        sliderRow(title: "Speed multiplier", value: $settings.speedMultiplier, range: 1...3, step: 0.1, valueText: String(format: "%.1fx", settings.speedMultiplier))
                         sliderRow(title: "Sentence pause", value: $settings.sentencePause, range: 0...2000, step: 100, valueText: "\(Int(settings.sentencePause)) ms")
                     } else {
                         Text("This voice currently uses the general settings from the main screen.")

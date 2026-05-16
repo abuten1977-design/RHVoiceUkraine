@@ -63,6 +63,7 @@ let commonDefines: [CSetting] = [
 let rhvoiceHeaderPaths: [CSetting] = [
     .headerSearchPath("../RHVoice/src/third-party/utf8"),
     .headerSearchPath("../RHVoice/src/third-party/rapidxml"),
+    .headerSearchPath("../RHVoice/src/third-party/sonic"),
     .headerSearchPath("../RHVoice/src/include"),
     .headerSearchPath("../RHVoice/src/hts_engine"),
 ]
@@ -98,6 +99,8 @@ let package = Package(
                 "src/hts_engine/CMakeLists.txt.bak",
                 "src/audio/CMakeLists.txt",
                 "src/audio/CMakeLists.txt.bak",
+                "src/third-party/sonic/CMakeLists.txt",
+                "src/third-party/sonic/SConscript",
                 "src/lib/CMakeLists.txt",
                 "src/lib/CMakeLists.txt.bak",
                 "src/audio/SConscript",
@@ -114,12 +117,13 @@ let package = Package(
                 "src/hts_engine",
                 "src/lib",
                 "src/audio",
+                "src/third-party/sonic",
             ],
             publicHeadersPath: "src/include/",
             cSettings: [
                 .headerSearchPath("../Bridge/Mock"),
                 .define("VERSION", to: "\"1.16.4\""),
-                .define("ENABLE_SONIC", to: "0"),
+                .define("ENABLE_SONIC", to: "1"),
             ] + coreSettings
         ),
         .target(

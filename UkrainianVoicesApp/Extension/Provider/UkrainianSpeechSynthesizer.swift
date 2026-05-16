@@ -146,22 +146,23 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
 
         // Extract rate/volume from SSML
-        let ssmlRate = Self.extractSSMLRate(from: text)
+        let ssmlRatePercent = Self.extractSSMLRatePercent(from: text)
         let ssmlVolume = Self.extractSSMLVolume(from: text)
 
         // Read user settings from App Group
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
 
-        // Combine SSML with user settings
-        let mappedRate = ssmlRate <= 2.0 ? ssmlRate : 2.0 + log(ssmlRate / 2.0) * 1.5
-        let effectiveRate = mappedRate * voiceSettings.speedMultiplier
-        let cappedRate = min(effectiveRate, 4.0)
+        // Combine VoiceOver SSML with the app-only accelerator.
+        let mappedRate = Self.mapSSMLRatePercentToEngineMultiplier(ssmlRatePercent)
+        let accelerator = Self.clampAccelerator(voiceSettings.speedMultiplier)
+        let finalRate = mappedRate * accelerator
         let effectiveVolume = ssmlVolume * voiceSettings.volume
         let effectivePitch = voiceSettings.pitch
+        let synthesisText = Self.applySentencePause(to: text, milliseconds: voiceSettings.sentencePause)
 
-        rhLog("synth: voice=\(profileName) rate=\(String(format: "%.2f", cappedRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch))")
-        os_log(.info, log: paramLog, "PARAMS rate=%{public}.2f speedMult=%{public}.2f vol=%{public}.2f pitch=%{public}.2f useCustom=%{public}d", cappedRate, voiceSettings.speedMultiplier, effectiveVolume, effectivePitch, voiceSettings.speedMultiplier != 1.0 ? 1 : 0)
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", ssmlRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accel=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(Int(Self.clampSentencePause(voiceSettings.sentencePause)))")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d", ssmlRatePercent, mappedRate, accelerator, finalRate, effectiveVolume, effectivePitch, Int(Self.clampSentencePause(voiceSettings.sentencePause)), accelerator != 1.0 ? 1 : 0)
 
         self.outputMutex.wait()
         self.isSynthesizing = true
@@ -171,21 +172,21 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         // Synchronous synthesis — blocks until complete
         var pcmBuffer = rhvoiceEngine.synthesize(
-            text,
+            synthesisText,
             voice: profileName,
-            rate: cappedRate,
+            rate: finalRate,
             volume: effectiveVolume,
             pitch: effectivePitch
         )
         
         // Fallback: if SSML synthesis failed, try plain text without tags
-        if pcmBuffer == nil && text.contains("<") {
-            let plainText = stripSSML(text)
+        if pcmBuffer == nil && synthesisText.contains("<") {
+            let plainText = stripSSML(synthesisText)
             rhLog("synth: SSML failed, trying fallback: \(plainText.prefix(50))...")
             pcmBuffer = rhvoiceEngine.synthesize(
                 plainText,
                 voice: profileName,
-                rate: cappedRate,
+                rate: finalRate,
                 volume: effectiveVolume,
                 pitch: effectivePitch
             )
@@ -247,12 +248,44 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     // MARK: - SSML parsing
 
-    private static func extractSSMLRate(from ssml: String) -> Double {
+    private static func extractSSMLRatePercent(from ssml: String) -> Double {
         guard let match = try? NSRegularExpression(pattern: #"rate="([0-9]+(?:\.[0-9]+)?)%""#)
             .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
               let range = Range(match.range(at: 1), in: ssml),
-              let pct = Double(ssml[range]) else { return 1.0 }
-        return max(0.5, pct / 100.0)
+              let pct = Double(ssml[range]) else { return 100.0 }
+        return max(0.0, pct)
+    }
+
+    private static func mapSSMLRatePercentToEngineMultiplier(_ percent: Double) -> Double {
+        if percent <= 100.0 {
+            return 0.5 + (max(0.0, percent) / 100.0) * 0.5
+        }
+        return pow(2.0, (percent - 100.0) / 100.0)
+    }
+
+    private static func clampAccelerator(_ value: Double) -> Double {
+        min(max(value, 1.0), 3.0)
+    }
+
+    private static func clampSentencePause(_ value: Double) -> Double {
+        min(max(value, 0.0), 2_000.0)
+    }
+
+    private static func applySentencePause(to ssml: String, milliseconds: Double) -> String {
+        let pauseMs = Int(clampSentencePause(milliseconds).rounded())
+        guard pauseMs > 0 else { return ssml }
+
+        let breakTag = "<break time='\(pauseMs)ms'/>"
+        let paused = ssml.replacingOccurrences(
+            of: #"([.,!?])"#,
+            with: "$1\(breakTag)",
+            options: .regularExpression
+        )
+
+        if paused.range(of: #"<\s*speak\b"#, options: .regularExpression) != nil {
+            return paused
+        }
+        return "<speak>\(paused)</speak>"
     }
 
     private static func extractSSMLVolume(from ssml: String) -> Double {
