@@ -50,6 +50,7 @@ let boostHeaderPaths: [CSetting] = [
 
 let commonDefines: [CSetting] = [
     .define("MAX_RATE", to: "3"),
+    .define("RHVOICE_MAX_MAX_RATE", to: "12", .when(platforms: [.macOS])),
     .define("RHVOICE"),
     .define("PACKAGE", to: "\"RHVoice\""),
     .define("DATA_PATH", to: "\"\""),
