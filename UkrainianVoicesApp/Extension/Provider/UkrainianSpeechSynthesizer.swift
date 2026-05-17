@@ -157,8 +157,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let mappedRate = Self.mapSSMLRatePercentToEngineMultiplier(ssmlRatePercent)
         let accelerator = Self.clampAccelerator(voiceSettings.speedMultiplier)
         let finalRate = mappedRate * accelerator
-        let effectiveVolume = ssmlVolume * voiceSettings.volume
-        let effectivePitch = voiceSettings.pitch
+        let effectiveVolume = ssmlVolume
+        let effectivePitch = 1.0
         let synthesisText = Self.applySentencePause(to: text, milliseconds: voiceSettings.sentencePause)
 
         rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", ssmlRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accel=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(Int(Self.clampSentencePause(voiceSettings.sentencePause)))")
@@ -257,21 +257,24 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func mapSSMLRatePercentToEngineMultiplier(_ percent: Double) -> Double {
-        if percent <= 100.0 {
-            return 0.5 + (max(0.0, percent) / 100.0) * 0.5
-        }
+        let normalizedPercent = max(0.0, percent)
 #if os(macOS)
-        let upperVoiceOverPercent = 424.0
-        let upperBaseRate = 4.0
-        let progress = min(max((percent - 100.0) / (upperVoiceOverPercent - 100.0), 0.0), 1.0)
-        return pow(upperBaseRate, progress)
+        if normalizedPercent <= 100.0 {
+            return pow(4.0, (normalizedPercent - 50.0) / 50.0)
+        }
+        let progress = min((normalizedPercent - 100.0) / 324.0, 1.0)
+        return 4.0 * pow(1.125, progress)
 #else
-        return pow(2.0, (percent - 100.0) / 100.0)
+        if normalizedPercent <= 100.0 {
+            return pow(4.0, (normalizedPercent - 50.0) / 50.0)
+        }
+        let progress = min((normalizedPercent - 100.0) / 100.0, 1.0)
+        return 4.0 * pow(1.125, progress)
 #endif
     }
 
     private static func clampAccelerator(_ value: Double) -> Double {
-        min(max(value, 1.0), 3.0)
+        min(max(value, 1.0), 4.0)
     }
 
     private static func clampSentencePause(_ value: Double) -> Double {
