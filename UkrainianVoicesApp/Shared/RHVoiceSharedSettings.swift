@@ -71,7 +71,7 @@ struct RHVoicePerVoiceSettings: Codable, Equatable {
     var settings: RHVoiceSpeechSettings
 
     static func inherited(from settings: RHVoiceSpeechSettings) -> RHVoicePerVoiceSettings {
-        RHVoicePerVoiceSettings(useCustomSettings: false, settings: settings)
+        RHVoicePerVoiceSettings(useCustomSettings: true, settings: settings)
     }
 }
 
@@ -186,7 +186,7 @@ enum RHVoiceSharedSettingsStore {
             perVoiceSettings: Dictionary(
                 uniqueKeysWithValues: RHVoiceSharedSettings.voiceCatalog.map { descriptor in
                     let prefix = "voiceSettings.\(descriptor.identifier)"
-                    let custom = defaults?.object(forKey: "\(prefix).useCustomSettings") as? Bool ?? false
+                    let custom = defaults?.object(forKey: "\(prefix).useCustomSettings") as? Bool ?? true
                     let settings = RHVoiceSpeechSettings(
                         rate: defaults?.object(forKey: "\(prefix).rate") as? Double ?? general.rate,
                         volume: defaults?.object(forKey: "\(prefix).volume") as? Double ?? general.volume,
