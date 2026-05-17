@@ -10,6 +10,7 @@ enum RHVoiceSharedSettings {
     static let volumeKey = "volume"
     static let speedMultiplierKey = "speedMultiplier"
     static let sentencePauseKey = "sentencePause"
+    static let wordGapKey = "wordGap"
     static let pitchKey = "pitch"
 
     static let defaultVoiceIdentifier = "com.rhvoice.UkrainianVoices.anatol"
@@ -38,13 +39,15 @@ struct RHVoiceSpeechSettings: Codable, Equatable {
     var volume: Double
     var speedMultiplier: Double
     var sentencePause: Double
+    var wordGap: Double
     var pitch: Double
 
-    init(rate: Double, volume: Double, speedMultiplier: Double, sentencePause: Double, pitch: Double) {
+    init(rate: Double, volume: Double, speedMultiplier: Double, sentencePause: Double, wordGap: Double, pitch: Double) {
         self.rate = rate
         self.volume = volume
         self.speedMultiplier = speedMultiplier
         self.sentencePause = sentencePause
+        self.wordGap = wordGap
         self.pitch = pitch
     }
 
@@ -54,6 +57,7 @@ struct RHVoiceSpeechSettings: Codable, Equatable {
         volume          = try c.decode(Double.self, forKey: .volume)
         speedMultiplier = try c.decode(Double.self, forKey: .speedMultiplier)
         sentencePause   = try c.decode(Double.self, forKey: .sentencePause)
+        wordGap         = (try? c.decode(Double.self, forKey: .wordGap)) ?? 0.0
         pitch           = (try? c.decode(Double.self, forKey: .pitch)) ?? 1.0
     }
 
@@ -62,6 +66,7 @@ struct RHVoiceSpeechSettings: Codable, Equatable {
         volume: 1.0,
         speedMultiplier: 1.0,
         sentencePause: 0.0,
+        wordGap: 0.0,
         pitch: 1.0
     )
 }
@@ -138,6 +143,7 @@ enum RHVoiceSharedSettingsStore {
             defaults.set(snapshot.generalSettings.volume, forKey: RHVoiceSharedSettings.volumeKey)
             defaults.set(snapshot.generalSettings.speedMultiplier, forKey: RHVoiceSharedSettings.speedMultiplierKey)
             defaults.set(snapshot.generalSettings.sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
+            defaults.set(snapshot.generalSettings.wordGap, forKey: RHVoiceSharedSettings.wordGapKey)
             defaults.set(snapshot.generalSettings.pitch, forKey: RHVoiceSharedSettings.pitchKey)
 
             // Also save per-voice settings so extension can read them from UserDefaults fallback
@@ -148,6 +154,7 @@ enum RHVoiceSharedSettingsStore {
                 defaults.set(perVoice.settings.volume, forKey: "\(prefix).volume")
                 defaults.set(perVoice.settings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
                 defaults.set(perVoice.settings.sentencePause, forKey: "\(prefix).sentencePause")
+                defaults.set(perVoice.settings.wordGap, forKey: "\(prefix).wordGap")
                 defaults.set(perVoice.settings.pitch, forKey: "\(prefix).pitch")
             }
         }
@@ -168,6 +175,7 @@ enum RHVoiceSharedSettingsStore {
             volume: defaults?.object(forKey: RHVoiceSharedSettings.volumeKey) as? Double ?? RHVoiceSpeechSettings.recommended.volume,
             speedMultiplier: defaults?.object(forKey: RHVoiceSharedSettings.speedMultiplierKey) as? Double ?? RHVoiceSpeechSettings.recommended.speedMultiplier,
             sentencePause: defaults?.object(forKey: RHVoiceSharedSettings.sentencePauseKey) as? Double ?? RHVoiceSpeechSettings.recommended.sentencePause,
+            wordGap: defaults?.object(forKey: RHVoiceSharedSettings.wordGapKey) as? Double ?? RHVoiceSpeechSettings.recommended.wordGap,
             pitch: defaults?.object(forKey: RHVoiceSharedSettings.pitchKey) as? Double ?? RHVoiceSpeechSettings.recommended.pitch
         )
         let enabled = defaults?.stringArray(forKey: RHVoiceSharedSettings.enabledVoiceIdentifiersKey)
@@ -192,6 +200,7 @@ enum RHVoiceSharedSettingsStore {
                         volume: defaults?.object(forKey: "\(prefix).volume") as? Double ?? general.volume,
                         speedMultiplier: defaults?.object(forKey: "\(prefix).speedMultiplier") as? Double ?? general.speedMultiplier,
                         sentencePause: defaults?.object(forKey: "\(prefix).sentencePause") as? Double ?? general.sentencePause,
+                        wordGap: defaults?.object(forKey: "\(prefix).wordGap") as? Double ?? general.wordGap,
                         pitch: defaults?.object(forKey: "\(prefix).pitch") as? Double ?? general.pitch
                     )
                     return (descriptor.identifier, RHVoicePerVoiceSettings(useCustomSettings: custom, settings: settings))

@@ -58,6 +58,7 @@ private struct VoiceSettingsState: Equatable {
     var volume = 1.0
     var speedMultiplier = 1.0
     var sentencePause = 0.0
+    var wordGap = 0.0
     var pitch = 1.0
 
     func withSpeedMultiplier(_ value: Double) -> VoiceSettingsState {
@@ -153,6 +154,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var speedMultiplier: Double
     @Published var pitch: Double
     @Published var sentencePause: Double
+    @Published var wordGap: Double
     @Published var testText: String
     @Published var enabledVoiceIdentifiers: Set<String>
     @Published var selectedVoiceIdentifier: String
@@ -173,6 +175,7 @@ private final class ContentViewModel: ObservableObject {
         let initialVolume = snapshot.generalSettings.volume
         let initialSpeedMultiplier = Self.clampSpeedMultiplier(snapshot.generalSettings.speedMultiplier)
         let initialSentencePause = snapshot.generalSettings.sentencePause
+        let initialWordGap = Self.clampWordGap(snapshot.generalSettings.wordGap)
         let initialPitch = snapshot.generalSettings.pitch
 
         self.rate = 0.5
@@ -180,6 +183,7 @@ private final class ContentViewModel: ObservableObject {
         self.speedMultiplier = initialSpeedMultiplier
         self.pitch = 1.0
         self.sentencePause = initialSentencePause
+        self.wordGap = initialWordGap
         self.testText = "Привіт! Це тест українського голосу."
         self.enabledVoiceIdentifiers = storedEnabled.isEmpty ? defaultEnabledVoiceIdentifiers : storedEnabled
         self.selectedVoiceIdentifier = storedSelected
@@ -191,10 +195,11 @@ private final class ContentViewModel: ObservableObject {
                     volume: stored.settings.volume,
                     speedMultiplier: Self.clampSpeedMultiplier(stored.settings.speedMultiplier),
                     sentencePause: stored.settings.sentencePause,
+                    wordGap: Self.clampWordGap(stored.settings.wordGap),
                     pitch: stored.settings.pitch
                 ).neutralizedVoiceOverControlledSettings())
             }
-            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackPitch: initialPitch))
+            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: initialPitch))
         })
 
         normalizeSelection()
@@ -234,6 +239,7 @@ private final class ContentViewModel: ObservableObject {
                 fallbackVolume: volume,
                 fallbackSpeedMultiplier: speedMultiplier,
                 fallbackSentencePause: sentencePause,
+                fallbackWordGap: wordGap,
                 fallbackPitch: pitch
             )
     }
@@ -387,6 +393,11 @@ private final class ContentViewModel: ObservableObject {
         persistGeneralSettings()
     }
 
+    func updateGeneralWordGap(_ value: Double) {
+        wordGap = Self.clampWordGap(value)
+        persistGeneralSettings()
+    }
+
     func updateSettings(_ settings: VoiceSettingsState, for identifier: String) {
         var normalizedSettings = settings
             .withSpeedMultiplier(Self.clampSpeedMultiplier(settings.speedMultiplier))
@@ -399,6 +410,7 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(normalizedSettings.volume, forKey: "\(prefix).volume")
         defaults.set(normalizedSettings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
         defaults.set(normalizedSettings.sentencePause, forKey: "\(prefix).sentencePause")
+        defaults.set(Self.clampWordGap(normalizedSettings.wordGap), forKey: "\(prefix).wordGap")
         defaults.set(normalizedSettings.pitch, forKey: "\(prefix).pitch")
         persistSharedSnapshot()
     }
@@ -441,6 +453,7 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(1.0, forKey: RHVoiceSharedSettings.volumeKey)
         defaults.set(Self.clampSpeedMultiplier(speedMultiplier), forKey: RHVoiceSharedSettings.speedMultiplierKey)
         defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
+        defaults.set(Self.clampWordGap(wordGap), forKey: RHVoiceSharedSettings.wordGapKey)
         defaults.set(1.0, forKey: RHVoiceSharedSettings.pitchKey)
         persistSharedSnapshot()
     }
@@ -470,6 +483,7 @@ private final class ContentViewModel: ObservableObject {
             volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(speedMultiplier),
             sentencePause: sentencePause,
+            wordGap: Self.clampWordGap(wordGap),
             pitch: 1.0
         )
         let perVoice = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice -> (String, RHVoicePerVoiceSettings) in
@@ -479,6 +493,7 @@ private final class ContentViewModel: ObservableObject {
                 volume: 1.0,
                 speedMultiplier: settings.speedMultiplier,
                 sentencePause: settings.sentencePause,
+                wordGap: settings.wordGap,
                 pitch: 1.0
             )
             return (
@@ -490,6 +505,7 @@ private final class ContentViewModel: ObservableObject {
                         volume: 1.0,
                         speedMultiplier: Self.clampSpeedMultiplier(state.speedMultiplier),
                         sentencePause: state.sentencePause,
+                        wordGap: Self.clampWordGap(state.wordGap),
                         pitch: 1.0
                     )
                 )
@@ -520,6 +536,7 @@ private final class ContentViewModel: ObservableObject {
         fallbackVolume: Double,
         fallbackSpeedMultiplier: Double,
         fallbackSentencePause: Double,
+        fallbackWordGap: Double,
         fallbackPitch: Double
     ) -> VoiceSettingsState {
         let prefix = voiceSettingsKeyPrefix(for: identifier)
@@ -529,12 +546,17 @@ private final class ContentViewModel: ObservableObject {
             volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier),
             sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
+            wordGap: Self.clampWordGap(defaults.object(forKey: "\(prefix).wordGap") as? Double ?? fallbackWordGap),
             pitch: 1.0
         )
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
         min(max(value, 1.0), 4.0)
+    }
+
+    private static func clampWordGap(_ value: Double) -> Double {
+        min(max(value, 0.0), 300.0)
     }
 }
 
@@ -655,6 +677,15 @@ private struct VoiceSettingsScreen: View {
                     step: 100,
                     valueText: "\(Int(settings.sentencePause)) мс",
                     hint: "Змінює паузу між реченнями для голосу \(voice.name)."
+                )
+
+                sliderRow(
+                    title: "Проміжок між словами",
+                    value: settingBinding(\.wordGap),
+                    range: 0...300,
+                    step: 10,
+                    valueText: "\(Int(settings.wordGap)) мс",
+                    hint: "Додає проміжок між словами для голосу \(voice.name)."
                 )
             }
 

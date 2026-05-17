@@ -159,10 +159,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let finalRate = mappedRate * accelerator
         let effectiveVolume = ssmlVolume
         let effectivePitch = 1.0
-        let synthesisText = Self.applySentencePause(to: text, milliseconds: voiceSettings.sentencePause)
+        let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
+        let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
+        let synthesisText = Self.applyTextBreaks(to: text, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
 
-        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", ssmlRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accel=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(Int(Self.clampSentencePause(voiceSettings.sentencePause)))")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d", ssmlRatePercent, mappedRate, accelerator, finalRate, effectiveVolume, effectivePitch, Int(Self.clampSentencePause(voiceSettings.sentencePause)), accelerator != 1.0 ? 1 : 0)
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", ssmlRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accel=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", ssmlRatePercent, mappedRate, accelerator, finalRate, effectiveVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
 
         self.outputMutex.wait()
         self.isSynthesizing = true
@@ -281,21 +283,96 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         min(max(value, 0.0), 2_000.0)
     }
 
-    private static func applySentencePause(to ssml: String, milliseconds: Double) -> String {
-        let pauseMs = Int(clampSentencePause(milliseconds).rounded())
-        guard pauseMs > 0 else { return ssml }
+    private static func clampWordGap(_ value: Double) -> Double {
+        min(max(value, 0.0), 300.0)
+    }
 
-        let breakTag = "<break time='\(pauseMs)ms'/>"
-        let paused = ssml.replacingOccurrences(
-            of: #"([.,!?])"#,
-            with: "$1\(breakTag)",
-            options: .regularExpression
-        )
+    private static func applyTextBreaks(to ssml: String, sentencePauseMs: Int, wordGapMs: Int) -> String {
+        guard sentencePauseMs > 0 || wordGapMs > 0 else { return ssml }
 
-        if paused.range(of: #"<\s*speak\b"#, options: .regularExpression) != nil {
-            return paused
+        var output = ""
+        var textSegment = ""
+        var tagSegment = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                tagSegment.append(character)
+                if character == ">" {
+                    output += transformTextSegment(textSegment, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+                    textSegment.removeAll(keepingCapacity: true)
+                    output += tagSegment
+                    tagSegment.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+            } else if character == "<" {
+                insideTag = true
+                tagSegment.append(character)
+            } else {
+                textSegment.append(character)
+            }
         }
-        return "<speak>\(paused)</speak>"
+
+        if insideTag {
+            output += textSegment + tagSegment
+        } else {
+            output += transformTextSegment(textSegment, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        }
+
+        if output.range(of: #"<\s*speak\b"#, options: .regularExpression) != nil {
+            return output
+        }
+        return "<speak>\(output)</speak>"
+    }
+
+    private static func transformTextSegment(_ text: String, sentencePauseMs: Int, wordGapMs: Int) -> String {
+        let characters = Array(text)
+        guard !characters.isEmpty else { return text }
+
+        var output = ""
+        for index in characters.indices {
+            let character = characters[index]
+            output.append(character)
+
+            if sentencePauseMs > 0 && isSentencePunctuation(character) && !isDecimalSeparator(characters, at: index) {
+                output += "<break time='\(sentencePauseMs)ms'/>"
+            }
+
+            if wordGapMs > 0 && isWordCharacter(character) {
+                let nextIndex = index + 1
+                if nextIndex < characters.count, isWhitespace(characters[nextIndex]), nextWordStarts(afterWhitespaceFrom: nextIndex, in: characters) {
+                    output += "<break time='\(wordGapMs)ms'/>"
+                }
+            }
+        }
+        return output
+    }
+
+    private static func nextWordStarts(afterWhitespaceFrom index: Int, in characters: [Character]) -> Bool {
+        var cursor = index
+        while cursor < characters.count, isWhitespace(characters[cursor]) {
+            cursor += 1
+        }
+        return cursor < characters.count && isWordCharacter(characters[cursor])
+    }
+
+    private static func isSentencePunctuation(_ character: Character) -> Bool {
+        character == "." || character == "," || character == "!" || character == "?"
+    }
+
+    private static func isDecimalSeparator(_ characters: [Character], at index: Int) -> Bool {
+        guard characters[index] == "." || characters[index] == "," else { return false }
+        let previous = index > 0 ? characters[index - 1] : nil
+        let next = index + 1 < characters.count ? characters[index + 1] : nil
+        return previous?.isNumber == true && next?.isNumber == true
+    }
+
+    private static func isWhitespace(_ character: Character) -> Bool {
+        character.unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) }
+    }
+
+    private static func isWordCharacter(_ character: Character) -> Bool {
+        character.unicodeScalars.contains { CharacterSet.letters.contains($0) || CharacterSet.decimalDigits.contains($0) }
     }
 
     private static func extractSSMLVolume(from ssml: String) -> Double {
