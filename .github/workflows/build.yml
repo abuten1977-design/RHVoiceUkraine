@@ -127,6 +127,70 @@ jobs:
             echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
           } >> "$GITHUB_ENV"
 
+      - name: Prune stale API development certificates
+        run: |
+          set -euo pipefail
+          ruby <<'RUBY' "$ASC_API_KEY_PATH" "$ASC_KEY_ID" "$ASC_ISSUER_ID"
+          require 'base64'
+          require 'json'
+          require 'open3'
+          require 'openssl'
+
+          key_path, key_id, issuer_id = ARGV
+
+          def base64url(value)
+            Base64.urlsafe_encode64(value).delete('=')
+          end
+
+          def jwt_for(key_path, key_id, issuer_id)
+            key = OpenSSL::PKey.read(File.read(key_path))
+            now = Time.now.to_i
+            header = { alg: 'ES256', kid: key_id, typ: 'JWT' }
+            payload = { iss: issuer_id, iat: now, exp: now + 900, aud: 'appstoreconnect-v1' }
+            signing_input = [base64url(header.to_json), base64url(payload.to_json)].join('.')
+            der_signature = key.sign(OpenSSL::Digest::SHA256.new, signing_input)
+            asn1_signature = OpenSSL::ASN1.decode(der_signature)
+            raw_signature = asn1_signature.value.map { |part| [part.value.to_s(16).rjust(64, '0')].pack('H*') }.join
+            "#{signing_input}.#{base64url(raw_signature)}"
+          end
+
+          def app_store_connect_request(jwt, method, url)
+            stdout, stderr, status = Open3.capture3(
+              'curl',
+              '-fsS',
+              '-X',
+              method,
+              '-H',
+              "Authorization: Bearer #{jwt}",
+              url
+            )
+            raise "#{method} #{url} failed\n#{stderr}\n#{stdout}" unless status.success?
+            stdout
+          end
+
+          jwt = jwt_for(key_path, key_id, issuer_id)
+          url = 'https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=DEVELOPMENT&limit=200'
+          response = JSON.parse(app_store_connect_request(jwt, 'GET', url))
+          certificates = response.fetch('data', [])
+          stale_api_development = certificates.select do |certificate|
+            attributes = certificate.fetch('attributes', {})
+            display_name = [attributes['displayName'], attributes['name']].compact.join(' ')
+            attributes['certificateType'].to_s == 'DEVELOPMENT' && display_name.include?('Created via API')
+          end
+
+          stale_api_development.sort_by! { |certificate| certificate.fetch('attributes', {})['expirationDate'].to_s }
+          keep_count = 2
+          delete_count = [stale_api_development.length - keep_count, 0].max
+          puts "Found #{stale_api_development.length} Created via API development certificates; deleting #{delete_count}, keeping #{[stale_api_development.length, keep_count].min} newest."
+
+          stale_api_development.first(delete_count).each do |certificate|
+            attributes = certificate.fetch('attributes', {})
+            label = attributes['displayName'] || attributes['name'] || certificate['id']
+            puts "Deleting #{certificate['id']} #{label} #{attributes['expirationDate']}"
+            app_store_connect_request(jwt, 'DELETE', "https://api.appstoreconnect.apple.com/v1/certificates/#{certificate['id']}")
+          end
+          RUBY
+
       - name: Build signed iPhone archive
         id: ios_archive
         continue-on-error: true
@@ -146,7 +210,6 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM=5NNZPP8CRR \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             clean archive \
             -archivePath build/UkrainianVoices.xcarchive 2>&1 | tee "$RUNNER_TEMP/ios-archive.log"
