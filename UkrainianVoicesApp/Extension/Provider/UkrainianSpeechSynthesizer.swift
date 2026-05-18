@@ -161,7 +161,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let effectivePitch = 1.0
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
-        let synthesisText = Self.applyTextBreaks(to: text, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        let normalizedText = Self.normalizeApostrophesInTextSegments(text)
+        let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
 
         rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", ssmlRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accel=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
         os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", ssmlRatePercent, mappedRate, accelerator, finalRate, effectiveVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
@@ -267,13 +268,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let progress = min((normalizedPercent - 100.0) / 324.0, 1.0)
         return 4.0 * pow(1.125, progress)
 #else
-        if normalizedPercent <= 100.0 {
-            if normalizedPercent <= 50.0 {
-                return 0.5 * pow(2.0, normalizedPercent / 50.0)
-            }
-            return pow(3.0, (normalizedPercent - 50.0) / 50.0)
-        }
-        return 3.0
+        let proportionalRate = normalizedPercent / 100.0
+        return min(max(proportionalRate, 0.5), 2.0)
 #endif
     }
 
@@ -287,6 +283,45 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private static func clampWordGap(_ value: Double) -> Double {
         min(max(value, 0.0), 300.0)
+    }
+
+    private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
+        var output = ""
+        var textSegment = ""
+        var tagSegment = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                tagSegment.append(character)
+                if character == ">" {
+                    output += normalizeApostrophes(textSegment)
+                    textSegment.removeAll(keepingCapacity: true)
+                    output += tagSegment
+                    tagSegment.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+            } else if character == "<" {
+                insideTag = true
+                tagSegment.append(character)
+            } else {
+                textSegment.append(character)
+            }
+        }
+
+        if insideTag {
+            output += normalizeApostrophes(textSegment) + tagSegment
+        } else {
+            output += normalizeApostrophes(textSegment)
+        }
+        return output
+    }
+
+    private static func normalizeApostrophes(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "\u{2019}", with: "'")
+            .replacingOccurrences(of: "\u{02BC}", with: "'")
+            .replacingOccurrences(of: "\u{2018}", with: "'")
     }
 
     private static func applyTextBreaks(to ssml: String, sentencePauseMs: Int, wordGapMs: Int) -> String {

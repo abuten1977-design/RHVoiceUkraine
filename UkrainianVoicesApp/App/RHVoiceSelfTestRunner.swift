@@ -44,12 +44,12 @@ enum RHVoiceSelfTestRunner {
         }
 
         if let clipDirectory, !clipDirectory.isEmpty {
-            let proofRates = [0.5, 1.0, 2.0, 3.0]
+            let proofRates = [0.5, 1.0, 1.5, 2.0]
             let clipURL = URL(fileURLWithPath: clipDirectory, isDirectory: true)
             do {
                 try FileManager.default.createDirectory(at: clipURL, withIntermediateDirectories: true)
                 for rate in proofRates {
-                    let sample = "Привіт! Це контрольний аудіо-кліп RHVoice на швидкості \(rate). Український голос має звучати розбірливо."
+                    let sample = "Привіт! Це контрольний аудіо-кліп RHVoice на швидкості \(rate). Українські слова м’ясо, пʼять, об’єкт, ім‘я, з’їзд і в’язень мають звучати розбірливо."
                     let rateToken = String(format: "%.1f", rate).replacingOccurrences(of: ".", with: "_")
                     let fileName = "anatol-rate-\(rateToken)x.wav"
                     let outputURL = clipURL.appendingPathComponent(fileName)

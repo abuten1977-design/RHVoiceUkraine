@@ -72,12 +72,25 @@ jobs:
           mkdir -p "$CLIP_DIR"
           APP_PATH="$(find build_audio/Build/Products/Debug -maxdepth 1 -name 'UkrainianVoicesMac.app' -print -quit)"
           test -d "$APP_PATH"
+          CONF_PATH="$APP_PATH/Contents/Resources/RHVoiceData/RHVoice.conf"
+          /usr/bin/python3 - <<'PY' "$CONF_PATH"
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          text = text.replace("languages.ukrainian.max_rate=20", "languages.ukrainian.max_rate=5")
+          text = text.replace("languages.ukrainian.min_sonic_rate=1", "languages.ukrainian.min_sonic_rate=99")
+          path.write_text(text)
+          PY
+          grep -q "languages.ukrainian.max_rate=5" "$CONF_PATH"
+          grep -q "languages.ukrainian.min_sonic_rate=99" "$CONF_PATH"
           RHVOICE_SELFTEST_CLIP_DIR="$CLIP_DIR" \
             "$APP_PATH/Contents/MacOS/UkrainianVoicesMac" --self-test 2>&1 | tee "$CLIP_DIR/selftest.log"
           grep -q "CLIP OK rate=0.5" "$CLIP_DIR/selftest.log"
           grep -q "CLIP OK rate=1.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK rate=1.5" "$CLIP_DIR/selftest.log"
           grep -q "CLIP OK rate=2.0" "$CLIP_DIR/selftest.log"
-          grep -q "CLIP OK rate=3.0" "$CLIP_DIR/selftest.log"
           if grep -q "CLIP FAIL" "$CLIP_DIR/selftest.log"; then
             exit 1
           fi
