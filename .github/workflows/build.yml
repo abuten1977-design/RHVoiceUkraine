@@ -158,6 +158,7 @@ jobs:
             stdout, stderr, status = Open3.capture3(
               'curl',
               '-fsS',
+              '-g',
               '-X',
               method,
               '-H',
