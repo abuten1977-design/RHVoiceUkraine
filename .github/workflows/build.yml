@@ -130,7 +130,7 @@ jobs:
       - name: Prune stale API development certificates
         run: |
           set -euo pipefail
-          ruby <<'RUBY' "$ASC_API_KEY_PATH" "$ASC_KEY_ID" "$ASC_ISSUER_ID"
+          ruby - "$ASC_API_KEY_PATH" "$ASC_KEY_ID" "$ASC_ISSUER_ID" <<'RUBY'
           require 'base64'
           require 'json'
           require 'open3'
