@@ -63,7 +63,7 @@ private struct VoiceSettingsState: Equatable {
 
     func withSpeedMultiplier(_ value: Double) -> VoiceSettingsState {
         var copy = self
-        copy.speedMultiplier = value
+        copy.speedMultiplier = 1.0
         return copy
     }
 
@@ -552,7 +552,7 @@ private final class ContentViewModel: ObservableObject {
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
-        min(max(value, 1.0), 4.0)
+        1.0
     }
 
     private static func clampWordGap(_ value: Double) -> Double {
@@ -661,15 +661,6 @@ private struct VoiceSettingsScreen: View {
             }
 
             Section("Налаштування голосу") {
-                sliderRow(
-                    title: "Прискорювач",
-                    value: settingBinding(\.speedMultiplier),
-                    range: 1...4,
-                    step: 0.1,
-                    valueText: String(format: "%.1fx", settings.speedMultiplier),
-                    hint: "Додатково множить швидкість голосу \(voice.name)."
-                )
-
                 sliderRow(
                     title: "Пауза між реченнями",
                     value: settingBinding(\.sentencePause),

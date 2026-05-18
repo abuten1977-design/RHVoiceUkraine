@@ -153,7 +153,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
 
-        // Combine VoiceOver SSML with the app-only accelerator.
+        // VoiceOver rotor owns speed. The legacy app accelerator is pinned off.
         let mappedRate = Self.mapSSMLRatePercentToEngineMultiplier(ssmlRatePercent)
         let accelerator = Self.clampAccelerator(voiceSettings.speedMultiplier)
         let finalRate = mappedRate * accelerator
@@ -268,15 +268,17 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         return 4.0 * pow(1.125, progress)
 #else
         if normalizedPercent <= 100.0 {
-            return pow(4.0, (normalizedPercent - 50.0) / 50.0)
+            if normalizedPercent <= 50.0 {
+                return 0.5 * pow(2.0, normalizedPercent / 50.0)
+            }
+            return pow(3.0, (normalizedPercent - 50.0) / 50.0)
         }
-        let progress = min((normalizedPercent - 100.0) / 100.0, 1.0)
-        return 4.0 * pow(1.125, progress)
+        return 3.0
 #endif
     }
 
     private static func clampAccelerator(_ value: Double) -> Double {
-        min(max(value, 1.0), 4.0)
+        1.0
     }
 
     private static func clampSentencePause(_ value: Double) -> Double {

@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 #if os(iOS)
 import RHVoiceBridge
 #else
@@ -23,6 +24,7 @@ enum RHVoiceSelfTestRunner {
             ("Natalia", "Привіт! Це тест голосу Наталія."),
             ("Volodymyr", "Привіт! Це тест голосу Володимир.")
         ]
+        let clipDirectory = ProcessInfo.processInfo.environment["RHVOICE_SELFTEST_CLIP_DIR"]
 
         for v in voices {
             let start = Date()
@@ -36,6 +38,61 @@ enum RHVoiceSelfTestRunner {
                 fputs("\(okLine)\n", stderr)
             } else {
                 let failLine = "FAIL voice=\(v.name) buffer=nil duration=\(Date().timeIntervalSince(start))"
+                lines.append(failLine)
+                fputs("\(failLine)\n", stderr)
+            }
+        }
+
+        if let clipDirectory, !clipDirectory.isEmpty {
+            let proofRates = [0.5, 1.0, 2.0, 3.0]
+            let clipURL = URL(fileURLWithPath: clipDirectory, isDirectory: true)
+            do {
+                try FileManager.default.createDirectory(at: clipURL, withIntermediateDirectories: true)
+                for rate in proofRates {
+                    let sample = "Привіт! Це контрольний аудіо-кліп RHVoice на швидкості \(rate). Український голос має звучати розбірливо."
+                    let rateToken = String(format: "%.1f", rate).replacingOccurrences(of: ".", with: "_")
+                    let fileName = "anatol-rate-\(rateToken)x.wav"
+                    let outputURL = clipURL.appendingPathComponent(fileName)
+                    let start = Date()
+                    let buffer = engine.synthesize(sample, voice: "Anatol", rate: rate, volume: 1.0, pitch: 1.0)
+                    guard let buffer, let channel = buffer.floatChannelData?[0], buffer.frameLength > 0 else {
+                        let failLine = "CLIP FAIL rate=\(rate) buffer=nil"
+                        lines.append(failLine)
+                        fputs("\(failLine)\n", stderr)
+                        continue
+                    }
+
+                    let frameCount = Int(buffer.frameLength)
+                    let samples = UnsafeBufferPointer(start: channel, count: frameCount)
+                    var peak: Float = 0
+                    var sumSquares: Double = 0
+                    var finite = true
+                    for sample in samples {
+                        finite = finite && sample.isFinite
+                        peak = max(peak, abs(sample))
+                        sumSquares += Double(sample * sample)
+                    }
+                    let rms = sqrt(sumSquares / Double(max(frameCount, 1)))
+                    let clipped = peak >= 0.999
+                    let silent = rms < 0.0001
+
+                    let file = try AVAudioFile(forWriting: outputURL, settings: buffer.format.settings)
+                    try file.write(from: buffer)
+
+                    let ok = finite && !silent && !clipped
+                    let line = String(format: "CLIP %@ rate=%.1f path=%@ frames=%u peak=%.4f rms=%.6f duration=%.3f",
+                                      ok ? "OK" : "FAIL",
+                                      rate,
+                                      outputURL.path,
+                                      buffer.frameLength,
+                                      peak,
+                                      rms,
+                                      Date().timeIntervalSince(start))
+                    lines.append(line)
+                    fputs("\(line)\n", stderr)
+                }
+            } catch {
+                let failLine = "CLIP FAIL error=\(error)"
                 lines.append(failLine)
                 fputs("\(failLine)\n", stderr)
             }

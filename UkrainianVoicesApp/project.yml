@@ -121,6 +121,16 @@ targets:
           
           if [ -d "$DATA_SRC" ]; then
             cp -r "$DATA_SRC" "$DATA_DST"
+            /usr/bin/python3 - <<'PY' "$DATA_DST/RHVoice.conf"
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          text = text.replace("languages.ukrainian.max_rate=20", "languages.ukrainian.max_rate=5")
+          text = text.replace("languages.ukrainian.min_sonic_rate=1", "languages.ukrainian.min_sonic_rate=99")
+          path.write_text(text)
+          PY
             echo "✅ RHVoiceData copied: $(find "$DATA_DST" -type f | wc -l) files"
             ls -la "$DATA_DST"
           else
@@ -162,6 +172,16 @@ targets:
           
           if [ -d "$DATA_SRC" ]; then
             cp -r "$DATA_SRC" "$DATA_DST"
+            /usr/bin/python3 - <<'PY' "$DATA_DST/RHVoice.conf"
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          text = text.replace("languages.ukrainian.max_rate=20", "languages.ukrainian.max_rate=5")
+          text = text.replace("languages.ukrainian.min_sonic_rate=1", "languages.ukrainian.min_sonic_rate=99")
+          path.write_text(text)
+          PY
             echo "✅ RHVoiceData copied to Extension: $(find "$DATA_DST" -type f | wc -l) files"
           else
             echo "❌ RHVoiceData not found: $DATA_SRC"

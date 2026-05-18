@@ -48,9 +48,14 @@ let boostHeaderPaths: [CSetting] = [
     .headerSearchPath("../RHVoice/external/libs/boost/libs/utility/include"),
 ]
 
-let commonDefines: [CSetting] = [
-    .define("MAX_RATE", to: "20"),
-    .define("RHVOICE_MAX_MAX_RATE", to: "20"),
+let rateDefines: [CSetting] = [
+    .define("MAX_RATE", to: "5", .when(platforms: [.iOS, .macCatalyst])),
+    .define("RHVOICE_MAX_MAX_RATE", to: "5", .when(platforms: [.iOS, .macCatalyst])),
+    .define("MAX_RATE", to: "20", .when(platforms: [.macOS])),
+    .define("RHVOICE_MAX_MAX_RATE", to: "20", .when(platforms: [.macOS])),
+]
+
+let commonDefines: [CSetting] = rateDefines + [
     .define("RHVOICE"),
     .define("PACKAGE", to: "\"RHVoice\""),
     .define("DATA_PATH", to: "\"\""),

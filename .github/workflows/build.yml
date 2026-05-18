@@ -51,6 +51,49 @@ jobs:
           xcodegen generate
           ls -la UkrainianVoices.xcodeproj
 
+      - name: Build macOS audio proof app
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodebuild \
+            -project UkrainianVoices.xcodeproj \
+            -scheme UkrainianVoicesMac \
+            -configuration Debug \
+            -destination "platform=macOS" \
+            -derivedDataPath build_audio \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Generate and validate native RHVoice speed clips
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          CLIP_DIR="$PWD/build/audio-proof"
+          mkdir -p "$CLIP_DIR"
+          APP_PATH="$(find build_audio/Build/Products/Debug -maxdepth 1 -name 'UkrainianVoicesMac.app' -print -quit)"
+          test -d "$APP_PATH"
+          RHVOICE_SELFTEST_CLIP_DIR="$CLIP_DIR" \
+            "$APP_PATH/Contents/MacOS/UkrainianVoicesMac" --self-test 2>&1 | tee "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK rate=0.5" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK rate=1.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK rate=2.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK rate=3.0" "$CLIP_DIR/selftest.log"
+          if grep -q "CLIP FAIL" "$CLIP_DIR/selftest.log"; then
+            exit 1
+          fi
+          test "$(find "$CLIP_DIR" -maxdepth 1 -name '*.wav' | wc -l)" -eq 4
+          ls -lh "$CLIP_DIR"
+
+      - name: Upload audio proof clips
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-safe-speed-audio-proof
+          path: |
+            UkrainianVoicesApp/build/audio-proof/*.wav
+            UkrainianVoicesApp/build/audio-proof/selftest.log
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Prepare App Store Connect API key
         run: |
           set -euo pipefail
