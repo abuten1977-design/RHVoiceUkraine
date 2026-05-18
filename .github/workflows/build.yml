@@ -128,6 +128,8 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build signed iPhone archive
+        id: ios_archive
+        continue-on-error: true
         run: |
           set -euxo pipefail
           cd UkrainianVoicesApp
@@ -146,7 +148,20 @@ jobs:
             CODE_SIGN_STYLE=Automatic \
             CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             clean archive \
-            -archivePath build/UkrainianVoices.xcarchive
+            -archivePath build/UkrainianVoices.xcarchive 2>&1 | tee "$RUNNER_TEMP/ios-archive.log"
+
+      - name: Upload iPhone archive log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-archive-log
+          path: ${{ runner.temp }}/ios-archive.log
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Stop after failed iPhone archive
+        if: steps.ios_archive.outcome == 'failure'
+        run: exit 1
 
       - name: Create export options
         run: |
