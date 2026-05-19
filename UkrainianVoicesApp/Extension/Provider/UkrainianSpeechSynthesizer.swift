@@ -136,6 +136,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let voiceId = speechRequest.voice.identifier
 
         rhLog("synth request: voice=\(voiceId) text=\(text.count) chars")
+        Self.logApostropheEncoding(label: "input-ssml", ssml: text)
 
         // Resolve voice profile name
         let profileName: String
@@ -162,7 +163,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeApostrophesInTextSegments(text)
+        Self.logApostropheEncoding(label: "after-apostrophe-normalize", ssml: normalizedText)
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
         rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", ssmlRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accel=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
         os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", ssmlRatePercent, mappedRate, accelerator, finalRate, effectiveVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
@@ -322,6 +325,94 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             .replacingOccurrences(of: "\u{2019}", with: "'")
             .replacingOccurrences(of: "\u{02BC}", with: "'")
             .replacingOccurrences(of: "\u{2018}", with: "'")
+    }
+
+    private static func logApostropheEncoding(label: String, ssml: String) {
+        let textSegments = extractTextSegments(from: ssml)
+        let matches = textSegments.flatMap { apostropheDiagnostics(in: $0) }
+
+        guard !matches.isEmpty else {
+            rhLog("APOSTROPHE_DIAG \(label): no apostrophe-like scalars in text segments")
+            return
+        }
+
+        for (index, match) in matches.enumerated() {
+            rhLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
+        }
+    }
+
+    private static func extractTextSegments(from ssml: String) -> [String] {
+        var segments: [String] = []
+        var textSegment = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                if character == ">" {
+                    insideTag = false
+                }
+            } else if character == "<" {
+                if !textSegment.isEmpty {
+                    segments.append(textSegment)
+                    textSegment.removeAll(keepingCapacity: true)
+                }
+                insideTag = true
+            } else {
+                textSegment.append(character)
+            }
+        }
+
+        if !textSegment.isEmpty {
+            segments.append(textSegment)
+        }
+        return segments
+    }
+
+    private static func apostropheDiagnostics(in text: String) -> [String] {
+        let scalars = Array(text.unicodeScalars)
+        var results: [String] = []
+
+        for index in scalars.indices where isApostropheLikeScalar(scalars[index]) {
+            let wordRange = diagnosticWordRange(around: index, in: scalars)
+            let wordScalars = Array(scalars[wordRange])
+            let word = String(String.UnicodeScalarView(wordScalars))
+            let codepoints = wordScalars.map { String(format: "U+%04X", $0.value) }.joined(separator: " ")
+            let utf8Bytes = word.utf8.map { String(format: "%02X", $0) }.joined(separator: " ")
+            let apostrophe = String(format: "U+%04X", scalars[index].value)
+            results.append("apostrophe=\(apostrophe) word=\(word) codepoints=[\(codepoints)] utf8=[\(utf8Bytes)]")
+        }
+
+        return results
+    }
+
+    private static func isApostropheLikeScalar(_ scalar: UnicodeScalar) -> Bool {
+        switch scalar.value {
+        case 0x0027, 0x0060, 0x00B4, 0x02BC, 0x055A, 0x2018, 0x2019, 0x2032, 0xA78B, 0xA78C, 0xFF07:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private static func diagnosticWordRange(around index: Int, in scalars: [UnicodeScalar]) -> Range<Int> {
+        var start = index
+        var end = index + 1
+
+        while start > scalars.startIndex, isDiagnosticWordScalar(scalars[start - 1]) {
+            start -= 1
+        }
+
+        while end < scalars.endIndex, isDiagnosticWordScalar(scalars[end]) {
+            end += 1
+        }
+
+        return start..<end
+    }
+
+    private static func isDiagnosticWordScalar(_ scalar: UnicodeScalar) -> Bool {
+        CharacterSet.letters.contains(scalar)
+            || CharacterSet.decimalDigits.contains(scalar)
+            || isApostropheLikeScalar(scalar)
     }
 
     private static func applyTextBreaks(to ssml: String, sentencePauseMs: Int, wordGapMs: Int) -> String {
