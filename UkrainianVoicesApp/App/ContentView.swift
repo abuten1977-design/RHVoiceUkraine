@@ -63,14 +63,13 @@ private struct VoiceSettingsState: Equatable {
 
     func withSpeedMultiplier(_ value: Double) -> VoiceSettingsState {
         var copy = self
-        copy.speedMultiplier = 1.0
+        copy.speedMultiplier = value
         return copy
     }
 
     func neutralizedVoiceOverControlledSettings() -> VoiceSettingsState {
         var copy = self
         copy.rate = 0.5
-        copy.volume = 1.0
         return copy
     }
 }
@@ -552,7 +551,7 @@ private final class ContentViewModel: ObservableObject {
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
-        1.0
+        min(max(value, 0.5), 2.0)
     }
 
     private static func clampWordGap(_ value: Double) -> Double {
@@ -666,11 +665,29 @@ private struct VoiceSettingsScreen: View {
 
             Section("Налаштування голосу") {
                 sliderRow(
+                    title: "Швидкість",
+                    value: settingBinding(\.speedMultiplier),
+                    range: 0.5...2.0,
+                    step: 0.05,
+                    valueText: "\(Int((settings.speedMultiplier * 100).rounded()))%",
+                    hint: "Змінює базову швидкість для голосу \(voice.name)."
+                )
+
+                sliderRow(
+                    title: "Гучність",
+                    value: settingBinding(\.volume),
+                    range: 0.0...1.0,
+                    step: 0.05,
+                    valueText: "\(Int((settings.volume * 100).rounded()))%",
+                    hint: "Змінює базову гучність для голосу \(voice.name)."
+                )
+
+                sliderRow(
                     title: "Тон",
                     value: settingBinding(\.pitch),
                     range: 0.5...2.0,
                     step: 0.05,
-                    valueText: String(format: "%.2f", settings.pitch),
+                    valueText: "\(Int((settings.pitch * 100).rounded()))%",
                     hint: "Змінює висоту тону для голосу \(voice.name)."
                 )
 

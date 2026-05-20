@@ -233,6 +233,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         // Extract rate/volume from SSML
         let ssmlRatePercent = Self.extractSSMLRatePercentIfPresent(from: text)
         let ssmlVolume = Self.extractSSMLVolumeIfPresent(from: text)
+        let ssmlPitch = Self.extractSSMLPitch(from: text)
+        let ssmlSnippet = String(text.prefix(200))
+        rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")
 
         // Read user settings from App Group
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
@@ -240,10 +243,13 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         let effectiveRatePercent = ssmlRatePercent ?? 100.0
         let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
-            ?? Double(rateValue ?? AUValue(voiceSettings.rate))
-        let finalRate = Self.clampRate(mappedRate)
-        let effectiveVolume = ssmlVolume ?? Self.clampVolume(Double(volumeValue ?? AUValue(voiceSettings.volume)))
-        let effectivePitch = Self.clampPitch(Double(pitchValue ?? AUValue(voiceSettings.pitch)))
+            ?? Double(rateValue ?? 1.0)
+        let baselineSpeed = Self.clampSpeedMultiplier(voiceSettings.speedMultiplier)
+        let finalRate = Self.clampRate(mappedRate * baselineSpeed)
+        let effectiveVolume = ssmlVolume ?? Self.clampVolume(Double(volumeValue ?? 1.0))
+        let baselineVolume = Self.clampVolume(voiceSettings.volume)
+        let finalVolume = Self.clampVolume(effectiveVolume * baselineVolume)
+        let effectivePitch = Self.clampPitch(ssmlPitch ?? voiceSettings.pitch)
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeApostrophesInTextSegments(text)
@@ -251,8 +257,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
-        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, finalRate, effectiveVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) baselineSpeed=\(String(format: "%.2f", baselineSpeed)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) baselineVolume=\(String(format: "%.2f", baselineVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f baselineSpeed=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f baselineVolume=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, baselineSpeed, finalRate, finalVolume, baselineVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || baselineSpeed != 1.0 || baselineVolume != 1.0 || ssmlPitch != nil || voiceSettings.pitch != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
 
         self.outputMutex.wait()
         self.isSynthesizing = true
@@ -265,7 +271,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             synthesisText,
             voice: profileName,
             rate: finalRate,
-            volume: effectiveVolume,
+            volume: finalVolume,
             pitch: effectivePitch
         )
         
@@ -277,7 +283,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 plainText,
                 voice: profileName,
                 rate: finalRate,
-                volume: effectiveVolume,
+                volume: finalVolume,
                 pitch: effectivePitch
             )
         }
@@ -358,12 +364,59 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         min(max(value, 0.1), 10.0)
     }
 
+    private static func clampSpeedMultiplier(_ value: Double) -> Double {
+        min(max(value, 0.5), 2.0)
+    }
+
     private static func clampVolume(_ value: Double) -> Double {
         min(max(value, 0.0), 1.0)
     }
 
     private static func clampPitch(_ value: Double) -> Double {
         min(max(value, 0.5), 2.0)
+    }
+
+    private static func extractSSMLPitch(from ssml: String) -> Double? {
+        guard let match = try? NSRegularExpression(pattern: #"pitch\s*=\s*"([^"]+)""#, options: [.caseInsensitive])
+            .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
+              let range = Range(match.range(at: 1), in: ssml) else { return nil }
+
+        let rawPitch = ssml[range].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch rawPitch {
+        case "x-low":
+            return 0.5
+        case "low":
+            return 0.75
+        case "medium", "default":
+            return 1.0
+        case "high":
+            return 1.25
+        case "x-high":
+            return 1.5
+        default:
+            break
+        }
+
+        if rawPitch.hasSuffix("%") {
+            let numeric = rawPitch.dropLast()
+            if let percent = Double(numeric) {
+                if numeric.first == "+" || numeric.first == "-" {
+                    return 1.0 + (percent / 100.0)
+                }
+                return percent / 100.0
+            }
+        }
+
+        if rawPitch.hasSuffix("st"),
+           let semitones = Double(rawPitch.dropLast(2)) {
+            return pow(2.0, semitones / 12.0)
+        }
+
+        if rawPitch.hasSuffix("hz") {
+            return nil
+        }
+
+        return nil
     }
 
     private static func clampSentencePause(_ value: Double) -> Double {

@@ -97,6 +97,11 @@ jobs:
           test "$(find "$CLIP_DIR" -maxdepth 1 -name '*.wav' | wc -l)" -eq 4
           ls -lh "$CLIP_DIR"
 
+      - name: Validate task-041 SSML baseline and pitch proof
+        run: |
+          set -euxo pipefail
+          bash scripts/task041_actions_proof.sh
+
       - name: Upload audio proof clips
         uses: actions/upload-artifact@v4
         with:
