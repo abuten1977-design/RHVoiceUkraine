@@ -149,6 +149,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         // Extract rate/volume from SSML
         let ssmlRatePercent = Self.extractSSMLRatePercent(from: text)
         let ssmlVolume = Self.extractSSMLVolume(from: text)
+        let ssmlPitch = Self.extractSSMLPitch(from: text)
 
         // Read user settings from App Group
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
@@ -159,7 +160,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let accelerator = Self.clampAccelerator(voiceSettings.speedMultiplier)
         let finalRate = mappedRate * accelerator
         let effectiveVolume = ssmlVolume
-        let effectivePitch = 1.0
+        let effectivePitch = Self.clampPitch(ssmlPitch ?? voiceSettings.pitch)
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeApostrophesInTextSegments(text)
@@ -264,16 +265,76 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private static func mapSSMLRatePercentToEngineMultiplier(_ percent: Double) -> Double {
         let normalizedPercent = max(0.0, percent)
-#if os(macOS)
-        if normalizedPercent <= 100.0 {
-            return pow(4.0, (normalizedPercent - 50.0) / 50.0)
+        let anchors: [(percent: Double, multiplier: Double)] = [
+            (0.0, 0.5),
+            (100.0, 1.0),
+            (175.0, 1.5),
+            (200.0, 2.0),
+            (300.0, 3.5),
+            (400.0, 5.5),
+            (500.0, 6.0),
+        ]
+
+        guard let first = anchors.first, let last = anchors.last else {
+            return 1.0
         }
-        let progress = min((normalizedPercent - 100.0) / 324.0, 1.0)
-        return 4.0 * pow(1.125, progress)
-#else
-        let proportionalRate = normalizedPercent / 100.0
-        return min(max(proportionalRate, 0.5), 2.0)
-#endif
+
+        if normalizedPercent <= first.percent {
+            return first.multiplier
+        }
+        if normalizedPercent >= last.percent {
+            return last.multiplier
+        }
+
+        for index in 0..<(anchors.count - 1) {
+            let left = anchors[index]
+            let right = anchors[index + 1]
+            if normalizedPercent <= right.percent {
+                let t = (normalizedPercent - left.percent) / (right.percent - left.percent)
+                let smoothed = t * t * (3.0 - 2.0 * t)
+                return left.multiplier + (right.multiplier - left.multiplier) * smoothed
+            }
+        }
+
+        return last.multiplier
+    }
+
+    private static func extractSSMLPitch(from ssml: String) -> Double? {
+        guard let match = try? NSRegularExpression(pattern: #"pitch="([^"]+)""#, options: [.caseInsensitive])
+            .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
+              let range = Range(match.range(at: 1), in: ssml) else { return nil }
+
+        let rawPitch = ssml[range].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch rawPitch {
+        case "default", "medium":
+            return 1.0
+        case "low":
+            return 0.7
+        case "high":
+            return 1.4
+        default:
+            break
+        }
+
+        if rawPitch.hasSuffix("%"),
+           let percent = Double(rawPitch.dropLast()) {
+            return 1.0 + (percent / 100.0)
+        }
+
+        if rawPitch.hasSuffix("st"),
+           let semitones = Double(rawPitch.dropLast(2)) {
+            return pow(2.0, semitones / 12.0)
+        }
+
+        if rawPitch.hasSuffix("hz") {
+            return 1.0
+        }
+
+        return nil
+    }
+
+    private static func clampPitch(_ value: Double) -> Double {
+        min(max(value, 0.5), 2.0)
     }
 
     private static func clampAccelerator(_ value: Double) -> Double {
