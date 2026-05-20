@@ -322,9 +322,18 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private static func normalizeApostrophes(_ text: String) -> String {
         text
-            .replacingOccurrences(of: "\u{2019}", with: "'")
-            .replacingOccurrences(of: "\u{02BC}", with: "'")
-            .replacingOccurrences(of: "\u{2018}", with: "'")
+            .replacingOccurrences(of: "&apos;", with: "`")
+            .replacingOccurrences(of: "&#39;", with: "`")
+            .replacingOccurrences(of: "&#x27;", with: "`")
+            .replacingOccurrences(of: "&#X27;", with: "`")
+            .replacingOccurrences(of: "\u{0027}", with: "`")
+            .replacingOccurrences(of: "\u{2019}", with: "`")
+            .replacingOccurrences(of: "\u{02BC}", with: "`")
+            .replacingOccurrences(of: "\u{2018}", with: "`")
+            .replacingOccurrences(of: "\u{2032}", with: "`")
+            .replacingOccurrences(of: "\u{00B4}", with: "`")
+            .replacingOccurrences(of: "\u{FF07}", with: "`")
+            .replacingOccurrences(of: "\u{0060}", with: "`")
     }
 
     private static func logApostropheEncoding(label: String, ssml: String) {
