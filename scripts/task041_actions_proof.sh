@@ -137,8 +137,9 @@ swiftc "$PROOF_SWIFT" \
   -Xlinker "$DERIVED_DATA/Build/Products/Debug" \
   -o "$PROOF_BIN"
 
-rm -rf /tmp/RHVoiceData
+rm -rf /tmp/RHVoiceData "$PROOF_DIR/RHVoiceData"
 ln -s "$DERIVED_DATA/Build/Products/Debug/UkrainianVoicesMac.app/Contents/Resources/RHVoiceData" /tmp/RHVoiceData
+ln -s "$DERIVED_DATA/Build/Products/Debug/UkrainianVoicesMac.app/Contents/Resources/RHVoiceData" "$PROOF_DIR/RHVoiceData"
 
 "$PROOF_BIN" 2>&1 | tee "$PROOF_LOG"
 
