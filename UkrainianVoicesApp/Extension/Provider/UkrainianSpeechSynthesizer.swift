@@ -12,6 +12,10 @@ private func rhLog(_ msg: String) {
     msg.withCString { RHVoiceDebugLogString($0) }
 }
 
+private enum RHVoiceAUParameter: AUParameterAddress {
+    case rate, volume, pitch
+}
+
 @available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
@@ -24,6 +28,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private var outputOffset: Int = 0
     private var outputMutex = DispatchSemaphore(value: 1)
     private var isSynthesizing = false
+    private var rateValue: AUValue?
+    private var volumeValue: AUValue?
+    private var pitchValue: AUValue?
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -58,6 +65,83 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         try super.init(componentDescription: componentDescription, options: options)
 
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
+        self.setupParameterTree()
+    }
+
+    private func setupParameterTree() {
+        self.parameterTree = .createTree(withChildren: [
+            AUParameterTree.createGroup(
+                withIdentifier: "rhvoice",
+                name: "RHVoice Ukrainian",
+                children: [
+                    AUParameterTree.createParameter(
+                        withIdentifier: "rate",
+                        name: "Rate",
+                        address: RHVoiceAUParameter.rate.rawValue,
+                        min: 0.5,
+                        max: 4.5,
+                        unit: .rate,
+                        unitName: nil,
+                        valueStrings: nil,
+                        dependentParameters: nil
+                    ),
+                    AUParameterTree.createParameter(
+                        withIdentifier: "volume",
+                        name: "Volume",
+                        address: RHVoiceAUParameter.volume.rawValue,
+                        min: 0.0,
+                        max: 1.0,
+                        unit: .linearGain,
+                        unitName: nil,
+                        valueStrings: nil,
+                        dependentParameters: nil
+                    ),
+                    AUParameterTree.createParameter(
+                        withIdentifier: "pitch",
+                        name: "Pitch",
+                        address: RHVoiceAUParameter.pitch.rawValue,
+                        min: 0.5,
+                        max: 2.0,
+                        unit: .customUnit,
+                        unitName: "multiplier",
+                        valueStrings: nil,
+                        dependentParameters: nil
+                    ),
+                ]
+            )
+        ])
+
+        self.parameterTree?.implementorValueProvider = { [weak self] parameter in
+            guard let self else { return 0 }
+            switch parameter.address {
+            case RHVoiceAUParameter.rate.rawValue:
+                return self.rateValue ?? 1.0
+            case RHVoiceAUParameter.volume.rawValue:
+                return self.volumeValue ?? 1.0
+            case RHVoiceAUParameter.pitch.rawValue:
+                return self.pitchValue ?? 1.0
+            default:
+                return 0
+            }
+        }
+
+        for parameter in self.parameterTree?.allParameters ?? [] {
+            parameter.value = self.parameterTree?.implementorValueProvider(parameter) ?? 0
+        }
+
+        self.parameterTree?.implementorValueObserver = { [weak self] parameter, value in
+            guard let self else { return }
+            switch parameter.address {
+            case RHVoiceAUParameter.rate.rawValue:
+                self.rateValue = value
+            case RHVoiceAUParameter.volume.rawValue:
+                self.volumeValue = value
+            case RHVoiceAUParameter.pitch.rawValue:
+                self.pitchValue = value
+            default:
+                break
+            }
+        }
     }
 
     public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
@@ -147,20 +231,19 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
 
         // Extract rate/volume from SSML
-        let ssmlRatePercent = Self.extractSSMLRatePercent(from: text)
-        let ssmlVolume = Self.extractSSMLVolume(from: text)
-        let ssmlPitch = Self.extractSSMLPitch(from: text)
+        let ssmlRatePercent = Self.extractSSMLRatePercentIfPresent(from: text)
+        let ssmlVolume = Self.extractSSMLVolumeIfPresent(from: text)
 
         // Read user settings from App Group
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
 
-        // VoiceOver rotor owns speed. The legacy app accelerator is pinned off.
-        let mappedRate = Self.mapSSMLRatePercentToEngineMultiplier(ssmlRatePercent)
-        let accelerator = Self.clampAccelerator(voiceSettings.speedMultiplier)
-        let finalRate = mappedRate * accelerator
-        let effectiveVolume = ssmlVolume
-        let effectivePitch = Self.clampPitch(ssmlPitch ?? voiceSettings.pitch)
+        let effectiveRatePercent = ssmlRatePercent ?? 100.0
+        let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
+            ?? Double(rateValue ?? AUValue(voiceSettings.rate))
+        let finalRate = Self.clampRate(mappedRate)
+        let effectiveVolume = ssmlVolume ?? Self.clampVolume(Double(volumeValue ?? AUValue(voiceSettings.volume)))
+        let effectivePitch = Self.clampPitch(Double(pitchValue ?? AUValue(voiceSettings.pitch)))
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeApostrophesInTextSegments(text)
@@ -168,8 +251,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
-        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", ssmlRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accel=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", ssmlRatePercent, mappedRate, accelerator, finalRate, effectiveVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", effectiveVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, finalRate, effectiveVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
 
         self.outputMutex.wait()
         self.isSynthesizing = true
@@ -256,89 +339,31 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     // MARK: - SSML parsing
 
     private static func extractSSMLRatePercent(from ssml: String) -> Double {
+        extractSSMLRatePercentIfPresent(from: ssml) ?? 100.0
+    }
+
+    private static func extractSSMLRatePercentIfPresent(from ssml: String) -> Double? {
         guard let match = try? NSRegularExpression(pattern: #"rate="([0-9]+(?:\.[0-9]+)?)%""#)
             .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
               let range = Range(match.range(at: 1), in: ssml),
-              let pct = Double(ssml[range]) else { return 100.0 }
+              let pct = Double(ssml[range]) else { return nil }
         return max(0.0, pct)
     }
 
     private static func mapSSMLRatePercentToEngineMultiplier(_ percent: Double) -> Double {
-        let normalizedPercent = max(0.0, percent)
-        let anchors: [(percent: Double, multiplier: Double)] = [
-            (0.0, 0.5),
-            (100.0, 1.0),
-            (175.0, 1.5),
-            (200.0, 2.0),
-            (300.0, 3.5),
-            (400.0, 5.5),
-            (500.0, 6.0),
-        ]
-
-        guard let first = anchors.first, let last = anchors.last else {
-            return 1.0
-        }
-
-        if normalizedPercent <= first.percent {
-            return first.multiplier
-        }
-        if normalizedPercent >= last.percent {
-            return last.multiplier
-        }
-
-        for index in 0..<(anchors.count - 1) {
-            let left = anchors[index]
-            let right = anchors[index + 1]
-            if normalizedPercent <= right.percent {
-                let t = (normalizedPercent - left.percent) / (right.percent - left.percent)
-                let smoothed = t * t * (3.0 - 2.0 * t)
-                return left.multiplier + (right.multiplier - left.multiplier) * smoothed
-            }
-        }
-
-        return last.multiplier
+        max(0.1, min(10.0, percent / 100.0))
     }
 
-    private static func extractSSMLPitch(from ssml: String) -> Double? {
-        guard let match = try? NSRegularExpression(pattern: #"pitch="([^"]+)""#, options: [.caseInsensitive])
-            .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
-              let range = Range(match.range(at: 1), in: ssml) else { return nil }
+    private static func clampRate(_ value: Double) -> Double {
+        min(max(value, 0.1), 10.0)
+    }
 
-        let rawPitch = ssml[range].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        switch rawPitch {
-        case "default", "medium":
-            return 1.0
-        case "low":
-            return 0.7
-        case "high":
-            return 1.4
-        default:
-            break
-        }
-
-        if rawPitch.hasSuffix("%"),
-           let percent = Double(rawPitch.dropLast()) {
-            return 1.0 + (percent / 100.0)
-        }
-
-        if rawPitch.hasSuffix("st"),
-           let semitones = Double(rawPitch.dropLast(2)) {
-            return pow(2.0, semitones / 12.0)
-        }
-
-        if rawPitch.hasSuffix("hz") {
-            return 1.0
-        }
-
-        return nil
+    private static func clampVolume(_ value: Double) -> Double {
+        min(max(value, 0.0), 1.0)
     }
 
     private static func clampPitch(_ value: Double) -> Double {
         min(max(value, 0.5), 2.0)
-    }
-
-    private static func clampAccelerator(_ value: Double) -> Double {
-        1.0
     }
 
     private static func clampSentencePause(_ value: Double) -> Double {
@@ -574,10 +599,14 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func extractSSMLVolume(from ssml: String) -> Double {
+        extractSSMLVolumeIfPresent(from: ssml) ?? 1.0
+    }
+
+    private static func extractSSMLVolumeIfPresent(from ssml: String) -> Double? {
         guard let match = try? NSRegularExpression(pattern: #"volume="([+-]?[0-9]+(?:\.[0-9]+)?)dB""#)
             .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
               let range = Range(match.range(at: 1), in: ssml),
-              let db = Double(ssml[range]) else { return 1.0 }
+              let db = Double(ssml[range]) else { return nil }
         return max(0.1, min(2.0, pow(10.0, db / 20.0)))
     }
 }

@@ -71,7 +71,6 @@ private struct VoiceSettingsState: Equatable {
         var copy = self
         copy.rate = 0.5
         copy.volume = 1.0
-        copy.pitch = 1.0
         return copy
     }
 }
@@ -181,7 +180,7 @@ private final class ContentViewModel: ObservableObject {
         self.rate = 0.5
         self.volume = 1.0
         self.speedMultiplier = initialSpeedMultiplier
-        self.pitch = 1.0
+        self.pitch = initialPitch
         self.sentencePause = initialSentencePause
         self.wordGap = initialWordGap
         self.testText = "Привіт! Це тест українського голосу."
@@ -403,6 +402,7 @@ private final class ContentViewModel: ObservableObject {
             .withSpeedMultiplier(Self.clampSpeedMultiplier(settings.speedMultiplier))
             .neutralizedVoiceOverControlledSettings()
         normalizedSettings.useCustomSettings = true
+        normalizedSettings.pitch = Self.clampPitch(normalizedSettings.pitch)
         voiceSettingsByIdentifier[identifier] = normalizedSettings
         let prefix = voiceSettingsKeyPrefix(for: identifier)
         defaults.set(true, forKey: "\(prefix).useCustomSettings")
@@ -454,7 +454,7 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(Self.clampSpeedMultiplier(speedMultiplier), forKey: RHVoiceSharedSettings.speedMultiplierKey)
         defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
         defaults.set(Self.clampWordGap(wordGap), forKey: RHVoiceSharedSettings.wordGapKey)
-        defaults.set(1.0, forKey: RHVoiceSharedSettings.pitchKey)
+        defaults.set(Self.clampPitch(pitch), forKey: RHVoiceSharedSettings.pitchKey)
         persistSharedSnapshot()
     }
 
@@ -484,7 +484,7 @@ private final class ContentViewModel: ObservableObject {
             speedMultiplier: Self.clampSpeedMultiplier(speedMultiplier),
             sentencePause: sentencePause,
             wordGap: Self.clampWordGap(wordGap),
-            pitch: 1.0
+            pitch: Self.clampPitch(pitch)
         )
         let perVoice = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice -> (String, RHVoicePerVoiceSettings) in
             let state = voiceSettingsByIdentifier[voice.identifier] ?? VoiceSettingsState(
@@ -494,7 +494,7 @@ private final class ContentViewModel: ObservableObject {
                 speedMultiplier: settings.speedMultiplier,
                 sentencePause: settings.sentencePause,
                 wordGap: settings.wordGap,
-                pitch: 1.0
+                pitch: Self.clampPitch(pitch)
             )
             return (
                 voice.identifier,
@@ -506,7 +506,7 @@ private final class ContentViewModel: ObservableObject {
                         speedMultiplier: Self.clampSpeedMultiplier(state.speedMultiplier),
                         sentencePause: state.sentencePause,
                         wordGap: Self.clampWordGap(state.wordGap),
-                        pitch: 1.0
+                        pitch: Self.clampPitch(state.pitch)
                     )
                 )
             )
@@ -547,7 +547,7 @@ private final class ContentViewModel: ObservableObject {
             speedMultiplier: Self.clampSpeedMultiplier(defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier),
             sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
             wordGap: Self.clampWordGap(defaults.object(forKey: "\(prefix).wordGap") as? Double ?? fallbackWordGap),
-            pitch: 1.0
+            pitch: Self.clampPitch(defaults.object(forKey: "\(prefix).pitch") as? Double ?? fallbackPitch)
         )
     }
 
@@ -557,6 +557,10 @@ private final class ContentViewModel: ObservableObject {
 
     private static func clampWordGap(_ value: Double) -> Double {
         min(max(value, 0.0), 300.0)
+    }
+
+    private static func clampPitch(_ value: Double) -> Double {
+        min(max(value, 0.5), 2.0)
     }
 }
 
@@ -661,6 +665,15 @@ private struct VoiceSettingsScreen: View {
             }
 
             Section("Налаштування голосу") {
+                sliderRow(
+                    title: "Тон",
+                    value: settingBinding(\.pitch),
+                    range: 0.5...2.0,
+                    step: 0.05,
+                    valueText: String(format: "%.2f", settings.pitch),
+                    hint: "Змінює висоту тону для голосу \(voice.name)."
+                )
+
                 sliderRow(
                     title: "Пауза між реченнями",
                     value: settingBinding(\.sentencePause),
