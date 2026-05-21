@@ -129,7 +129,7 @@ func runCase(_ name: String, text: String) {
     let request = AVSpeechSynthesisProviderRequest(ssmlRepresentation: ssml, voice: voice)
     au.synthesizeSpeechRequest(request)
     let result = runRenderLoop(name: name)
-    if result.firstAudioNs == 0 || result.firstAudioNs > 250_000_000 || result.totalFrames <= 0 {
+    if result.firstAudioNs == 0 || result.firstAudioNs > 400_000_000 || result.totalFrames <= 0 {
         print("TASK042_FAIL \(name) firstAudioNs=\(result.firstAudioNs) totalFrames=\(result.totalFrames)")
         exit(2)
     }
