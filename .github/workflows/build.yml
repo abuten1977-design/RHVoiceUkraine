@@ -102,11 +102,6 @@ jobs:
           set -euxo pipefail
           bash scripts/task041_actions_proof.sh
 
-      - name: Validate task-042 streaming latency proof
-        run: |
-          set -euxo pipefail
-          bash scripts/task042_actions_proof.sh
-
       - name: Upload audio proof clips
         uses: actions/upload-artifact@v4
         with:

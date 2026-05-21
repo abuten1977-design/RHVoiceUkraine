@@ -170,14 +170,14 @@ private final class ContentViewModel: ObservableObject {
         let storedEnabled = Set(snapshot.enabledVoiceIdentifiers)
         let storedSelected = snapshot.selectedVoiceIdentifier
         let initialRate = snapshot.generalSettings.rate
-        let initialVolume = snapshot.generalSettings.volume
+        let initialVolume = Self.clampBaselineMultiplier(snapshot.generalSettings.volume)
         let initialSpeedMultiplier = Self.clampSpeedMultiplier(snapshot.generalSettings.speedMultiplier)
         let initialSentencePause = snapshot.generalSettings.sentencePause
         let initialWordGap = Self.clampWordGap(snapshot.generalSettings.wordGap)
         let initialPitch = snapshot.generalSettings.pitch
 
         self.rate = 0.5
-        self.volume = 1.0
+        self.volume = initialVolume
         self.speedMultiplier = initialSpeedMultiplier
         self.pitch = initialPitch
         self.sentencePause = initialSentencePause
@@ -190,7 +190,7 @@ private final class ContentViewModel: ObservableObject {
                 return (voice.identifier, VoiceSettingsState(
                     useCustomSettings: true,
                     rate: stored.settings.rate,
-                    volume: stored.settings.volume,
+                    volume: Self.clampBaselineMultiplier(stored.settings.volume),
                     speedMultiplier: Self.clampSpeedMultiplier(stored.settings.speedMultiplier),
                     sentencePause: stored.settings.sentencePause,
                     wordGap: Self.clampWordGap(stored.settings.wordGap),
@@ -401,6 +401,7 @@ private final class ContentViewModel: ObservableObject {
             .withSpeedMultiplier(Self.clampSpeedMultiplier(settings.speedMultiplier))
             .neutralizedVoiceOverControlledSettings()
         normalizedSettings.useCustomSettings = true
+        normalizedSettings.volume = Self.clampBaselineMultiplier(normalizedSettings.volume)
         normalizedSettings.pitch = Self.clampPitch(normalizedSettings.pitch)
         voiceSettingsByIdentifier[identifier] = normalizedSettings
         let prefix = voiceSettingsKeyPrefix(for: identifier)
@@ -449,7 +450,7 @@ private final class ContentViewModel: ObservableObject {
 
     private func persistGeneralSettings() {
         defaults.set(0.5, forKey: RHVoiceSharedSettings.rateKey)
-        defaults.set(1.0, forKey: RHVoiceSharedSettings.volumeKey)
+        defaults.set(Self.clampBaselineMultiplier(volume), forKey: RHVoiceSharedSettings.volumeKey)
         defaults.set(Self.clampSpeedMultiplier(speedMultiplier), forKey: RHVoiceSharedSettings.speedMultiplierKey)
         defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
         defaults.set(Self.clampWordGap(wordGap), forKey: RHVoiceSharedSettings.wordGapKey)
@@ -479,7 +480,7 @@ private final class ContentViewModel: ObservableObject {
     private func persistSharedSnapshot() {
         let settings = RHVoiceSpeechSettings(
             rate: 0.5,
-            volume: 1.0,
+            volume: Self.clampBaselineMultiplier(volume),
             speedMultiplier: Self.clampSpeedMultiplier(speedMultiplier),
             sentencePause: sentencePause,
             wordGap: Self.clampWordGap(wordGap),
@@ -501,7 +502,7 @@ private final class ContentViewModel: ObservableObject {
                     useCustomSettings: true,
                     settings: RHVoiceSpeechSettings(
                         rate: 0.5,
-                        volume: 1.0,
+                        volume: Self.clampBaselineMultiplier(state.volume),
                         speedMultiplier: Self.clampSpeedMultiplier(state.speedMultiplier),
                         sentencePause: state.sentencePause,
                         wordGap: Self.clampWordGap(state.wordGap),
@@ -542,7 +543,7 @@ private final class ContentViewModel: ObservableObject {
         return VoiceSettingsState(
             useCustomSettings: true,
             rate: 0.5,
-            volume: 1.0,
+            volume: Self.clampBaselineMultiplier(defaults.object(forKey: "\(prefix).volume") as? Double ?? fallbackVolume),
             speedMultiplier: Self.clampSpeedMultiplier(defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier),
             sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
             wordGap: Self.clampWordGap(defaults.object(forKey: "\(prefix).wordGap") as? Double ?? fallbackWordGap),
@@ -551,6 +552,10 @@ private final class ContentViewModel: ObservableObject {
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
+        min(max(value, 0.5), 2.0)
+    }
+
+    private static func clampBaselineMultiplier(_ value: Double) -> Double {
         min(max(value, 0.5), 2.0)
     }
 
@@ -666,28 +671,28 @@ private struct VoiceSettingsScreen: View {
             Section("Налаштування голосу") {
                 sliderRow(
                     title: "Швидкість",
-                    value: settingBinding(\.speedMultiplier),
-                    range: 0.5...2.0,
-                    step: 0.05,
-                    valueText: "\(Int((settings.speedMultiplier * 100).rounded()))%",
+                    value: baselinePercentBinding(\.speedMultiplier),
+                    range: 0...100,
+                    step: 5,
+                    valueText: baselinePercentText(settings.speedMultiplier),
                     hint: "Змінює базову швидкість для голосу \(voice.name)."
                 )
 
                 sliderRow(
                     title: "Гучність",
-                    value: settingBinding(\.volume),
-                    range: 0.0...1.0,
-                    step: 0.05,
-                    valueText: "\(Int((settings.volume * 100).rounded()))%",
+                    value: baselinePercentBinding(\.volume),
+                    range: 0...100,
+                    step: 5,
+                    valueText: baselinePercentText(settings.volume),
                     hint: "Змінює базову гучність для голосу \(voice.name)."
                 )
 
                 sliderRow(
                     title: "Тон",
-                    value: settingBinding(\.pitch),
-                    range: 0.5...2.0,
-                    step: 0.05,
-                    valueText: "\(Int((settings.pitch * 100).rounded()))%",
+                    value: baselinePercentBinding(\.pitch),
+                    range: 0...100,
+                    step: 5,
+                    valueText: baselinePercentText(settings.pitch),
                     hint: "Змінює висоту тону для голосу \(voice.name)."
                 )
 
@@ -733,6 +738,36 @@ private struct VoiceSettingsScreen: View {
                 settings[keyPath: keyPath] = newValue
             }
         )
+    }
+
+    private func baselinePercentBinding(_ keyPath: WritableKeyPath<VoiceSettingsState, Double>) -> Binding<Double> {
+        Binding(
+            get: { percentFromBaselineMultiplier(settings[keyPath: keyPath]) },
+            set: { newPercent in
+                settings.useCustomSettings = true
+                settings[keyPath: keyPath] = baselineMultiplierFromPercent(newPercent)
+            }
+        )
+    }
+
+    private func baselinePercentText(_ value: Double) -> String {
+        "\(Int(percentFromBaselineMultiplier(value).rounded()))%"
+    }
+
+    private func percentFromBaselineMultiplier(_ value: Double) -> Double {
+        let clamped = min(max(value, 0.5), 2.0)
+        if clamped <= 1.0 {
+            return min(max((clamped - 0.5) / 0.5 * 50.0, 0.0), 50.0)
+        }
+        return min(max(50.0 + (clamped - 1.0) * 50.0, 50.0), 100.0)
+    }
+
+    private func baselineMultiplierFromPercent(_ percent: Double) -> Double {
+        let clamped = min(max(percent, 0.0), 100.0)
+        if clamped <= 50.0 {
+            return 0.5 + (clamped / 50.0) * 0.5
+        }
+        return 1.0 + ((clamped - 50.0) / 50.0)
     }
 
     @ViewBuilder
