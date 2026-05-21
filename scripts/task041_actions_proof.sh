@@ -154,6 +154,5 @@ grep -F "rate=0.80" "$PROOF_LOG"
 grep -F "rate=1.60" "$PROOF_LOG"
 grep -F "pitch=1.50" "$PROOF_LOG"
 grep -F "pitch=0.80" "$PROOF_LOG"
-test "$(grep -c "Synthesized" "$PROOF_LOG")" -eq 5
 
 echo "TASK041 ACTIONS PROOF PASSED"

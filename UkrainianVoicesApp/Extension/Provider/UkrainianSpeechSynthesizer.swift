@@ -23,11 +23,18 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private let outputBus: AUAudioUnitBus
     private var _outputBusses: AUAudioUnitBusArray!
 
-    // eSpeak-style: flat array + offset + semaphore
+    // Streaming chunks from RHVoiceStreamingClient.
     private var output: [Float] = []
     private var outputOffset: Int = 0
-    private var outputMutex = DispatchSemaphore(value: 1)
-    private var isSynthesizing = false
+    private let outputDataQueue = DispatchQueue(label: "com.rhvoice.ukrainianvoices.output-data", qos: .userInteractive)
+    private var streamingClient: RHVoiceStreamingClient?
+    private var outputRecurseCallNumber = 0
+    private let outputRecurseCallNumberMax = 5
+    private let baseDelayMicroseconds: UInt32 = 1000
+    private var timingStartNs: UInt64 = 0
+    private var firstChunkLogged = false
+    private var firstRenderLogged = false
+    private var firstAudioLogged = false
     private var rateValue: AUValue?
     private var volumeValue: AUValue?
     private var pitchValue: AUValue?
@@ -156,7 +163,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         set { }
     }
 
-    // MARK: - Render (exactly like eSpeak)
+    // MARK: - Render
 
     private func performRender(
         actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
@@ -169,55 +176,126 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     ) -> AUAudioUnitStatus {
         let unsafeBuffer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
         let frames = unsafeBuffer[0].mData!.assumingMemoryBound(to: Float.self)
-        frames.assign(repeating: 0, count: Int(frameCount))
+        let requestedFrames = Int(frameCount)
+        frames.assign(repeating: 0, count: requestedFrames)
 
-        self.outputMutex.wait()
-        
-        let available = self.output.count - self.outputOffset
-        
-        if available <= 0 {
-            let stillSynthesizing = self.isSynthesizing
-            self.outputMutex.signal()
-            
-            outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(Int(frameCount) * MemoryLayout<Float>.size)
-            
-            if stillSynthesizing {
-                actionFlags.pointee = .offlineUnitRenderAction_Render
-            } else {
-                actionFlags.pointee = .offlineUnitRenderAction_Complete
-            }
+        guard let client = self.streamingClient else {
+            outputAudioBufferList.pointee.mBuffers.mDataByteSize = 0
+            actionFlags.pointee = .offlineUnitRenderAction_Complete
             return noErr
         }
 
-        let count = min(available, Int(frameCount))
-        self.output.withUnsafeBufferPointer { ptr in
-            frames.assign(from: ptr.baseAddress!.advanced(by: self.outputOffset), count: count)
-        }
-        outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(count * MemoryLayout<Float>.size)
+        let available = self.outputDataQueue.sync { max(0, self.output.count - self.outputOffset) }
+        let countOfDataAvailable = min(available, requestedFrames)
 
-        self.outputOffset += count
-        
-        let done = (self.outputOffset >= self.output.count) && !self.isSynthesizing
-        
-        if done {
+        if countOfDataAvailable < requestedFrames {
+            let completed = client.completed()
+            if completed && countOfDataAvailable <= 0 {
+                outputAudioBufferList.pointee.mBuffers.mDataByteSize = 0
+                actionFlags.pointee = .offlineUnitRenderAction_Complete
+                self.cleanUp(cancelClient: false)
+                return noErr
+            }
+
+            if !completed && self.outputRecurseCallNumber < self.outputRecurseCallNumberMax {
+                self.outputRecurseCallNumber += 1
+                self.pauseUntil(maxDelayFactor: self.outputRecurseCallNumberMax) { [weak self, weak client] in
+                    guard let self, let client else { return true }
+                    if client.completed() {
+                        return true
+                    }
+                    return self.outputDataQueue.sync {
+                        (self.output.count - self.outputOffset) >= requestedFrames
+                    }
+                }
+                return self.performRender(
+                    actionFlags: actionFlags,
+                    timestamp: timestamp,
+                    frameCount: frameCount,
+                    outputBusNumber: outputBusNumber,
+                    outputAudioBufferList: outputAudioBufferList,
+                    renderEvents: renderEvents,
+                    renderPull: renderPull
+                )
+            }
+        }
+
+        self.outputRecurseCallNumber = 0
+
+        let copied = self.outputDataQueue.sync { () -> Int in
+            let available = max(0, self.output.count - self.outputOffset)
+            let count = min(available, requestedFrames)
+            guard count > 0 else { return 0 }
+            self.output.withUnsafeBufferPointer { ptr in
+                frames.assign(from: ptr.baseAddress!.advanced(by: self.outputOffset), count: count)
+            }
+            self.outputOffset += count
+            return count
+        }
+
+        outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(copied * MemoryLayout<Float>.size)
+
+        if copied > 0 {
+            self.logFirstRenderIfNeeded()
+            actionFlags.pointee = .offlineUnitRenderAction_Render
+            self.logFirstAudioIfNeeded()
+        } else if client.completed() {
             actionFlags.pointee = .offlineUnitRenderAction_Complete
-            self.output.removeAll()
-            self.outputOffset = 0
+            self.cleanUp(cancelClient: false)
         } else {
             actionFlags.pointee = .offlineUnitRenderAction_Render
         }
-        self.outputMutex.signal()
-
         return noErr
     }
 
     public override var internalRenderBlock: AUInternalRenderBlock { self.performRender }
 
-    // MARK: - Synthesize (exactly like eSpeak: sync, then store under mutex)
+    private func pauseUntil(maxDelayFactor: Int, condition: () -> Bool) {
+        let deadline = Date().addingTimeInterval(Double(baseDelayMicroseconds * UInt32(maxDelayFactor)) / 1_000_000.0)
+        while !condition() && Date() < deadline {
+            RunLoop.current.run(mode: .default, before: deadline)
+        }
+    }
+
+    private func elapsedNs(from start: UInt64, to end: UInt64) -> UInt64 {
+        end >= start ? end - start : 0
+    }
+
+    private func logTiming(_ message: String) {
+        rhLog(message)
+        os_log(.info, log: paramLog, "%{public}@", message)
+        #if DEBUG
+        fputs("\(message)\n", stderr)
+        #endif
+    }
+
+    private func logFirstRenderIfNeeded() {
+        guard !firstRenderLogged else { return }
+        firstRenderLogged = true
+        let elapsed = elapsedNs(from: timingStartNs, to: DispatchTime.now().uptimeNanoseconds)
+        logTiming("TIMING T0->T3=\(elapsed)ns")
+    }
+
+    private func logFirstAudioIfNeeded() {
+        guard !firstAudioLogged else { return }
+        firstAudioLogged = true
+        let elapsed = elapsedNs(from: timingStartNs, to: DispatchTime.now().uptimeNanoseconds)
+        logTiming("TIMING T0->T4=\(elapsed)ns")
+    }
+
+    // MARK: - Synthesize
 
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+        let t0 = DispatchTime.now().uptimeNanoseconds
         let text = speechRequest.ssmlRepresentation
         let voiceId = speechRequest.voice.identifier
+
+        self.streamingClient?.cancel()
+        self.cleanUp(cancelClient: false)
+        self.timingStartNs = t0
+        self.firstChunkLogged = false
+        self.firstRenderLogged = false
+        self.firstAudioLogged = false
 
         rhLog("synth request: voice=\(voiceId) text=\(text.count) chars")
         Self.logApostropheEncoding(label: "input-ssml", ssml: text)
@@ -263,67 +341,45 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f baselineSpeed=%.2f finalRate=%.2f vol=%.2f baselineVolume=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, baselineSpeed, finalRate, finalVolume, baselineVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || baselineSpeed != 1.0 || baselineVolume != 1.0 || ssmlPitch != nil || voiceSettings.pitch != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
 
-        self.outputMutex.wait()
-        self.isSynthesizing = true
-        self.output.removeAll()
-        self.outputOffset = 0
-        self.outputMutex.signal()
+        self.outputDataQueue.sync {
+            self.output.removeAll(keepingCapacity: true)
+            self.outputOffset = 0
+            self.outputRecurseCallNumber = 0
+        }
 
-        // Synchronous synthesis — blocks until complete
-        var pcmBuffer = rhvoiceEngine.synthesize(
+        let client = RHVoiceStreamingClient(engine: rhvoiceEngine)
+        client.delegate = self
+        self.streamingClient = client
+        let t1 = DispatchTime.now().uptimeNanoseconds
+        logTiming("TIMING T0->T1=\(elapsedNs(from: t0, to: t1))ns")
+        client.synthesize(
             synthesisText,
             voice: profileName,
             rate: finalRate,
             volume: finalVolume,
             pitch: effectivePitch
         )
-        
-        // Fallback: if SSML synthesis failed, try plain text without tags
-        if pcmBuffer == nil && synthesisText.contains("<") {
-            let plainText = stripSSML(synthesisText)
-            rhLog("synth: SSML failed, trying fallback: \(plainText.prefix(50))...")
-            pcmBuffer = rhvoiceEngine.synthesize(
-                plainText,
-                voice: profileName,
-                rate: finalRate,
-                volume: finalVolume,
-                pitch: effectivePitch
-            )
-        }
-
-        self.outputMutex.wait()
-        defer {
-            self.isSynthesizing = false
-            self.outputMutex.signal()
-        }
-
-        guard let buffer = pcmBuffer, let floatData = buffer.floatChannelData?[0] else {
-            rhLog("synth FAILED")
-            return
-        }
-
-        let frameCount = Int(buffer.frameLength)
-        let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
-
-        rhLog("synth output: \(samples.count) samples")
-
-        self.output = samples
-        self.outputOffset = 0
     }
 
-    private func stripSSML(_ ssml: String) -> String {
-        return ssml.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-    }
-
-    // MARK: - Cancel (exactly like eSpeak)
+    // MARK: - Cancel
 
     public override func cancelSpeechRequest() {
-        self.outputMutex.wait()
-        self.isSynthesizing = false
-        self.output.removeAll()
-        self.outputOffset = 0
+        self.streamingClient?.cancel()
+        self.cleanUp(cancelClient: false)
         rhLog("cancel")
-        self.outputMutex.signal()
+    }
+
+    private func cleanUp(cancelClient: Bool = true) {
+        if cancelClient {
+            self.streamingClient?.cancel()
+        }
+        self.outputDataQueue.sync {
+            self.output.removeAll(keepingCapacity: true)
+            self.outputOffset = 0
+            self.outputRecurseCallNumber = 0
+        }
+        self.streamingClient?.delegate = nil
+        self.streamingClient = nil
     }
 
     // MARK: - Message Channel
@@ -664,5 +720,28 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
               let range = Range(match.range(at: 1), in: ssml),
               let db = Double(ssml[range]) else { return nil }
         return max(0.1, min(2.0, pow(10.0, db / 20.0)))
+    }
+}
+
+@available(iOS 16.0, macOS 13.0, *)
+extension UkrainianSpeechSynthesizer: RHVoiceStreamingClientDelegate {
+    public func streamingClient(_ client: RHVoiceStreamingClient, didReceiveSamples samples: UnsafePointer<Int16>, count: Int) {
+        guard count > 0 else { return }
+
+        let floats = UnsafeBufferPointer(start: samples, count: count).map { Float($0) / 32768.0 }
+        let now = DispatchTime.now().uptimeNanoseconds
+
+        self.outputDataQueue.async { [weak self, weak client] in
+            guard let self, let client, client === self.streamingClient else {
+                return
+            }
+
+            if !self.firstChunkLogged {
+                self.firstChunkLogged = true
+                self.logTiming("TIMING T0->T2=\(self.elapsedNs(from: self.timingStartNs, to: now))ns")
+            }
+
+            self.output.append(contentsOf: floats)
+        }
     }
 }
