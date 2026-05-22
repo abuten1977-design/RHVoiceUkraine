@@ -70,9 +70,26 @@ private struct VoiceSettingsState: Equatable {
     func neutralizedVoiceOverControlledSettings() -> VoiceSettingsState {
         var copy = self
         copy.rate = 0.5
+        copy.volume = 1.0
+        copy.pitch = 1.0
         return copy
     }
 }
+
+private struct AcceleratorPreset: Identifiable, Hashable {
+    let title: String
+    let multiplier: Double
+
+    var id: Double { multiplier }
+}
+
+private let acceleratorPresets: [AcceleratorPreset] = [
+    .init(title: "Дуже повільно", multiplier: 0.5),
+    .init(title: "Повільно", multiplier: 0.75),
+    .init(title: "Нормально", multiplier: 1.0),
+    .init(title: "Швидко", multiplier: 1.5),
+    .init(title: "Дуже швидко", multiplier: 2.0)
+]
 
 private let voiceCatalog: [VoiceDefinition] = RHVoiceSharedSettings.voiceCatalog.map(VoiceDefinition.init)
 
@@ -190,11 +207,11 @@ private final class ContentViewModel: ObservableObject {
                 return (voice.identifier, VoiceSettingsState(
                     useCustomSettings: true,
                     rate: stored.settings.rate,
-                    volume: Self.clampBaselineMultiplier(stored.settings.volume),
+                    volume: 1.0,
                     speedMultiplier: Self.clampSpeedMultiplier(stored.settings.speedMultiplier),
                     sentencePause: stored.settings.sentencePause,
                     wordGap: Self.clampWordGap(stored.settings.wordGap),
-                    pitch: stored.settings.pitch
+                    pitch: 1.0
                 ).neutralizedVoiceOverControlledSettings())
             }
             return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: initialPitch))
@@ -401,8 +418,8 @@ private final class ContentViewModel: ObservableObject {
             .withSpeedMultiplier(Self.clampSpeedMultiplier(settings.speedMultiplier))
             .neutralizedVoiceOverControlledSettings()
         normalizedSettings.useCustomSettings = true
-        normalizedSettings.volume = Self.clampBaselineMultiplier(normalizedSettings.volume)
-        normalizedSettings.pitch = Self.clampPitch(normalizedSettings.pitch)
+        normalizedSettings.volume = 1.0
+        normalizedSettings.pitch = 1.0
         voiceSettingsByIdentifier[identifier] = normalizedSettings
         let prefix = voiceSettingsKeyPrefix(for: identifier)
         defaults.set(true, forKey: "\(prefix).useCustomSettings")
@@ -426,9 +443,9 @@ private final class ContentViewModel: ObservableObject {
             try playbackController.play(
                 text: text,
                 voiceName: voiceName,
-                rate: currentSettings.rate * currentSettings.speedMultiplier,
-                volume: currentSettings.volume,
-                pitch: currentSettings.pitch
+                rate: currentSettings.speedMultiplier,
+                volume: 1.0,
+                pitch: 1.0
             ) { [weak self] in
                 guard let self else { return }
                 self.isPreviewPlaying = false
@@ -450,11 +467,11 @@ private final class ContentViewModel: ObservableObject {
 
     private func persistGeneralSettings() {
         defaults.set(0.5, forKey: RHVoiceSharedSettings.rateKey)
-        defaults.set(Self.clampBaselineMultiplier(volume), forKey: RHVoiceSharedSettings.volumeKey)
+        defaults.set(1.0, forKey: RHVoiceSharedSettings.volumeKey)
         defaults.set(Self.clampSpeedMultiplier(speedMultiplier), forKey: RHVoiceSharedSettings.speedMultiplierKey)
         defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
         defaults.set(Self.clampWordGap(wordGap), forKey: RHVoiceSharedSettings.wordGapKey)
-        defaults.set(Self.clampPitch(pitch), forKey: RHVoiceSharedSettings.pitchKey)
+        defaults.set(1.0, forKey: RHVoiceSharedSettings.pitchKey)
         persistSharedSnapshot()
     }
 
@@ -480,11 +497,11 @@ private final class ContentViewModel: ObservableObject {
     private func persistSharedSnapshot() {
         let settings = RHVoiceSpeechSettings(
             rate: 0.5,
-            volume: Self.clampBaselineMultiplier(volume),
+            volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(speedMultiplier),
             sentencePause: sentencePause,
             wordGap: Self.clampWordGap(wordGap),
-            pitch: Self.clampPitch(pitch)
+            pitch: 1.0
         )
         let perVoice = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice -> (String, RHVoicePerVoiceSettings) in
             let state = voiceSettingsByIdentifier[voice.identifier] ?? VoiceSettingsState(
@@ -494,7 +511,7 @@ private final class ContentViewModel: ObservableObject {
                 speedMultiplier: settings.speedMultiplier,
                 sentencePause: settings.sentencePause,
                 wordGap: settings.wordGap,
-                pitch: Self.clampPitch(pitch)
+                pitch: 1.0
             )
             return (
                 voice.identifier,
@@ -502,11 +519,11 @@ private final class ContentViewModel: ObservableObject {
                     useCustomSettings: true,
                     settings: RHVoiceSpeechSettings(
                         rate: 0.5,
-                        volume: Self.clampBaselineMultiplier(state.volume),
+                        volume: 1.0,
                         speedMultiplier: Self.clampSpeedMultiplier(state.speedMultiplier),
                         sentencePause: state.sentencePause,
                         wordGap: Self.clampWordGap(state.wordGap),
-                        pitch: Self.clampPitch(state.pitch)
+                        pitch: 1.0
                     )
                 )
             )
@@ -543,16 +560,16 @@ private final class ContentViewModel: ObservableObject {
         return VoiceSettingsState(
             useCustomSettings: true,
             rate: 0.5,
-            volume: Self.clampBaselineMultiplier(defaults.object(forKey: "\(prefix).volume") as? Double ?? fallbackVolume),
+            volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier),
             sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
             wordGap: Self.clampWordGap(defaults.object(forKey: "\(prefix).wordGap") as? Double ?? fallbackWordGap),
-            pitch: Self.clampPitch(defaults.object(forKey: "\(prefix).pitch") as? Double ?? fallbackPitch)
+            pitch: 1.0
         )
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
-        min(max(value, 0.5), 2.0)
+        min(max(value, 0.5), 3.0)
     }
 
     private static func clampBaselineMultiplier(_ value: Double) -> Double {
@@ -669,31 +686,20 @@ private struct VoiceSettingsScreen: View {
             }
 
             Section("Налаштування голосу") {
-                sliderRow(
-                    title: "Швидкість",
-                    value: baselinePercentBinding(\.speedMultiplier),
-                    range: 0...100,
-                    step: 5,
-                    valueText: baselinePercentText(settings.speedMultiplier),
-                    hint: "Змінює базову швидкість для голосу \(voice.name)."
-                )
+                Picker("Прискорювач", selection: acceleratorPresetBinding) {
+                    ForEach(acceleratorPresets) { preset in
+                        Text(preset.title).tag(preset.multiplier)
+                    }
+                }
+                .accessibilityHint("Вибирає готовий множник темпу для голосу \(voice.name). Нормально не змінює системну швидкість VoiceOver.")
 
                 sliderRow(
-                    title: "Гучність",
-                    value: baselinePercentBinding(\.volume),
-                    range: 0...100,
-                    step: 5,
-                    valueText: baselinePercentText(settings.volume),
-                    hint: "Змінює базову гучність для голосу \(voice.name)."
-                )
-
-                sliderRow(
-                    title: "Тон",
-                    value: baselinePercentBinding(\.pitch),
-                    range: 0...100,
-                    step: 5,
-                    valueText: baselinePercentText(settings.pitch),
-                    hint: "Змінює висоту тону для голосу \(voice.name)."
+                    title: "Детальний множник",
+                    value: settingBinding(\.speedMultiplier),
+                    range: 0.5...3.0,
+                    step: 0.1,
+                    valueText: multiplierText(settings.speedMultiplier),
+                    hint: "Точно налаштовує множник темпу для голосу \(voice.name). 1.0x не змінює системну швидкість VoiceOver."
                 )
 
                 sliderRow(
@@ -752,6 +758,26 @@ private struct VoiceSettingsScreen: View {
 
     private func baselinePercentText(_ value: Double) -> String {
         "\(Int(percentFromBaselineMultiplier(value).rounded()))%"
+    }
+
+    private var acceleratorPresetBinding: Binding<Double> {
+        Binding(
+            get: { nearestAcceleratorPreset(for: settings.speedMultiplier).multiplier },
+            set: { newValue in
+                settings.useCustomSettings = true
+                settings.speedMultiplier = min(max(newValue, 0.5), 3.0)
+            }
+        )
+    }
+
+    private func multiplierText(_ value: Double) -> String {
+        String(format: "%.1fx", min(max(value, 0.5), 3.0))
+    }
+
+    private func nearestAcceleratorPreset(for value: Double) -> AcceleratorPreset {
+        acceleratorPresets.min { lhs, rhs in
+            abs(lhs.multiplier - value) < abs(rhs.multiplier - value)
+        } ?? acceleratorPresets[2]
     }
 
     private func percentFromBaselineMultiplier(_ value: Double) -> Double {

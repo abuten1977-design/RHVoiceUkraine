@@ -244,12 +244,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let effectiveRatePercent = ssmlRatePercent ?? 100.0
         let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
             ?? Double(rateValue ?? 1.0)
-        let baselineSpeed = Self.clampSpeedMultiplier(voiceSettings.speedMultiplier)
-        let finalRate = Self.clampRate(mappedRate * baselineSpeed)
+        let accelerator = Self.clampSpeedMultiplier(voiceSettings.speedMultiplier)
+        let finalRate = Self.clampRate(mappedRate * accelerator)
         let effectiveVolume = ssmlVolume ?? Self.clampVolume(Double(volumeValue ?? 1.0))
-        let baselineVolume = Self.clampVolume(voiceSettings.volume)
-        let finalVolume = Self.clampVolume(effectiveVolume * baselineVolume)
-        let effectivePitch = Self.clampPitch(ssmlPitch ?? voiceSettings.pitch)
+        let finalVolume = Self.clampVolume(effectiveVolume)
+        let effectivePitch = Self.clampPitch(ssmlPitch ?? Double(pitchValue ?? 1.0))
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeApostrophesInTextSegments(text)
@@ -257,10 +256,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
-        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) baselineSpeed=\(String(format: "%.2f", baselineSpeed)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) baselineVolume=\(String(format: "%.2f", baselineVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f baselineSpeed=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f baselineVolume=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, baselineSpeed, finalRate, finalVolume, baselineVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || baselineSpeed != 1.0 || baselineVolume != 1.0 || ssmlPitch != nil || voiceSettings.pitch != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
         #if DEBUG
-        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f baselineSpeed=%.2f finalRate=%.2f vol=%.2f baselineVolume=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, baselineSpeed, finalRate, finalVolume, baselineVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || baselineSpeed != 1.0 || baselineVolume != 1.0 || ssmlPitch != nil || voiceSettings.pitch != 1.0 || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
+        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
 
         self.outputMutex.wait()
@@ -360,15 +359,25 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func mapSSMLRatePercentToEngineMultiplier(_ percent: Double) -> Double {
-        max(0.1, min(10.0, percent / 100.0))
+        let normalizedPercent = max(0.0, percent)
+        if normalizedPercent <= 100.0 {
+            return pow(4.0, (normalizedPercent - 50.0) / 50.0)
+        }
+
+        #if os(macOS)
+        let progress = min((normalizedPercent - 100.0) / 324.0, 1.0)
+        #else
+        let progress = min((normalizedPercent - 100.0) / 100.0, 1.0)
+        #endif
+        return 4.0 * pow(1.125, progress)
     }
 
     private static func clampRate(_ value: Double) -> Double {
-        min(max(value, 0.1), 10.0)
+        min(max(value, 0.1), 20.0)
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
-        min(max(value, 0.5), 2.0)
+        min(max(value, 0.5), 3.0)
     }
 
     private static func clampVolume(_ value: Double) -> Double {
