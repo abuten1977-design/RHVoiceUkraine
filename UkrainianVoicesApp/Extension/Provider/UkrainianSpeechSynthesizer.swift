@@ -216,6 +216,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     // MARK: - Synthesize (exactly like eSpeak: sync, then store under mutex)
 
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+        let requestStart = CFAbsoluteTimeGetCurrent()
         let text = speechRequest.ssmlRepresentation
         let voiceId = speechRequest.voice.identifier
 
@@ -240,6 +241,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         // Read user settings from App Group
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
+        let settingsMs = Self.elapsedMs(since: requestStart)
 
         let effectiveRatePercent = ssmlRatePercent ?? 100.0
         let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
@@ -258,6 +260,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
         os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
+        rhLog("LATENCY_DIAG prepare voice=\(profileName) chars=\(text.count) settingsMs=\(settingsMs) beforeSynthesizeMs=\(Self.elapsedMs(since: requestStart))")
         #if DEBUG
         fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
@@ -269,6 +272,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self.outputMutex.signal()
 
         // Synchronous synthesis — blocks until complete
+        let synthStart = CFAbsoluteTimeGetCurrent()
         var pcmBuffer = rhvoiceEngine.synthesize(
             synthesisText,
             voice: profileName,
@@ -276,11 +280,13 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             volume: finalVolume,
             pitch: effectivePitch
         )
+        var synthMs = Self.elapsedMs(since: synthStart)
         
         // Fallback: if SSML synthesis failed, try plain text without tags
         if pcmBuffer == nil && synthesisText.contains("<") {
             let plainText = stripSSML(synthesisText)
             rhLog("synth: SSML failed, trying fallback: \(plainText.prefix(50))...")
+            let fallbackStart = CFAbsoluteTimeGetCurrent()
             pcmBuffer = rhvoiceEngine.synthesize(
                 plainText,
                 voice: profileName,
@@ -288,6 +294,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 volume: finalVolume,
                 pitch: effectivePitch
             )
+            synthMs += Self.elapsedMs(since: fallbackStart)
         }
 
         self.outputMutex.wait()
@@ -305,6 +312,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
 
         rhLog("synth output: \(samples.count) samples")
+        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(text.count) synthMs=\(synthMs) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(samples.count)")
 
         self.output = samples
         self.outputOffset = 0
@@ -377,7 +385,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
-        min(max(value, 0.5), 3.0)
+        min(max(value, 0.8), 1.6)
+    }
+
+    private static func elapsedMs(since start: CFAbsoluteTime) -> Int {
+        Int(((CFAbsoluteTimeGetCurrent() - start) * 1000).rounded())
     }
 
     private static func clampVolume(_ value: Double) -> Double {

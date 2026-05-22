@@ -14,7 +14,9 @@ enum RHVoiceSharedSettings {
     static let pitchKey = "pitch"
 
     static let defaultVoiceIdentifier = "com.rhvoice.UkrainianVoices.anatol"
-    static let defaultEnabledVoiceIdentifiers: Set<String> = [defaultVoiceIdentifier]
+    static var defaultEnabledVoiceIdentifiers: Set<String> {
+        Set(voiceCatalog.map(\.identifier))
+    }
 
     static let voiceCatalog: [RHVoiceVoiceDescriptor] = [
         .init(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol", language: "uk-UA", profileName: "Anatol", sampleText: "Привіт! Це тест голосу Анатол."),

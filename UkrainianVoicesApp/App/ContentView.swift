@@ -84,11 +84,11 @@ private struct AcceleratorPreset: Identifiable, Hashable {
 }
 
 private let acceleratorPresets: [AcceleratorPreset] = [
-    .init(title: "Дуже повільно", multiplier: 0.5),
-    .init(title: "Повільно", multiplier: 0.75),
+    .init(title: "Повільно", multiplier: 0.8),
     .init(title: "Нормально", multiplier: 1.0),
-    .init(title: "Швидко", multiplier: 1.5),
-    .init(title: "Дуже швидко", multiplier: 2.0)
+    .init(title: "Трохи швидше", multiplier: 1.15),
+    .init(title: "Швидко", multiplier: 1.3),
+    .init(title: "Дуже швидко", multiplier: 1.5)
 ]
 
 private let voiceCatalog: [VoiceDefinition] = RHVoiceSharedSettings.voiceCatalog.map(VoiceDefinition.init)
@@ -119,12 +119,14 @@ private final class PreviewPlaybackController {
         pitch: Double = 1.0,
         onFinish: @escaping @MainActor () -> Void
     ) throws {
+        let requestStart = CFAbsoluteTimeGetCurrent()
         #if os(iOS)
         // Audio session must be active before local preview playback on iOS.
         try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
         try AVAudioSession.sharedInstance().setActive(true)
         #endif
 
+        let synthStart = CFAbsoluteTimeGetCurrent()
         guard let buffer = previewEngine.synthesize(
             text,
             voice: voiceName,
@@ -134,6 +136,7 @@ private final class PreviewPlaybackController {
         ) else {
             throw PreviewError.synthesisFailed(voiceName)
         }
+        let synthMs = Int(((CFAbsoluteTimeGetCurrent() - synthStart) * 1000).rounded())
 
         playerNode.stop()
         audioEngine.stop()
@@ -153,6 +156,8 @@ private final class PreviewPlaybackController {
             }
         }
         playerNode.play()
+        let totalMs = Int(((CFAbsoluteTimeGetCurrent() - requestStart) * 1000).rounded())
+        LogCollector.shared.log("Preview latency voice=\(voiceName) chars=\(text.count) synthMs=\(synthMs) totalToPlayMs=\(totalMs)")
     }
 
     func stop() {
@@ -185,6 +190,7 @@ private final class ContentViewModel: ObservableObject {
     init() {
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
         let storedEnabled = Set(snapshot.enabledVoiceIdentifiers)
+        let effectiveEnabled = Self.normalizedEnabledVoices(storedEnabled)
         let storedSelected = snapshot.selectedVoiceIdentifier
         let initialRate = snapshot.generalSettings.rate
         let initialVolume = Self.clampBaselineMultiplier(snapshot.generalSettings.volume)
@@ -200,7 +206,7 @@ private final class ContentViewModel: ObservableObject {
         self.sentencePause = initialSentencePause
         self.wordGap = initialWordGap
         self.testText = "Привіт! Це тест українського голосу."
-        self.enabledVoiceIdentifiers = storedEnabled.isEmpty ? defaultEnabledVoiceIdentifiers : storedEnabled
+        self.enabledVoiceIdentifiers = effectiveEnabled
         self.selectedVoiceIdentifier = storedSelected
         self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
             if let stored = snapshot.perVoiceSettings[voice.identifier] {
@@ -319,7 +325,7 @@ private final class ContentViewModel: ObservableObject {
         selectedVoiceIdentifier = RHVoiceSharedSettings.defaultVoiceIdentifier
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
-        setStatus("Рекомендовані голоси відновлено: Anatol.")
+        setStatus("Рекомендовані голоси відновлено: усі українські голоси.")
     }
 
     func runSpeechComponentDiagnostics() {
@@ -569,7 +575,15 @@ private final class ContentViewModel: ObservableObject {
     }
 
     private static func clampSpeedMultiplier(_ value: Double) -> Double {
-        min(max(value, 0.5), 3.0)
+        min(max(value, 0.8), 1.6)
+    }
+
+    private static func normalizedEnabledVoices(_ storedEnabled: Set<String>) -> Set<String> {
+        let defaultOnly: Set<String> = [RHVoiceSharedSettings.defaultVoiceIdentifier]
+        if storedEnabled.isEmpty || storedEnabled == defaultOnly {
+            return defaultEnabledVoiceIdentifiers
+        }
+        return storedEnabled
     }
 
     private static func clampBaselineMultiplier(_ value: Double) -> Double {
@@ -696,8 +710,8 @@ private struct VoiceSettingsScreen: View {
                 sliderRow(
                     title: "Детальний множник",
                     value: settingBinding(\.speedMultiplier),
-                    range: 0.5...3.0,
-                    step: 0.1,
+                    range: 0.8...1.6,
+                    step: 0.05,
                     valueText: multiplierText(settings.speedMultiplier),
                     hint: "Точно налаштовує множник темпу для голосу \(voice.name). 1.0x не змінює системну швидкість VoiceOver."
                 )
@@ -765,13 +779,13 @@ private struct VoiceSettingsScreen: View {
             get: { nearestAcceleratorPreset(for: settings.speedMultiplier).multiplier },
             set: { newValue in
                 settings.useCustomSettings = true
-                settings.speedMultiplier = min(max(newValue, 0.5), 3.0)
+                settings.speedMultiplier = min(max(newValue, 0.8), 1.6)
             }
         )
     }
 
     private func multiplierText(_ value: Double) -> String {
-        String(format: "%.1fx", min(max(value, 0.5), 3.0))
+        String(format: "%.2fx", min(max(value, 0.8), 1.6))
     }
 
     private func nearestAcceleratorPreset(for value: Double) -> AcceleratorPreset {
