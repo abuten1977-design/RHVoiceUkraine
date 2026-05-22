@@ -617,25 +617,20 @@ struct ContentView: View {
     @StateObject private var model = ContentViewModel()
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iosBody
+        #endif
+    }
+
+    private var iosBody: some View {
         NavigationStack {
             List {
                 Section {
                     ForEach(voiceCatalog) { voice in
                         NavigationLink {
-                            VoiceSettingsScreen(
-                                voice: voice,
-                                settings: Binding(
-                                    get: { model.settings(for: voice) },
-                                    set: { model.updateSettings($0, for: voice.identifier) }
-                                ),
-                                isEnabled: Binding(
-                                    get: { model.isEnabled(voice) },
-                                    set: { model.setVoiceEnabled(voice, enabled: $0) }
-                                ),
-                                isPreviewPlaying: model.isPreviewPlaying,
-                                playSample: { model.listenToSample(for: voice) },
-                                stopPreview: { model.stopPreview() }
-                            )
+                            settingsScreen(for: voice)
                         } label: {
                             voiceRow(voice)
                         }
@@ -666,6 +661,63 @@ struct ContentView: View {
             }
         }
 #endif
+    }
+
+    #if os(macOS)
+    private var macBody: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(voiceCatalog) { voice in
+                        NavigationLink {
+                            settingsScreen(for: voice)
+                        } label: {
+                            voiceRow(voice)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 10)
+                                .padding(.horizontal, 12)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(voice.name), \(voice.languageTitle)")
+                        .accessibilityValue(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
+                        .accessibilityHint("Відкрити налаштування голосу")
+
+                        if voice.id != voiceCatalog.last?.id {
+                            Divider()
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            .navigationTitle("Українські голоси")
+        }
+        .frame(minWidth: 520, minHeight: 520)
+        .onAppear {
+            DispatchQueue.main.async {
+                NSApp.setActivationPolicy(.regular)
+                NSApp.activate(ignoringOtherApps: true)
+                NSApp.windows.first?.makeKeyAndOrderFront(nil)
+            }
+        }
+    }
+    #endif
+
+    private func settingsScreen(for voice: VoiceDefinition) -> some View {
+        VoiceSettingsScreen(
+            voice: voice,
+            settings: Binding(
+                get: { model.settings(for: voice) },
+                set: { model.updateSettings($0, for: voice.identifier) }
+            ),
+            isEnabled: Binding(
+                get: { model.isEnabled(voice) },
+                set: { model.setVoiceEnabled(voice, enabled: $0) }
+            ),
+            isPreviewPlaying: model.isPreviewPlaying,
+            playSample: { model.listenToSample(for: voice) },
+            stopPreview: { model.stopPreview() }
+        )
     }
 
     private func voiceRow(_ voice: VoiceDefinition) -> some View {
