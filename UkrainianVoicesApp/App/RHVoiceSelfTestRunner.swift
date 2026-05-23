@@ -22,6 +22,10 @@ enum RHVoiceSelfTestRunner {
             runLatencyDiagnostics(engine: engine, lines: &lines)
             writeLogAndExit(lines: lines, logPath: logPath)
         }
+        if ProcessInfo.processInfo.environment["RHVOICE_SUBSENTENCE_PROOF"] == "1" {
+            runSubSentenceProof(engine: engine, lines: &lines)
+            writeLogAndExit(lines: lines, logPath: logPath)
+        }
 
         let voices: [(name: String, sample: String)] = [
             ("Anatol", "Привіт! Це тест голосу Анатол."),
@@ -162,6 +166,84 @@ enum RHVoiceSelfTestRunner {
                     fputs("\(line)\n", stderr)
                 }
             }
+        }
+    }
+
+    private static func runSubSentenceProof(engine: RHVoiceEngine, lines: inout [String]) {
+        let cases: [(label: String, text: String)] = [
+            ("short", "Це коротка фраза."),
+            ("long_single", "Це довге повідомлення для перевірки швидкого старту, воно містить кілька частин, додаткові уточнення, природні паузи через кому, важливий фрагмент після тире — і ще один довгий опис, щоб синтезатор не чекав завершення всього речення перед першим аудіо"),
+            ("multi", "Перше довге речення має кілька частин, уточнення через кому, і довший опис для перевірки старту. Друге речення теж містить багато слів, додаткові фрагменти, і природну структуру без нових штучних пауз. Третє речення завершує перевірку, має тире — і достатню довжину для поділу.")
+        ]
+        let clipDirectory = ProcessInfo.processInfo.environment["RHVOICE_SELFTEST_CLIP_DIR"]
+        let clipURL = clipDirectory.map { URL(fileURLWithPath: $0, isDirectory: true) }
+        if let clipURL {
+            try? FileManager.default.createDirectory(at: clipURL, withIntermediateDirectories: true)
+        }
+
+        for testCase in cases {
+            let ssml = "<speak>\(testCase.text)</speak>"
+            let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: ssml)
+            var totalSynthMs = 0
+            var firstFragmentSynthMs = 0
+            var totalFrames = 0
+            var outputSamples: [Float] = []
+            var outputFormat: AVAudioFormat?
+            var failed = false
+
+            for (index, fragment) in fragments.enumerated() {
+                let start = Date()
+                guard let buffer = engine.synthesize(fragment, voice: "Anatol", rate: 1.0, volume: 1.0, pitch: 1.0),
+                      let channel = buffer.floatChannelData?[0],
+                      buffer.frameLength > 0 else {
+                    failed = true
+                    break
+                }
+
+                let synthMs = Int((Date().timeIntervalSince(start) * 1000.0).rounded())
+                if index == 0 {
+                    firstFragmentSynthMs = synthMs
+                }
+                totalSynthMs += synthMs
+                totalFrames += Int(buffer.frameLength)
+                outputFormat = outputFormat ?? buffer.format
+                outputSamples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+            }
+
+            var clipPath = ""
+            if !failed,
+               let clipURL,
+               let format = outputFormat,
+               let combined = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(outputSamples.count)) {
+                combined.frameLength = AVAudioFrameCount(outputSamples.count)
+                if let channel = combined.floatChannelData?[0] {
+                    for (index, sample) in outputSamples.enumerated() {
+                        channel[index] = sample
+                    }
+                }
+                let outputURL = clipURL.appendingPathComponent("task048-\(testCase.label).wav")
+                do {
+                    let file = try AVAudioFile(forWriting: outputURL, settings: format.settings)
+                    try file.write(from: combined)
+                    clipPath = outputURL.path
+                } catch {
+                    failed = true
+                }
+            }
+
+            let firstFragmentChars = fragments.first.map(RHVoicePipelineSplitter.textCharacterCount) ?? 0
+            let line = String(format: "TASK048_PROOF %@ label=%@ textChars=%d fragments=%d firstFragmentChars=%d firstFragmentSynthMs=%d totalSynthMs=%d frames=%d clip=%@",
+                              failed ? "FAIL" : "OK",
+                              testCase.label,
+                              testCase.text.count,
+                              fragments.count,
+                              firstFragmentChars,
+                              firstFragmentSynthMs,
+                              totalSynthMs,
+                              totalFrames,
+                              clipPath)
+            lines.append(line)
+            fputs("\(line)\n", stderr)
         }
     }
 
