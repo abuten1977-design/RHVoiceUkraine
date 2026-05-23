@@ -33,9 +33,13 @@ private final class MacAppDelegate: NSObject, NSApplicationDelegate {
         guard !isSelfTestMode else { return false }
         NSApp.activate(ignoringOtherApps: true)
         if !flag {
-            showFallbackWindow()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if NSApp.windows.isEmpty {
+                    self.showFallbackWindow()
+                }
+            }
         }
-        return true
+        return false
     }
 
     private func showFallbackWindow() {
