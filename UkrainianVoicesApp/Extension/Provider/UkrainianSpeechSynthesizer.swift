@@ -367,9 +367,41 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func mapSSMLRatePercentToEngineMultiplier(_ percent: Double) -> Double {
+#if os(iOS)
+        let normalizedPercent = max(0.0, percent)
+        let anchors: [(percent: Double, multiplier: Double)] = [
+            (0.0, 0.5),
+            (100.0, 1.0),
+            (175.0, 1.5),
+            (200.0, 2.0),
+            (300.0, 3.5),
+            (400.0, 5.5),
+            (500.0, 6.0),
+        ]
+
+        guard let first = anchors.first, let last = anchors.last else {
+            return 1.0
+        }
+
+        if normalizedPercent <= first.percent { return first.multiplier }
+        if normalizedPercent >= last.percent { return last.multiplier }
+
+        for index in 0..<(anchors.count - 1) {
+            let left = anchors[index]
+            let right = anchors[index + 1]
+            if normalizedPercent <= right.percent {
+                let t = (normalizedPercent - left.percent) / (right.percent - left.percent)
+                let smoothed = t * t * (3.0 - 2.0 * t)
+                return left.multiplier + (right.multiplier - left.multiplier) * smoothed
+            }
+        }
+
+        return last.multiplier
+#else
         let clampedPercent = min(max(percent, 50.0), 300.0)
         let progress = (clampedPercent - 50.0) / 250.0
         return 0.55 + (progress * 1.65)
+#endif
     }
 
     private static func clampRate(_ value: Double) -> Double {
