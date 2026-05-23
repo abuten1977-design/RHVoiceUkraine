@@ -45,11 +45,18 @@ enum RHVoiceSelfTestRunner {
 
         if let clipDirectory, !clipDirectory.isEmpty {
             let proofPhrase = "Це тестова фраза для перевірки швидкості мовлення."
-            let proofRates = [0.5, 1.0, 1.5, 2.0, 3.0]
+            let proofSSML = "<speak>\(proofPhrase)</speak>"
+            let proofRates: [(percent: Int, multiplier: Double)] = [
+                (50, 0.5),
+                (100, 1.0),
+                (150, 1.5),
+                (200, 2.0),
+                (300, 3.0)
+            ]
             let clipURL = URL(fileURLWithPath: clipDirectory, isDirectory: true)
             do {
                 try FileManager.default.createDirectory(at: clipURL, withIntermediateDirectories: true)
-                if let buffer = engine.synthesize(proofPhrase, voice: "Anatol", rate: 1.0, volume: 1.0, pitch: 1.0),
+                if let buffer = engine.synthesize(proofSSML, voice: "Anatol", rate: 1.0, volume: 1.0, pitch: 1.0),
                    buffer.frameLength > 0 {
                     let outputURL = clipURL.appendingPathComponent("anatol-default.wav")
                     let file = try AVAudioFile(forWriting: outputURL, settings: buffer.format.settings)
@@ -66,13 +73,12 @@ enum RHVoiceSelfTestRunner {
                     fputs("\(failLine)\n", stderr)
                 }
 
-                for rate in proofRates {
-                    let rateToken = String(format: "%.1f", rate).replacingOccurrences(of: ".", with: "_")
-                    let fileName = "anatol-rate-\(rateToken)x.wav"
+                for point in proofRates {
+                    let fileName = "anatol-rate-\(point.percent)p.wav"
                     let outputURL = clipURL.appendingPathComponent(fileName)
-                    let buffer = engine.synthesize(proofPhrase, voice: "Anatol", rate: rate, volume: 1.0, pitch: 1.0)
+                    let buffer = engine.synthesize(proofSSML, voice: "Anatol", rate: point.multiplier, volume: 1.0, pitch: 1.0)
                     guard let buffer, let channel = buffer.floatChannelData?[0], buffer.frameLength > 0 else {
-                        let failLine = "CLIP FAIL rate=\(rate) buffer=nil"
+                        let failLine = "CLIP FAIL percent=\(point.percent) rate=\(point.multiplier) buffer=nil"
                         lines.append(failLine)
                         fputs("\(failLine)\n", stderr)
                         continue
@@ -96,9 +102,10 @@ enum RHVoiceSelfTestRunner {
                     try file.write(from: buffer)
 
                     let ok = finite && !silent && !clipped
-                    let line = String(format: "CLIP %@ rate=%.1f path=%@ frames=%u peak=%.4f rms=%.6f duration=%.3f",
+                    let line = String(format: "CLIP %@ percent=%d rate=%.1f path=%@ frames=%u peak=%.4f rms=%.6f duration=%.3f",
                                       ok ? "OK" : "FAIL",
-                                      rate,
+                                      point.percent,
+                                      point.multiplier,
                                       outputURL.path,
                                       buffer.frameLength,
                                       peak,
