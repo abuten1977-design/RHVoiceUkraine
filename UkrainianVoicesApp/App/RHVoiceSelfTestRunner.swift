@@ -18,6 +18,11 @@ enum RHVoiceSelfTestRunner {
         try? await Task.sleep(nanoseconds: 200_000_000)
 
         let engine = RHVoiceEngine()
+        if ProcessInfo.processInfo.environment["RHVOICE_LATENCY_DIAG"] == "1" {
+            runLatencyDiagnostics(engine: engine, lines: &lines)
+            writeLogAndExit(lines: lines, logPath: logPath)
+        }
+
         let voices: [(name: String, sample: String)] = [
             ("Anatol", "Привіт! Це тест голосу Анатол."),
             ("Marianna", "Привіт! Це тест голосу Маріанна."),
@@ -121,6 +126,46 @@ enum RHVoiceSelfTestRunner {
             }
         }
 
+        writeLogAndExit(lines: lines, logPath: logPath)
+    }
+
+    private static func runLatencyDiagnostics(engine: RHVoiceEngine, lines: inout [String]) {
+        let cases: [(label: String, text: String)] = [
+            ("len10", "Це тестове"),
+            ("len40", "Це короткий український текст без меж"),
+            ("len80", "Це український текст середньої довжини без крапок і знаків оклику для перевірки"),
+            ("len150", "Це довгий український фрагмент без крапок і знаків оклику який має показати чи час синтезу першого фрагмента росте разом із кількістю символів"),
+            ("len300", "Це дуже довгий український фрагмент без крапок і знаків оклику який імітує одне велике повідомлення у месенджері з кількома комами, кількома уточненнями, додатковими словами і довгими описами, щоб перевірити чи RHVoice створює велику початкову затримку перед тим як віддати перший аудіобуфер користувачеві VoiceOver")
+        ]
+
+        for testCase in cases {
+            for iteration in 1...3 {
+                let ssml = "<speak>\(testCase.text)</speak>"
+                let start = Date()
+                let buffer = engine.synthesize(ssml, voice: "Anatol", rate: 1.0, volume: 1.0, pitch: 1.0)
+                let synthMs = Int((Date().timeIntervalSince(start) * 1000.0).rounded())
+                if let buffer, buffer.frameLength > 0 {
+                    let duration = Double(buffer.frameLength) / buffer.format.sampleRate
+                    let line = String(format: "LATENCY_DIAG_PHASE_A label=%@ iteration=%d textChars=%d firstFragmentSynthMs=%d totalSynthMs=%d frames=%u audioDuration=%.3f",
+                                      testCase.label,
+                                      iteration,
+                                      testCase.text.count,
+                                      synthMs,
+                                      synthMs,
+                                      buffer.frameLength,
+                                      duration)
+                    lines.append(line)
+                    fputs("\(line)\n", stderr)
+                } else {
+                    let line = "LATENCY_DIAG_PHASE_A_FAIL label=\(testCase.label) iteration=\(iteration) textChars=\(testCase.text.count) buffer=nil"
+                    lines.append(line)
+                    fputs("\(line)\n", stderr)
+                }
+            }
+        }
+    }
+
+    private static func writeLogAndExit(lines: [String], logPath: String) -> Never {
         let out = lines.joined(separator: "\n") + "\n"
         do {
             try out.write(toFile: logPath, atomically: true, encoding: .utf8)
