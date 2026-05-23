@@ -115,9 +115,11 @@ SWIFT
 OBJECT_ROOT="$DERIVED_DATA/Build/Intermediates.noindex/UkrainianVoices.build/Debug/UkrainianVoicesExtensionMac.build/Objects-normal"
 OBJECT_DIR="$(find "$OBJECT_ROOT" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
 BRIDGE_OBJ="$(find "$DERIVED_DATA/Build/Products/Debug" -name RHVoiceBridge.o -print -quit)"
+PIPELINE_SPLITTER_OBJ="$OBJECT_DIR/RHVoicePipelineSplitter.o"
 
 test -n "$OBJECT_DIR"
 test -n "$BRIDGE_OBJ"
+test -f "$PIPELINE_SPLITTER_OBJ"
 
 swiftc "$PROOF_SWIFT" \
   -I "$DERIVED_DATA/Build/Products/Debug" \
@@ -130,6 +132,7 @@ swiftc "$PROOF_SWIFT" \
   -lc++ \
   "$OBJECT_DIR/UkrainianSpeechSynthesizer.o" \
   "$OBJECT_DIR/RHVoiceSharedSettings.o" \
+  "$PIPELINE_SPLITTER_OBJ" \
   "$OBJECT_DIR/RHVoiceSynthesisRuntime.o" \
   "$OBJECT_DIR/AudioUnitFactory.o" \
   "$BRIDGE_OBJ" \
