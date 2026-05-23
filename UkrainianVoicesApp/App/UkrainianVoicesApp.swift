@@ -30,11 +30,8 @@ private final class MacAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         guard !isSelfTestMode else { return false }
-        if !flag {
-            NSApp.activate(ignoringOtherApps: true)
-            NSApp.windows.first?.makeKeyAndOrderFront(nil)
-        }
-        return true
+        NSApp.activate(ignoringOtherApps: true)
+        return false
     }
 }
 #endif
