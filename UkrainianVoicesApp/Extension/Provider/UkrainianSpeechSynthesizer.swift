@@ -526,9 +526,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             return [ssml]
         }
         let bodyFragments = splitPipelineBodyIntoSentenceFragments(strippedBody)
-        guard bodyFragments.count > 1 else { return [ssml] }
+        let pipelineFragments = bodyFragments.flatMap { splitLongPipelineFragment($0) }
+        guard pipelineFragments.count > 1 else { return [ssml] }
 
-        let mergedFragments = mergeSmallPipelineFragments(bodyFragments)
+        let mergedFragments = mergeSmallPipelineFragments(pipelineFragments)
         guard mergedFragments.count > 1,
               mergedFragments.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
             return [ssml]
@@ -627,6 +628,83 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
         flushCurrent()
         return fragments
+    }
+
+    private static func splitLongPipelineFragment(_ fragment: String) -> [String] {
+        guard textCharacterCount(in: fragment) > 80 else { return [fragment] }
+
+        var fragments: [String] = []
+        var current = ""
+        var currentTextCount = 0
+        var tag = ""
+        var insideTag = false
+        let characters = Array(fragment)
+
+        func appendCurrent() {
+            let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                current.removeAll(keepingCapacity: true)
+                currentTextCount = 0
+                return
+            }
+
+            if textCharacterCount(in: trimmed) < 15, !fragments.isEmpty {
+                fragments[fragments.count - 1] += " " + trimmed
+            } else {
+                fragments.append(trimmed)
+            }
+
+            current.removeAll(keepingCapacity: true)
+            currentTextCount = 0
+        }
+
+        for index in characters.indices {
+            let character = characters[index]
+
+            if insideTag {
+                tag.append(character)
+                if character == ">" {
+                    current += tag
+                    tag.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+                continue
+            }
+
+            if character == "<" {
+                insideTag = true
+                tag.append(character)
+                continue
+            }
+
+            current.append(character)
+            currentTextCount += 1
+
+            if currentTextCount >= 30,
+               isPipelineSubSentenceBoundary(character, in: characters, at: index) {
+                appendCurrent()
+            }
+        }
+
+        if insideTag {
+            return [fragment]
+        }
+
+        appendCurrent()
+        return fragments.count > 1 ? fragments : [fragment]
+    }
+
+    private static func isPipelineSubSentenceBoundary(_ character: Character, in characters: [Character], at index: Int) -> Bool {
+        guard character == "," || character == ";" || character == ":" || character == "—" else {
+            return false
+        }
+
+        let nextIndex = characters.index(after: index)
+        guard nextIndex < characters.endIndex else {
+            return true
+        }
+
+        return isWhitespace(characters[nextIndex])
     }
 
     private static func isPipelineSentenceBoundary(_ character: Character) -> Bool {
