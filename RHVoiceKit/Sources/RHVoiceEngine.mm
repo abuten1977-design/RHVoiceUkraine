@@ -566,10 +566,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         p.relative_pitch = pitch > 0 ? pitch : 1.0;
         p.relative_volume = volume > 0 ? volume : 1.0;
     } else {
-        // For plain text (Preview): full Polish formula
+        // For plain text (Preview): keep legacy multiplier without applying rate twice.
         double polishRate = fmax(0.5, rate * 2.0);
         double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5));
-        p.absolute_rate = (polishRate - 1.0);
+        p.absolute_rate = 0.0;
         p.relative_rate = polishRate;
         p.absolute_pitch = (polishPitch - 1.0);
         p.relative_pitch = polishPitch;
