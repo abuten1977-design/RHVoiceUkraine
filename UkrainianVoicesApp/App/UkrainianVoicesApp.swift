@@ -16,6 +16,7 @@ import RHVoiceKit
 #if os(macOS)
 private final class MacAppDelegate: NSObject, NSApplicationDelegate {
     var isSelfTestMode = false
+    private var fallbackWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !isSelfTestMode else { return }
@@ -31,7 +32,26 @@ private final class MacAppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         guard !isSelfTestMode else { return false }
         NSApp.activate(ignoringOtherApps: true)
-        return false
+        if !flag {
+            showFallbackWindow()
+        }
+        return true
+    }
+
+    private func showFallbackWindow() {
+        if fallbackWindow == nil || fallbackWindow?.isVisible == false {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 900, height: 800),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "Українські голоси"
+            window.contentViewController = NSHostingController(rootView: ContentView())
+            window.center()
+            fallbackWindow = window
+        }
+        fallbackWindow?.makeKeyAndOrderFront(nil)
     }
 }
 #endif
