@@ -87,14 +87,16 @@ jobs:
           grep -q "languages.ukrainian.min_sonic_rate=99" "$CONF_PATH"
           RHVOICE_SELFTEST_CLIP_DIR="$CLIP_DIR" \
             "$APP_PATH/Contents/MacOS/UkrainianVoicesMac" --self-test 2>&1 | tee "$CLIP_DIR/selftest.log"
-          grep -q "CLIP OK rate=0.5" "$CLIP_DIR/selftest.log"
-          grep -q "CLIP OK rate=1.0" "$CLIP_DIR/selftest.log"
-          grep -q "CLIP OK rate=1.5" "$CLIP_DIR/selftest.log"
-          grep -q "CLIP OK rate=2.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK default" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=50 rate=0.5" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=100 rate=1.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=150 rate=1.5" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=200 rate=2.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=300 rate=3.0" "$CLIP_DIR/selftest.log"
           if grep -q "CLIP FAIL" "$CLIP_DIR/selftest.log"; then
             exit 1
           fi
-          test "$(find "$CLIP_DIR" -maxdepth 1 -name '*.wav' | wc -l)" -eq 4
+          test "$(find "$CLIP_DIR" -maxdepth 1 -name '*.wav' | wc -l)" -eq 6
           ls -lh "$CLIP_DIR"
 
       - name: Validate task-041 SSML baseline and pitch proof
