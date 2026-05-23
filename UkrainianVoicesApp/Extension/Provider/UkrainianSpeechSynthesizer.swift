@@ -213,7 +213,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     public override var internalRenderBlock: AUInternalRenderBlock { self.performRender }
 
-    // MARK: - Synthesize (exactly like eSpeak: sync, then store under mutex)
+    // MARK: - Synthesize (eSpeak-style render buffer, sentence pipeline for long text)
 
     public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
         let requestStart = CFAbsoluteTimeGetCurrent()
@@ -271,55 +271,86 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self.outputOffset = 0
         self.outputMutex.signal()
 
-        // Synchronous synthesis — blocks until complete
+        let fragments = Self.sentencePipelineFragments(from: synthesisText)
+        rhLog("LATENCY_DIAG pipeline plan fragments=\(fragments.count) chars=\(synthesisText.count)")
+
         let synthStart = CFAbsoluteTimeGetCurrent()
-        var pcmBuffer = rhvoiceEngine.synthesize(
-            synthesisText,
-            voice: profileName,
-            rate: finalRate,
-            volume: finalVolume,
-            pitch: effectivePitch
-        )
-        var synthMs = Self.elapsedMs(since: synthStart)
-        
-        // Fallback: if SSML synthesis failed, try plain text without tags
-        if pcmBuffer == nil && synthesisText.contains("<") {
-            let plainText = stripSSML(synthesisText)
-            rhLog("synth: SSML failed, trying fallback: \(plainText.prefix(50))...")
-            let fallbackStart = CFAbsoluteTimeGetCurrent()
-            pcmBuffer = rhvoiceEngine.synthesize(
-                plainText,
+        var totalSamples = 0
+        var firstFragmentSynthMs: Int?
+        var fragmentSynthMsTotal = 0
+
+        for (index, fragment) in fragments.enumerated() {
+            if !self.shouldContinueSynthesis() {
+                rhLog("LATENCY_DIAG pipeline cancelled beforeFragment=\(index + 1)")
+                break
+            }
+
+            let fragmentStart = CFAbsoluteTimeGetCurrent()
+            var pcmBuffer = rhvoiceEngine.synthesize(
+                fragment,
                 voice: profileName,
                 rate: finalRate,
                 volume: finalVolume,
                 pitch: effectivePitch
             )
-            synthMs += Self.elapsedMs(since: fallbackStart)
+            var fragmentSynthMs = Self.elapsedMs(since: fragmentStart)
+
+            // Fallback: if SSML synthesis failed, try plain text without tags for this fragment.
+            if pcmBuffer == nil && fragment.contains("<") {
+                let plainText = stripSSML(fragment)
+                rhLog("synth: SSML fragment failed, trying fallback: \(plainText.prefix(50))...")
+                let fallbackStart = CFAbsoluteTimeGetCurrent()
+                pcmBuffer = rhvoiceEngine.synthesize(
+                    plainText,
+                    voice: profileName,
+                    rate: finalRate,
+                    volume: finalVolume,
+                    pitch: effectivePitch
+                )
+                fragmentSynthMs += Self.elapsedMs(since: fallbackStart)
+            }
+
+            fragmentSynthMsTotal += fragmentSynthMs
+            if firstFragmentSynthMs == nil {
+                firstFragmentSynthMs = fragmentSynthMs
+            }
+
+            guard let buffer = pcmBuffer, let floatData = buffer.floatChannelData?[0] else {
+                rhLog("synth fragment FAILED index=\(index + 1)")
+                rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) synthMs=\(fragmentSynthMs) samples=0 failed=1")
+                continue
+            }
+
+            let frameCount = Int(buffer.frameLength)
+            let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
+            totalSamples += samples.count
+
+            self.outputMutex.wait()
+            self.output.append(contentsOf: samples)
+            self.outputMutex.signal()
+
+            rhLog("synth fragment output index=\(index + 1) samples=\(samples.count)")
+            rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) synthMs=\(fragmentSynthMs) samples=\(samples.count)")
         }
 
         self.outputMutex.wait()
-        defer {
-            self.isSynthesizing = false
-            self.outputMutex.signal()
-        }
+        self.isSynthesizing = false
+        self.outputMutex.signal()
 
-        guard let buffer = pcmBuffer, let floatData = buffer.floatChannelData?[0] else {
-            rhLog("synth FAILED")
-            return
-        }
-
-        let frameCount = Int(buffer.frameLength)
-        let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
-
-        rhLog("synth output: \(samples.count) samples")
-        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(text.count) synthMs=\(synthMs) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(samples.count)")
-
-        self.output = samples
-        self.outputOffset = 0
+        rhLog("synth output: \(totalSamples) samples")
+        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(text.count) synthMs=\(fragmentSynthMsTotal) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(totalSamples)")
+        rhLog("LATENCY_DIAG pipeline fragments=\(fragments.count) firstFragmentSynthMs=\(firstFragmentSynthMs ?? 0) totalSynthMs=\(Self.elapsedMs(since: synthStart)) samples=\(totalSamples)")
     }
 
     private func stripSSML(_ ssml: String) -> String {
         return ssml.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+    }
+
+    private func shouldContinueSynthesis() -> Bool {
+        self.outputMutex.wait()
+        let shouldContinue = self.isSynthesizing
+        self.outputMutex.signal()
+        return shouldContinue
     }
 
     // MARK: - Cancel (exactly like eSpeak)
@@ -521,6 +552,144 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             .replacingOccurrences(of: "\u{00B4}", with: "`")
             .replacingOccurrences(of: "\u{FF07}", with: "`")
             .replacingOccurrences(of: "\u{0060}", with: "`")
+    }
+
+    private static func sentencePipelineFragments(from ssml: String) -> [String] {
+        guard let strippedBody = pipelineBodyByRemovingWrapperTags(from: ssml) else {
+            return [ssml]
+        }
+        let bodyFragments = splitPipelineBodyIntoSentenceFragments(strippedBody)
+        guard bodyFragments.count > 1 else { return [ssml] }
+
+        let mergedFragments = mergeSmallPipelineFragments(bodyFragments)
+        guard mergedFragments.count > 1,
+              mergedFragments.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+            return [ssml]
+        }
+
+        return mergedFragments.map { "<speak>\($0)</speak>" }
+    }
+
+    private static func pipelineBodyByRemovingWrapperTags(from ssml: String) -> String? {
+        var output = ""
+        var tag = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                tag.append(character)
+                if character == ">" {
+                    if isPipelineBreakTag(tag) {
+                        output += tag
+                    } else if !isPipelineWrapperTag(tag) {
+                        return nil
+                    }
+                    tag.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+            } else if character == "<" {
+                insideTag = true
+                tag.append(character)
+            } else {
+                output.append(character)
+            }
+        }
+
+        if insideTag {
+            return nil
+        }
+        return output
+    }
+
+    private static func isPipelineWrapperTag(_ tag: String) -> Bool {
+        let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return trimmed.range(of: #"^</?\s*(speak|prosody)\b"#, options: .regularExpression) != nil
+    }
+
+    private static func isPipelineBreakTag(_ tag: String) -> Bool {
+        let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return trimmed.range(of: #"^<\s*break\b[^>]*/\s*>$"#, options: .regularExpression) != nil
+    }
+
+    private static func splitPipelineBodyIntoSentenceFragments(_ body: String) -> [String] {
+        var fragments: [String] = []
+        var current = ""
+        var tag = ""
+        var insideTag = false
+        var pendingBoundary = false
+
+        func flushCurrent() {
+            let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                fragments.append(current)
+            }
+            current.removeAll(keepingCapacity: true)
+            pendingBoundary = false
+        }
+
+        for character in body {
+            if insideTag {
+                tag.append(character)
+                if character == ">" {
+                    current += tag
+                    tag.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+                continue
+            }
+
+            if character == "<" {
+                insideTag = true
+                tag.append(character)
+                continue
+            }
+
+            if pendingBoundary && !isWhitespace(character) {
+                flushCurrent()
+            }
+
+            current.append(character)
+
+            if isPipelineSentenceBoundary(character) {
+                pendingBoundary = true
+            }
+        }
+
+        if insideTag {
+            return [body]
+        }
+        flushCurrent()
+        return fragments
+    }
+
+    private static func isPipelineSentenceBoundary(_ character: Character) -> Bool {
+        character == "." || character == "!" || character == "?"
+    }
+
+    private static func mergeSmallPipelineFragments(_ fragments: [String]) -> [String] {
+        var merged: [String] = []
+
+        for fragment in fragments {
+            if textCharacterCount(in: fragment) < 10, !merged.isEmpty {
+                merged[merged.count - 1] += fragment
+            } else {
+                merged.append(fragment)
+            }
+        }
+
+        if merged.count > 1, let last = merged.last, textCharacterCount(in: last) < 10 {
+            merged[merged.count - 2] += last
+            merged.removeLast()
+        }
+
+        return merged
+    }
+
+    private static func textCharacterCount(in ssml: String) -> Int {
+        extractTextSegments(from: ssml)
+            .joined()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .count
     }
 
     private static func logApostropheEncoding(label: String, ssml: String) {
