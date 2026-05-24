@@ -18,6 +18,10 @@ enum RHVoiceSelfTestRunner {
         try? await Task.sleep(nanoseconds: 200_000_000)
 
         let engine = RHVoiceEngine()
+        if ProcessInfo.processInfo.environment["RHVOICE_DEBUG_LOG_PROOF"] == "1" {
+            runDebugLogProof(lines: &lines)
+            writeLogAndExit(lines: lines, logPath: logPath)
+        }
         if ProcessInfo.processInfo.environment["RHVOICE_LATENCY_DIAG"] == "1" {
             runLatencyDiagnostics(engine: engine, lines: &lines)
             writeLogAndExit(lines: lines, logPath: logPath)
@@ -131,6 +135,31 @@ enum RHVoiceSelfTestRunner {
         }
 
         writeLogAndExit(lines: lines, logPath: logPath)
+    }
+
+    private static func runDebugLogProof(lines: inout [String]) {
+        guard let logURL = DebugLogShareHelper.logURL else {
+            let line = "DEBUG_LOG_PROOF FAIL appGroupURL=nil"
+            lines.append(line)
+            fputs("\(line)\n", stderr)
+            return
+        }
+
+        try? FileManager.default.createDirectory(at: logURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? "TASK049_BEFORE_CLEAR\n".write(to: logURL, atomically: true, encoding: .utf8)
+        let beforeSize = DebugLogShareHelper.logSize()
+
+        DebugLogShareHelper.clearLog()
+        let afterClearSize = DebugLogShareHelper.logSize()
+
+        "LATENCY_DIAG TASK049 NSLog fallback proof".withCString { RHVoiceDebugLogString($0) }
+        Thread.sleep(forTimeInterval: 0.2)
+        let afterLatencyWriteSize = DebugLogShareHelper.logSize()
+
+        let result = (beforeSize > 0 && afterClearSize == 0 && afterLatencyWriteSize > 0) ? "OK" : "FAIL"
+        let line = "DEBUG_LOG_PROOF \(result) path=\(logURL.path) beforeSize=\(beforeSize) afterClearSize=\(afterClearSize) afterLatencyWriteSize=\(afterLatencyWriteSize)"
+        lines.append(line)
+        fputs("\(line)\n", stderr)
     }
 
     private static func runLatencyDiagnostics(engine: RHVoiceEngine, lines: inout [String]) {
