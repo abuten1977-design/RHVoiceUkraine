@@ -6,12 +6,11 @@ extern "C" {
 #endif
 
 void RHVoiceDebugLogWrite(const char* format, ...) __attribute__((format(printf, 1, 2)));
+void RHVoiceDebugLogString(const char* message);
+void RHVoiceDebugLogClear(void);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
-// Non-variadic wrapper for Swift
-void RHVoiceDebugLogString(const char* message);

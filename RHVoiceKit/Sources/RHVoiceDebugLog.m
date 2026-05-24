@@ -48,8 +48,22 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
         NSData* data = [line dataUsingEncoding:NSUTF8StringEncoding];
         if (data) [_logHandle writeData:data];
     });
+
+    if ([msg containsString:@"LATENCY_DIAG"] || [msg containsString:@"PARAMS"]) {
+        NSLog(@"%@", msg);
+    }
 }
 
 void RHVoiceDebugLogString(const char* message) {
     RHVoiceDebugLogWrite("%s", message);
+}
+
+void RHVoiceDebugLogClear(void) {
+    ensureLogFile();
+    if (!_logHandle || !_logQueue) return;
+
+    dispatch_sync(_logQueue, ^{
+        [_logHandle truncateFileAtOffset:0];
+        [_logHandle seekToFileOffset:0];
+    });
 }

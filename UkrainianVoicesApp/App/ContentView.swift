@@ -184,6 +184,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var statusMessage = ""
     @Published var isRunningSpeechComponentDiagnostics = false
     @Published var speechComponentDiagnosticReport: SpeechComponentDiagnosticReport?
+    @Published var debugLogSize = DebugLogShareHelper.logSize()
 
     private let playbackController = PreviewPlaybackController()
 
@@ -392,6 +393,16 @@ private final class ContentViewModel: ObservableObject {
 #else
         setStatus("Діагностика мовного компонента доступна лише на macOS.")
 #endif
+    }
+
+    func refreshDebugLogState() {
+        debugLogSize = DebugLogShareHelper.logSize()
+    }
+
+    func clearDebugLog() {
+        DebugLogShareHelper.clearLog()
+        refreshDebugLogState()
+        setStatus("Лог очищено.")
     }
 
     func updateGeneralRate(_ value: Double) {
@@ -648,12 +659,18 @@ struct ContentView: View {
                             .accessibilityLabel("Стан: \(model.statusMessage)")
                     }
                 }
+
+                diagnosticSection
             }
             .navigationTitle("Українські голоси")
+            .onAppear {
+                model.refreshDebugLogState()
+            }
         }
 #if os(macOS)
         .frame(minWidth: 520, minHeight: 520)
         .onAppear {
+            model.refreshDebugLogState()
             DispatchQueue.main.async {
                 NSApp.setActivationPolicy(.regular)
                 NSApp.activate(ignoringOtherApps: true)
@@ -689,6 +706,12 @@ struct ContentView: View {
                     }
                 }
                 .padding(.vertical, 8)
+
+                Divider()
+
+                diagnosticSection
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 16)
             }
             .navigationTitle("Українські голоси")
         }
@@ -730,6 +753,40 @@ struct ContentView: View {
             Text(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
                 .font(.caption)
                 .foregroundColor(model.isEnabled(voice) ? .secondary : .orange)
+        }
+    }
+
+    @ViewBuilder
+    private var diagnosticSection: some View {
+        Section("Діагностика") {
+            Text("Для перевірки затримки голосу:\n1. Тап «Очистити лог».\n2. Прочитай 3-4 фрази через VoiceOver у будь-якій програмі.\n3. Повернись сюди і тап «Поділитись логом».\n4. У шторці обери WhatsApp, Mail або AirDrop і надішли лог.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .accessibilityLabel("Підказка щодо діагностики затримки голосу")
+
+            Button {
+                model.clearDebugLog()
+            } label: {
+                Label("Очистити лог", systemImage: "trash")
+            }
+            .accessibilityLabel("Очистити лог")
+            .accessibilityHint("Стирає поточний лог-файл для нового вимірювання.")
+
+            if let url = DebugLogShareHelper.logURL, DebugLogShareHelper.logExists() {
+                ShareLink(item: url) {
+                    Label("Поділитись логом", systemImage: "square.and.arrow.up")
+                }
+                .accessibilityLabel("Поділитись логом")
+                .accessibilityHint("Відкриває системне меню обміну для надсилання лог-файлу.")
+            } else {
+                Text("Лог ще порожній — спочатку прочитай щось через VoiceOver.")
+                    .foregroundColor(.secondary)
+            }
+
+            Text("Розмір логу: \(model.debugLogSize) байт")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .accessibilityLabel("Розмір логу: \(model.debugLogSize) байт")
         }
     }
 }
