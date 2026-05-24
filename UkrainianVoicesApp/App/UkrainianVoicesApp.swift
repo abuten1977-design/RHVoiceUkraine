@@ -27,6 +27,11 @@ private final class MacAppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async {
             NSApp.windows.first?.makeKeyAndOrderFront(nil)
         }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if NSApp.windows.isEmpty {
+                self.showFallbackWindow()
+            }
+        }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
