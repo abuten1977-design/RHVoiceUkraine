@@ -31,26 +31,46 @@ static void ensureLogFile(void) {
 }
 
 void RHVoiceDebugLogWrite(const char* format, ...) {
-    ensureLogFile();
-    if (!_logHandle || !_logQueue) return;
-
     va_list args;
     va_start(args, format);
     NSString* msg = [[NSString alloc] initWithFormat:[NSString stringWithUTF8String:format] arguments:args];
     va_end(args);
+    BOOL important = [msg containsString:@"LATENCY_DIAG"] ||
+                     [msg containsString:@"PARAMS"] ||
+                     [msg containsString:@"APP_DIAG"] ||
+                     [msg containsString:@"EXT_DIAG"];
+
+    if (important) {
+        NSLog(@"%@", msg);
+    }
+
+    ensureLogFile();
+    if (!_logHandle || !_logQueue) {
+        if (important) {
+            NSLog(@"RHVoiceDebugLog unavailable path=%@ handle=%d queue=%d",
+                  _logPath ?: @"nil",
+                  _logHandle ? 1 : 0,
+                  _logQueue ? 1 : 0);
+        }
+        return;
+    }
 
     NSDateFormatter* df = [[NSDateFormatter alloc] init];
     df.dateFormat = @"HH:mm:ss.SSS";
     NSString* ts = [df stringFromDate:[NSDate date]];
     NSString* line = [NSString stringWithFormat:@"%@ [%d] %@\n", ts, (int)getpid(), msg];
 
-    dispatch_async(_logQueue, ^{
+    void (^writeBlock)(void) = ^{
         NSData* data = [line dataUsingEncoding:NSUTF8StringEncoding];
-        if (data) [_logHandle writeData:data];
-    });
-
-    if ([msg containsString:@"LATENCY_DIAG"] || [msg containsString:@"PARAMS"]) {
-        NSLog(@"%@", msg);
+        if (data) {
+            [_logHandle writeData:data];
+            if (important) [_logHandle synchronizeFile];
+        }
+    };
+    if (important) {
+        dispatch_sync(_logQueue, writeBlock);
+    } else {
+        dispatch_async(_logQueue, writeBlock);
     }
 }
 

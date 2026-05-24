@@ -66,6 +66,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
         self.setupParameterTree()
+        rhLog("EXT_DIAG synthesizer init")
     }
 
     private func setupParameterTree() {

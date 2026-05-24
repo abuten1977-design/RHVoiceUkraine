@@ -4,13 +4,13 @@
 //
 
 import SwiftUI
-#if os(macOS)
-import AppKit
 #if os(iOS)
 import RHVoiceBridge
-#else
+#elseif os(macOS)
 import RHVoiceKit
 #endif
+#if os(macOS)
+import AppKit
 #endif
 
 #if os(macOS)
@@ -76,6 +76,12 @@ struct UkrainianVoicesApp: App {
     #endif
 
     init() {
+        #if os(iOS)
+        let version = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        "APP_DIAG init build=\(version) bundle=\(Bundle.main.bundleIdentifier ?? "nil")".withCString {
+            RHVoiceDebugLogString($0)
+        }
+        #endif
         #if os(macOS)
         macAppDelegate.isSelfTestMode = isSelfTestMode
         if isSelfTestMode {
