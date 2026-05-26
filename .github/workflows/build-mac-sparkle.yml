@@ -188,12 +188,25 @@ jobs:
           set -euxo pipefail
           APP_PATH="build_sparkle/export/UkrainianVoicesMac.app"
           EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+          SPARKLE_PATH="$APP_PATH/Contents/Frameworks/Sparkle.framework"
           test -d "$APP_PATH"
           test -d "$EXT_PATH"
 
+          if [ -d "$SPARKLE_PATH" ]; then
+            while IFS= read -r item; do
+              codesign --force --timestamp --options runtime --sign "$MACOS_CODE_SIGN_IDENTITY" "$item"
+            done < <(find "$SPARKLE_PATH" \( -name "*.xpc" -o -name "*.app" \) -print | sort -r)
+
+            while IFS= read -r item; do
+              codesign --force --timestamp --options runtime --sign "$MACOS_CODE_SIGN_IDENTITY" "$item"
+            done < <(find "$SPARKLE_PATH" -type f -perm -111 -print | sort -r)
+
+            codesign --force --timestamp --options runtime --sign "$MACOS_CODE_SIGN_IDENTITY" "$SPARKLE_PATH"
+          fi
+
           while IFS= read -r item; do
             codesign --force --timestamp --options runtime --sign "$MACOS_CODE_SIGN_IDENTITY" "$item"
-          done < <(find "$APP_PATH" \( -name "*.framework" -o -name "*.dylib" -o -name "*.xpc" \) -print | sort -r)
+          done < <(find "$APP_PATH" \( -name "*.framework" -o -name "*.dylib" -o -name "*.xpc" -o -name "*.app" \) -print | sort -r)
 
           codesign --force --timestamp --options runtime \
             --entitlements Extension/UkrainianVoicesExtensionMac.entitlements \
