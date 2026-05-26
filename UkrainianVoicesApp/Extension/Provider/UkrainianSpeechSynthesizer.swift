@@ -28,6 +28,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private var outputOffset: Int = 0
     private var outputMutex = DispatchSemaphore(value: 1)
     private var isSynthesizing = false
+    private let synthesisQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.synthesis", qos: .userInitiated)
+    private var synthesisGeneration: UInt64 = 0
     private var rateValue: AUValue?
     private var volumeValue: AUValue?
     private var pitchValue: AUValue?
@@ -268,6 +270,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         self.outputMutex.wait()
         self.isSynthesizing = true
+        self.synthesisGeneration &+= 1
+        let generation = self.synthesisGeneration
         self.output.removeAll()
         self.outputOffset = 0
         self.outputMutex.signal()
@@ -275,13 +279,37 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: synthesisText)
         rhLog("LATENCY_DIAG pipeline plan fragments=\(fragments.count) chars=\(synthesisText.count)")
 
+        self.synthesisQueue.async { [weak self] in
+            self?.runSynthesisPipeline(
+                fragments: fragments,
+                profileName: profileName,
+                finalRate: finalRate,
+                finalVolume: finalVolume,
+                effectivePitch: effectivePitch,
+                requestStart: requestStart,
+                inputCharacterCount: text.count,
+                generation: generation
+            )
+        }
+    }
+
+    private func runSynthesisPipeline(
+        fragments: [String],
+        profileName: String,
+        finalRate: Double,
+        finalVolume: Double,
+        effectivePitch: Double,
+        requestStart: CFAbsoluteTime,
+        inputCharacterCount: Int,
+        generation: UInt64
+    ) {
         let synthStart = CFAbsoluteTimeGetCurrent()
         var totalSamples = 0
         var firstFragmentSynthMs: Int?
         var fragmentSynthMsTotal = 0
 
         for (index, fragment) in fragments.enumerated() {
-            if !self.shouldContinueSynthesis() {
+            if !self.shouldContinueSynthesis(generation: generation) {
                 rhLog("LATENCY_DIAG pipeline cancelled beforeFragment=\(index + 1)")
                 break
             }
@@ -327,19 +355,29 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             totalSamples += samples.count
 
             self.outputMutex.wait()
-            self.output.append(contentsOf: samples)
+            let appendAllowed = self.isSynthesizing && self.synthesisGeneration == generation
+            if appendAllowed {
+                self.output.append(contentsOf: samples)
+            }
             self.outputMutex.signal()
+
+            if !appendAllowed {
+                rhLog("LATENCY_DIAG pipeline cancelled afterFragment=\(index + 1)")
+                break
+            }
 
             rhLog("synth fragment output index=\(index + 1) samples=\(samples.count)")
             rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) synthMs=\(fragmentSynthMs) samples=\(samples.count)")
         }
 
         self.outputMutex.wait()
-        self.isSynthesizing = false
+        if self.synthesisGeneration == generation {
+            self.isSynthesizing = false
+        }
         self.outputMutex.signal()
 
         rhLog("synth output: \(totalSamples) samples")
-        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(text.count) synthMs=\(fragmentSynthMsTotal) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(totalSamples)")
+        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(inputCharacterCount) synthMs=\(fragmentSynthMsTotal) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(totalSamples)")
         rhLog("LATENCY_DIAG pipeline fragments=\(fragments.count) firstFragmentSynthMs=\(firstFragmentSynthMs ?? 0) totalSynthMs=\(Self.elapsedMs(since: synthStart)) samples=\(totalSamples)")
     }
 
@@ -347,9 +385,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         return ssml.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
     }
 
-    private func shouldContinueSynthesis() -> Bool {
+    private func shouldContinueSynthesis(generation: UInt64) -> Bool {
         self.outputMutex.wait()
-        let shouldContinue = self.isSynthesizing
+        let shouldContinue = self.isSynthesizing && self.synthesisGeneration == generation
         self.outputMutex.signal()
         return shouldContinue
     }
@@ -359,6 +397,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     public override func cancelSpeechRequest() {
         self.outputMutex.wait()
         self.isSynthesizing = false
+        self.synthesisGeneration &+= 1
         self.output.removeAll()
         self.outputOffset = 0
         rhLog("cancel")
