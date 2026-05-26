@@ -172,17 +172,27 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     ) -> AUAudioUnitStatus {
         let unsafeBuffer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
         let frames = unsafeBuffer[0].mData!.assumingMemoryBound(to: Float.self)
-        frames.assign(repeating: 0, count: Int(frameCount))
+        let intFrameCount = Int(frameCount)
+        frames.assign(repeating: 0, count: intFrameCount)
 
         self.outputMutex.wait()
-        
-        let available = self.output.count - self.outputOffset
-        
-        if available <= 0 {
-            let stillSynthesizing = self.isSynthesizing
+        var available = max(self.output.count - self.outputOffset, 0)
+        var stillSynthesizing = self.isSynthesizing
+        self.outputMutex.signal()
+
+        if available < intFrameCount && stillSynthesizing {
+            let ready = self.pauseUntilRenderReady(needFrames: intFrameCount)
+
+            self.outputMutex.wait()
+            available = max(self.output.count - self.outputOffset, 0)
+            stillSynthesizing = self.isSynthesizing
             self.outputMutex.signal()
-            
-            outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(Int(frameCount) * MemoryLayout<Float>.size)
+
+            rhLog("RENDER_WAIT perform ready=\(ready ? 1 : 0) available=\(available) stillSynthesizing=\(stillSynthesizing ? 1 : 0)")
+        }
+
+        if available <= 0 {
+            outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float>.size)
             
             if stillSynthesizing {
                 actionFlags.pointee = .offlineUnitRenderAction_Render
@@ -192,7 +202,24 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             return noErr
         }
 
-        let count = min(available, Int(frameCount))
+        self.outputMutex.wait()
+        available = max(self.output.count - self.outputOffset, 0)
+        stillSynthesizing = self.isSynthesizing
+
+        if available <= 0 {
+            self.outputMutex.signal()
+
+            outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float>.size)
+
+            if stillSynthesizing {
+                actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                actionFlags.pointee = .offlineUnitRenderAction_Complete
+            }
+            return noErr
+        }
+
+        let count = min(available, intFrameCount)
         self.output.withUnsafeBufferPointer { ptr in
             frames.assign(from: ptr.baseAddress!.advanced(by: self.outputOffset), count: count)
         }
@@ -212,6 +239,51 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self.outputMutex.signal()
 
         return noErr
+    }
+
+    private func pauseUntilRenderReady(
+        needFrames: Int,
+        maxRecurse: Int = 200,
+        baseDelayMicroseconds: UInt32 = 1000
+    ) -> Bool {
+        let maxDelaySeconds = Double(baseDelayMicroseconds) * Double(maxRecurse) / 1_000_000
+        let checkIntervalSeconds = maxDelaySeconds / 5.0
+        let startTime = Date()
+
+        rhLog("RENDER_WAIT start needFrames=\(needFrames)")
+
+        var ready = false
+        var complete = false
+
+        while Date().timeIntervalSince(startTime) < maxDelaySeconds {
+            self.outputMutex.wait()
+            let available = max(self.output.count - self.outputOffset, 0)
+            let stillSynthesizing = self.isSynthesizing
+            self.outputMutex.signal()
+
+            ready = available >= needFrames
+            complete = !stillSynthesizing
+
+            if ready || complete {
+                break
+            }
+
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(checkIntervalSeconds))
+        }
+
+        self.outputMutex.wait()
+        let finalAvailable = max(self.output.count - self.outputOffset, 0)
+        let finalSynthesizing = self.isSynthesizing
+        self.outputMutex.signal()
+
+        ready = finalAvailable >= needFrames
+        complete = !finalSynthesizing && !ready
+
+        let waitedMs = Int(Date().timeIntervalSince(startTime) * 1000)
+        let result = ready ? "ready" : (complete ? "complete" : "timeout")
+        rhLog("RENDER_WAIT end result=\(result) waitedMs=\(waitedMs) available=\(finalAvailable)")
+
+        return ready
     }
 
     public override var internalRenderBlock: AUInternalRenderBlock { self.performRender }
