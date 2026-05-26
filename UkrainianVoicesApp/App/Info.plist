@@ -24,5 +24,13 @@
     <string>13.0</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
+    <key>SUAutomaticallyUpdate</key>
+    <false/>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUFeedURL</key>
+    <string>https://abuten1977-design.github.io/RHVoiceUkraine/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>YWIoGYUkCL3wX/rglOlXvntETvx/9aDS6huZY4/YD6o=</string>
 </dict>
 </plist>

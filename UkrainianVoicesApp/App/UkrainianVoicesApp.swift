@@ -11,15 +11,22 @@ import RHVoiceKit
 #endif
 #if os(macOS)
 import AppKit
+import Sparkle
 #endif
 
 #if os(macOS)
 private final class MacAppDelegate: NSObject, NSApplicationDelegate {
     var isSelfTestMode = false
     private var fallbackWindow: NSWindow?
+    private var updaterController: SPUStandardUpdaterController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard !isSelfTestMode else { return }
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil
+        )
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
 
