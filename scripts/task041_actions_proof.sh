@@ -80,6 +80,7 @@ guard let tree = au.parameterTree else {
     fputs("PROOF FAIL missing_parameter_tree\n", stderr)
     exit(2)
 }
+try au.allocateRenderResources()
 
 let all = tree.allParameters
 print("TREE groups=\(tree.children.map(\.identifier).joined(separator: ",")) params=\(all.map { "\($0.identifier):\($0.address):\($0.minValue)-\($0.maxValue):\($0.unit.rawValue)" }.joined(separator: ","))")
@@ -93,6 +94,47 @@ func set(_ id: String, _ value: AUValue) {
     parameter.value = value
 }
 
+func drainRender(_ name: String) {
+    let frameCount: AVAudioFrameCount = 1024
+    var samples = [Float](repeating: 0, count: Int(frameCount))
+    var timestamp = AudioTimeStamp()
+    timestamp.mFlags = .sampleTimeValid
+    let deadline = Date().addingTimeInterval(10.0)
+    var renderedFrames = 0
+    var iterations = 0
+
+    while Date() < deadline {
+        iterations += 1
+        var flags = AudioUnitRenderActionFlags()
+        let status = samples.withUnsafeMutableBufferPointer { sampleBuffer -> AUAudioUnitStatus in
+            var audioBuffer = AudioBuffer(
+                mNumberChannels: 1,
+                mDataByteSize: UInt32(Int(frameCount) * MemoryLayout<Float>.size),
+                mData: sampleBuffer.baseAddress
+            )
+            var bufferList = AudioBufferList(mNumberBuffers: 1, mBuffers: audioBuffer)
+            return au.internalRenderBlock(&flags, &timestamp, frameCount, 0, &bufferList, nil, nil)
+        }
+
+        if status != noErr {
+            fputs("PROOF FAIL render_status name=\(name) status=\(status)\n", stderr)
+            exit(2)
+        }
+
+        if flags.contains(.offlineUnitRenderAction_Complete) {
+            print("PROOF_RENDER_DONE \(name) frames=\(renderedFrames) iterations=\(iterations)")
+            return
+        }
+
+        renderedFrames += Int(frameCount)
+        timestamp.mSampleTime += Float64(frameCount)
+        Thread.sleep(forTimeInterval: 0.01)
+    }
+
+    fputs("PROOF FAIL render_timeout name=\(name) frames=\(renderedFrames) iterations=\(iterations)\n", stderr)
+    exit(2)
+}
+
 func runCase(_ name: String, ssml: String, appSpeed: Double, appVolume: Double, appPitch: Double) throws {
     try writeSnapshot(speed: appSpeed, volume: appVolume, pitch: appPitch)
     set("rate", 1.0)
@@ -102,6 +144,7 @@ func runCase(_ name: String, ssml: String, appSpeed: Double, appVolume: Double, 
     let request = AVSpeechSynthesisProviderRequest(ssmlRepresentation: ssml, voice: voice)
     print("PROOF_START \(name) appSpeed=\(appSpeed) appVolume=\(appVolume) appPitch=\(appPitch)")
     au.synthesizeSpeechRequest(request)
+    drainRender(name)
     print("PROOF_END \(name)")
 }
 
@@ -152,6 +195,11 @@ grep -F "PROOF_START baseline-100-speed-0_8" "$PROOF_LOG"
 grep -F "PROOF_START rotor-200-speed-0_8" "$PROOF_LOG"
 grep -F "PROOF_START ssml-pitch-plus-50" "$PROOF_LOG"
 grep -F "PROOF_START app-pitch-0_8-fallback" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE baseline-100-speed-1-volume-1" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE baseline-100-speed-0_8" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE rotor-200-speed-0_8" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE ssml-pitch-plus-50" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE app-pitch-0_8-fallback" "$PROOF_LOG"
 grep -F "rate=1.00" "$PROOF_LOG"
 grep -F "rate=0.80" "$PROOF_LOG"
 grep -F "rate=1.60" "$PROOF_LOG"
