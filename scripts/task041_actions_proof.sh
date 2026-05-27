@@ -153,6 +153,11 @@ try runCase("baseline-100-speed-0_8", ssml: "<speak><prosody rate=\"100%\">Пр�
 try runCase("rotor-200-speed-0_8", ssml: "<speak><prosody rate=\"200%\">Привіт, це тест.</prosody></speak>", appSpeed: 0.8, appVolume: 1.0, appPitch: 1.0)
 try runCase("ssml-pitch-plus-50", ssml: "<speak><prosody pitch=\"+50%\">Привіт, це тест.</prosody></speak>", appSpeed: 1.0, appVolume: 1.0, appPitch: 1.0)
 try runCase("app-pitch-0_8-fallback", ssml: "<speak>Привіт, це тест.</speak>", appSpeed: 1.0, appVolume: 1.0, appPitch: 0.8)
+try runCase("userdict-atb", ssml: "<speak>АТБ</speak>", appSpeed: 1.0, appVolume: 1.0, appPitch: 1.0)
+try runCase("userdict-apk", ssml: "<speak>АПК</speak>", appSpeed: 1.0, appVolume: 1.0, appPitch: 1.0)
+try runCase("userdict-apostrophe", ssml: "<speak>апостроф</speak>", appSpeed: 1.0, appVolume: 1.0, appPitch: 1.0)
+try runCase("userdict-avtivka", ssml: "<speak>автівка</speak>", appSpeed: 1.0, appVolume: 1.0, appPitch: 1.0)
+try runCase("userdict-makarchuk", ssml: "<speak>Макарчук</speak>", appSpeed: 1.0, appVolume: 1.0, appPitch: 1.0)
 SWIFT
 
 OBJECT_ROOT="$DERIVED_DATA/Build/Intermediates.noindex/UkrainianVoices.build/Debug/UkrainianVoicesExtensionMac.build/Objects-normal"
@@ -187,7 +192,7 @@ rm -rf /tmp/RHVoiceData "$PROOF_DIR/RHVoiceData"
 ln -s "$DERIVED_DATA/Build/Products/Debug/UkrainianVoicesMac.app/Contents/Resources/RHVoiceData" /tmp/RHVoiceData
 ln -s "$DERIVED_DATA/Build/Products/Debug/UkrainianVoicesMac.app/Contents/Resources/RHVoiceData" "$PROOF_DIR/RHVoiceData"
 
-"$PROOF_BIN" 2>&1 | tee "$PROOF_LOG"
+RHVOICE_USERDICT_DIAG=1 "$PROOF_BIN" 2>&1 | tee "$PROOF_LOG"
 
 grep -F "TREE groups=rhvoice" "$PROOF_LOG"
 grep -F "PROOF_START baseline-100-speed-1-volume-1" "$PROOF_LOG"
@@ -200,6 +205,16 @@ grep -F "PROOF_RENDER_DONE baseline-100-speed-0_8" "$PROOF_LOG"
 grep -F "PROOF_RENDER_DONE rotor-200-speed-0_8" "$PROOF_LOG"
 grep -F "PROOF_RENDER_DONE ssml-pitch-plus-50" "$PROOF_LOG"
 grep -F "PROOF_RENDER_DONE app-pitch-0_8-fallback" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE userdict-atb" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE userdict-apk" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE userdict-apostrophe" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE userdict-avtivka" "$PROOF_LOG"
+grep -F "PROOF_RENDER_DONE userdict-makarchuk" "$PROOF_LOG"
+grep -F "USERDICT_DIAG apply token=АТБ replacement=АТБ initialism=1" "$PROOF_LOG"
+grep -F "USERDICT_DIAG apply token=АПК replacement=АПК initialism=1" "$PROOF_LOG"
+grep -F "USERDICT_DIAG apply token=апостроф replacement=апостроф initialism=0" "$PROOF_LOG"
+grep -F "USERDICT_DIAG apply token=автівка replacement=автівка initialism=0" "$PROOF_LOG"
+grep -F "USERDICT_DIAG apply token=Макарчук replacement=Макарчук initialism=0" "$PROOF_LOG"
 grep -F "finalRate=1.00" "$PROOF_LOG"
 grep -F "finalRate=0.80" "$PROOF_LOG"
 grep -F "finalRate=1.60" "$PROOF_LOG"
