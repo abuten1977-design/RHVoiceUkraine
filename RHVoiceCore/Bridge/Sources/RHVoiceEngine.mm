@@ -136,6 +136,69 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     return nil;
 }
 
+static NSString* const RHVoiceAppGroupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
+static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt";
+
+static NSURL* RHVoiceSharedContainerURL(void) {
+    return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];
+}
+
+static NSString* RHVoicePersonalDictionarySignature(void) {
+    NSURL* containerURL = RHVoiceSharedContainerURL();
+    if (!containerURL) return @"no-app-group";
+
+    NSString* path = [[containerURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] path];
+    NSDictionary<NSFileAttributeKey, id>* attributes =
+        [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
+    if (!attributes) return @"missing";
+
+    NSDate* modified = attributes[NSFileModificationDate];
+    NSNumber* size = attributes[NSFileSize];
+    return [NSString stringWithFormat:@"%lld:%llu",
+            (long long)modified.timeIntervalSince1970,
+            size.unsignedLongLongValue];
+}
+
+static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSURL* containerURL = RHVoiceSharedContainerURL();
+    if (!containerURL) return dataPath;
+
+    NSURL* configURL = [containerURL URLByAppendingPathComponent:@"RHVoiceConfig" isDirectory:YES];
+    NSURL* dictURL = [[configURL URLByAppendingPathComponent:@"dicts" isDirectory:YES]
+        URLByAppendingPathComponent:@"Ukrainian" isDirectory:YES];
+    NSError* error = nil;
+    if (![fm createDirectoryAtURL:dictURL withIntermediateDirectories:YES attributes:nil error:&error]) {
+        RHVoiceDebugLogWrite("USERDICT personal config mkdir failed: %s", error.localizedDescription.UTF8String);
+        return dataPath;
+    }
+
+    NSString* sourceConfig = [dataPath stringByAppendingPathComponent:@"RHVoice.conf"];
+    NSString* targetConfig = [[configURL URLByAppendingPathComponent:@"RHVoice.conf"] path];
+    if ([fm fileExistsAtPath:sourceConfig]) {
+        [fm removeItemAtPath:targetConfig error:nil];
+        if (![fm copyItemAtPath:sourceConfig toPath:targetConfig error:&error]) {
+            RHVoiceDebugLogWrite("USERDICT config copy failed: %s", error.localizedDescription.UTF8String);
+            return dataPath;
+        }
+    }
+
+    NSString* personalSource = [[[containerURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] standardizedURL] path];
+    NSString* personalTarget = [[dictURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] path];
+    [fm removeItemAtPath:personalTarget error:nil];
+    if ([fm fileExistsAtPath:personalSource]) {
+        if (![fm copyItemAtPath:personalSource toPath:personalTarget error:&error]) {
+            RHVoiceDebugLogWrite("USERDICT personal copy failed: %s", error.localizedDescription.UTF8String);
+            return dataPath;
+        }
+        RHVoiceDebugLogWrite("USERDICT personal loaded path=%s", personalSource.UTF8String);
+    } else {
+        RHVoiceDebugLogWrite("USERDICT personal missing; bundled only");
+    }
+
+    return [configURL path];
+}
+
 @interface RHVoiceAudioRequestToken () {
 @public
     std::shared_ptr<AudioRequestState> _state;
@@ -430,6 +493,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @property (assign) BOOL initialized;
 @property (strong) NSCondition* activeStateCondition;
 @property (assign) EngineState* activeStreamingState;
+@property (copy) NSString* personalDictionarySignature;
 @end
 
 // MARK: - @implementation
@@ -456,9 +520,28 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         _initialized = NO;
         _engine = NULL;
         _activeStateCondition = [[NSCondition alloc] init];
+        _personalDictionarySignature = @"";
         [self initializeEngine];
     }
     return self;
+}
+
+- (void)refreshPersonalDictionaryIfNeeded {
+    NSString* signature = RHVoicePersonalDictionarySignature();
+    if (!self.initialized || [signature isEqualToString:self.personalDictionarySignature]) {
+        return;
+    }
+
+    RHVoiceDebugLogWrite("USERDICT personal changed old=%s new=%s",
+                         self.personalDictionarySignature.UTF8String,
+                         signature.UTF8String);
+    [self cancel];
+    if (self.engine) {
+        RHVoice_delete_tts_engine(self.engine);
+        self.engine = NULL;
+    }
+    self.initialized = NO;
+    [self initializeEngine];
 }
 
 - (BOOL)initializeEngine {
@@ -483,10 +566,17 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     callbacks.set_sample_rate = set_sample_rate_callback;
     callbacks.play_speech = play_speech_callback;
 
+    NSString* configPath = RHVoicePrepareWritableConfigPath(dataPath);
+    self.personalDictionarySignature = RHVoicePersonalDictionarySignature();
+    NSLog(@"✅ RHVoice config path: %@", configPath);
+    RHVoiceDebugLogWrite("USERDICT config path=%s signature=%s",
+                         configPath.UTF8String,
+                         self.personalDictionarySignature.UTF8String);
+
     RHVoice_init_params params;
     memset(&params, 0, sizeof(params));
     params.data_path = [dataPath UTF8String];
-    params.config_path = [dataPath UTF8String];
+    params.config_path = [configPath UTF8String];
     params.callbacks = callbacks;
 
     @try {
@@ -626,6 +716,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
                                     rate:(double)rate volume:(double)volume pitch:(double)pitch {
     NSLog(@"🔍 synthesize called: initialized=%d, text='%@', voice='%@'", self.initialized, text, voice);
+    [self refreshPersonalDictionaryIfNeeded];
     
     if (!self.initialized || !text.length) {
         NSLog(@"❌ synthesize failed: initialized=%d, textLength=%lu", self.initialized, (unsigned long)text.length);
@@ -701,6 +792,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (void)synthesizeStreaming:(NSString*)text voice:(NSString*)voice
                       rate:(double)rate volume:(double)volume pitch:(double)pitch
                    onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
+    [self refreshPersonalDictionaryIfNeeded];
     if (!self.initialized || !text.length) return;
 
     // NOTE: Do NOT call [self cancel] here — the caller (Swift) already called

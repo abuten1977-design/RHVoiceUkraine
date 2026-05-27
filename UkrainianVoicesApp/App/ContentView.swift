@@ -185,6 +185,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var isRunningSpeechComponentDiagnostics = false
     @Published var speechComponentDiagnosticReport: SpeechComponentDiagnosticReport?
     @Published var debugLogSize = DebugLogShareHelper.logSize()
+    @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
 
     private let playbackController = PreviewPlaybackController()
 
@@ -209,6 +210,7 @@ private final class ContentViewModel: ObservableObject {
         self.testText = "Привіт! Це тест українського голосу."
         self.enabledVoiceIdentifiers = effectiveEnabled
         self.selectedVoiceIdentifier = storedSelected
+        self.personalDictionaryEntries = PersonalUserDictionary.loadEntries()
         self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
             if let stored = snapshot.perVoiceSettings[voice.identifier] {
                 return (voice.identifier, VoiceSettingsState(
@@ -304,6 +306,45 @@ private final class ContentViewModel: ObservableObject {
             return
         }
         previewVoice(voice, overrideText: testText)
+    }
+
+    func previewDictionaryText(_ text: String) {
+        guard let voice = selectedVoice ?? voiceCatalog.first else {
+            setStatus("Спочатку виберіть голос.")
+            return
+        }
+        previewVoice(voice, overrideText: text)
+    }
+
+    func reloadPersonalDictionary() {
+        personalDictionaryEntries = PersonalUserDictionary.loadEntries()
+    }
+
+    func savePersonalDictionaryEntry(id: UUID?, displayWord: String, stressedWord: String) -> Bool {
+        do {
+            if let id {
+                try PersonalUserDictionary.updateEntry(id: id, displayWord: displayWord, stressedWord: stressedWord)
+                setStatus("Запис словника оновлено.")
+            } else {
+                try PersonalUserDictionary.addEntry(displayWord: displayWord, stressedWord: stressedWord)
+                setStatus("Запис додано до словника.")
+            }
+            reloadPersonalDictionary()
+            return true
+        } catch {
+            setStatus(error.localizedDescription)
+            return false
+        }
+    }
+
+    func removePersonalDictionaryEntry(_ entry: PersonalDictionaryEntry) {
+        do {
+            try PersonalUserDictionary.removeEntry(id: entry.id)
+            reloadPersonalDictionary()
+            setStatus("Запис «\(entry.displayWord)» видалено зі словника.")
+        } catch {
+            setStatus(error.localizedDescription)
+        }
     }
 
     func stopPreview() {
@@ -651,6 +692,10 @@ struct ContentView: View {
                     }
                 }
 
+                Section {
+                    personalDictionaryLink
+                }
+
                 if !model.statusMessage.isEmpty {
                     Section {
                         Text(model.statusMessage)
@@ -706,6 +751,12 @@ struct ContentView: View {
                     }
                 }
                 .padding(.vertical, 8)
+
+                Divider()
+
+                personalDictionaryLink
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
 
                 Divider()
 
@@ -788,6 +839,189 @@ struct ContentView: View {
                 .foregroundColor(.secondary)
                 .accessibilityLabel("Розмір логу: \(model.debugLogSize) байт")
         }
+    }
+
+    private var personalDictionaryLink: some View {
+        NavigationLink {
+            PersonalDictionaryView(
+                entries: model.personalDictionaryEntries,
+                isPreviewPlaying: model.isPreviewPlaying,
+                reload: { model.reloadPersonalDictionary() },
+                save: { id, displayWord, stressedWord in
+                    model.savePersonalDictionaryEntry(
+                        id: id,
+                        displayWord: displayWord,
+                        stressedWord: stressedWord
+                    )
+                },
+                delete: { entry in model.removePersonalDictionaryEntry(entry) },
+                preview: { text in model.previewDictionaryText(text) },
+                stopPreview: { model.stopPreview() }
+            )
+        } label: {
+            Label("Мій словник", systemImage: "book.closed")
+        }
+        .accessibilityLabel("Мій словник")
+        .accessibilityHint("Відкрити особистий словник вимови.")
+    }
+}
+
+private struct PersonalDictionaryView: View {
+    let entries: [PersonalDictionaryEntry]
+    let isPreviewPlaying: Bool
+    let reload: () -> Void
+    let save: (UUID?, String, String) -> Bool
+    let delete: (PersonalDictionaryEntry) -> Void
+    let preview: (String) -> Void
+    let stopPreview: () -> Void
+
+    @State private var editingEntry: PersonalDictionaryEntry?
+    @State private var isAddingEntry = false
+
+    var body: some View {
+        List {
+            if entries.isEmpty {
+                Text("Словник порожній.")
+                    .foregroundColor(.secondary)
+                    .accessibilityLabel("Особистий словник порожній")
+            } else {
+                ForEach(entries) { entry in
+                    Button {
+                        editingEntry = entry
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(entry.displayWord)
+                                .font(.headline)
+                            Text(entry.stressedWord)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .accessibilityLabel("\(entry.displayWord), вимова \(entry.stressedWord)")
+                    .accessibilityHint("Відкрити редагування запису")
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            delete(entry)
+                        } label: {
+                            Label("Видалити", systemImage: "trash")
+                        }
+                        .accessibilityLabel("Видалити \(entry.displayWord)")
+                    }
+                }
+                .onDelete { offsets in
+                    offsets.map { entries[$0] }.forEach(delete)
+                }
+            }
+        }
+        .navigationTitle("Мій словник")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    isAddingEntry = true
+                } label: {
+                    Label("Додати", systemImage: "plus")
+                }
+                .accessibilityLabel("Додати запис")
+                .accessibilityHint("Відкриває форму нового слова.")
+            }
+        }
+        .sheet(isPresented: $isAddingEntry) {
+            PersonalDictionaryEditorView(
+                entry: nil,
+                isPreviewPlaying: isPreviewPlaying,
+                save: save,
+                preview: preview,
+                stopPreview: stopPreview
+            )
+        }
+        .sheet(item: $editingEntry) { entry in
+            PersonalDictionaryEditorView(
+                entry: entry,
+                isPreviewPlaying: isPreviewPlaying,
+                save: save,
+                preview: preview,
+                stopPreview: stopPreview
+            )
+        }
+        .onAppear(perform: reload)
+#if os(macOS)
+        .frame(minWidth: 460, minHeight: 520)
+#endif
+    }
+}
+
+private struct PersonalDictionaryEditorView: View {
+    let entry: PersonalDictionaryEntry?
+    let isPreviewPlaying: Bool
+    let save: (UUID?, String, String) -> Bool
+    let preview: (String) -> Void
+    let stopPreview: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var displayWord: String
+    @State private var stressedWord: String
+
+    init(
+        entry: PersonalDictionaryEntry?,
+        isPreviewPlaying: Bool,
+        save: @escaping (UUID?, String, String) -> Bool,
+        preview: @escaping (String) -> Void,
+        stopPreview: @escaping () -> Void
+    ) {
+        self.entry = entry
+        self.isPreviewPlaying = isPreviewPlaying
+        self.save = save
+        self.preview = preview
+        self.stopPreview = stopPreview
+        _displayWord = State(initialValue: entry?.displayWord ?? "")
+        _stressedWord = State(initialValue: entry?.stressedWord ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Слово") {
+                    TextField("Бутенко", text: $displayWord)
+                        .accessibilityLabel("Слово")
+                        .accessibilityHint("Введіть слово без позначки наголосу.")
+                    TextField("Бу+тенко", text: $stressedWord)
+                        .accessibilityLabel("Слово з наголосом")
+                        .accessibilityHint("Поставте плюс перед голосною, на яку хочете наголос.")
+                    Text("Поставте + перед голосною, на яку хочете наголос.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+
+                Section {
+                    Button(isPreviewPlaying ? "Зупинити" : "Прослухати") {
+                        isPreviewPlaying ? stopPreview() : preview(stressedWord)
+                    }
+                    .disabled(stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityAddTraits(.startsMediaSession)
+                    .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Прослухати слово з наголосом")
+                    .accessibilityHint("Промовляє введений варіант вимови.")
+                }
+            }
+            .navigationTitle(entry == nil ? "Нове слово" : "Редагування")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Скасувати") {
+                        dismiss()
+                    }
+                    .accessibilityLabel("Скасувати")
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Зберегти") {
+                        if save(entry?.id, displayWord, stressedWord) {
+                            dismiss()
+                        }
+                    }
+                    .accessibilityLabel("Зберегти запис")
+                }
+            }
+        }
+#if os(macOS)
+        .frame(minWidth: 420, minHeight: 300)
+#endif
     }
 }
 
