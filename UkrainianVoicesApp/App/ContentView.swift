@@ -186,6 +186,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var speechComponentDiagnosticReport: SpeechComponentDiagnosticReport?
     @Published var debugLogSize = DebugLogShareHelper.logSize()
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
+    @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
 
     private let playbackController = PreviewPlaybackController()
 
@@ -211,6 +212,7 @@ private final class ContentViewModel: ObservableObject {
         self.enabledVoiceIdentifiers = effectiveEnabled
         self.selectedVoiceIdentifier = storedSelected
         self.personalDictionaryEntries = PersonalUserDictionary.loadEntries()
+        self.personalDictionaryStatus = PersonalUserDictionary.fileStatus()
         self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
             if let stored = snapshot.perVoiceSettings[voice.identifier] {
                 return (voice.identifier, VoiceSettingsState(
@@ -318,6 +320,7 @@ private final class ContentViewModel: ObservableObject {
 
     func reloadPersonalDictionary() {
         personalDictionaryEntries = PersonalUserDictionary.loadEntries()
+        personalDictionaryStatus = PersonalUserDictionary.fileStatus()
     }
 
     func savePersonalDictionaryEntry(id: UUID?, displayWord: String, stressedWord: String) -> Bool {
@@ -845,6 +848,7 @@ struct ContentView: View {
         NavigationLink {
             PersonalDictionaryView(
                 entries: model.personalDictionaryEntries,
+                fileStatus: model.personalDictionaryStatus,
                 isPreviewPlaying: model.isPreviewPlaying,
                 reload: { model.reloadPersonalDictionary() },
                 save: { id, displayWord, stressedWord in
@@ -868,6 +872,7 @@ struct ContentView: View {
 
 private struct PersonalDictionaryView: View {
     let entries: [PersonalDictionaryEntry]
+    let fileStatus: PersonalDictionaryFileStatus
     let isPreviewPlaying: Bool
     let reload: () -> Void
     let save: (UUID?, String, String) -> Bool
@@ -880,35 +885,85 @@ private struct PersonalDictionaryView: View {
 
     var body: some View {
         List {
-            if entries.isEmpty {
-                Text("Словник порожній.")
-                    .foregroundColor(.secondary)
-                    .accessibilityLabel("Особистий словник порожній")
-            } else {
-                ForEach(entries) { entry in
-                    Button {
-                        editingEntry = entry
-                    } label: {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(entry.displayWord)
-                                .font(.headline)
-                            Text(entry.stressedWord)
-                                .foregroundColor(.secondary)
-                        }
+            Section("Файл словника") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(fileStatus.dictionaryExists ? "user_dictionary.txt: \(fileStatus.dictionarySize) байт" : "user_dictionary.txt: не створено")
+                    Text(fileStatus.metadataExists ? "user_dictionary_meta.json: \(fileStatus.metadataSize) байт" : "user_dictionary_meta.json: не створено")
+                        .foregroundColor(.secondary)
+                    if let modifiedAt = fileStatus.dictionaryModifiedAt {
+                        Text("Оновлено: \(modifiedAt.formatted(date: .numeric, time: .standard))")
+                            .foregroundColor(.secondary)
                     }
-                    .accessibilityLabel("\(entry.displayWord), вимова \(entry.stressedWord)")
-                    .accessibilityHint("Відкрити редагування запису")
-                    .swipeActions {
-                        Button(role: .destructive) {
-                            delete(entry)
-                        } label: {
-                            Label("Видалити", systemImage: "trash")
-                        }
-                        .accessibilityLabel("Видалити \(entry.displayWord)")
+#if os(macOS)
+                    if let path = fileStatus.dictionaryPath {
+                        Text(path)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .textSelection(.enabled)
                     }
+#endif
                 }
-                .onDelete { offsets in
-                    offsets.map { entries[$0] }.forEach(delete)
+                .font(.footnote)
+                .accessibilityElement(children: .combine)
+            }
+
+            if entries.isEmpty {
+                Section {
+                    Text("Словник порожній.")
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Особистий словник порожній")
+                }
+            } else {
+                Section("Записи") {
+                    ForEach(entries) { entry in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Button {
+                                editingEntry = entry
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(entry.displayWord)
+                                        .font(.headline)
+                                    Text(entry.stressedWord)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("\(entry.displayWord), вимова \(entry.stressedWord)")
+                            .accessibilityHint("Відкрити редагування запису")
+
+                            HStack {
+                                Button {
+                                    preview(entry.displayWord)
+                                } label: {
+                                    Label("Перевірити слово", systemImage: "speaker.wave.2")
+                                }
+                                .disabled(entry.displayWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                .accessibilityAddTraits(.startsMediaSession)
+                                .accessibilityHint("Промовляє звичайне слово, щоб перевірити застосування словника.")
+
+                                Button {
+                                    preview(entry.stressedWord)
+                                } label: {
+                                    Label("Вимова", systemImage: "waveform")
+                                }
+                                .disabled(entry.stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                                .accessibilityAddTraits(.startsMediaSession)
+                                .accessibilityHint("Промовляє введений варіант вимови напряму.")
+                            }
+                            .font(.caption)
+                        }
+                        .swipeActions {
+                            Button(role: .destructive) {
+                                delete(entry)
+                            } label: {
+                                Label("Видалити", systemImage: "trash")
+                            }
+                            .accessibilityLabel("Видалити \(entry.displayWord)")
+                        }
+                    }
+                    .onDelete { offsets in
+                        offsets.map { entries[$0] }.forEach(delete)
+                    }
                 }
             }
         }
@@ -993,12 +1048,12 @@ private struct PersonalDictionaryEditorView: View {
 
                 Section {
                     Button(isPreviewPlaying ? "Зупинити" : "Прослухати") {
-                        isPreviewPlaying ? stopPreview() : preview(stressedWord)
+                        isPreviewPlaying ? stopPreview() : preview(displayWord)
                     }
-                    .disabled(stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(displayWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityAddTraits(.startsMediaSession)
-                    .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Прослухати слово з наголосом")
-                    .accessibilityHint("Промовляє введений варіант вимови.")
+                    .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Перевірити слово")
+                    .accessibilityHint("Промовляє звичайне слово. Після збереження воно має звучати за словником.")
                 }
             }
             .navigationTitle(entry == nil ? "Нове слово" : "Редагування")

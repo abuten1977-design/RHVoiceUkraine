@@ -8,6 +8,17 @@ struct PersonalDictionaryEntry: Codable, Identifiable, Equatable {
     var createdAt: Date
 }
 
+struct PersonalDictionaryFileStatus: Equatable {
+    var dictionaryPath: String?
+    var metadataPath: String?
+    var dictionaryExists: Bool
+    var metadataExists: Bool
+    var dictionarySize: UInt64
+    var metadataSize: UInt64
+    var dictionaryModifiedAt: Date?
+    var metadataModifiedAt: Date?
+}
+
 enum PersonalUserDictionaryError: LocalizedError {
     case emptyDisplayWord
     case emptyStressedWord
@@ -37,6 +48,23 @@ enum PersonalUserDictionary {
             return []
         }
         return entries.sorted { $0.createdAt < $1.createdAt }
+    }
+
+    static func fileStatus() -> PersonalDictionaryFileStatus {
+        let dictURL = dictionaryURL()
+        let metaURL = metadataURL()
+        let dictAttributes = attributes(for: dictURL)
+        let metaAttributes = attributes(for: metaURL)
+        return PersonalDictionaryFileStatus(
+            dictionaryPath: dictURL?.path,
+            metadataPath: metaURL?.path,
+            dictionaryExists: dictAttributes != nil,
+            metadataExists: metaAttributes != nil,
+            dictionarySize: fileSize(from: dictAttributes),
+            metadataSize: fileSize(from: metaAttributes),
+            dictionaryModifiedAt: dictAttributes?[.modificationDate] as? Date,
+            metadataModifiedAt: metaAttributes?[.modificationDate] as? Date
+        )
     }
 
     @discardableResult
@@ -137,6 +165,21 @@ enum PersonalUserDictionary {
 
     private static func containerURL() -> URL? {
         FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID)
+    }
+
+    private static func attributes(for url: URL?) -> [FileAttributeKey: Any]? {
+        guard let url else { return nil }
+        return try? FileManager.default.attributesOfItem(atPath: url.path)
+    }
+
+    private static func fileSize(from attributes: [FileAttributeKey: Any]?) -> UInt64 {
+        if let value = attributes?[.size] as? UInt64 {
+            return value
+        }
+        if let value = attributes?[.size] as? NSNumber {
+            return value.uint64Value
+        }
+        return 0
     }
 
     private static var jsonEncoder: JSONEncoder {
