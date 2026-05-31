@@ -882,29 +882,35 @@ private struct PersonalDictionaryView: View {
 
     @State private var editingEntry: PersonalDictionaryEntry?
     @State private var isAddingEntry = false
+    @State private var showsTechnicalInfo = false
+    @State private var entryPendingDeletion: PersonalDictionaryEntry?
 
     var body: some View {
         List {
-            Section("Файл словника") {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(fileStatus.dictionaryExists ? "user_dictionary.txt: \(fileStatus.dictionarySize) байт" : "user_dictionary.txt: не створено")
-                    Text(fileStatus.metadataExists ? "user_dictionary_meta.json: \(fileStatus.metadataSize) байт" : "user_dictionary_meta.json: не створено")
-                        .foregroundColor(.secondary)
-                    if let modifiedAt = fileStatus.dictionaryModifiedAt {
-                        Text("Оновлено: \(modifiedAt.formatted(date: .numeric, time: .standard))")
+            Section {
+                DisclosureGroup("Технічна інформація", isExpanded: $showsTechnicalInfo) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(fileStatus.dictionaryExists ? "user_dictionary.txt: \(fileStatus.dictionarySize) байт" : "user_dictionary.txt: не створено")
+                        Text(fileStatus.metadataExists ? "user_dictionary_meta.json: \(fileStatus.metadataSize) байт" : "user_dictionary_meta.json: не створено")
                             .foregroundColor(.secondary)
-                    }
+                        if let modifiedAt = fileStatus.dictionaryModifiedAt {
+                            Text("Оновлено: \(modifiedAt.formatted(date: .numeric, time: .standard))")
+                                .foregroundColor(.secondary)
+                        }
 #if os(macOS)
-                    if let path = fileStatus.dictionaryPath {
-                        Text(path)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .textSelection(.enabled)
-                    }
+                        if let path = fileStatus.dictionaryPath {
+                            Text(path)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .textSelection(.enabled)
+                        }
 #endif
+                    }
+                    .font(.footnote)
+                    .accessibilityElement(children: .combine)
                 }
-                .font(.footnote)
-                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Технічна інформація")
+                .accessibilityHint("Показує стан файлів особистого словника.")
             }
 
             if entries.isEmpty {
@@ -949,12 +955,20 @@ private struct PersonalDictionaryView: View {
                                 .disabled(entry.stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                                 .accessibilityAddTraits(.startsMediaSession)
                                 .accessibilityHint("Промовляє введений варіант вимови напряму.")
+
+                                Button(role: .destructive) {
+                                    entryPendingDeletion = entry
+                                } label: {
+                                    Label("Видалити", systemImage: "trash")
+                                }
+                                .accessibilityLabel("Видалити \(entry.displayWord)")
+                                .accessibilityHint("Відкриває підтвердження перед видаленням запису.")
                             }
                             .font(.caption)
                         }
                         .swipeActions {
                             Button(role: .destructive) {
-                                delete(entry)
+                                entryPendingDeletion = entry
                             } label: {
                                 Label("Видалити", systemImage: "trash")
                             }
@@ -962,7 +976,7 @@ private struct PersonalDictionaryView: View {
                         }
                     }
                     .onDelete { offsets in
-                        offsets.map { entries[$0] }.forEach(delete)
+                        entryPendingDeletion = offsets.map { entries[$0] }.first
                     }
                 }
             }
@@ -998,6 +1012,24 @@ private struct PersonalDictionaryView: View {
             )
         }
         .onAppear(perform: reload)
+        .confirmationDialog(
+            entryPendingDeletion.map { "Видалити запис «\($0.displayWord)»?" } ?? "Видалити запис?",
+            isPresented: Binding(
+                get: { entryPendingDeletion != nil },
+                set: { if !$0 { entryPendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let entry = entryPendingDeletion {
+                Button("Видалити", role: .destructive) {
+                    delete(entry)
+                    entryPendingDeletion = nil
+                }
+            }
+            Button("Скасувати", role: .cancel) {
+                entryPendingDeletion = nil
+            }
+        }
 #if os(macOS)
         .frame(minWidth: 460, minHeight: 520)
 #endif
@@ -1014,6 +1046,12 @@ private struct PersonalDictionaryEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var displayWord: String
     @State private var stressedWord: String
+    @FocusState private var focusedField: Field?
+
+    private enum Field {
+        case displayWord
+        case stressedWord
+    }
 
     init(
         entry: PersonalDictionaryEntry?,
@@ -1035,15 +1073,20 @@ private struct PersonalDictionaryEditorView: View {
         NavigationStack {
             Form {
                 Section("Слово") {
-                    TextField("Бутенко", text: $displayWord)
-                        .accessibilityLabel("Слово")
+                    TextField("", text: $displayWord, prompt: Text("наприклад: листопад"))
+                        .focused($focusedField, equals: .displayWord)
+                        .personalDictionaryTextInputSettings()
+                        .accessibilityLabel("Слово як воно пишеться")
                         .accessibilityHint("Введіть слово без позначки наголосу.")
-                    TextField("Бу+тенко", text: $stressedWord)
-                        .accessibilityLabel("Слово з наголосом")
+                    TextField("", text: $stressedWord, prompt: Text("наприклад: листоп+ад"))
+                        .focused($focusedField, equals: .stressedWord)
+                        .personalDictionaryTextInputSettings()
+                        .accessibilityLabel("Слово з позначкою наголосу")
                         .accessibilityHint("Поставте плюс перед голосною, на яку хочете наголос.")
                     Text("Поставте + перед голосною, на яку хочете наголос.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
+                        .accessibilityLabel("Підказка: поставте плюс перед голосною, на яку хочете наголос.")
                 }
 
                 Section {
@@ -1055,6 +1098,22 @@ private struct PersonalDictionaryEditorView: View {
                     .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Перевірити слово")
                     .accessibilityHint("Промовляє звичайне слово. Після збереження воно має звучати за словником.")
                 }
+
+#if os(macOS)
+                Section("Дії") {
+                    Button("Зберегти") {
+                        saveAndDismiss()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .accessibilityLabel("Зберегти запис")
+
+                    Button("Скасувати") {
+                        dismiss()
+                    }
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel("Скасувати")
+                }
+#endif
             }
             .navigationTitle(entry == nil ? "Нове слово" : "Редагування")
             .toolbar {
@@ -1066,16 +1125,36 @@ private struct PersonalDictionaryEditorView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Зберегти") {
-                        if save(entry?.id, displayWord, stressedWord) {
-                            dismiss()
-                        }
+                        saveAndDismiss()
                     }
                     .accessibilityLabel("Зберегти запис")
                 }
             }
         }
+        .onAppear {
+            focusedField = .displayWord
+        }
 #if os(macOS)
         .frame(minWidth: 420, minHeight: 300)
+#endif
+    }
+
+    private func saveAndDismiss() {
+        if save(entry?.id, displayWord, stressedWord) {
+            dismiss()
+        }
+    }
+}
+
+private extension View {
+    func personalDictionaryTextInputSettings() -> some View {
+#if os(iOS)
+        self
+            .autocorrectionDisabled(true)
+            .textContentType(.none)
+#else
+        self
+            .autocorrectionDisabled(true)
 #endif
     }
 }
