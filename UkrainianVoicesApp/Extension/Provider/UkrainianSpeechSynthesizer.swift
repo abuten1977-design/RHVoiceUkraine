@@ -69,6 +69,17 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
         self.setupParameterTree()
         rhLog("EXT_DIAG synthesizer init")
+        self.startEngineWarmup()
+    }
+
+    private func startEngineWarmup() {
+        self.synthesisQueue.async { [weak self] in
+            guard let self else { return }
+            let warmupStart = CFAbsoluteTimeGetCurrent()
+            rhLog("WARMUP started")
+            _ = self.rhvoiceEngine
+            rhLog("WARMUP done elapsedMs=\(Self.elapsedMs(since: warmupStart))")
+        }
     }
 
     private func setupParameterTree() {
@@ -296,6 +307,50 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let voiceId = speechRequest.voice.identifier
 
         rhLog("synth request: voice=\(voiceId) text=\(text.count) chars")
+
+        let ssmlSnippet = String(text.prefix(200))
+        rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")
+        let currentRateValue = self.rateValue
+        let currentVolumeValue = self.volumeValue
+        let currentPitchValue = self.pitchValue
+
+        self.outputMutex.wait()
+        self.isSynthesizing = true
+        self.synthesisGeneration &+= 1
+        let generation = self.synthesisGeneration
+        self.output.removeAll()
+        self.outputOffset = 0
+        self.outputMutex.signal()
+
+        rhLog("LATENCY_DIAG synthesizeSpeechRequestMs=\(Self.elapsedMs(since: requestStart)) chars=\(text.count)")
+
+        self.synthesisQueue.async { [weak self] in
+            self?.runSynthesisPipeline(
+                text: text,
+                voiceId: voiceId,
+                rateValue: currentRateValue,
+                volumeValue: currentVolumeValue,
+                pitchValue: currentPitchValue,
+                requestStart: requestStart,
+                generation: generation
+            )
+        }
+    }
+
+    private func runSynthesisPipeline(
+        text: String,
+        voiceId: String,
+        rateValue: AUValue?,
+        volumeValue: AUValue?,
+        pitchValue: AUValue?,
+        requestStart: CFAbsoluteTime,
+        generation: UInt64
+    ) {
+        let preprocessingStart = CFAbsoluteTimeGetCurrent()
+        guard self.shouldContinueSynthesis(generation: generation) else {
+            rhLog("LATENCY_DIAG pipeline cancelled beforePreprocessing")
+            return
+        }
         Self.logApostropheEncoding(label: "input-ssml", ssml: text)
 
         // Resolve voice profile name
@@ -310,13 +365,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let ssmlRatePercent = Self.extractSSMLRatePercentIfPresent(from: text)
         let ssmlVolume = Self.extractSSMLVolumeIfPresent(from: text)
         let ssmlPitch = Self.extractSSMLPitch(from: text)
-        let ssmlSnippet = String(text.prefix(200))
-        rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")
 
         // Read user settings from App Group
         let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
-        let settingsMs = Self.elapsedMs(since: requestStart)
+        let settingsMs = Self.elapsedMs(since: preprocessingStart)
 
         let effectiveRatePercent = ssmlRatePercent ?? 100.0
         let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
@@ -335,46 +388,15 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
         os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
-        rhLog("LATENCY_DIAG prepare voice=\(profileName) chars=\(text.count) settingsMs=\(settingsMs) beforeSynthesizeMs=\(Self.elapsedMs(since: requestStart))")
         #if DEBUG
         fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
 
-        self.outputMutex.wait()
-        self.isSynthesizing = true
-        self.synthesisGeneration &+= 1
-        let generation = self.synthesisGeneration
-        self.output.removeAll()
-        self.outputOffset = 0
-        self.outputMutex.signal()
-
         let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: synthesisText)
+        let preprocessingMs = Self.elapsedMs(since: preprocessingStart)
+        rhLog("LATENCY_DIAG prepare voice=\(profileName) chars=\(text.count) settingsMs=\(settingsMs) backgroundPreprocessingMs=\(preprocessingMs) beforeSynthesizeMs=\(Self.elapsedMs(since: requestStart))")
         rhLog("LATENCY_DIAG pipeline plan fragments=\(fragments.count) chars=\(synthesisText.count)")
 
-        self.synthesisQueue.async { [weak self] in
-            self?.runSynthesisPipeline(
-                fragments: fragments,
-                profileName: profileName,
-                finalRate: finalRate,
-                finalVolume: finalVolume,
-                effectivePitch: effectivePitch,
-                requestStart: requestStart,
-                inputCharacterCount: text.count,
-                generation: generation
-            )
-        }
-    }
-
-    private func runSynthesisPipeline(
-        fragments: [String],
-        profileName: String,
-        finalRate: Double,
-        finalVolume: Double,
-        effectivePitch: Double,
-        requestStart: CFAbsoluteTime,
-        inputCharacterCount: Int,
-        generation: UInt64
-    ) {
         let synthStart = CFAbsoluteTimeGetCurrent()
         var totalSamples = 0
         var firstFragmentSynthMs: Int?
@@ -449,7 +471,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self.outputMutex.signal()
 
         rhLog("synth output: \(totalSamples) samples")
-        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(inputCharacterCount) synthMs=\(fragmentSynthMsTotal) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(totalSamples)")
+        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(text.count) synthMs=\(fragmentSynthMsTotal) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(totalSamples)")
         rhLog("LATENCY_DIAG pipeline fragments=\(fragments.count) firstFragmentSynthMs=\(firstFragmentSynthMs ?? 0) totalSynthMs=\(Self.elapsedMs(since: synthStart)) samples=\(totalSamples)")
     }
 
