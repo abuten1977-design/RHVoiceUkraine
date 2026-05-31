@@ -26,6 +26,10 @@ enum RHVoiceSelfTestRunner {
             runLatencyDiagnostics(engine: engine, lines: &lines)
             writeLogAndExit(lines: lines, logPath: logPath)
         }
+        if ProcessInfo.processInfo.environment["RHVOICE_TASK057_BASELINE"] == "1" {
+            runTask057Baseline(engine: engine, lines: &lines)
+            writeLogAndExit(lines: lines, logPath: logPath)
+        }
         if ProcessInfo.processInfo.environment["RHVOICE_SUBSENTENCE_PROOF"] == "1" {
             runSubSentenceProof(engine: engine, lines: &lines)
             writeLogAndExit(lines: lines, logPath: logPath)
@@ -191,6 +195,52 @@ enum RHVoiceSelfTestRunner {
                     fputs("\(line)\n", stderr)
                 } else {
                     let line = "LATENCY_DIAG_PHASE_A_FAIL label=\(testCase.label) iteration=\(iteration) textChars=\(testCase.text.count) buffer=nil"
+                    lines.append(line)
+                    fputs("\(line)\n", stderr)
+                }
+            }
+        }
+    }
+
+    private static func runTask057Baseline(engine: RHVoiceEngine, lines: inout [String]) {
+        let cases: [(label: String, text: String)] = [
+            ("short-15", "Доброго дня всім!"),
+            ("medium-100", "Доброго дня. Я працюю у Києві. Маю новини: завтра, п'ятого травня, відбудеться зустріч о тринадцятій годині."),
+            ("long-300", "Незрячий користувач отримує доступ до тексту через системний синтез мовлення VoiceOver. Якість голосу впливає на швидкість читання, рівень втоми і взагалі на бажання користуватись пристроєм. Чотири українські голоси RHVoice — Anatol, Marianna, Natalia і Volodymyr — створені, щоб дати україномовним альтернативу штатній Лесі."),
+            ("cold-start", "Доброго дня всім!")
+        ]
+
+        for testCase in cases {
+            if testCase.label == "cold-start" {
+                let line = "TASK057_BASELINE cold-start-marker idleSeconds=external"
+                lines.append(line)
+                fputs("\(line)\n", stderr)
+            }
+
+            for iteration in 1...3 {
+                let ssml = "<speak>\(testCase.text)</speak>"
+                let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: ssml)
+                let start = Date()
+                let buffer = engine.synthesize(ssml, voice: "Anatol", rate: 1.0, volume: 1.0, pitch: 1.0)
+                let synthMs = Int((Date().timeIntervalSince(start) * 1000.0).rounded())
+
+                if let buffer, buffer.frameLength > 0 {
+                    let firstFragmentChars = fragments.first.map(RHVoicePipelineSplitter.textCharacterCount) ?? testCase.text.count
+                    let duration = Double(buffer.frameLength) / buffer.format.sampleRate
+                    let line = String(format: "TASK057_BASELINE label=%@ iteration=%d textChars=%d fragments=%d firstFragmentChars=%d firstFragmentSynthMs=%d totalSynthMs=%d frames=%u audioDuration=%.3f",
+                                      testCase.label,
+                                      iteration,
+                                      testCase.text.count,
+                                      fragments.count,
+                                      firstFragmentChars,
+                                      synthMs,
+                                      synthMs,
+                                      buffer.frameLength,
+                                      duration)
+                    lines.append(line)
+                    fputs("\(line)\n", stderr)
+                } else {
+                    let line = "TASK057_BASELINE_FAIL label=\(testCase.label) iteration=\(iteration) textChars=\(testCase.text.count) buffer=nil"
                     lines.append(line)
                     fputs("\(line)\n", stderr)
                 }
