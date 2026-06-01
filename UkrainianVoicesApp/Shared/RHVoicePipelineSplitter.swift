@@ -7,9 +7,10 @@ enum RHVoicePipelineSplitter {
         }
         let bodyFragments = splitPipelineBodyIntoSentenceFragments(strippedBody)
         let pipelineFragments = bodyFragments.flatMap { splitLongPipelineFragment($0) }
-        guard pipelineFragments.count > 1 else { return [ssml] }
+        let priorityFragments = splitPriorityFirstFragment(pipelineFragments)
+        guard priorityFragments.count > 1 else { return [ssml] }
 
-        let mergedFragments = mergeSmallPipelineFragments(pipelineFragments)
+        let mergedFragments = mergeSmallPipelineFragments(priorityFragments)
         guard mergedFragments.count > 1,
               mergedFragments.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
             return [ssml]
@@ -179,6 +180,59 @@ enum RHVoicePipelineSplitter {
 
         appendCurrent()
         return fragments.count > 1 ? fragments : [fragment]
+    }
+
+    private static func splitPriorityFirstFragment(_ fragments: [String]) -> [String] {
+        guard let first = fragments.first,
+              textCharacterCount(in: first) > 30,
+              let splitIndex = priorityFirstFragmentSplitIndex(in: first) else {
+            return fragments
+        }
+
+        let firstPart = first[..<splitIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        let remainder = first[splitIndex...].trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !firstPart.isEmpty, !remainder.isEmpty else { return fragments }
+
+        return [String(firstPart), String(remainder)] + Array(fragments.dropFirst())
+    }
+
+    private static func priorityFirstFragmentSplitIndex(in fragment: String) -> String.Index? {
+        var insideTag = false
+        var textCount = 0
+        var commaCandidate: String.Index?
+        var whitespaceCandidate: String.Index?
+
+        for index in fragment.indices {
+            let character = fragment[index]
+
+            if insideTag {
+                if character == ">" {
+                    insideTag = false
+                }
+                continue
+            }
+
+            if character == "<" {
+                insideTag = true
+                continue
+            }
+
+            textCount += 1
+
+            if (15...30).contains(textCount) {
+                if character == "," {
+                    commaCandidate = fragment.index(after: index)
+                } else if isWhitespace(character) {
+                    whitespaceCandidate = index
+                }
+            }
+
+            if textCount > 30 {
+                break
+            }
+        }
+
+        return commaCandidate ?? whitespaceCandidate
     }
 
     private static func isPipelineSentenceBoundary(_ character: Character) -> Bool {

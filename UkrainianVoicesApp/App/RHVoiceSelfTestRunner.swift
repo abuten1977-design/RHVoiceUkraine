@@ -30,6 +30,10 @@ enum RHVoiceSelfTestRunner {
             runTask057Baseline(engine: engine, lines: &lines)
             writeLogAndExit(lines: lines, logPath: logPath)
         }
+        if ProcessInfo.processInfo.environment["RHVOICE_TASK059_SPLITTER_PROOF"] == "1" {
+            runTask059SplitterProof(lines: &lines)
+            writeLogAndExit(lines: lines, logPath: logPath)
+        }
         if ProcessInfo.processInfo.environment["RHVOICE_SUBSENTENCE_PROOF"] == "1" {
             runSubSentenceProof(engine: engine, lines: &lines)
             writeLogAndExit(lines: lines, logPath: logPath)
@@ -245,6 +249,36 @@ enum RHVoiceSelfTestRunner {
                     fputs("\(line)\n", stderr)
                 }
             }
+        }
+    }
+
+    private static func runTask059SplitterProof(lines: inout [String]) {
+        let cases: [(label: String, text: String, maxFirstIfPossible: Int)] = [
+            ("short_unchanged", "Доброго дня всім!", 30),
+            ("medium_sentence", "Доброго дня. Я працюю у Києві. Маю новини: завтра, п'ятого травня, відбудеться зустріч.", 30),
+            ("long_no_comma", "Незрячий користувач отримує доступ до тексту через системний синтез мовлення VoiceOver.", 30),
+            ("long_comma", "Це довге повідомлення для перевірки швидкого старту, воно містить кілька частин і природні паузи.", 30),
+            ("long_dash", "Це довге повідомлення для перевірки швидкого старту — і ще один довгий опис для синтезатора.", 30),
+            ("long_parenthesis", "Перше довге повідомлення (з коротким уточненням) має починатися без великої тиші перед першим словом.", 30),
+            ("abbrev", "США і НАТО обговорюють нові рішення для України на наступному тижні.", 30),
+            ("quoted", "«Українські голоси» мають швидко починати довге повідомлення без відчутної паузи.", 30),
+            ("numbers", "Сьогодні о тринадцятій годині двадцять п'ять хвилин відбудеться коротка зустріч.", 30),
+            ("unbreakable", "Наддовгесловобезпробілівякенеможнарозрізатибезпсуваннявимови", 80)
+        ]
+
+        for testCase in cases {
+            let ssml = "<speak>\(testCase.text)</speak>"
+            let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: ssml)
+            let firstChars = fragments.first.map(RHVoicePipelineSplitter.textCharacterCount) ?? 0
+            let ok = firstChars <= testCase.maxFirstIfPossible
+            let line = String(format: "TASK059_SPLITTER_PROOF %@ label=%@ textChars=%d fragments=%d firstFragmentChars=%d",
+                              ok ? "OK" : "FAIL",
+                              testCase.label,
+                              testCase.text.count,
+                              fragments.count,
+                              firstChars)
+            lines.append(line)
+            fputs("\(line)\n", stderr)
         }
     }
 
