@@ -69,6 +69,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
         self.setupParameterTree()
         rhLog("EXT_DIAG synthesizer init")
+        let appGroupURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.rhvoice.UkrainianVoices.shared"
+        )
+        rhLog("EXT_DIAG appgroup container=\(appGroupURL?.path ?? "nil")")
         self.startEngineWarmup()
     }
 

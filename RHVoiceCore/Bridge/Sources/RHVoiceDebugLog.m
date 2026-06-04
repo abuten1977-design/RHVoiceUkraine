@@ -7,9 +7,15 @@ static NSFileHandle* _logHandle = nil;
 static dispatch_queue_t _logQueue = nil;
 
 static void ensureLogFile(void) {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
+    static dispatch_once_t queueOnceToken;
+    dispatch_once(&queueOnceToken, ^{
         _logQueue = dispatch_queue_create("com.rhvoice.debuglog", DISPATCH_QUEUE_SERIAL);
+    });
+    if (_logHandle || !_logQueue) return;
+
+    dispatch_sync(_logQueue, ^{
+        if (_logHandle) return;
+
         NSURL* groupURL = [[NSFileManager defaultManager]
             containerURLForSecurityApplicationGroupIdentifier:@"group.rhvoice.UkrainianVoices.shared"];
         if (!groupURL) return;
@@ -63,6 +69,7 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
     void (^writeBlock)(void) = ^{
         NSData* data = [line dataUsingEncoding:NSUTF8StringEncoding];
         if (data) {
+            [_logHandle seekToEndOfFile];
             [_logHandle writeData:data];
             if (important) [_logHandle synchronizeFile];
         }

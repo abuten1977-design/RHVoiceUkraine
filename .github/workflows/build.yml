@@ -286,7 +286,7 @@ jobs:
             UkrainianVoicesApp/build/export/*.ipa
             UkrainianVoicesApp/build/UkrainianVoices.xcarchive
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
       - name: Upload to TestFlight
         run: |
