@@ -1,39 +1,63 @@
 #import <Foundation/Foundation.h>
 #include <stdarg.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include "RHVoiceDebugLog.h"
 
 static NSString* _logPath = nil;
-static NSFileHandle* _logHandle = nil;
 static dispatch_queue_t _logQueue = nil;
 
-static void ensureLogFile(void) {
+static void ensureLogQueue(void) {
     static dispatch_once_t queueOnceToken;
     dispatch_once(&queueOnceToken, ^{
         _logQueue = dispatch_queue_create("com.rhvoice.debuglog", DISPATCH_QUEUE_SERIAL);
     });
-    if (_logHandle || !_logQueue) return;
+}
 
-    dispatch_sync(_logQueue, ^{
-        if (_logHandle) return;
+static NSString* currentLogPath(void) {
+    NSURL* groupURL = [[NSFileManager defaultManager]
+        containerURLForSecurityApplicationGroupIdentifier:@"group.rhvoice.UkrainianVoices.shared"];
+    if (!groupURL) {
+        _logPath = nil;
+        return nil;
+    }
+    _logPath = [[groupURL path] stringByAppendingPathComponent:@"RHVoiceDebug.log"];
+    return _logPath;
+}
 
-        NSURL* groupURL = [[NSFileManager defaultManager]
-            containerURLForSecurityApplicationGroupIdentifier:@"group.rhvoice.UkrainianVoices.shared"];
-        if (!groupURL) return;
-        _logPath = [[groupURL path] stringByAppendingPathComponent:@"RHVoiceDebug.log"];
+static void trimLogIfNeeded(NSString* path) {
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSDictionary* attrs = [fm attributesOfItemAtPath:path error:nil];
+    if ([attrs fileSize] > 1024*1024) {
+        [fm removeItemAtPath:path error:nil];
+    }
+}
 
-        // Truncate if > 1MB
-        NSFileManager* fm = [NSFileManager defaultManager];
-        NSDictionary* attrs = [fm attributesOfItemAtPath:_logPath error:nil];
-        if ([attrs fileSize] > 1024*1024) {
-            [fm removeItemAtPath:_logPath error:nil];
+static BOOL appendLine(NSString* line, BOOL important) {
+    NSString* path = currentLogPath();
+    if (!path) return NO;
+    trimLogIfNeeded(path);
+
+    NSData* data = [line dataUsingEncoding:NSUTF8StringEncoding];
+    if (!data) return NO;
+
+    int fd = open([path fileSystemRepresentation], O_WRONLY | O_CREAT | O_APPEND, 0644);
+    if (fd < 0) return NO;
+
+    const uint8_t* bytes = data.bytes;
+    NSUInteger remaining = data.length;
+    while (remaining > 0) {
+        ssize_t written = write(fd, bytes, remaining);
+        if (written <= 0) {
+            close(fd);
+            return NO;
         }
-
-        if (![fm fileExistsAtPath:_logPath]) {
-            [fm createFileAtPath:_logPath contents:nil attributes:nil];
-        }
-        _logHandle = [NSFileHandle fileHandleForWritingAtPath:_logPath];
-        [_logHandle seekToEndOfFile];
-    });
+        bytes += written;
+        remaining -= (NSUInteger)written;
+    }
+    if (important) fsync(fd);
+    close(fd);
+    return YES;
 }
 
 void RHVoiceDebugLogWrite(const char* format, ...) {
@@ -50,12 +74,11 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
         NSLog(@"%@", msg);
     }
 
-    ensureLogFile();
-    if (!_logHandle || !_logQueue) {
+    ensureLogQueue();
+    if (!_logQueue) {
         if (important) {
-            NSLog(@"RHVoiceDebugLog unavailable path=%@ handle=%d queue=%d",
+            NSLog(@"RHVoiceDebugLog unavailable path=%@ queue=%d",
                   _logPath ?: @"nil",
-                  _logHandle ? 1 : 0,
                   _logQueue ? 1 : 0);
         }
         return;
@@ -67,11 +90,10 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
     NSString* line = [NSString stringWithFormat:@"%@ [%d] %@\n", ts, (int)getpid(), msg];
 
     void (^writeBlock)(void) = ^{
-        NSData* data = [line dataUsingEncoding:NSUTF8StringEncoding];
-        if (data) {
-            [_logHandle seekToEndOfFile];
-            [_logHandle writeData:data];
-            if (important) [_logHandle synchronizeFile];
+        if (!appendLine(line, important) && important) {
+            NSLog(@"RHVoiceDebugLog unavailable path=%@ queue=%d",
+                  _logPath ?: @"nil",
+                  _logQueue ? 1 : 0);
         }
     };
     if (important) {
@@ -86,11 +108,16 @@ void RHVoiceDebugLogString(const char* message) {
 }
 
 void RHVoiceDebugLogClear(void) {
-    ensureLogFile();
-    if (!_logHandle || !_logQueue) return;
+    ensureLogQueue();
+    if (!_logQueue) return;
 
     dispatch_sync(_logQueue, ^{
-        [_logHandle truncateFileAtOffset:0];
-        [_logHandle seekToFileOffset:0];
+        NSString* path = currentLogPath();
+        if (!path) return;
+        int fd = open([path fileSystemRepresentation], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if (fd >= 0) {
+            fsync(fd);
+            close(fd);
+        }
     });
 }
