@@ -7,9 +7,8 @@ import Foundation
 import SwiftUI
 
 #if os(iOS)
-import MessageUI
 
-class LogCollector: NSObject, MFMailComposeViewControllerDelegate {
+class LogCollector: NSObject {
     static let shared = LogCollector()
     
     private var logs: [String] = []
@@ -28,41 +27,6 @@ class LogCollector: NSObject, MFMailComposeViewControllerDelegate {
     func getAllLogs() -> String {
         queue.sync {
             return logs.joined(separator: "\n")
-        }
-    }
-    
-    func mailComposeController(_ controller: MFMailComposeViewController,
-                               didFinishWith result: MFMailComposeResult,
-                               error: Error?) {
-        controller.dismiss(animated: true)
-    }
-}
-
-struct MailView: UIViewControllerRepresentable {
-    let logs: String
-    @Environment(\.presentationMode) var presentationMode
-    
-    func makeUIViewController(context: Context) -> MFMailComposeViewController {
-        let vc = MFMailComposeViewController()
-        vc.mailComposeDelegate = context.coordinator
-        vc.setToRecipients(["support@rhvoice.com"])
-        vc.setSubject("RHVoice Debug Logs - \(Date())")
-        vc.setMessageBody(logs, isHTML: false)
-        return vc
-    }
-    
-    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
-    
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-    
-    class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
-        let parent: MailView
-        init(_ parent: MailView) { self.parent = parent }
-        
-        func mailComposeController(_ controller: MFMailComposeViewController,
-                                   didFinishWith result: MFMailComposeResult,
-                                   error: Error?) {
-            parent.presentationMode.wrappedValue.dismiss()
         }
     }
 }

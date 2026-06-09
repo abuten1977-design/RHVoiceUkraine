@@ -24,7 +24,6 @@ targets:
       public:
         - ../RHVoiceKit/Sources/RHVoiceKit.h
         - ../RHVoiceKit/Sources/RHVoiceEngine.h
-        - ../RHVoiceKit/Sources/RHVoiceEngine+Parameters.h
     settings:
       base:
         PRODUCT_NAME: RHVoiceKit
@@ -87,7 +86,6 @@ targets:
       public:
         - ../RHVoiceKit/Sources/RHVoiceKit.h
         - ../RHVoiceKit/Sources/RHVoiceEngine.h
-        - ../RHVoiceKit/Sources/RHVoiceEngine+Parameters.h
     settings:
       base:
         PRODUCT_NAME: RHVoiceKit
