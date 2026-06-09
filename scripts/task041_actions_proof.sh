@@ -181,7 +181,6 @@ swiftc "$PROOF_SWIFT" \
   "$OBJECT_DIR/UkrainianSpeechSynthesizer.o" \
   "$OBJECT_DIR/RHVoiceSharedSettings.o" \
   "$PIPELINE_SPLITTER_OBJ" \
-  "$OBJECT_DIR/RHVoiceSynthesisRuntime.o" \
   "$OBJECT_DIR/AudioUnitFactory.o" \
   "$BRIDGE_OBJ" \
   -Xlinker -rpath \
