@@ -30,14 +30,6 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Verify tracked static libraries
-        run: |
-          set -euxo pipefail
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice.a
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_core.a
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_audio.a
-          ls -lh UkrainianVoicesApp/Extension/Libraries/
-
       - name: Generate Xcode project
         run: |
           set -euxo pipefail
