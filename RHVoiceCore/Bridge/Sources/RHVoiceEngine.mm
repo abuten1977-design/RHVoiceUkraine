@@ -6,6 +6,7 @@
 #import "RHVoiceEngine.h"
 #include "RHVoice.h"
 #import <AVFoundation/AVFoundation.h>
+#import <os/log.h>
 #include <atomic>
 #include <cstdint>
 #include <cstring>
@@ -392,7 +393,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     const char* t = [text UTF8String];
     NSString* textPreview = text.length > 300 ? [text substringToIndex:300] : text;
-    NSLog(@"[RHVOICE_TIMING] buildMessage text preview: %@", textPreview);
+    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] buildMessage textLength=%{public}lu", (unsigned long)text.length);
     RHVoiceDebugLogWrite("buildMessage text: %s", [textPreview UTF8String]);
     NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
           normalizedVoice, rate, p.absolute_rate, p.relative_rate,
@@ -502,7 +503,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     EngineState* state = self.activeStreamingState;
     if (!state) {
         [self.activeStateCondition unlock];
-        NSLog(@"[RHVOICE_TIMING] cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+        os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: no active state (%{public}.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
         RHVoiceDebugLogWrite("cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
         return;
     }
@@ -515,7 +516,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         [state->dataCondition unlock];
     }
     [self.activeStateCondition unlock];
-    NSLog(@"[RHVOICE_TIMING] cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: flagged in %{public}.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
     RHVoiceDebugLogWrite("cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
 }
 
