@@ -18,7 +18,11 @@
 namespace
 {
   const double MAX_MAX_VOLUME=4;
+#ifdef RHVOICE_MAX_MAX_RATE
+  const double MAX_MAX_RATE=RHVOICE_MAX_MAX_RATE;
+#else
   const double MAX_MAX_RATE=5;
+#endif
   const double NO_MIN_SONIC_RATE=MAX_MAX_RATE+1;
 }
 

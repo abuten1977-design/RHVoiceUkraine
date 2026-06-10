@@ -6,6 +6,7 @@
 ; Anatoly Kryzhovskyi <tolyan-kr@ukr.net>
 
 apk/i
+апк/i
 it/i
 nrcu/i
 nvda/i

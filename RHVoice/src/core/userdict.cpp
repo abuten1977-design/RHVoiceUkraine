@@ -15,6 +15,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <iostream>
 #include "core/path.hpp"
 #include "core/io.hpp"
 #include "core/language.hpp"
@@ -26,6 +27,15 @@ namespace RHVoice
 {
   namespace userdict
   {
+    namespace
+    {
+      bool diag_enabled()
+      {
+        const char* value=std::getenv("RHVOICE_USERDICT_DIAG");
+        return value&&*value;
+      }
+    }
+
     position::position(utterance& utt):
       token(0),
       text(0),
@@ -83,6 +93,7 @@ namespace RHVoice
       std::string name;
       std::copy(text.begin(),text.end(),str::utf8_inserter(std::back_inserter(name)));
       item& token=cursor.get_token();
+      const std::string original=token.get("name").as<std::string>();
       token.set("userdict",true);
       const language* lang2=nullptr;
       if(foreign)
@@ -96,6 +107,14 @@ namespace RHVoice
           lang.decode_as_word(token,name);
           if(stress.get_state()!=stress_pattern::undefined)
             token.last_child().set("stress_pattern",stress);
+        }
+      if(diag_enabled())
+        {
+          std::cerr << "USERDICT_DIAG apply token=" << original
+                    << " replacement=" << name
+                    << " initialism=" << (initialism?"1":"0")
+                    << " foreign=" << (foreign?"1":"0")
+                    << std::endl;
         }
     }
 
@@ -592,9 +611,13 @@ struct result_t
               chars32 key=it->get_key();
               rules.insert(key.begin(),key.end(),*it);
             }
+          if(diag_enabled())
+            std::cerr << "USERDICT_DIAG load file=" << file_path << std::endl;
         }
       catch(const std::exception& e)
         {
+          if(diag_enabled())
+            std::cerr << "USERDICT_DIAG load_error file=" << file_path << " error=" << e.what() << std::endl;
         }
     }
 

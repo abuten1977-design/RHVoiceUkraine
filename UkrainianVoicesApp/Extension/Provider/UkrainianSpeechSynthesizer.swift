@@ -3,44 +3,53 @@ import AVFAudio
 import CoreAudio
 import CoreMedia
 import Foundation
-import RHVoiceKit
+import RHVoiceBridge
+import os.log
 
-private enum RHVoiceParameter: AUParameterAddress {
-    case rate = 1
-    case volume = 2
-    case speedMultiplier = 3
-    case sentencePause = 4
+private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
+
+private func rhLog(_ msg: String) {
+    msg.withCString { RHVoiceDebugLogString($0) }
+}
+
+private enum RHVoiceAUParameter: AUParameterAddress {
+    case rate, volume, pitch
 }
 
 @available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
-    private let rhvoiceEngine: RHVoiceEngine
+    private lazy var rhvoiceEngine: RHVoiceEngine = RHVoiceEngine()
     private let outputBus: AUAudioUnitBus
-    private let outputMutex = DispatchSemaphore(value: 1)
-    private let availableVoices: [AVSpeechSynthesisProviderVoice]
+    private var _outputBusses: AUAudioUnitBusArray!
 
-    private var outputBussesStorage: AUAudioUnitBusArray!
+    // eSpeak-style: flat array + offset + semaphore
     private var output: [Float] = []
-    private var outputOffset = 0
+    private var outputOffset: Int = 0
+    private var outputMutex = DispatchSemaphore(value: 1)
+    private var isSynthesizing = false
+    private let synthesisQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.synthesis", qos: .userInitiated)
+    private var synthesisGeneration: UInt64 = 0
+    private var rateValue: AUValue?
+    private var volumeValue: AUValue?
+    private var pitchValue: AUValue?
 
-    private var rateValue: AUValue
-    private var volumeValue: AUValue
-    private var speedMultiplierValue: AUValue
-    private var sentencePauseValue: AUValue
+    private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
+        AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Natalia", identifier: "com.rhvoice.UkrainianVoices.natalia",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Marianna", identifier: "com.rhvoice.UkrainianVoices.marianna",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+        AVSpeechSynthesisProviderVoice(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr",
+            primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
+    ]
 
     @objc
     public override init(
         componentDescription: AudioComponentDescription,
         options: AudioComponentInstantiationOptions = []
     ) throws {
-        let settings = RHVoiceSpeechSettings.recommended
-        self.rhvoiceEngine = RHVoiceEngine()
-        self.rateValue = AUValue(settings.rate)
-        self.volumeValue = AUValue(settings.volume)
-        self.speedMultiplierValue = AUValue(settings.speedMultiplier)
-        self.sentencePauseValue = AUValue(settings.sentencePause)
-
         let basicDescription = AudioStreamBasicDescription(
             mSampleRate: 24000.0,
             mFormatID: kAudioFormatLinearPCM,
@@ -52,37 +61,43 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             mBitsPerChannel: 32,
             mReserved: 0
         )
-        let formatDescription = try CMAudioFormatDescription(audioStreamBasicDescription: basicDescription)
-        let format = AVAudioFormat(cmAudioFormatDescription: formatDescription)
+        let format = AVAudioFormat(cmAudioFormatDescription: try CMAudioFormatDescription(audioStreamBasicDescription: basicDescription))
         self.outputBus = try AUAudioUnitBus(format: format)
-        self.availableVoices = RHVoiceSharedSettings.voiceCatalog.map {
-            AVSpeechSynthesisProviderVoice(
-                name: $0.name,
-                identifier: $0.identifier,
-                primaryLanguages: [$0.language],
-                supportedLanguages: [$0.language]
-            )
-        }
 
         try super.init(componentDescription: componentDescription, options: options)
 
-        self.outputBussesStorage = AUAudioUnitBusArray(
-            audioUnit: self,
-            busType: .output,
-            busses: [outputBus]
+        self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
+        self.setupParameterTree()
+        rhLog("EXT_DIAG synthesizer init")
+        let appGroupURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: "group.rhvoice.UkrainianVoices.shared"
         )
+        rhLog("EXT_DIAG appgroup container=\(appGroupURL?.path ?? "nil")")
+        self.startEngineWarmup()
+    }
 
-        let parameterTree = AUParameterTree.createTree(withChildren: [
+    private func startEngineWarmup() {
+        self.synthesisQueue.async { [weak self] in
+            guard let self else { return }
+            let warmupStart = CFAbsoluteTimeGetCurrent()
+            rhLog("WARMUP started")
+            _ = self.rhvoiceEngine
+            rhLog("WARMUP done elapsedMs=\(Self.elapsedMs(since: warmupStart))")
+        }
+    }
+
+    private func setupParameterTree() {
+        self.parameterTree = .createTree(withChildren: [
             AUParameterTree.createGroup(
                 withIdentifier: "rhvoice",
-                name: "RHVoice",
+                name: "RHVoice Ukrainian",
                 children: [
                     AUParameterTree.createParameter(
                         withIdentifier: "rate",
                         name: "Rate",
-                        address: RHVoiceParameter.rate.rawValue,
-                        min: 0.1,
-                        max: 2.0,
+                        address: RHVoiceAUParameter.rate.rawValue,
+                        min: 0.5,
+                        max: 4.5,
                         unit: .rate,
                         unitName: nil,
                         valueStrings: nil,
@@ -91,7 +106,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                     AUParameterTree.createParameter(
                         withIdentifier: "volume",
                         name: "Volume",
-                        address: RHVoiceParameter.volume.rawValue,
+                        address: RHVoiceAUParameter.volume.rawValue,
                         min: 0.0,
                         max: 1.0,
                         unit: .linearGain,
@@ -100,145 +115,66 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                         dependentParameters: nil
                     ),
                     AUParameterTree.createParameter(
-                        withIdentifier: "speedMultiplier",
-                        name: "Speed Multiplier",
-                        address: RHVoiceParameter.speedMultiplier.rawValue,
+                        withIdentifier: "pitch",
+                        name: "Pitch",
+                        address: RHVoiceAUParameter.pitch.rawValue,
                         min: 0.5,
-                        max: 5.0,
-                        unit: .ratio,
-                        unitName: nil,
+                        max: 2.0,
+                        unit: .customUnit,
+                        unitName: "multiplier",
                         valueStrings: nil,
                         dependentParameters: nil
                     ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "sentencePause",
-                        name: "Sentence Pause",
-                        address: RHVoiceParameter.sentencePause.rawValue,
-                        min: 0.0,
-                        max: 2000.0,
-                        unit: .milliseconds,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    )
                 ]
             )
         ])
-        parameterTree.implementorValueProvider = { [weak self] parameter in
+
+        self.parameterTree?.implementorValueProvider = { [weak self] parameter in
             guard let self else { return 0 }
             switch parameter.address {
-            case RHVoiceParameter.rate.rawValue:
-                return self.rateValue
-            case RHVoiceParameter.volume.rawValue:
-                return self.volumeValue
-            case RHVoiceParameter.speedMultiplier.rawValue:
-                return self.speedMultiplierValue
-            case RHVoiceParameter.sentencePause.rawValue:
-                return self.sentencePauseValue
+            case RHVoiceAUParameter.rate.rawValue:
+                return self.rateValue ?? 1.0
+            case RHVoiceAUParameter.volume.rawValue:
+                return self.volumeValue ?? 1.0
+            case RHVoiceAUParameter.pitch.rawValue:
+                return self.pitchValue ?? 1.0
             default:
                 return 0
             }
         }
-        parameterTree.implementorValueObserver = { [weak self] parameter, value in
+
+        for parameter in self.parameterTree?.allParameters ?? [] {
+            parameter.value = self.parameterTree?.implementorValueProvider(parameter) ?? 0
+        }
+
+        self.parameterTree?.implementorValueObserver = { [weak self] parameter, value in
             guard let self else { return }
             switch parameter.address {
-            case RHVoiceParameter.rate.rawValue:
+            case RHVoiceAUParameter.rate.rawValue:
                 self.rateValue = value
-            case RHVoiceParameter.volume.rawValue:
+            case RHVoiceAUParameter.volume.rawValue:
                 self.volumeValue = value
-            case RHVoiceParameter.speedMultiplier.rawValue:
-                self.speedMultiplierValue = value
-            case RHVoiceParameter.sentencePause.rawValue:
-                self.sentencePauseValue = value
+            case RHVoiceAUParameter.pitch.rawValue:
+                self.pitchValue = value
             default:
                 break
             }
         }
-        for parameter in parameterTree.allParameters where parameter.unit != .indexed {
-            parameter.value = parameterTree.implementorValueProvider(parameter)
-        }
-        self.parameterTree = parameterTree
     }
 
-    public override var outputBusses: AUAudioUnitBusArray {
-        outputBussesStorage
-    }
+    public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
 
     public override func allocateRenderResources() throws {
         try super.allocateRenderResources()
+        _ = self.rhvoiceEngine
     }
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { availableVoices }
+        get { Self.staticVoices }
         set { }
     }
 
-    public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
-        let request = resolvedRequest(for: speechRequest)
-        cancelSpeechRequest()
-
-        let audioBuffer = rhvoiceEngine.synthesize(
-            request.text,
-            voice: request.voiceProfileName,
-            rate: request.settings.rate * request.settings.speedMultiplier,
-            volume: request.settings.volume,
-            pitch: 1.0
-        )
-
-        outputMutex.wait()
-        defer { outputMutex.signal() }
-
-        output.removeAll(keepingCapacity: false)
-        outputOffset = 0
-
-        guard
-            let audioBuffer,
-            audioBuffer.frameLength > 0,
-            let channelData = audioBuffer.floatChannelData
-        else {
-            return
-        }
-
-        let samples = UnsafeBufferPointer(
-            start: channelData[0],
-            count: Int(audioBuffer.frameLength)
-        )
-        output.append(contentsOf: samples)
-    }
-
-    public override func cancelSpeechRequest() {
-        rhvoiceEngine.cancel()
-        outputMutex.wait()
-        output.removeAll(keepingCapacity: false)
-        outputOffset = 0
-        outputMutex.signal()
-    }
-
-    public override func messageChannel(for channelName: String) -> AUMessageChannel {
-        final class MessageChannel: AUMessageChannel {
-            var callHostBlock: CallHostBlock? { get { nil } set {} }
-            private let voices: [RHVoiceVoiceDescriptor]
-
-            init(voices: [RHVoiceVoiceDescriptor]) {
-                self.voices = voices
-            }
-
-            func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
-                var response: [AnyHashable: Any] = [:]
-
-                if message["initHost"] as? Bool == true {
-                    response["voiceIds"] = voices.map(\.identifier)
-                    response["voiceNames"] = voices.map(\.name)
-                    response["primaryLanguages"] = voices.map(\.language)
-                }
-
-                return response
-            }
-        }
-
-        _ = channelName
-        return MessageChannel(voices: RHVoiceSharedSettings.voiceCatalog)
-    }
+    // MARK: - Render (exactly like eSpeak)
 
     private func performRender(
         actionFlags: UnsafeMutablePointer<AudioUnitRenderActionFlags>,
@@ -249,82 +185,665 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         renderEvents: UnsafePointer<AURenderEvent>?,
         renderPull: AURenderPullInputBlock?
     ) -> AUAudioUnitStatus {
-        _ = timestamp
-        _ = outputBusNumber
-        _ = renderEvents
-        _ = renderPull
+        let unsafeBuffer = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
+        let frames = unsafeBuffer[0].mData!.assumingMemoryBound(to: Float.self)
+        let intFrameCount = Int(frameCount)
+        frames.assign(repeating: 0, count: intFrameCount)
 
-        let audioBuffers = UnsafeMutableAudioBufferListPointer(outputAudioBufferList)
-        guard let data = audioBuffers[0].mData else {
-            return kAudioUnitErr_InvalidParameter
+        self.outputMutex.wait()
+        var available = max(self.output.count - self.outputOffset, 0)
+        var stillSynthesizing = self.isSynthesizing
+        self.outputMutex.signal()
+
+        if available < intFrameCount && stillSynthesizing {
+            let ready = self.pauseUntilRenderReady(needFrames: intFrameCount)
+
+            self.outputMutex.wait()
+            available = max(self.output.count - self.outputOffset, 0)
+            stillSynthesizing = self.isSynthesizing
+            self.outputMutex.signal()
+
+            rhLog("RENDER_WAIT perform ready=\(ready ? 1 : 0) available=\(available) stillSynthesizing=\(stillSynthesizing ? 1 : 0)")
         }
 
-        let frames = data.assumingMemoryBound(to: Float.self)
-        let requestedFrames = Int(frameCount)
-        frames.update(repeating: 0, count: requestedFrames)
-        audioBuffers[0].mDataByteSize = UInt32(requestedFrames * MemoryLayout<Float>.size)
-        audioBuffers[0].mNumberChannels = 1
-
-        outputMutex.wait()
-        defer { outputMutex.signal() }
-
-        let availableCount = max(0, output.count - outputOffset)
-        let count = min(availableCount, requestedFrames)
-
-        if count > 0 {
-            output.withUnsafeBufferPointer { buffer in
-                guard let baseAddress = buffer.baseAddress else { return }
-                frames.update(from: baseAddress.advanced(by: outputOffset), count: count)
+        if available <= 0 {
+            outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float>.size)
+            
+            if stillSynthesizing {
+                actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                actionFlags.pointee = .offlineUnitRenderAction_Complete
             }
-            audioBuffers[0].mDataByteSize = UInt32(count * MemoryLayout<Float>.size)
-            outputOffset += count
+            return noErr
         }
 
-        if outputOffset >= output.count {
-            actionFlags.pointee = .offlineUnitRenderAction_Complete
-            output.removeAll(keepingCapacity: false)
-            outputOffset = 0
-        } else if count > 0 {
-            actionFlags.pointee = .offlineUnitRenderAction_Render
-        } else {
-            actionFlags.pointee = []
+        self.outputMutex.wait()
+        available = max(self.output.count - self.outputOffset, 0)
+        stillSynthesizing = self.isSynthesizing
+
+        if available <= 0 {
+            self.outputMutex.signal()
+
+            outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(intFrameCount * MemoryLayout<Float>.size)
+
+            if stillSynthesizing {
+                actionFlags.pointee = .offlineUnitRenderAction_Render
+            } else {
+                actionFlags.pointee = .offlineUnitRenderAction_Complete
+            }
+            return noErr
         }
+
+        let count = min(available, intFrameCount)
+        self.output.withUnsafeBufferPointer { ptr in
+            frames.assign(from: ptr.baseAddress!.advanced(by: self.outputOffset), count: count)
+        }
+        outputAudioBufferList.pointee.mBuffers.mDataByteSize = UInt32(count * MemoryLayout<Float>.size)
+
+        self.outputOffset += count
+        
+        let done = (self.outputOffset >= self.output.count) && !self.isSynthesizing
+        
+        if done {
+            actionFlags.pointee = .offlineUnitRenderAction_Complete
+            self.output.removeAll()
+            self.outputOffset = 0
+        } else {
+            actionFlags.pointee = .offlineUnitRenderAction_Render
+        }
+        self.outputMutex.signal()
 
         return noErr
     }
 
-    public override var internalRenderBlock: AUInternalRenderBlock {
-        performRender
-    }
+    private func pauseUntilRenderReady(
+        needFrames: Int,
+        maxRecurse: Int = 200,
+        baseDelayMicroseconds: UInt32 = 1000
+    ) -> Bool {
+        let maxDelaySeconds = Double(baseDelayMicroseconds) * Double(maxRecurse) / 1_000_000
+        let checkIntervalSeconds = maxDelaySeconds / 5.0
+        let startTime = Date()
 
-    private func resolvedRequest(
-        for speechRequest: AVSpeechSynthesisProviderRequest
-    ) -> RHVoiceSynthesisRequest {
-        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
-        let identifier = speechRequest.voice.identifier
+        rhLog("RENDER_WAIT start needFrames=\(needFrames)")
 
-        guard snapshot.voiceCatalog.contains(where: { $0.identifier == identifier }) else {
-            let fallback = RHVoiceSharedSettings.voiceCatalog.first {
-                $0.identifier == identifier
-            } ?? RHVoiceSharedSettings.voiceCatalog.first!
-            return RHVoiceSynthesisRequest(
-                text: speechRequest.ssmlRepresentation,
-                voiceIdentifier: fallback.identifier,
-                voiceProfileName: fallback.profileName,
-                settings: RHVoiceSpeechSettings(
-                    rate: Double(rateValue),
-                    volume: Double(volumeValue),
-                    speedMultiplier: Double(speedMultiplierValue),
-                    sentencePause: Double(sentencePauseValue)
-                ),
-                source: .system
-            )
+        var ready = false
+        var complete = false
+
+        while Date().timeIntervalSince(startTime) < maxDelaySeconds {
+            self.outputMutex.wait()
+            let available = max(self.output.count - self.outputOffset, 0)
+            let stillSynthesizing = self.isSynthesizing
+            self.outputMutex.signal()
+
+            ready = available >= needFrames
+            complete = !stillSynthesizing
+
+            if ready || complete {
+                break
+            }
+
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(checkIntervalSeconds))
         }
 
-        return RHVoiceSynthesisRequestFactory.systemRequest(
-            text: speechRequest.ssmlRepresentation,
-            voiceIdentifier: identifier,
-            snapshot: snapshot
-        )
+        self.outputMutex.wait()
+        let finalAvailable = max(self.output.count - self.outputOffset, 0)
+        let finalSynthesizing = self.isSynthesizing
+        self.outputMutex.signal()
+
+        ready = finalAvailable >= needFrames
+        complete = !finalSynthesizing && !ready
+
+        let waitedMs = Int(Date().timeIntervalSince(startTime) * 1000)
+        let result = ready ? "ready" : (complete ? "complete" : "timeout")
+        rhLog("RENDER_WAIT end result=\(result) waitedMs=\(waitedMs) available=\(finalAvailable)")
+
+        return ready
+    }
+
+    public override var internalRenderBlock: AUInternalRenderBlock { self.performRender }
+
+    // MARK: - Synthesize (eSpeak-style render buffer, sentence pipeline for long text)
+
+    public override func synthesizeSpeechRequest(_ speechRequest: AVSpeechSynthesisProviderRequest) {
+        let requestStart = CFAbsoluteTimeGetCurrent()
+        let text = speechRequest.ssmlRepresentation
+        let voiceId = speechRequest.voice.identifier
+
+        rhLog("synth request: voice=\(voiceId) text=\(text.count) chars")
+
+        let ssmlSnippet = String(text.prefix(200))
+        rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")
+        let currentRateValue = self.rateValue
+        let currentVolumeValue = self.volumeValue
+        let currentPitchValue = self.pitchValue
+
+        self.outputMutex.wait()
+        self.isSynthesizing = true
+        self.synthesisGeneration &+= 1
+        let generation = self.synthesisGeneration
+        self.output.removeAll()
+        self.outputOffset = 0
+        self.outputMutex.signal()
+
+        rhLog("LATENCY_DIAG synthesizeSpeechRequestMs=\(Self.elapsedMs(since: requestStart)) chars=\(text.count)")
+
+        self.synthesisQueue.async { [weak self] in
+            self?.runSynthesisPipeline(
+                text: text,
+                voiceId: voiceId,
+                rateValue: currentRateValue,
+                volumeValue: currentVolumeValue,
+                pitchValue: currentPitchValue,
+                requestStart: requestStart,
+                generation: generation
+            )
+        }
+    }
+
+    private func runSynthesisPipeline(
+        text: String,
+        voiceId: String,
+        rateValue: AUValue?,
+        volumeValue: AUValue?,
+        pitchValue: AUValue?,
+        requestStart: CFAbsoluteTime,
+        generation: UInt64
+    ) {
+        let preprocessingStart = CFAbsoluteTimeGetCurrent()
+        guard self.shouldContinueSynthesis(generation: generation) else {
+            rhLog("LATENCY_DIAG pipeline cancelled beforePreprocessing")
+            return
+        }
+        Self.logApostropheEncoding(label: "input-ssml", ssml: text)
+
+        // Resolve voice profile name
+        let profileName: String
+        if let descriptor = RHVoiceSharedSettings.voiceCatalog.first(where: { $0.identifier == voiceId }) {
+            profileName = descriptor.profileName
+        } else {
+            profileName = RHVoiceSharedSettings.voiceCatalog.first!.profileName
+        }
+
+        // Extract rate/volume from SSML
+        let ssmlRatePercent = Self.extractSSMLRatePercentIfPresent(from: text)
+        let ssmlVolume = Self.extractSSMLVolumeIfPresent(from: text)
+        let ssmlPitch = Self.extractSSMLPitch(from: text)
+
+        // Read user settings from App Group
+        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        let voiceSettings = snapshot.effectiveSettings(for: voiceId)
+        let settingsMs = Self.elapsedMs(since: preprocessingStart)
+
+        let effectiveRatePercent = ssmlRatePercent ?? 100.0
+        let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
+            ?? Double(rateValue ?? 1.0)
+        let accelerator = Self.clampSpeedMultiplier(voiceSettings.speedMultiplier)
+        let finalRate = Self.clampRate(mappedRate * accelerator)
+        let effectiveVolume = ssmlVolume ?? Self.clampVolume(Double(volumeValue ?? 1.0))
+        let finalVolume = Self.clampVolume(effectiveVolume)
+        let effectivePitch = Self.clampPitch(ssmlPitch ?? Double(pitchValue ?? 1.0))
+        let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
+        let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
+        let normalizedText = Self.normalizeApostrophesInTextSegments(text)
+        Self.logApostropheEncoding(label: "after-apostrophe-normalize", ssml: normalizedText)
+        let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
+
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
+        #if DEBUG
+        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
+        #endif
+
+        let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: synthesisText)
+        let preprocessingMs = Self.elapsedMs(since: preprocessingStart)
+        rhLog("LATENCY_DIAG prepare voice=\(profileName) chars=\(text.count) settingsMs=\(settingsMs) backgroundPreprocessingMs=\(preprocessingMs) beforeSynthesizeMs=\(Self.elapsedMs(since: requestStart))")
+        rhLog("LATENCY_DIAG pipeline plan fragments=\(fragments.count) chars=\(synthesisText.count)")
+
+        let synthStart = CFAbsoluteTimeGetCurrent()
+        var totalSamples = 0
+        var firstFragmentSynthMs: Int?
+        var fragmentSynthMsTotal = 0
+
+        for (index, fragment) in fragments.enumerated() {
+            if !self.shouldContinueSynthesis(generation: generation) {
+                rhLog("LATENCY_DIAG pipeline cancelled beforeFragment=\(index + 1)")
+                break
+            }
+
+            let fragmentStart = CFAbsoluteTimeGetCurrent()
+            var pcmBuffer = rhvoiceEngine.synthesize(
+                fragment,
+                voice: profileName,
+                rate: finalRate,
+                volume: finalVolume,
+                pitch: effectivePitch
+            )
+            var fragmentSynthMs = Self.elapsedMs(since: fragmentStart)
+
+            // Fallback: if SSML synthesis failed, try plain text without tags for this fragment.
+            if pcmBuffer == nil && fragment.contains("<") {
+                let plainText = stripSSML(fragment)
+                rhLog("synth: SSML fragment failed, trying fallback: \(plainText.prefix(50))...")
+                let fallbackStart = CFAbsoluteTimeGetCurrent()
+                pcmBuffer = rhvoiceEngine.synthesize(
+                    plainText,
+                    voice: profileName,
+                    rate: finalRate,
+                    volume: finalVolume,
+                    pitch: effectivePitch
+                )
+                fragmentSynthMs += Self.elapsedMs(since: fallbackStart)
+            }
+
+            fragmentSynthMsTotal += fragmentSynthMs
+            if firstFragmentSynthMs == nil {
+                firstFragmentSynthMs = fragmentSynthMs
+            }
+
+            guard let buffer = pcmBuffer, let floatData = buffer.floatChannelData?[0] else {
+                rhLog("synth fragment FAILED index=\(index + 1)")
+                rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) synthMs=\(fragmentSynthMs) samples=0 failed=1")
+                continue
+            }
+
+            let frameCount = Int(buffer.frameLength)
+            let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
+            totalSamples += samples.count
+
+            self.outputMutex.wait()
+            let appendAllowed = self.isSynthesizing && self.synthesisGeneration == generation
+            if appendAllowed {
+                self.output.append(contentsOf: samples)
+            }
+            self.outputMutex.signal()
+
+            if !appendAllowed {
+                rhLog("LATENCY_DIAG pipeline cancelled afterFragment=\(index + 1)")
+                break
+            }
+
+            rhLog("synth fragment output index=\(index + 1) samples=\(samples.count)")
+            rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) synthMs=\(fragmentSynthMs) samples=\(samples.count)")
+        }
+
+        self.outputMutex.wait()
+        if self.synthesisGeneration == generation {
+            self.isSynthesizing = false
+        }
+        self.outputMutex.signal()
+
+        rhLog("synth output: \(totalSamples) samples")
+        rhLog("LATENCY_DIAG output voice=\(profileName) chars=\(text.count) synthMs=\(fragmentSynthMsTotal) totalMs=\(Self.elapsedMs(since: requestStart)) samples=\(totalSamples)")
+        rhLog("LATENCY_DIAG pipeline fragments=\(fragments.count) firstFragmentSynthMs=\(firstFragmentSynthMs ?? 0) totalSynthMs=\(Self.elapsedMs(since: synthStart)) samples=\(totalSamples)")
+    }
+
+    private func stripSSML(_ ssml: String) -> String {
+        return ssml.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+    }
+
+    private func shouldContinueSynthesis(generation: UInt64) -> Bool {
+        self.outputMutex.wait()
+        let shouldContinue = self.isSynthesizing && self.synthesisGeneration == generation
+        self.outputMutex.signal()
+        return shouldContinue
+    }
+
+    // MARK: - Cancel (exactly like eSpeak)
+
+    public override func cancelSpeechRequest() {
+        self.outputMutex.wait()
+        self.isSynthesizing = false
+        self.synthesisGeneration &+= 1
+        self.output.removeAll()
+        self.outputOffset = 0
+        rhLog("cancel")
+        self.outputMutex.signal()
+    }
+
+    // MARK: - Message Channel
+
+    public override func messageChannel(for channelName: String) -> AUMessageChannel {
+        final class MC: AUMessageChannel {
+            var callHostBlock: CallHostBlock? { get { nil } set {} }
+            func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
+                if message["initHost"] as? Bool == true {
+                    return [
+                        "voiceIds": UkrainianSpeechSynthesizer.staticVoices.map(\.identifier),
+                        "voiceNames": UkrainianSpeechSynthesizer.staticVoices.map(\.name),
+                        "primaryLanguages": UkrainianSpeechSynthesizer.staticVoices.map { $0.primaryLanguages.first ?? "uk-UA" }
+                    ]
+                }
+                return [:]
+            }
+        }
+        return MC()
+    }
+
+    // MARK: - SSML parsing
+
+    private static func extractSSMLRatePercent(from ssml: String) -> Double {
+        extractSSMLRatePercentIfPresent(from: ssml) ?? 100.0
+    }
+
+    private static func extractSSMLRatePercentIfPresent(from ssml: String) -> Double? {
+        guard let match = try? NSRegularExpression(pattern: #"rate="([0-9]+(?:\.[0-9]+)?)%""#)
+            .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
+              let range = Range(match.range(at: 1), in: ssml),
+              let pct = Double(ssml[range]) else { return nil }
+        return max(0.0, pct)
+    }
+
+    private static func mapSSMLRatePercentToEngineMultiplier(_ percent: Double) -> Double {
+        let normalized = max(0.0, percent) / 100.0
+        return min(max(normalized, 0.5), 3.0)
+    }
+
+    private static func clampRate(_ value: Double) -> Double {
+        min(max(value, 0.1), 20.0)
+    }
+
+    private static func clampSpeedMultiplier(_ value: Double) -> Double {
+        min(max(value, 0.8), 1.6)
+    }
+
+    private static func elapsedMs(since start: CFAbsoluteTime) -> Int {
+        Int(((CFAbsoluteTimeGetCurrent() - start) * 1000).rounded())
+    }
+
+    private static func clampVolume(_ value: Double) -> Double {
+        min(max(value, 0.0), 2.0)
+    }
+
+    private static func clampPitch(_ value: Double) -> Double {
+        min(max(value, 0.5), 2.0)
+    }
+
+    private static func extractSSMLPitch(from ssml: String) -> Double? {
+        guard let match = try? NSRegularExpression(pattern: #"pitch\s*=\s*"([^"]+)""#, options: [.caseInsensitive])
+            .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
+              let range = Range(match.range(at: 1), in: ssml) else { return nil }
+
+        let rawPitch = ssml[range].trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch rawPitch {
+        case "x-low":
+            return 0.5
+        case "low":
+            return 0.75
+        case "medium", "default":
+            return 1.0
+        case "high":
+            return 1.25
+        case "x-high":
+            return 1.5
+        default:
+            break
+        }
+
+        if rawPitch.hasSuffix("%") {
+            let numeric = rawPitch.dropLast()
+            if let percent = Double(numeric) {
+                if numeric.first == "+" || numeric.first == "-" {
+                    return 1.0 + (percent / 100.0)
+                }
+                return percent / 100.0
+            }
+        }
+
+        if rawPitch.hasSuffix("st"),
+           let semitones = Double(rawPitch.dropLast(2)) {
+            return pow(2.0, semitones / 12.0)
+        }
+
+        if rawPitch.hasSuffix("hz") {
+            return nil
+        }
+
+        return nil
+    }
+
+    private static func clampSentencePause(_ value: Double) -> Double {
+        min(max(value, 0.0), 2_000.0)
+    }
+
+    private static func clampWordGap(_ value: Double) -> Double {
+        min(max(value, 0.0), 300.0)
+    }
+
+    private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
+        var output = ""
+        var textSegment = ""
+        var tagSegment = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                tagSegment.append(character)
+                if character == ">" {
+                    output += normalizeApostrophes(textSegment)
+                    textSegment.removeAll(keepingCapacity: true)
+                    output += tagSegment
+                    tagSegment.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+            } else if character == "<" {
+                insideTag = true
+                tagSegment.append(character)
+            } else {
+                textSegment.append(character)
+            }
+        }
+
+        if insideTag {
+            output += normalizeApostrophes(textSegment) + tagSegment
+        } else {
+            output += normalizeApostrophes(textSegment)
+        }
+        return output
+    }
+
+    private static func normalizeApostrophes(_ text: String) -> String {
+        text
+            .replacingOccurrences(of: "&apos;", with: "`")
+            .replacingOccurrences(of: "&#39;", with: "`")
+            .replacingOccurrences(of: "&#x27;", with: "`")
+            .replacingOccurrences(of: "&#X27;", with: "`")
+            .replacingOccurrences(of: "\u{0027}", with: "`")
+            .replacingOccurrences(of: "\u{2019}", with: "`")
+            .replacingOccurrences(of: "\u{02BC}", with: "`")
+            .replacingOccurrences(of: "\u{2018}", with: "`")
+            .replacingOccurrences(of: "\u{2032}", with: "`")
+            .replacingOccurrences(of: "\u{00B4}", with: "`")
+            .replacingOccurrences(of: "\u{FF07}", with: "`")
+            .replacingOccurrences(of: "\u{0060}", with: "`")
+    }
+
+    private static func logApostropheEncoding(label: String, ssml: String) {
+        let textSegments = extractTextSegments(from: ssml)
+        let matches = textSegments.flatMap { apostropheDiagnostics(in: $0) }
+
+        guard !matches.isEmpty else {
+            rhLog("APOSTROPHE_DIAG \(label): no apostrophe-like scalars in text segments")
+            return
+        }
+
+        for (index, match) in matches.enumerated() {
+            rhLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
+        }
+    }
+
+    private static func extractTextSegments(from ssml: String) -> [String] {
+        var segments: [String] = []
+        var textSegment = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                if character == ">" {
+                    insideTag = false
+                }
+            } else if character == "<" {
+                if !textSegment.isEmpty {
+                    segments.append(textSegment)
+                    textSegment.removeAll(keepingCapacity: true)
+                }
+                insideTag = true
+            } else {
+                textSegment.append(character)
+            }
+        }
+
+        if !textSegment.isEmpty {
+            segments.append(textSegment)
+        }
+        return segments
+    }
+
+    private static func apostropheDiagnostics(in text: String) -> [String] {
+        let scalars = Array(text.unicodeScalars)
+        var results: [String] = []
+
+        for index in scalars.indices where isApostropheLikeScalar(scalars[index]) {
+            let wordRange = diagnosticWordRange(around: index, in: scalars)
+            let wordScalars = Array(scalars[wordRange])
+            let word = String(String.UnicodeScalarView(wordScalars))
+            let codepoints = wordScalars.map { String(format: "U+%04X", $0.value) }.joined(separator: " ")
+            let utf8Bytes = word.utf8.map { String(format: "%02X", $0) }.joined(separator: " ")
+            let apostrophe = String(format: "U+%04X", scalars[index].value)
+            results.append("apostrophe=\(apostrophe) word=\(word) codepoints=[\(codepoints)] utf8=[\(utf8Bytes)]")
+        }
+
+        return results
+    }
+
+    private static func isApostropheLikeScalar(_ scalar: UnicodeScalar) -> Bool {
+        switch scalar.value {
+        case 0x0027, 0x0060, 0x00B4, 0x02BC, 0x055A, 0x2018, 0x2019, 0x2032, 0xA78B, 0xA78C, 0xFF07:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private static func diagnosticWordRange(around index: Int, in scalars: [UnicodeScalar]) -> Range<Int> {
+        var start = index
+        var end = index + 1
+
+        while start > scalars.startIndex, isDiagnosticWordScalar(scalars[start - 1]) {
+            start -= 1
+        }
+
+        while end < scalars.endIndex, isDiagnosticWordScalar(scalars[end]) {
+            end += 1
+        }
+
+        return start..<end
+    }
+
+    private static func isDiagnosticWordScalar(_ scalar: UnicodeScalar) -> Bool {
+        CharacterSet.letters.contains(scalar)
+            || CharacterSet.decimalDigits.contains(scalar)
+            || isApostropheLikeScalar(scalar)
+    }
+
+    private static func applyTextBreaks(to ssml: String, sentencePauseMs: Int, wordGapMs: Int) -> String {
+        guard sentencePauseMs > 0 || wordGapMs > 0 else { return ssml }
+
+        var output = ""
+        var textSegment = ""
+        var tagSegment = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                tagSegment.append(character)
+                if character == ">" {
+                    output += transformTextSegment(textSegment, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+                    textSegment.removeAll(keepingCapacity: true)
+                    output += tagSegment
+                    tagSegment.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+            } else if character == "<" {
+                insideTag = true
+                tagSegment.append(character)
+            } else {
+                textSegment.append(character)
+            }
+        }
+
+        if insideTag {
+            output += textSegment + tagSegment
+        } else {
+            output += transformTextSegment(textSegment, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        }
+
+        if output.range(of: #"<\s*speak\b"#, options: .regularExpression) != nil {
+            return output
+        }
+        return "<speak>\(output)</speak>"
+    }
+
+    private static func transformTextSegment(_ text: String, sentencePauseMs: Int, wordGapMs: Int) -> String {
+        let characters = Array(text)
+        guard !characters.isEmpty else { return text }
+
+        var output = ""
+        for index in characters.indices {
+            let character = characters[index]
+            output.append(character)
+
+            if sentencePauseMs > 0 && isSentencePunctuation(character) && !isDecimalSeparator(characters, at: index) {
+                output += "<break time='\(sentencePauseMs)ms'/>"
+            }
+
+            if wordGapMs > 0 && isWordCharacter(character) {
+                let nextIndex = index + 1
+                if nextIndex < characters.count, isWhitespace(characters[nextIndex]), nextWordStarts(afterWhitespaceFrom: nextIndex, in: characters) {
+                    output += "<break time='\(wordGapMs)ms'/>"
+                }
+            }
+        }
+        return output
+    }
+
+    private static func nextWordStarts(afterWhitespaceFrom index: Int, in characters: [Character]) -> Bool {
+        var cursor = index
+        while cursor < characters.count, isWhitespace(characters[cursor]) {
+            cursor += 1
+        }
+        return cursor < characters.count && isWordCharacter(characters[cursor])
+    }
+
+    private static func isSentencePunctuation(_ character: Character) -> Bool {
+        character == "." || character == "," || character == "!" || character == "?"
+    }
+
+    private static func isDecimalSeparator(_ characters: [Character], at index: Int) -> Bool {
+        guard characters[index] == "." || characters[index] == "," else { return false }
+        let previous = index > 0 ? characters[index - 1] : nil
+        let next = index + 1 < characters.count ? characters[index + 1] : nil
+        return previous?.isNumber == true && next?.isNumber == true
+    }
+
+    private static func isWhitespace(_ character: Character) -> Bool {
+        character.unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) }
+    }
+
+    private static func isWordCharacter(_ character: Character) -> Bool {
+        character.unicodeScalars.contains { CharacterSet.letters.contains($0) || CharacterSet.decimalDigits.contains($0) }
+    }
+
+    private static func extractSSMLVolume(from ssml: String) -> Double {
+        extractSSMLVolumeIfPresent(from: ssml) ?? 1.0
+    }
+
+    private static func extractSSMLVolumeIfPresent(from ssml: String) -> Double? {
+        guard let match = try? NSRegularExpression(pattern: #"volume="([+-]?[0-9]+(?:\.[0-9]+)?)dB""#)
+            .firstMatch(in: ssml, range: NSRange(ssml.startIndex..., in: ssml)),
+              let range = Range(match.range(at: 1), in: ssml),
+              let db = Double(ssml[range]) else { return nil }
+        return max(0.1, min(2.0, pow(10.0, db / 20.0)))
     }
 }

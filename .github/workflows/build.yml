@@ -12,9 +12,13 @@ concurrency:
 
 jobs:
   build-ios-app:
-    name: Build iOS App (.ipa)
+    name: Build Signed iOS App and Upload to TestFlight
     runs-on: macos-latest
     timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
 
     steps:
       - name: Checkout code
@@ -22,17 +26,18 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Select stable Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Verify tracked static libraries and voices
+      - name: Verify tracked voices
         run: |
           set -euxo pipefail
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice.a
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_core.a
-          test -f UkrainianVoicesApp/Extension/Libraries/libRHVoice_audio.a
           test -d UkrainianVoicesApp/Extension/Resources/Voices
-          ls -lh UkrainianVoicesApp/Extension/Libraries/
           find UkrainianVoicesApp/Extension/Resources/Voices -maxdepth 2 -type f | head -20
 
       - name: Generate Xcode project
@@ -42,7 +47,157 @@ jobs:
           xcodegen generate
           ls -la UkrainianVoices.xcodeproj
 
-      - name: Build unsigned iPhone archive
+      - name: Build macOS audio proof app
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodebuild \
+            -project UkrainianVoices.xcodeproj \
+            -scheme UkrainianVoicesMac \
+            -configuration Debug \
+            -destination "platform=macOS" \
+            -derivedDataPath build_audio \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Generate and validate native RHVoice speed clips
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          CLIP_DIR="$PWD/build/audio-proof"
+          mkdir -p "$CLIP_DIR"
+          APP_PATH="$(find build_audio/Build/Products/Debug -maxdepth 1 -name 'UkrainianVoicesMac.app' -print -quit)"
+          test -d "$APP_PATH"
+          CONF_PATH="$APP_PATH/Contents/Resources/RHVoiceData/RHVoice.conf"
+          /usr/bin/python3 - <<'PY' "$CONF_PATH"
+          import pathlib
+          import sys
+
+          path = pathlib.Path(sys.argv[1])
+          text = path.read_text()
+          text = text.replace("languages.ukrainian.max_rate=20", "languages.ukrainian.max_rate=5")
+          text = text.replace("languages.ukrainian.min_sonic_rate=1", "languages.ukrainian.min_sonic_rate=99")
+          path.write_text(text)
+          PY
+          grep -q "languages.ukrainian.max_rate=5" "$CONF_PATH"
+          grep -q "languages.ukrainian.min_sonic_rate=99" "$CONF_PATH"
+          RHVOICE_SELFTEST_CLIP_DIR="$CLIP_DIR" \
+            "$APP_PATH/Contents/MacOS/UkrainianVoicesMac" --self-test 2>&1 | tee "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK default" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=50 rate=0.5" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=100 rate=1.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=150 rate=1.5" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=200 rate=2.0" "$CLIP_DIR/selftest.log"
+          grep -q "CLIP OK percent=300 rate=3.0" "$CLIP_DIR/selftest.log"
+          if grep -q "CLIP FAIL" "$CLIP_DIR/selftest.log"; then
+            exit 1
+          fi
+          test "$(find "$CLIP_DIR" -maxdepth 1 -name '*.wav' | wc -l)" -eq 6
+          ls -lh "$CLIP_DIR"
+
+      - name: Validate task-041 SSML baseline and pitch proof
+        run: |
+          set -euxo pipefail
+          bash scripts/task041_actions_proof.sh
+
+      - name: Upload audio proof clips
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-safe-speed-audio-proof
+          path: |
+            UkrainianVoicesApp/build/audio-proof/*.wav
+            UkrainianVoicesApp/build/audio-proof/selftest.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Prepare App Store Connect API key
+        run: |
+          set -euo pipefail
+          test -n "${ASC_KEY_ID:-}"
+          test -n "${ASC_ISSUER_ID:-}"
+          test -n "${ASC_API_KEY_BASE64:-}"
+          mkdir -p "$RUNNER_TEMP/appstoreconnect"
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          printf '%s' "$ASC_API_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          cp "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8" "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          test -s "$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+          test -s "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          {
+            echo "ASC_API_KEY_PATH=$RUNNER_TEMP/appstoreconnect/AuthKey_${ASC_KEY_ID}.p8"
+            echo "ASC_KEY_ID=$ASC_KEY_ID"
+            echo "ASC_ISSUER_ID=$ASC_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Prune stale API development certificates
+        run: |
+          set -euo pipefail
+          ruby - "$ASC_API_KEY_PATH" "$ASC_KEY_ID" "$ASC_ISSUER_ID" <<'RUBY'
+          require 'base64'
+          require 'json'
+          require 'open3'
+          require 'openssl'
+
+          key_path, key_id, issuer_id = ARGV
+
+          def base64url(value)
+            Base64.urlsafe_encode64(value).delete('=')
+          end
+
+          def jwt_for(key_path, key_id, issuer_id)
+            key = OpenSSL::PKey.read(File.read(key_path))
+            now = Time.now.to_i
+            header = { alg: 'ES256', kid: key_id, typ: 'JWT' }
+            payload = { iss: issuer_id, iat: now, exp: now + 900, aud: 'appstoreconnect-v1' }
+            signing_input = [base64url(header.to_json), base64url(payload.to_json)].join('.')
+            der_signature = key.sign(OpenSSL::Digest::SHA256.new, signing_input)
+            asn1_signature = OpenSSL::ASN1.decode(der_signature)
+            raw_signature = asn1_signature.value.map { |part| [part.value.to_s(16).rjust(64, '0')].pack('H*') }.join
+            "#{signing_input}.#{base64url(raw_signature)}"
+          end
+
+          def app_store_connect_request(jwt, method, url)
+            stdout, stderr, status = Open3.capture3(
+              'curl',
+              '-fsS',
+              '-g',
+              '-X',
+              method,
+              '-H',
+              "Authorization: Bearer #{jwt}",
+              url
+            )
+            raise "#{method} #{url} failed\n#{stderr}\n#{stdout}" unless status.success?
+            stdout
+          end
+
+          jwt = jwt_for(key_path, key_id, issuer_id)
+          url = 'https://api.appstoreconnect.apple.com/v1/certificates?filter[certificateType]=DEVELOPMENT&limit=200'
+          response = JSON.parse(app_store_connect_request(jwt, 'GET', url))
+          certificates = response.fetch('data', [])
+          stale_api_development = certificates.select do |certificate|
+            attributes = certificate.fetch('attributes', {})
+            display_name = [attributes['displayName'], attributes['name']].compact.join(' ')
+            attributes['certificateType'].to_s == 'DEVELOPMENT' && display_name.include?('Created via API')
+          end
+
+          stale_api_development.sort_by! { |certificate| certificate.fetch('attributes', {})['expirationDate'].to_s }
+          keep_count = 2
+          delete_count = [stale_api_development.length - keep_count, 0].max
+          puts "Found #{stale_api_development.length} Created via API development certificates; deleting #{delete_count}, keeping #{[stale_api_development.length, keep_count].min} newest."
+
+          stale_api_development.first(delete_count).each do |certificate|
+            attributes = certificate.fetch('attributes', {})
+            label = attributes['displayName'] || attributes['name'] || certificate['id']
+            puts "Deleting #{certificate['id']} #{label} #{attributes['expirationDate']}"
+            app_store_connect_request(jwt, 'DELETE', "https://api.appstoreconnect.apple.com/v1/certificates/#{certificate['id']}")
+          end
+          RUBY
+
+      - name: Build signed iPhone archive
+        id: ios_archive
+        continue-on-error: true
         run: |
           set -euxo pipefail
           cd UkrainianVoicesApp
@@ -53,41 +208,106 @@ jobs:
             -sdk iphoneos \
             -destination "generic/platform=iOS" \
             -derivedDataPath build \
-            ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            DEVELOPMENT_TEAM="" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_API_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM=5NNZPP8CRR \
+            CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" \
             clean archive \
-            -archivePath build/UkrainianVoices.xcarchive
+            -archivePath build/UkrainianVoices.xcarchive 2>&1 | tee "$RUNNER_TEMP/ios-archive.log"
 
-      - name: Package unsigned iPhone app
+      - name: Upload iPhone archive log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-archive-log
+          path: ${{ runner.temp }}/ios-archive.log
+          if-no-files-found: ignore
+          retention-days: 3
+
+      - name: Stop after failed iPhone archive
+        if: steps.ios_archive.outcome == 'failure'
+        run: exit 1
+
+      - name: Create export options
         run: |
           set -euxo pipefail
           cd UkrainianVoicesApp
-          test -d build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app
-          mkdir -p unsigned_artifacts/Payload
-          cp -R build/UkrainianVoices.xcarchive/Products/Applications/UkrainianVoices.app unsigned_artifacts/Payload/
-          cd unsigned_artifacts
-          zip -qry ../UkrainianVoices-unsigned.ipa Payload
+          cat > ExportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>5NNZPP8CRR</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>manageAppVersionAndBuildNumber</key>
+            <false/>
+          </dict>
+          </plist>
+          PLIST
 
-      - name: Upload unsigned iPhone artifacts
+      - name: Export signed IPA
+        run: |
+          set -euxo pipefail
+          cd UkrainianVoicesApp
+          xcodebuild -exportArchive \
+            -archivePath build/UkrainianVoices.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_API_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          find build/export -maxdepth 2 -type f -name '*.ipa' -print
+
+      - name: Upload signed iPhone artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ios-unsigned-build
+          name: ios-signed-testflight-build
           path: |
-            UkrainianVoicesApp/UkrainianVoices-unsigned.ipa
+            UkrainianVoicesApp/build/export/*.ipa
             UkrainianVoicesApp/build/UkrainianVoices.xcarchive
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
+
+      - name: Upload to TestFlight
+        run: |
+          set -euxo pipefail
+          IPA_PATH="$(find UkrainianVoicesApp/build/export -maxdepth 2 -type f -name '*.ipa' | head -n 1)"
+          test -n "$IPA_PATH"
+          ALTOOL_LOG="$RUNNER_TEMP/altool-upload.log"
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$ALTOOL_LOG"
+          if grep -E "ERROR:|Failed to upload|The bundle version must be higher" "$ALTOOL_LOG"; then
+            echo "altool reported an upload error"
+            exit 1
+          fi
 
       - name: Summary
         run: |
           {
-            echo "## iOS unsigned build ready"
+            echo "## iOS signed build uploaded"
             echo ""
             echo "- Trigger: manual only"
-            echo "- Output artifact: \`ios-unsigned-build\`"
+            echo "- Output artifact: \`ios-signed-testflight-build\`"
             echo "- Retention: 1 day"
-            echo "- Signing: disabled in CI; sign locally on Mac"
+            echo "- Signing: App Store Connect API key with Xcode automatic signing"
+            echo "- Upload: TestFlight via altool API key"
           } >> "$GITHUB_STEP_SUMMARY"

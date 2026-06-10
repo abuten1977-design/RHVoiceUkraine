@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include "RHVoiceDebugLog.h"
 
 // MARK: - ThreadSafeRingBuffer
 // Internal SPSC queue used by the Stage 4 hybrid model:
@@ -57,30 +58,22 @@ private:
 // MARK: - EngineState (heap-allocated, shared between C callback and ObjC)
 
 struct EngineState {
-    ThreadSafeRingBuffer<void*>* queue;
+    ThreadSafeRingBuffer<void*>* queue = nullptr;
     std::atomic<bool> cancelled{false};
     std::atomic<int> sampleRate{24000};
     std::atomic<bool> synthesisDone{false};
-    NSCondition* dataCondition; // Condition variable to wake consumer when data arrives
-};
+    NSCondition* dataCondition = nil;
 
-struct AudioRequestState {
-    ThreadSafeRingBuffer<void*, 2048> queue;
-    std::atomic<size_t> queuedSamples{0};
-    std::atomic<bool> completed{true};
-    __strong NSData* currentChunk = nil;
-    size_t currentChunkOffset = 0;
+    bool ownsQueue = false; // true only when queue is heap-allocated
 
-    ~AudioRequestState() {
-        if (currentChunk) {
-            currentChunk = nil;
-        }
-
-        void* chunkPtr = nullptr;
-        while (queue.pop(chunkPtr)) {
-            if (chunkPtr) {
-                CFBridgingRelease(chunkPtr);
+    ~EngineState() {
+        // Drain and release any remaining chunks
+        if (queue) {
+            void* chunkPtr = nullptr;
+            while (queue->pop(chunkPtr)) {
+                if (chunkPtr) CFBridgingRelease(chunkPtr);
             }
+            if (ownsQueue) delete queue;
         }
     }
 };
@@ -88,7 +81,6 @@ struct AudioRequestState {
 // MARK: - Thread-local pointer to current EngineState
 
 static __thread EngineState* tls_engineState = nullptr;
-static constexpr NSTimeInterval kCancelWaitTimeoutSec = 1.5;
 
 static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBundle) {
     NSArray<NSBundle*>* candidateBundles = @[
@@ -118,208 +110,68 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     return nil;
 }
 
-@interface RHVoiceAudioRequestToken () {
-@public
-    std::shared_ptr<AudioRequestState> _state;
-}
-@end
+static NSString* const RHVoiceAppGroupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
+static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt";
 
-@implementation RHVoiceAudioRequestToken
-@end
-
-@interface RHVoiceAudioBuffer () {
-@private
-    std::shared_ptr<AudioRequestState> _activeState;
-}
-@end
-
-@implementation RHVoiceAudioBuffer
-
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        auto state = std::make_shared<AudioRequestState>();
-        std::atomic_store(&_activeState, state);
-    }
-    return self;
+static NSURL* RHVoiceSharedContainerURL(void) {
+    return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];
 }
 
-- (RHVoiceAudioRequestToken *)beginRequest {
-    auto state = std::make_shared<AudioRequestState>();
-    state->completed.store(false, std::memory_order_release);
-    std::atomic_store(&_activeState, state);
+static NSString* RHVoicePersonalDictionarySignature(void) {
+    NSURL* containerURL = RHVoiceSharedContainerURL();
+    if (!containerURL) return @"no-app-group";
 
-    RHVoiceAudioRequestToken* token = [RHVoiceAudioRequestToken new];
-    token->_state = state;
-    return token;
+    NSString* path = [[containerURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] path];
+    NSDictionary<NSFileAttributeKey, id>* attributes =
+        [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
+    if (!attributes) return @"missing";
+
+    NSDate* modified = attributes[NSFileModificationDate];
+    NSNumber* size = attributes[NSFileSize];
+    return [NSString stringWithFormat:@"%lld:%llu",
+            (long long)modified.timeIntervalSince1970,
+            size.unsignedLongLongValue];
 }
 
-- (void)cancelCurrentRequest {
-    auto state = std::make_shared<AudioRequestState>();
-    state->completed.store(true, std::memory_order_release);
-    std::atomic_store(&_activeState, state);
-}
+static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSURL* containerURL = RHVoiceSharedContainerURL();
+    if (!containerURL) return dataPath;
 
-- (BOOL)appendSamples:(const short *)samples
-                count:(unsigned int)count
-                token:(RHVoiceAudioRequestToken *)token {
-    if (!samples || count == 0 || !token) return NO;
-
-    auto tokenState = token->_state;
-    auto activeState = std::atomic_load(&_activeState);
-    if (!tokenState || tokenState.get() != activeState.get()) return NO;
-    if (tokenState->completed.load(std::memory_order_acquire)) return NO;
-
-    NSData* chunk = [NSData dataWithBytes:samples length:count * sizeof(short)];
-    void* retained = (__bridge_retained void*)chunk;
-    if (!tokenState->queue.push(retained)) {
-        CFBridgingRelease(retained);
-        return NO;
+    NSURL* configURL = [containerURL URLByAppendingPathComponent:@"RHVoiceConfig" isDirectory:YES];
+    NSURL* dictURL = [[configURL URLByAppendingPathComponent:@"dicts" isDirectory:YES]
+        URLByAppendingPathComponent:@"Ukrainian" isDirectory:YES];
+    NSError* error = nil;
+    if (![fm createDirectoryAtURL:dictURL withIntermediateDirectories:YES attributes:nil error:&error]) {
+        RHVoiceDebugLogWrite("USERDICT personal config mkdir failed: %s", error.localizedDescription.UTF8String);
+        return dataPath;
     }
 
-    tokenState->queuedSamples.fetch_add(count, std::memory_order_release);
-    return YES;
-}
-
-- (void)markCompletedWithToken:(RHVoiceAudioRequestToken *)token {
-    if (!token) return;
-    auto tokenState = token->_state;
-    if (!tokenState) return;
-
-    auto activeState = std::atomic_load(&_activeState);
-    if (tokenState.get() != activeState.get()) return;
-
-    tokenState->completed.store(true, std::memory_order_release);
-}
-
-- (NSUInteger)availableFrames {
-    auto state = std::atomic_load(&_activeState);
-    if (!state) return 0;
-    return state->queuedSamples.load(std::memory_order_acquire);
-}
-
-- (NSUInteger)readFrames:(float *)destination maxFrames:(NSUInteger)maxFrames {
-    if (!destination || maxFrames == 0) return 0;
-
-    auto state = std::atomic_load(&_activeState);
-    if (!state) return 0;
-
-    size_t copied = 0;
-    while (copied < maxFrames) {
-        if (!state->currentChunk || state->currentChunkOffset >= state->currentChunk.length / sizeof(short)) {
-            if (state->currentChunk) {
-                state->currentChunk = nil;
-                state->currentChunkOffset = 0;
-            }
-
-            void* chunkPtr = nullptr;
-            if (!state->queue.pop(chunkPtr)) break;
-
-            state->currentChunk = (__bridge_transfer NSData*)chunkPtr;
-            state->currentChunkOffset = 0;
+    NSString* sourceConfig = [dataPath stringByAppendingPathComponent:@"RHVoice.conf"];
+    NSString* targetConfig = [[configURL URLByAppendingPathComponent:@"RHVoice.conf"] path];
+    if ([fm fileExistsAtPath:sourceConfig]) {
+        [fm removeItemAtPath:targetConfig error:nil];
+        if (![fm copyItemAtPath:sourceConfig toPath:targetConfig error:&error]) {
+            RHVoiceDebugLogWrite("USERDICT config copy failed: %s", error.localizedDescription.UTF8String);
+            return dataPath;
         }
-
-        const short* samples = (const short*)state->currentChunk.bytes;
-        const size_t totalSamples = state->currentChunk.length / sizeof(short);
-        const size_t remaining = totalSamples - state->currentChunkOffset;
-        const size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
-        for (size_t i = 0; i < toCopy; ++i) {
-            destination[copied + i] = samples[state->currentChunkOffset + i] / 32768.0f;
-        }
-
-        state->currentChunkOffset += toCopy;
-        state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
-        copied += toCopy;
     }
 
-    return copied;
+    NSString* personalSource = [[[containerURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] standardizedURL] path];
+    NSString* personalTarget = [[dictURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] path];
+    [fm removeItemAtPath:personalTarget error:nil];
+    if ([fm fileExistsAtPath:personalSource]) {
+        if (![fm copyItemAtPath:personalSource toPath:personalTarget error:&error]) {
+            RHVoiceDebugLogWrite("USERDICT personal copy failed: %s", error.localizedDescription.UTF8String);
+            return dataPath;
+        }
+        RHVoiceDebugLogWrite("USERDICT personal loaded path=%s", personalSource.UTF8String);
+    } else {
+        RHVoiceDebugLogWrite("USERDICT personal missing; bundled only");
+    }
+
+    return [configURL path];
 }
-
-- (BOOL)renderFrames:(float *)destination
-           maxFrames:(NSUInteger)maxFrames
-     preBufferFrames:(NSUInteger)preBufferFrames
-         didComplete:(BOOL *)didComplete {
-    if (didComplete) {
-        *didComplete = NO;
-    }
-    if (!destination || maxFrames == 0) return NO;
-
-    auto state = std::atomic_load(&_activeState);
-    if (!state) {
-        if (didComplete) {
-            *didComplete = YES;
-        }
-        return NO;
-    }
-
-    const size_t available = state->queuedSamples.load(std::memory_order_acquire);
-    const bool done = state->completed.load(std::memory_order_acquire);
-
-    if (available == 0) {
-        if (didComplete) {
-            *didComplete = done;
-        }
-        return NO;
-    }
-
-    if (available < preBufferFrames && !done) {
-        return NO;
-    }
-
-    size_t copied = 0;
-    while (copied < maxFrames) {
-        if (!state->currentChunk || state->currentChunkOffset >= state->currentChunk.length / sizeof(short)) {
-            if (state->currentChunk) {
-                state->currentChunk = nil;
-                state->currentChunkOffset = 0;
-            }
-
-            void* chunkPtr = nullptr;
-            if (!state->queue.pop(chunkPtr)) break;
-
-            state->currentChunk = (__bridge_transfer NSData*)chunkPtr;
-            state->currentChunkOffset = 0;
-        }
-
-        const short* samples = (const short*)state->currentChunk.bytes;
-        const size_t totalSamples = state->currentChunk.length / sizeof(short);
-        const size_t remaining = totalSamples - state->currentChunkOffset;
-        const size_t toCopy = std::min(remaining, (size_t)(maxFrames - copied));
-        for (size_t i = 0; i < toCopy; ++i) {
-            destination[copied + i] = samples[state->currentChunkOffset + i] / 32768.0f;
-        }
-
-        state->currentChunkOffset += toCopy;
-        state->queuedSamples.fetch_sub(toCopy, std::memory_order_acq_rel);
-        copied += toCopy;
-    }
-
-    bool playbackComplete = false;
-    if (state->queuedSamples.load(std::memory_order_acquire) == 0) {
-        const bool chunkExhausted = (!state->currentChunk ||
-            state->currentChunkOffset >= state->currentChunk.length / sizeof(short));
-        playbackComplete = chunkExhausted && state->completed.load(std::memory_order_acquire);
-    }
-
-    if (didComplete) {
-        *didComplete = playbackComplete;
-    }
-    return copied > 0;
-}
-
-- (BOOL)isPlaybackComplete {
-    auto state = std::atomic_load(&_activeState);
-    if (!state) return YES;
-
-    if (state->queuedSamples.load(std::memory_order_acquire) > 0) return NO;
-    if (state->currentChunk && state->currentChunkOffset < state->currentChunk.length / sizeof(short)) {
-        return NO;
-    }
-
-    return state->completed.load(std::memory_order_acquire);
-}
-
-@end
 
 // MARK: - C Callbacks
 
@@ -336,7 +188,6 @@ static int set_sample_rate_callback(int sample_rate, void* user_data) {
 }
 
 static int play_speech_callback(const short* samples, unsigned int count, void* user_data) {
-    NSLog(@"🔊 play_speech_callback: count=%u user_data=%p tls=%p", count, user_data, tls_engineState);
     // Prefer user_data over TLS — works across threads
     EngineState* state = static_cast<EngineState*>(user_data);
     if (!state) state = tls_engineState;
@@ -370,6 +221,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @property (assign) BOOL initialized;
 @property (strong) NSCondition* activeStateCondition;
 @property (assign) EngineState* activeStreamingState;
+@property (copy) NSString* personalDictionarySignature;
 @end
 
 // MARK: - @implementation
@@ -396,9 +248,28 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         _initialized = NO;
         _engine = NULL;
         _activeStateCondition = [[NSCondition alloc] init];
+        _personalDictionarySignature = @"";
         [self initializeEngine];
     }
     return self;
+}
+
+- (void)refreshPersonalDictionaryIfNeeded {
+    NSString* signature = RHVoicePersonalDictionarySignature();
+    if (!self.initialized || [signature isEqualToString:self.personalDictionarySignature]) {
+        return;
+    }
+
+    RHVoiceDebugLogWrite("USERDICT personal changed old=%s new=%s",
+                         self.personalDictionarySignature.UTF8String,
+                         signature.UTF8String);
+    [self cancel];
+    if (self.engine) {
+        RHVoice_delete_tts_engine(self.engine);
+        self.engine = NULL;
+    }
+    self.initialized = NO;
+    [self initializeEngine];
 }
 
 - (BOOL)initializeEngine {
@@ -417,20 +288,55 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     NSLog(@"✅ RHVoice data path: %@ (bundle=%@)", dataPath, resolvedBundle.resourcePath);
     NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
+    
+    // Check permissions
+    BOOL isReadable = [fm isReadableFileAtPath:dataPath];
+    NSLog(@"ℹ️ Data path is readable: %d", isReadable);
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
     callbacks.set_sample_rate = set_sample_rate_callback;
     callbacks.play_speech = play_speech_callback;
 
+    NSString* configPath = RHVoicePrepareWritableConfigPath(dataPath);
+    self.personalDictionarySignature = RHVoicePersonalDictionarySignature();
+    NSLog(@"✅ RHVoice config path: %@", configPath);
+    RHVoiceDebugLogWrite("USERDICT config path=%s signature=%s",
+                         configPath.UTF8String,
+                         self.personalDictionarySignature.UTF8String);
+
     RHVoice_init_params params;
     memset(&params, 0, sizeof(params));
     params.data_path = [dataPath UTF8String];
-    params.config_path = NULL;
+    params.config_path = [configPath UTF8String];
     params.callbacks = callbacks;
 
-    self.engine = RHVoice_new_tts_engine(&params);
-    if (!self.engine) { NSLog(@"❌ Engine init failed for data_path: %@", dataPath); return NO; }
+    @try {
+        self.engine = RHVoice_new_tts_engine(&params);
+    } @catch (NSException *exception) {
+        NSLog(@"❌ Engine threw NSException: %@ — %@", exception.name, exception.reason);
+    }
+    if (!self.engine) {
+        NSLog(@"❌ Engine init failed for data_path: %@", dataPath);
+        // Diagnostic: check subdirectories
+        NSString* langPath = [dataPath stringByAppendingPathComponent:@"languages"];
+        NSString* voicePath = [dataPath stringByAppendingPathComponent:@"voices"];
+        NSLog(@"❌ languages/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:langPath],
+              [fm contentsOfDirectoryAtPath:langPath error:nil]);
+        NSLog(@"❌ voices/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:voicePath],
+              [fm contentsOfDirectoryAtPath:voicePath error:nil]);
+        NSString* ukPath = [langPath stringByAppendingPathComponent:@"Ukrainian"];
+        NSLog(@"❌ Ukrainian/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:ukPath],
+              [fm contentsOfDirectoryAtPath:ukPath error:nil]);
+        NSString* anatol = [voicePath stringByAppendingPathComponent:@"anatol"];
+        NSLog(@"❌ anatol/ exists: %d, contents: %@",
+              [fm fileExistsAtPath:anatol],
+              [fm contentsOfDirectoryAtPath:anatol error:nil]);
+        return NO;
+    }
 
     // Verify voices loaded
     unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
@@ -465,18 +371,44 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     RHVoice_synth_params p;
     memset(&p, 0, sizeof(p));
     p.voice_profile = [normalizedVoice UTF8String];
-    double mappedRate = rate > 0 ? rate * 2.0 : 1.0;
-    p.absolute_rate = 0.0;
-    p.relative_rate = mappedRate;
-    p.absolute_pitch = 0.0;
-    p.relative_pitch = pitch > 0 ? pitch : 1.0;
-    p.relative_volume = volume > 0 ? volume : 1.0;
+
+    // Detect SSML: VoiceOver sends rate/pitch/volume via SSML prosody tags
+    BOOL isSSML = [text containsString:@"<"];
+
+    if (isSSML) {
+        // Rate/volume extracted from SSML prosody, passed via parameters
+        p.absolute_rate = 0.0;
+        p.relative_rate = rate;
+        p.flags = RHVoice_synth_flag_dont_clip_rate;
+        p.absolute_pitch = 0.0;
+        p.relative_pitch = pitch > 0 ? pitch : 1.0;
+        p.relative_volume = volume > 0 ? volume : 1.0;
+    } else {
+        // For plain text (Preview): keep legacy multiplier without applying rate twice.
+        double polishRate = fmax(0.5, rate * 2.0);
+        double polishPitch = fmax(0.2, fmin(5.0, 0.5 + pitch * 0.5));
+        p.absolute_rate = 0.0;
+        p.relative_rate = polishRate;
+        p.absolute_pitch = (polishPitch - 1.0);
+        p.relative_pitch = polishPitch;
+        p.relative_volume = volume > 0 ? volume : 1.0;
+    }
 
     const char* t = [text UTF8String];
-    NSLog(@"🎙️ buildMessage voice='%@' normalized='%@' rate=%.2f→%.2f textLength=%lu",
-          voice, normalizedVoice, rate, mappedRate, (unsigned long)text.length);
+    NSString* textPreview = text.length > 300 ? [text substringToIndex:300] : text;
+    NSLog(@"[RHVOICE_TIMING] buildMessage text preview: %@", textPreview);
+    RHVoiceDebugLogWrite("buildMessage text: %s", [textPreview UTF8String]);
+    NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
+          normalizedVoice, rate, p.absolute_rate, p.relative_rate,
+          pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
+    RHVoiceDebugLogWrite("buildMessage voice=%s rate=%.2f->abs=%.2f/rel=%.2f pitch=%.2f->abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
+          [normalizedVoice UTF8String], rate, p.absolute_rate, p.relative_rate,
+          pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
+
+    RHVoice_message_type msgType = isSSML ? RHVoice_message_ssml : RHVoice_message_text;
+
     RHVoice_message msg = RHVoice_new_message(self.engine, t, (unsigned int)strlen(t),
-                               RHVoice_message_text, &p,
+                               msgType, &p,
                                (void*)state);  // Pass EngineState as user_data
     if (!msg) {
         NSLog(@"❌ RHVoice_new_message returned NULL for voice='%@'", normalizedVoice);
@@ -486,28 +418,13 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (RHVoice_message)buildDefaultMessage:(NSString*)text state:(EngineState*)state {
     const char* t = [text UTF8String];
+    RHVoice_message_type msgType = [text containsString:@"<"] ? RHVoice_message_ssml : RHVoice_message_text;
     return RHVoice_new_message(self.engine,
                                t,
                                (unsigned int)strlen(t),
-                               RHVoice_message_text,
+                               msgType,
                                NULL,
                                (void*)state);
-}
-
-- (void)publishActiveState:(EngineState*)state {
-    [self.activeStateCondition lock];
-    self.activeStreamingState = state;
-    [self.activeStateCondition broadcast];
-    [self.activeStateCondition unlock];
-}
-
-- (void)clearActiveStateIfMatches:(EngineState*)state {
-    [self.activeStateCondition lock];
-    if (self.activeStreamingState == state) {
-        self.activeStreamingState = nullptr;
-        [self.activeStateCondition broadcast];
-    }
-    [self.activeStateCondition unlock];
 }
 
 // MARK: - Sync synthesize (для preview в App)
@@ -515,6 +432,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 - (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
                                     rate:(double)rate volume:(double)volume pitch:(double)pitch {
     NSLog(@"🔍 synthesize called: initialized=%d, text='%@', voice='%@'", self.initialized, text, voice);
+    [self refreshPersonalDictionaryIfNeeded];
     
     if (!self.initialized || !text.length) {
         NSLog(@"❌ synthesize failed: initialized=%d, textLength=%lu", self.initialized, (unsigned long)text.length);
@@ -582,139 +500,27 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     return [self pcmBufferFrom:audioBuffer sampleRate:sr];
 }
 
-// MARK: - Streaming synthesize (для VoiceOver Extension)
-// Producer: RHVoice_speak runs in background thread, callbacks push to ring buffer.
-// Consumer: caller's thread (synthesizeSpeechRequest background queue) drains ring buffer.
-// NSCondition wakes consumer when data arrives — no spin-lock, no CPU burn.
-
-- (void)synthesizeStreaming:(NSString*)text voice:(NSString*)voice
-                      rate:(double)rate volume:(double)volume pitch:(double)pitch
-                   onChunk:(void(^)(const short* samples, unsigned int count, int sampleRate))chunkCallback {
-    if (!self.initialized || !text.length) return;
-
-    // NOTE: Do NOT call [self cancel] here — the caller (Swift) already called
-    // audioBuffer.beginRequest() which set up the active state. Calling cancel()
-    // would replace _activeState with a new empty state, causing render block
-    // to never receive data.
-
-    // Heap-allocated — lifetime spans both producer and consumer
-    EngineState* state = new (std::nothrow) EngineState();
-    if (!state) {
-        NSLog(@"❌ synthesizeStreaming failed: EngineState allocation failed");
-        return;
-    }
-
-    state->queue = new (std::nothrow) ThreadSafeRingBuffer<void*>();
-    if (!state->queue) {
-        NSLog(@"❌ synthesizeStreaming failed: queue allocation failed");
-        delete state;
-        return;
-    }
-    state->cancelled.store(false, std::memory_order_release);
-    state->sampleRate.store(24000, std::memory_order_release);
-    state->synthesisDone.store(false, std::memory_order_release);
-    state->dataCondition = [[NSCondition alloc] init];
-    if (!state->dataCondition) {
-        NSLog(@"❌ synthesizeStreaming failed: NSCondition allocation failed");
-        delete state->queue;
-        delete state;
-        return;
-    }
-    [self publishActiveState:state];
-
-    NSString* textCopy = [text copy];
-    NSString* voiceCopy = [voice copy];
-    RHVoiceEngine* __weak weakSelf = self;
-
-    dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        RHVoiceEngine* strongSelf = weakSelf;
-        // TLS set in THIS thread — callbacks fire synchronously from RHVoice_speak here
-        tls_engineState = state;
-
-        RHVoice_message msg = nullptr;
-        if (strongSelf) {
-            msg = [strongSelf buildMessage:textCopy voice:voiceCopy
-                                      rate:rate volume:volume pitch:pitch state:state];
-        }
-        if (msg) {
-            RHVoice_speak(msg);
-            RHVoice_delete_message(msg);
-        }
-
-        tls_engineState = nullptr;
-        // Signal consumer that production is complete
-        state->synthesisDone.store(true, std::memory_order_release);
-        [state->dataCondition lock];
-        [state->dataCondition broadcast];
-        [state->dataCondition unlock];
-        if (strongSelf) {
-            [strongSelf clearActiveStateIfMatches:state];
-        }
-    });
-
-    // Consumer loop — sleeps on NSCondition until data arrives or synthesis done
-    while (true) {
-        void* chunkPtr = nullptr;
-        if (state->queue->pop(chunkPtr)) {
-            NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
-            if (!state->cancelled.load(std::memory_order_acquire)) {
-                const short* samples = (const short*)chunk.bytes;
-                unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-                int sr = state->sampleRate.load(std::memory_order_acquire);
-                if (sr <= 0) sr = 24000;
-                chunkCallback(samples, count, sr);
-            }
-        } else if (state->synthesisDone.load(std::memory_order_acquire)) {
-            // Drain any remaining chunks after done signal
-            while (state->queue->pop(chunkPtr)) {
-                if (chunkPtr) {
-                    NSData* chunk = (__bridge_transfer NSData*)chunkPtr;
-                    if (!state->cancelled.load(std::memory_order_acquire)) {
-                        const short* samples = (const short*)chunk.bytes;
-                        unsigned int count = (unsigned int)(chunk.length / sizeof(short));
-                        int sr = state->sampleRate.load(std::memory_order_acquire);
-                        if (sr <= 0) sr = 24000;
-                        chunkCallback(samples, count, sr);
-                    }
-                }
-            }
-            break;
-        } else {
-            // No data yet and not done — sleep until signaled
-            [state->dataCondition lock];
-            // Double-check condition to avoid spurious wakeup issues
-            if (state->queue->is_empty() && !state->synthesisDone.load(std::memory_order_acquire)) {
-                [state->dataCondition wait];
-            }
-            [state->dataCondition unlock];
-        }
-    }
-
-    delete state->queue;
-    delete state;
-}
-
 - (void)cancel {
+    CFAbsoluteTime t0 = CFAbsoluteTimeGetCurrent();
     [self.activeStateCondition lock];
     EngineState* state = self.activeStreamingState;
     if (!state) {
         [self.activeStateCondition unlock];
+        NSLog(@"[RHVOICE_TIMING] cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+        RHVoiceDebugLogWrite("cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
         return;
     }
 
+    // Non-blocking: set flag and wake consumer, don't wait
     state->cancelled.store(true, std::memory_order_release);
-    [state->dataCondition lock];
-    [state->dataCondition broadcast];
-    [state->dataCondition unlock];
-
-    NSDate* deadline = [NSDate dateWithTimeIntervalSinceNow:kCancelWaitTimeoutSec];
-    while (self.activeStreamingState == state) {
-        if (![self.activeStateCondition waitUntilDate:deadline]) {
-            NSLog(@"⚠️ cancel timeout after %.1f sec; continuing without blocking caller", kCancelWaitTimeoutSec);
-            break;
-        }
+    if (state->dataCondition) {
+        [state->dataCondition lock];
+        [state->dataCondition broadcast];
+        [state->dataCondition unlock];
     }
     [self.activeStateCondition unlock];
+    NSLog(@"[RHVOICE_TIMING] cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+    RHVoiceDebugLogWrite("cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
 }
 
 // MARK: - Int16 → Float32

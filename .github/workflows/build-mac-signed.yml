@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   build-mac-signed:
-    runs-on: macos-14
+    runs-on: macos-latest
     timeout-minutes: 60
 
     steps:
@@ -21,98 +21,335 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install build tools
-        run: brew install xcodegen cmake boost
-
-      - name: Import signing certificate
-        uses: apple-actions/import-codesign-certs@v3
+      - name: Select Xcode 16
+        uses: maxim-lobanov/setup-xcode@v1
         with:
-          p12-file-base64: ${{ secrets.MACOS_CODESIGN_P12_BASE64 }}
-          p12-password: ${{ secrets.MACOS_CODESIGN_P12_PASSWORD }}
+          xcode-version: "16.4"
 
-      - name: Install provisioning profiles (app + extension)
+      - name: Install build tools
+        run: brew install xcodegen
+
+      - name: Prepare App Store Connect API key
+        env:
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -euxo pipefail
+          KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          echo "$ASC_API_KEY_BASE64" | base64 --decode > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "ASC_API_KEY_PATH=$KEY_PATH" >> "$GITHUB_ENV"
+          echo "ASC_KEY_ID=$ASC_KEY_ID" >> "$GITHUB_ENV"
+          echo "ASC_ISSUER_ID=$ASC_ISSUER_ID" >> "$GITHUB_ENV"
+
+      - name: Import Developer ID certificate
+        env:
+          MACOS_CODESIGN_P12_BASE64: ${{ secrets.MACOS_CODESIGN_P12_BASE64 }}
+          MACOS_CODESIGN_P12_PASSWORD: ${{ secrets.MACOS_CODESIGN_P12_PASSWORD }}
+          MACOS_CODE_SIGN_IDENTITY: ${{ secrets.MACOS_CODE_SIGN_IDENTITY }}
+        run: |
+          set -euo pipefail
+          KEYCHAIN_PATH="$RUNNER_TEMP/rhvoice-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          P12_PATH="$RUNNER_TEMP/developer-id.p12"
+
+          echo "$MACOS_CODESIGN_P12_BASE64" | base64 --decode > "$P12_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$P12_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$MACOS_CODESIGN_P12_PASSWORD" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security \
+            -T /usr/bin/xcodebuild
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security default-keychain -d user -s "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | sed 's/[ "]//g')
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          echo "MACOS_CODE_SIGN_IDENTITY=$MACOS_CODE_SIGN_IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Install provisioning profiles
         env:
           APP_PROFILE_BASE64: ${{ secrets.MACOS_APP_PROFILE_BASE64 }}
           EXT_PROFILE_BASE64: ${{ secrets.MACOS_EXT_PROFILE_BASE64 }}
+          TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
 
-          echo "$APP_PROFILE_BASE64" | base64 --decode > /tmp/uv_mac_app.mobileprovision
-          echo "$EXT_PROFILE_BASE64" | base64 --decode > /tmp/uv_mac_ext.mobileprovision
+          echo "$APP_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/uv_mac_app.mobileprovision"
+          echo "$EXT_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/uv_mac_ext.mobileprovision"
 
-          APP_UUID=$(/usr/bin/security cms -D -i /tmp/uv_mac_app.mobileprovision | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
-          EXT_UUID=$(/usr/bin/security cms -D -i /tmp/uv_mac_ext.mobileprovision | /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin)
+          if /usr/bin/security cms -D -i "$RUNNER_TEMP/uv_mac_app.mobileprovision" > "$RUNNER_TEMP/uv_mac_app.plist" 2>/dev/null &&
+             /usr/bin/security cms -D -i "$RUNNER_TEMP/uv_mac_ext.mobileprovision" > "$RUNNER_TEMP/uv_mac_ext.plist" 2>/dev/null; then
+            APP_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/uv_mac_app.plist")
+            EXT_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/uv_mac_ext.plist")
+            APP_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$RUNNER_TEMP/uv_mac_app.plist" 2>/dev/null || true)
+            EXT_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$RUNNER_TEMP/uv_mac_ext.plist" 2>/dev/null || true)
 
-          cp /tmp/uv_mac_app.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$APP_UUID.mobileprovision"
-          cp /tmp/uv_mac_ext.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$EXT_UUID.mobileprovision"
+            if [[ "$APP_ID" != "${TEAM_ID}.com.rhvoice.UkrainianVoices.mac" ||
+                  "$EXT_ID" != "${TEAM_ID}.com.rhvoice.UkrainianVoices.mac.Extension" ]]; then
+              echo "Provisioning profile secrets do not match current macOS bundle IDs/team; continuing without explicit profile UUIDs."
+              echo "UV_MAC_APP_PROFILE_UUID=" >> "$GITHUB_ENV"
+              echo "UV_MAC_EXT_PROFILE_UUID=" >> "$GITHUB_ENV"
+              exit 0
+            fi
 
-          echo "UV_MAC_APP_PROFILE_UUID=$APP_UUID" >> "$GITHUB_ENV"
-          echo "UV_MAC_EXT_PROFILE_UUID=$EXT_UUID" >> "$GITHUB_ENV"
+            cp "$RUNNER_TEMP/uv_mac_app.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$APP_UUID.mobileprovision"
+            cp "$RUNNER_TEMP/uv_mac_ext.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$EXT_UUID.mobileprovision"
 
-          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles"
+            echo "UV_MAC_APP_PROFILE_UUID=$APP_UUID" >> "$GITHUB_ENV"
+            echo "UV_MAC_EXT_PROFILE_UUID=$EXT_UUID" >> "$GITHUB_ENV"
+          else
+            echo "Provisioning profile secrets are not parseable; continuing without explicit profile UUIDs."
+            echo "UV_MAC_APP_PROFILE_UUID=" >> "$GITHUB_ENV"
+            echo "UV_MAC_EXT_PROFILE_UUID=" >> "$GITHUB_ENV"
+          fi
 
-      - name: Build RHVoice x86_64 dylibs
+      - name: Create Boost unified include
         run: |
           set -euxo pipefail
-          cd RHVoice
-          rm -rf build_macos_x86_64
-          mkdir -p build_macos_x86_64
-          cd build_macos_x86_64
-          cmake .. \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_OSX_ARCHITECTURES=x86_64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-            -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_CXX_FLAGS="-I$(brew --prefix boost)/include"
-          cmake --build . --config Release --parallel
-
-      - name: Stage fresh RHVoice dylibs
-        run: |
-          set -euxo pipefail
-          cp RHVoice/build_macos_x86_64/src/lib/libRHVoice.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cp RHVoice/build_macos_x86_64/src/core/libRHVoice_core.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cp RHVoice/build_macos_x86_64/src/audio/libRHVoice_audio.dylib UkrainianVoicesApp/Extension/Libraries_macos_x86_64/
-          cd UkrainianVoicesApp/Extension/Libraries_macos_x86_64
-          ln -sf libRHVoice.dylib libRHVoice..dylib
-          ln -sf libRHVoice_core.dylib libRHVoice_core..dylib
-          ln -sf libRHVoice_audio.dylib libRHVoice_audio..dylib
-          file ./*.dylib
+          BOOST_ROOT="RHVoice/external/libs/boost"
+          UNIFIED="$BOOST_ROOT/unified_include"
+          rm -rf "$UNIFIED"
+          mkdir -p "$UNIFIED/boost"
+          for dir in "$BOOST_ROOT"/libs/*/include/boost; do
+            if [ -d "$dir" ]; then
+              rsync -a "$dir/" "$UNIFIED/boost/"
+            fi
+          done
+          echo "Boost unified: $(find "$UNIFIED/boost/" -maxdepth 1 | wc -l) top-level entries"
 
       - name: Generate Xcode project
         working-directory: UkrainianVoicesApp
         run: xcodegen generate
 
-      - name: Archive signed macOS app
+      - name: Archive and export signed macOS app
         env:
           TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
-          SIGN_ID: ${{ secrets.MACOS_CODE_SIGN_IDENTITY }}
         working-directory: UkrainianVoicesApp
         run: |
           set -euxo pipefail
           xcodebuild \
+            -project UkrainianVoices.xcodeproj \
             -scheme UkrainianVoicesMac \
             -configuration Release \
             -destination "platform=macOS,arch=x86_64" \
             -derivedDataPath build_signed \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_API_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             ARCHS="x86_64" \
             ONLY_ACTIVE_ARCH=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGN_STYLE=Manual \
+            CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_IDENTITY="$SIGN_ID" \
-            UV_MAC_APP_PROFILE_UUID="$UV_MAC_APP_PROFILE_UUID" \
-            UV_MAC_EXT_PROFILE_UUID="$UV_MAC_EXT_PROFILE_UUID" \
             clean archive \
             -archivePath build_signed/UkrainianVoicesMac.xcarchive
 
-      - name: Package signed macOS app
+          mkdir -p build_signed/export
+          cp -R build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app build_signed/export/
+
+      - name: Sign macOS app manually
         working-directory: UkrainianVoicesApp
         run: |
           set -euxo pipefail
-          APP_PATH="build_signed/UkrainianVoicesMac.xcarchive/Products/Applications/UkrainianVoicesMac.app"
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
+          EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+          test -d "$APP_PATH"
+          test -d "$EXT_PATH"
+
+          while IFS= read -r item; do
+            codesign --force --timestamp --options runtime --sign "$MACOS_CODE_SIGN_IDENTITY" "$item"
+          done < <(find "$APP_PATH" \( -name "*.framework" -o -name "*.dylib" \) -print | sort -r)
+
+          codesign --force --timestamp --options runtime \
+            --entitlements Extension/UkrainianVoicesExtensionMac.entitlements \
+            --sign "$MACOS_CODE_SIGN_IDENTITY" "$EXT_PATH"
+
+          codesign --force --timestamp --options runtime \
+            --entitlements App/UkrainianVoicesMac.entitlements \
+            --sign "$MACOS_CODE_SIGN_IDENTITY" "$APP_PATH"
+
+      - name: Validate signed macOS artifact (static + signature gate)
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
+          test -d "$APP_PATH"
+
+          EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+
+          bash ../scripts/validate_macos_artifact.sh "$APP_PATH"
+
+          if find "$APP_PATH" -name "libRHVoice*.dylib" | grep -q .; then
+            echo "❌ FAIL: legacy RHVoice dylibs found in app bundle"
+            find "$APP_PATH" -name "libRHVoice*.dylib"
+            exit 1
+          fi
+          echo "✅ No RHVoice dylibs in app bundle — RHVoice C/C++ is compiled into RHVoiceKitMac"
+
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
+
+          APP_ENT="$(codesign -d --entitlements :- "$APP_PATH" 2>/dev/null || true)"
+          EXT_ENT="$(codesign -d --entitlements :- "$EXT_PATH" 2>/dev/null || true)"
+          echo "$APP_ENT"
+          echo "$EXT_ENT"
+          echo "$APP_ENT" | grep -q "group.rhvoice.UkrainianVoices.shared"
+          echo "$EXT_ENT" | grep -q "group.rhvoice.UkrainianVoices.shared"
+          echo "$APP_ENT" | grep -q "com.apple.security.app-sandbox"
+          echo "$EXT_ENT" | grep -q "com.apple.security.app-sandbox"
+
+      - name: Package signed macOS app for notarization
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
           test -d "$APP_PATH"
           mkdir -p ../mac_signed_build
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
+          ls -la ../mac_signed_build/UkrainianVoicesMac.app.notary.zip
+
+      - name: Upload pre-notarized signed macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-signed-prenotary-build
+          path: ${{ github.workspace }}/mac_signed_build/UkrainianVoicesMac.app.notary.zip
+          retention-days: 3
+
+      - name: Notarize signed macOS app
+        run: |
+          set -euxo pipefail
+          ZIP_PATH="mac_signed_build/UkrainianVoicesMac.app.notary.zip"
+          ls -lh "$ZIP_PATH"
+          du -h "$ZIP_PATH"
+
+          HISTORY_BEFORE="$RUNNER_TEMP/notary-history-before.json"
+          xcrun notarytool history \
+            --key "$ASC_API_KEY_PATH" \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" \
+            --output-format json > "$HISTORY_BEFORE" || true
+          BEFORE_ID="$(/usr/bin/python3 -c 'import json,sys; p=sys.argv[1]; d=json.load(open(p)) if __import__("os").path.getsize(p) else {}; h=d.get("history") or []; print(h[0].get("id","") if h else "")' "$HISTORY_BEFORE")"
+          echo "Previous notary submission id: ${BEFORE_ID:-none}"
+
+          SUBMISSION_JSON="$RUNNER_TEMP/notary-submit.json"
+          /usr/bin/python3 - "$ZIP_PATH" "$ASC_API_KEY_PATH" "$ASC_KEY_ID" "$ASC_ISSUER_ID" "$SUBMISSION_JSON" <<'PY'
+          import os
+          import signal
+          import subprocess
+          import sys
+
+          zip_path, key_path, key_id, issuer_id, output_path = sys.argv[1:]
+          cmd = [
+              "xcrun", "notarytool", "submit", zip_path,
+              "--key", key_path,
+              "--key-id", key_id,
+              "--issuer", issuer_id,
+              "--no-wait",
+              "--no-s3-acceleration",
+              "--output-format", "json",
+          ]
+          with open(output_path, "wb") as out:
+              proc = subprocess.Popen(
+                  cmd,
+                  stdout=out,
+                  stderr=subprocess.STDOUT,
+                  start_new_session=True,
+              )
+              try:
+                  proc.wait(timeout=90)
+              except subprocess.TimeoutExpired:
+                  print("notarytool submit did not return after 90 seconds; continuing via history polling.", flush=True)
+                  os.killpg(proc.pid, signal.SIGTERM)
+                  try:
+                      proc.wait(timeout=10)
+                  except subprocess.TimeoutExpired:
+                      os.killpg(proc.pid, signal.SIGKILL)
+                      proc.wait()
+          PY
+
+          SUBMISSION_ID="$(/usr/bin/python3 - "$SUBMISSION_JSON" <<'PY'
+          import json
+          import os
+          import sys
+
+          path = sys.argv[1]
+          try:
+              print(json.load(open(path)).get("id", "") if os.path.getsize(path) else "")
+          except Exception:
+              print("")
+          PY
+          )"
+          if [ -z "$SUBMISSION_ID" ]; then
+            for attempt in $(seq 1 12); do
+              HISTORY_AFTER="$RUNNER_TEMP/notary-history-after-${attempt}.json"
+              xcrun notarytool history \
+                --key "$ASC_API_KEY_PATH" \
+                --key-id "$ASC_KEY_ID" \
+                --issuer "$ASC_ISSUER_ID" \
+                --output-format json > "$HISTORY_AFTER"
+              SUBMISSION_ID="$(/usr/bin/python3 -c 'import json,sys; before=sys.argv[2]; h=json.load(open(sys.argv[1])).get("history") or []; print(next((x.get("id","") for x in h if x.get("name")=="UkrainianVoicesMac.app.notary.zip" and x.get("id","") != before), ""))' "$HISTORY_AFTER" "$BEFORE_ID")"
+              if [ -n "$SUBMISSION_ID" ]; then
+                break
+              fi
+              sleep 10
+            done
+          fi
+          test -n "$SUBMISSION_ID"
+          echo "Notary submission id: $SUBMISSION_ID"
+
+          for attempt in $(seq 1 60); do
+            STATUS_JSON="$RUNNER_TEMP/notary-status-${attempt}.json"
+            xcrun notarytool info "$SUBMISSION_ID" \
+              --key "$ASC_API_KEY_PATH" \
+              --key-id "$ASC_KEY_ID" \
+              --issuer "$ASC_ISSUER_ID" \
+              --output-format json > "$STATUS_JSON"
+            STATUS="$(/usr/bin/python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' "$STATUS_JSON")"
+            echo "Notary status attempt ${attempt}: ${STATUS}"
+
+            case "$STATUS" in
+              Accepted)
+                exit 0
+                ;;
+              Invalid|Rejected)
+                xcrun notarytool log "$SUBMISSION_ID" \
+                  --key "$ASC_API_KEY_PATH" \
+                  --key-id "$ASC_KEY_ID" \
+                  --issuer "$ASC_ISSUER_ID"
+                exit 65
+                ;;
+            esac
+
+            sleep 30
+          done
+
+          echo "Notarization did not finish within 30 minutes."
+          xcrun notarytool log "$SUBMISSION_ID" \
+            --key "$ASC_API_KEY_PATH" \
+            --key-id "$ASC_KEY_ID" \
+            --issuer "$ASC_ISSUER_ID" || true
+          exit 65
+
+      - name: Staple notarization and package final artifact
+        working-directory: UkrainianVoicesApp
+        run: |
+          set -euxo pipefail
+          APP_PATH="build_signed/export/UkrainianVoicesMac.app"
+          for attempt in 1 2 3 4 5; do
+            if xcrun stapler staple "$APP_PATH"; then
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              exit 65
+            fi
+            sleep 30
+          done
+          xcrun stapler validate "$APP_PATH"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.zip
           ls -la ../mac_signed_build/UkrainianVoicesMac.app.zip
 
@@ -129,14 +366,14 @@ jobs:
             echo "## macOS signed build ready"
             echo ""
             echo "- Artifact: \`macos-signed-build\`"
-            echo "- Signing: Manual (certificate + provisioning profiles)"
+            echo "- Signing: Xcode automatic signing with App Store Connect API key"
+            echo "- Notarization: App Store Connect API key + notarytool"
             echo "- Scheme: \`UkrainianVoicesMac\` (x86_64)"
+            echo "- Architecture gate: no \`libRHVoice*.dylib\` in the app bundle"
             echo ""
             echo "Required secrets:"
-            echo "- \`MACOS_CODESIGN_P12_BASE64\`"
-            echo "- \`MACOS_CODESIGN_P12_PASSWORD\`"
-            echo "- \`MACOS_APP_PROFILE_BASE64\` (macOS App profile for \`com.rhvoice.UkrainianVoices.mac\`)"
-            echo "- \`MACOS_EXT_PROFILE_BASE64\` (macOS App Extension profile for \`com.rhvoice.UkrainianVoices.mac.Extension\`)"
             echo "- \`MACOS_TEAM_ID\`"
-            echo "- \`MACOS_CODE_SIGN_IDENTITY\` (e.g. \`Apple Development: ...\`)"
+            echo "- \`ASC_API_KEY_BASE64\`"
+            echo "- \`ASC_KEY_ID\`"
+            echo "- \`ASC_ISSUER_ID\`"
           } >> "$GITHUB_STEP_SUMMARY"

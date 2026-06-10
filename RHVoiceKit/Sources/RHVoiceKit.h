@@ -12,5 +12,5 @@ FOUNDATION_EXPORT double RHVoiceKitVersionNumber;
 FOUNDATION_EXPORT const unsigned char RHVoiceKitVersionString[];
 
 #import <RHVoiceKit/RHVoiceEngine.h>
-#import <RHVoiceKit/RHVoiceEngine+Parameters.h>
 
+#include "RHVoiceDebugLog.h"

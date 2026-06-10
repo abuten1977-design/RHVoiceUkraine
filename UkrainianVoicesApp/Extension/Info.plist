@@ -32,7 +32,9 @@
 					<key>manufacturer</key>
 					<string>RHVo</string>
 					<key>name</key>
-					<string>RHVo: RHVoice Ukrainian Speech Synthesizer</string>
+					<string>RHVoiceUA: Ukrainian Speech Synthesizer</string>
+					<key>resourceBundleID</key>
+					<string>com.rhvoice.UkrainianVoices.mac.Extension</string>
 					<key>sandboxSafe</key>
 					<true/>
 					<key>subtype</key>
