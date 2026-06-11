@@ -304,3 +304,19 @@ targets:
         ENABLE_DEBUG_DYLIB: NO
         GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: NO
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
+
+  RHVoicePipelineSplitterTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Shared/RHVoicePipelineSplitter.swift
+      - path: Tests/RHVoicePipelineSplitterTests.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoicePipelineSplitterTests
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        DEVELOPMENT_TEAM: ""
+        MACOSX_DEPLOYMENT_TARGET: "13.0"
+        GENERATE_INFOPLIST_FILE: YES

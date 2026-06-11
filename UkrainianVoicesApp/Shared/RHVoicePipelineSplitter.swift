@@ -1,22 +1,34 @@
 import Foundation
+import os.log
 
 enum RHVoicePipelineSplitter {
+    private static let diagnosticLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "latency")
+
     static func sentencePipelineFragments(from ssml: String) -> [String] {
+        logSSMLTagNames(from: ssml)
+
         guard let strippedBody = pipelineBodyByRemovingWrapperTags(from: ssml) else {
+            logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
             return [ssml]
         }
         let bodyFragments = splitPipelineBodyIntoSentenceFragments(strippedBody)
         let pipelineFragments = bodyFragments.flatMap { splitLongPipelineFragment($0) }
         let priorityFragments = splitPriorityFirstFragment(pipelineFragments)
-        guard priorityFragments.count > 1 else { return [ssml] }
+        guard priorityFragments.count > 1 else {
+            logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
+            return [ssml]
+        }
 
         let mergedFragments = mergeSmallPipelineFragments(priorityFragments)
         guard mergedFragments.count > 1,
               mergedFragments.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+            logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
             return [ssml]
         }
 
-        return mergedFragments.map { "<speak>\($0)</speak>" }
+        let fragments = mergedFragments.map { "<speak>\($0)</speak>" }
+        logPipelinePlan(fragmentCount: fragments.count, totalLength: ssml.count)
+        return fragments
     }
 
     static func textCharacterCount(in ssml: String) -> Int {
@@ -38,7 +50,7 @@ enum RHVoicePipelineSplitter {
                     if isPipelineBreakTag(tag) {
                         output += tag
                     } else if !isPipelineWrapperTag(tag) {
-                        return nil
+                        output += tag
                     }
                     tag.removeAll(keepingCapacity: true)
                     insideTag = false
@@ -73,21 +85,27 @@ enum RHVoicePipelineSplitter {
         var tag = ""
         var insideTag = false
         var pendingBoundary = false
+        var activeTags: [SSMLTag] = []
+        let characters = Array(body)
 
         func flushCurrent() {
             let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
             if !trimmed.isEmpty {
-                fragments.append(current)
+                let suffix = activeTags.reversed().map(\.closingTag).joined()
+                fragments.append(current + suffix)
             }
-            current.removeAll(keepingCapacity: true)
+            current = activeTags.map(\.openingTag).joined()
             pendingBoundary = false
         }
 
-        for character in body {
+        for index in characters.indices {
+            let character = characters[index]
+
             if insideTag {
                 tag.append(character)
                 if character == ">" {
                     current += tag
+                    updateActiveTags(with: tag, activeTags: &activeTags)
                     tag.removeAll(keepingCapacity: true)
                     insideTag = false
                 }
@@ -106,7 +124,7 @@ enum RHVoicePipelineSplitter {
 
             current.append(character)
 
-            if isPipelineSentenceBoundary(character) {
+            if isPipelineSentenceBoundary(character, in: characters, at: index) {
                 pendingBoundary = true
             }
         }
@@ -239,6 +257,22 @@ enum RHVoicePipelineSplitter {
         character == "." || character == "!" || character == "?"
     }
 
+    private static func isPipelineSentenceBoundary(_ character: Character, in characters: [Character], at index: Int) -> Bool {
+        guard isPipelineSentenceBoundary(character) else { return false }
+
+        if character == ".",
+           index > characters.startIndex {
+            let nextIndex = characters.index(after: index)
+            if nextIndex < characters.endIndex,
+               isDigit(characters[characters.index(before: index)]),
+               isDigit(characters[nextIndex]) {
+                return false
+            }
+        }
+
+        return true
+    }
+
     private static func isPipelineSubSentenceBoundary(_ character: Character, in characters: [Character], at index: Int) -> Bool {
         guard character == "," || character == ";" || character == ":" || character == "—" else {
             return false
@@ -300,5 +334,97 @@ enum RHVoicePipelineSplitter {
 
     private static func isWhitespace(_ character: Character) -> Bool {
         character.unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) }
+    }
+
+    private static func isDigit(_ character: Character) -> Bool {
+        character.unicodeScalars.allSatisfy { CharacterSet.decimalDigits.contains($0) }
+    }
+
+    private static func logSSMLTagNames(from ssml: String) {
+        let names = ssmlTagNames(from: ssml)
+        let tagList = names.isEmpty ? "none" : names.joined(separator: ",")
+        os_log(.info, log: diagnosticLog, "LATENCY_DIAG ssml tags=%{public}@", tagList)
+    }
+
+    private static func logPipelinePlan(fragmentCount: Int, totalLength: Int) {
+        os_log(.info, log: diagnosticLog, "LATENCY_DIAG pipeline plan fragments=%{public}d totalLen=%{public}d", fragmentCount, totalLength)
+    }
+
+    private static func ssmlTagNames(from ssml: String) -> [String] {
+        var names = Set<String>()
+        var tag = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                tag.append(character)
+                if character == ">" {
+                    if let parsed = parseSSMLTag(tag) {
+                        names.insert(parsed.name)
+                    }
+                    tag.removeAll(keepingCapacity: true)
+                    insideTag = false
+                }
+            } else if character == "<" {
+                insideTag = true
+                tag.append(character)
+            }
+        }
+
+        return names.sorted()
+    }
+
+    private static func updateActiveTags(with tag: String, activeTags: inout [SSMLTag]) {
+        guard let parsed = parseSSMLTag(tag),
+              !parsed.isSelfClosing else {
+            return
+        }
+
+        if parsed.isClosing {
+            if let index = activeTags.lastIndex(where: { $0.name == parsed.name }) {
+                activeTags.removeSubrange(index...)
+            }
+        } else {
+            activeTags.append(SSMLTag(name: parsed.name, openingTag: tag, closingTag: "</\(parsed.name)>"))
+        }
+    }
+
+    private static func parseSSMLTag(_ tag: String) -> ParsedSSMLTag? {
+        let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("<"), trimmed.hasSuffix(">") else { return nil }
+
+        var content = trimmed.dropFirst().dropLast().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !content.isEmpty else { return nil }
+
+        let isClosing = content.hasPrefix("/")
+        if isClosing {
+            content = content.dropFirst().trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        let isSelfClosing = !isClosing && content.hasSuffix("/")
+        if isSelfClosing {
+            content = content.dropLast().trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        guard let nameEnd = content.firstIndex(where: { isWhitespace($0) || $0 == "/" }),
+              nameEnd > content.startIndex else {
+            let name = String(content).lowercased()
+            return name.isEmpty ? nil : ParsedSSMLTag(name: name, isClosing: isClosing, isSelfClosing: isSelfClosing)
+        }
+
+        let name = String(content[..<nameEnd]).lowercased()
+        return name.isEmpty ? nil : ParsedSSMLTag(name: name, isClosing: isClosing, isSelfClosing: isSelfClosing)
+    }
+
+    private struct SSMLTag {
+        let name: String
+        let openingTag: String
+        let closingTag: String
+    }
+
+    private struct ParsedSSMLTag {
+        let name: String
+        let isClosing: Bool
+        let isSelfClosing: Bool
     }
 }
