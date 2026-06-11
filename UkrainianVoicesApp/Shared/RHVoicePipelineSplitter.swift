@@ -11,19 +11,27 @@ enum RHVoicePipelineSplitter {
             logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
             return [ssml]
         }
+        // Single-fragment fallbacks must also go through the cleaned body: returning
+        // the original ssml (with unknown tags) would send short texts down the
+        // engine's plain-text fallback with a different rate formula than split
+        // fragments use — short and long texts must sound identical.
+        let cleanedWholeUtterance: [String] = {
+            let trimmed = strippedBody.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? [ssml] : ["<speak>\(strippedBody)</speak>"]
+        }()
         let bodyFragments = splitPipelineBodyIntoSentenceFragments(strippedBody)
         let pipelineFragments = bodyFragments.flatMap { splitLongPipelineFragment($0) }
         let priorityFragments = splitPriorityFirstFragment(pipelineFragments)
         guard priorityFragments.count > 1 else {
             logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
-            return [ssml]
+            return cleanedWholeUtterance
         }
 
         let mergedFragments = mergeSmallPipelineFragments(priorityFragments)
         guard mergedFragments.count > 1,
               mergedFragments.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
             logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
-            return [ssml]
+            return cleanedWholeUtterance
         }
 
         let fragments = mergedFragments.map { "<speak>\($0)</speak>" }
@@ -49,9 +57,11 @@ enum RHVoicePipelineSplitter {
                 if character == ">" {
                     if isPipelineBreakTag(tag) {
                         output += tag
-                    } else if !isPipelineWrapperTag(tag) {
-                        output += tag
                     }
+                    // speak/prosody wrappers and unknown (VoiceOver service) tags are
+                    // dropped, keeping their inner text: the engine rejects unknown
+                    // tags, which triggered the per-fragment plain-text fallback with
+                    // a different rate formula (build 152 mixed-speed regression).
                     tag.removeAll(keepingCapacity: true)
                     insideTag = false
                 }

@@ -20,17 +20,43 @@ final class RHVoicePipelineSplitterTests: XCTestCase {
         XCTAssertEqual(RHVoicePipelineSplitter.textCharacterCount(in: fragments[1]), "Друге речення.".count)
     }
 
-    func testUnknownNestedTagsSplitWithoutDroppingTags() {
+    func testUnknownTagsAreStrippedKeepingInnerText() {
+        // Engine rejects unknown tags -> per-fragment plain-text fallback with a
+        // different rate formula (build 152 mixed-speed regression). Tags must be
+        // dropped, their inner text preserved.
         let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(
             from: "<speak><p>Перше речення. Друге речення.</p><say-as interpret-as=\"characters\">АБВ</say-as>.</speak>"
         )
 
         XCTAssertGreaterThan(fragments.count, 1)
-        XCTAssertTrue(fragments[0].contains("<p>"))
-        XCTAssertTrue(fragments[0].contains("Перше речення."))
-        XCTAssertTrue(fragments[0].contains("</p>"))
-        XCTAssertTrue(fragments.joined().contains("<say-as interpret-as=\"characters\">АБВ</say-as>"))
+        let joined = fragments.joined()
+        XCTAssertTrue(joined.contains("Перше речення."))
+        XCTAssertTrue(joined.contains("АБВ"))
+        XCTAssertFalse(joined.contains("<p>"))
+        XCTAssertFalse(joined.contains("</p>"))
+        XCTAssertFalse(joined.contains("<say-as"))
         XCTAssertTrue(fragments.allSatisfy { $0.hasPrefix("<speak>") && $0.hasSuffix("</speak>") })
+    }
+
+    func testShortTextWithUnknownTagReturnsCleanSpeakFragment() {
+        // Short texts must take the same cleaned path as split fragments,
+        // otherwise short and long texts get different rate formulas.
+        let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(
+            from: "<speak><voice name=\"x\">Коротка фраза</voice></speak>"
+        )
+
+        XCTAssertEqual(fragments.count, 1)
+        XCTAssertFalse(fragments[0].contains("<voice"))
+        XCTAssertTrue(fragments[0].contains("Коротка фраза"))
+        XCTAssertTrue(fragments[0].hasPrefix("<speak>"))
+        XCTAssertTrue(fragments[0].hasSuffix("</speak>"))
+    }
+
+    func testShortPlainTextIsWrappedInSpeak() {
+        XCTAssertEqual(
+            RHVoicePipelineSplitter.sentencePipelineFragments(from: "Привіт"),
+            ["<speak>Привіт</speak>"]
+        )
     }
 
     func testBreakTagsStayInsideFragments() {
@@ -64,9 +90,15 @@ final class RHVoicePipelineSplitterTests: XCTestCase {
 
     func testEmptyAndBrokenInputsFallBackSafely() {
         XCTAssertEqual(RHVoicePipelineSplitter.sentencePipelineFragments(from: ""), [""])
+        // Truly malformed input (unterminated tag bracket) falls back to the original.
+        XCTAssertEqual(
+            RHVoicePipelineSplitter.sentencePipelineFragments(from: "Обірваний <pros"),
+            ["Обірваний <pros"]
+        )
+        // An unclosed element whose brackets are closed is cleaned like everything else.
         XCTAssertEqual(
             RHVoicePipelineSplitter.sentencePipelineFragments(from: "<speak>Незакритий тег <prosody>текст."),
-            ["<speak>Незакритий тег <prosody>текст."]
+            ["<speak>Незакритий тег текст.</speak>"]
         )
     }
 }
