@@ -497,7 +497,7 @@
 				E135D3DEF710767D79216462 /* utils.h */,
 			);
 			name = hts_engine;
-			path = ../RHVoice/src/hts_engine;
+			path = ../RHVoiceCore/RHVoice/src/hts_engine;
 			sourceTree = "<group>";
 		};
 		35DB041430E546E462B37A78 /* Sources */ = {
@@ -558,7 +558,7 @@
 				174B5BD6981063CFB8C0912E /* lib.cpp */,
 			);
 			name = lib;
-			path = ../RHVoice/src/lib;
+			path = ../RHVoiceCore/RHVoice/src/lib;
 			sourceTree = "<group>";
 		};
 		80588C453191FFE2BD670D6B /* Packages */ = {
@@ -612,7 +612,7 @@
 				363F518B88AE67C4666C9517 /* samples */,
 			);
 			name = sonic;
-			path = ../RHVoice/external/libs/sonic;
+			path = ../RHVoiceCore/RHVoice/external/libs/sonic;
 			sourceTree = "<group>";
 		};
 		A89B1CB528455BE3B220D476 /* doc */ = {
@@ -671,7 +671,7 @@
 				AD4A7F8E301506474EEA5261 /* playback_stream.cpp */,
 			);
 			name = audio;
-			path = ../RHVoice/src/audio;
+			path = ../RHVoiceCore/RHVoice/src/audio;
 			sourceTree = "<group>";
 		};
 		E2D3F51540C339143A2B0B90 /* Tests */ = {
@@ -738,7 +738,7 @@
 				5DF5993E3398006C1ED4470B /* voice.cpp */,
 			);
 			name = core;
-			path = ../RHVoice/src/core;
+			path = ../RHVoiceCore/RHVoice/src/core;
 			sourceTree = "<group>";
 		};
 		FFD49389CF3603FFA416C0EA /* Shared */ = {
@@ -1390,7 +1390,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GCC_PREPROCESSOR_DEFINITIONS = "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20";
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/audio $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1556,7 +1556,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1588,7 +1588,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GCC_PREPROCESSOR_DEFINITIONS = "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20";
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/audio $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1746,7 +1746,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;

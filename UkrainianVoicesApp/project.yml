@@ -35,14 +35,14 @@ targets:
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
         IPHONEOS_DEPLOYMENT_TARGET: "16.0"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include"
 
   RHVoiceKitMac:
     type: framework
     platform: macOS
     sources:
       - path: ../RHVoiceKit/Sources
-      - path: ../RHVoice/src/core
+      - path: ../RHVoiceCore/RHVoice/src/core
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
@@ -50,16 +50,16 @@ targets:
           - "emoji_data.cpp"
           - "unidata.cpp"
           - "userdict_parser.c"
-      - path: ../RHVoice/src/lib
+      - path: ../RHVoiceCore/RHVoice/src/lib
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
           - "lib.def"
-      - path: ../RHVoice/src/hts_engine
+      - path: ../RHVoiceCore/RHVoice/src/hts_engine
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
-      - path: ../RHVoice/src/audio
+      - path: ../RHVoiceCore/RHVoice/src/audio
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
@@ -69,7 +69,7 @@ targets:
           - "portaudio.hpp"
           - "pulse.cpp"
           - "pulse.hpp"
-      - path: ../RHVoice/external/libs/sonic
+      - path: ../RHVoiceCore/RHVoice/external/libs/sonic
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
@@ -97,7 +97,7 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/audio $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include"
         GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20"
         OTHER_CPLUSPLUSFLAGS: "-D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION -Wno-deprecated-declarations"
         GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: NO
