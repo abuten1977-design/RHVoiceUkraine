@@ -136,13 +136,13 @@ jobs:
             -project UkrainianVoices.xcodeproj \
             -scheme UkrainianVoicesMac \
             -configuration Release \
-            -destination "platform=macOS,arch=x86_64" \
+            -destination "generic/platform=macOS" \
             -derivedDataPath build_signed \
             -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_API_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
-            ARCHS="x86_64" \
+            ARCHS="arm64 x86_64" \
             ONLY_ACTIVE_ARCH=NO \
             CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="$TEAM_ID" \

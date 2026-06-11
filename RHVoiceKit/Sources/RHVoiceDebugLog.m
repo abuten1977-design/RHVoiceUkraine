@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import <os/log.h>
 #include <stdarg.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -69,9 +70,16 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
                      [msg containsString:@"PARAMS"] ||
                      [msg containsString:@"APP_DIAG"] ||
                      [msg containsString:@"EXT_DIAG"];
+    BOOL publicDiagnostic = [msg containsString:@"LATENCY_DIAG"] ||
+                            [msg containsString:@"PARAMS"] ||
+                            [msg containsString:@"EXT_DIAG"];
 
     if (important) {
-        NSLog(@"%@", msg);
+        if (publicDiagnostic) {
+            os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "%{public}@", msg);
+        } else {
+            NSLog(@"%@", msg);
+        }
     }
 
     ensureLogQueue();

@@ -295,8 +295,12 @@ jobs:
             --file "$IPA_PATH" \
             --apiKey "$ASC_KEY_ID" \
             --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee "$ALTOOL_LOG"
-          if grep -E "ERROR:|Failed to upload|The bundle version must be higher" "$ALTOOL_LOG"; then
-            echo "altool reported an upload error"
+          # altool may log transient retried errors (e.g. Apple 500) and still succeed;
+          # gate on the positive success marker instead of grepping for error words.
+          if grep -q "UPLOAD SUCCEEDED" "$ALTOOL_LOG"; then
+            echo "altool confirmed: UPLOAD SUCCEEDED"
+          else
+            echo "altool did not confirm upload success"
             exit 1
           fi
 
