@@ -268,8 +268,8 @@ enum RHVoiceSelfTestRunner {
 
         for testCase in cases {
             let ssml = "<speak>\(testCase.text)</speak>"
-            let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: ssml)
-            let firstChars = fragments.first.map(RHVoicePipelineSplitter.textCharacterCount) ?? 0
+            let fragments = RHVoicePipelineSplitter.pipelineFragments(from: ssml)
+            let firstChars = fragments.first.map { RHVoicePipelineSplitter.textCharacterCount(in: $0.ssml) } ?? 0
             let ok = firstChars <= testCase.maxFirstIfPossible
             let line = String(format: "TASK059_SPLITTER_PROOF %@ label=%@ textChars=%d fragments=%d firstFragmentChars=%d",
                               ok ? "OK" : "FAIL",
@@ -296,7 +296,7 @@ enum RHVoiceSelfTestRunner {
 
         for testCase in cases {
             let ssml = "<speak>\(testCase.text)</speak>"
-            let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: ssml)
+            let fragments = RHVoicePipelineSplitter.pipelineFragments(from: ssml)
             var totalSynthMs = 0
             var firstFragmentSynthMs = 0
             var totalFrames = 0
@@ -304,7 +304,8 @@ enum RHVoiceSelfTestRunner {
             var outputFormat: AVAudioFormat?
             var failed = false
 
-            for (index, fragment) in fragments.enumerated() {
+            for (index, pipelineFragment) in fragments.enumerated() {
+                let fragment = pipelineFragment.ssml
                 let start = Date()
                 guard let buffer = engine.synthesize(fragment, voice: "Anatol", rate: 1.0, volume: 1.0, pitch: 1.0),
                       let channel = buffer.floatChannelData?[0],
@@ -314,13 +315,36 @@ enum RHVoiceSelfTestRunner {
                 }
 
                 let synthMs = Int((Date().timeIntervalSince(start) * 1000.0).rounded())
+                let samples = Array(UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+                let silence = RHVoiceSilenceAnalyzer.measure(samples: samples, sampleRate: buffer.format.sampleRate)
+                let trimLeading = pipelineFragment.continuesSentence
+                let trimTrailing = index + 1 < fragments.count && fragments[index + 1].continuesSentence
+                let trimmedSamples = RHVoiceSilenceAnalyzer.trimMidSentenceSilence(
+                    samples: samples,
+                    sampleRate: buffer.format.sampleRate,
+                    trimLeading: trimLeading,
+                    trimTrailing: trimTrailing
+                )
+                let fragmentLine = String(format: "TASK081_SILENCE label=%@ fragment=%d chars=%d leadingSilenceMs=%d trailingSilenceMs=%d trimLeading=%d trimTrailing=%d synthMs=%d frames=%u trimmedFrames=%d",
+                                          testCase.label,
+                                          index + 1,
+                                          RHVoicePipelineSplitter.textCharacterCount(in: fragment),
+                                          silence.leadingSilenceMs,
+                                          silence.trailingSilenceMs,
+                                          trimLeading ? 1 : 0,
+                                          trimTrailing ? 1 : 0,
+                                          synthMs,
+                                          buffer.frameLength,
+                                          trimmedSamples.count)
+                lines.append(fragmentLine)
+                fputs("\(fragmentLine)\n", stderr)
                 if index == 0 {
                     firstFragmentSynthMs = synthMs
                 }
                 totalSynthMs += synthMs
                 totalFrames += Int(buffer.frameLength)
                 outputFormat = outputFormat ?? buffer.format
-                outputSamples.append(contentsOf: UnsafeBufferPointer(start: channel, count: Int(buffer.frameLength)))
+                outputSamples.append(contentsOf: trimmedSamples)
             }
 
             var clipPath = ""
@@ -344,7 +368,7 @@ enum RHVoiceSelfTestRunner {
                 }
             }
 
-            let firstFragmentChars = fragments.first.map(RHVoicePipelineSplitter.textCharacterCount) ?? 0
+            let firstFragmentChars = fragments.first.map { RHVoicePipelineSplitter.textCharacterCount(in: $0.ssml) } ?? 0
             let line = String(format: "TASK048_PROOF %@ label=%@ textChars=%d fragments=%d firstFragmentChars=%d firstFragmentSynthMs=%d totalSynthMs=%d frames=%d clip=%@",
                               failed ? "FAIL" : "OK",
                               testCase.label,

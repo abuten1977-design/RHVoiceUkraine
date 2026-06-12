@@ -4,20 +4,30 @@ import os.log
 enum RHVoicePipelineSplitter {
     private static let diagnosticLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "latency")
 
+    struct PipelineFragment {
+        let ssml: String
+        let continuesSentence: Bool
+    }
+
     static func sentencePipelineFragments(from ssml: String) -> [String] {
+        pipelineFragments(from: ssml).map(\.ssml)
+    }
+
+    static func pipelineFragments(from ssml: String) -> [PipelineFragment] {
         logSSMLTagNames(from: ssml)
 
         guard let strippedBody = pipelineBodyByRemovingWrapperTags(from: ssml) else {
             logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
-            return [ssml]
+            return [PipelineFragment(ssml: ssml, continuesSentence: false)]
         }
         // Single-fragment fallbacks must also go through the cleaned body: returning
         // the original ssml (with unknown tags) would send short texts down the
         // engine's plain-text fallback with a different rate formula than split
         // fragments use — short and long texts must sound identical.
-        let cleanedWholeUtterance: [String] = {
+        let cleanedWholeUtterance: [PipelineFragment] = {
             let trimmed = strippedBody.trimmingCharacters(in: .whitespacesAndNewlines)
-            return trimmed.isEmpty ? [ssml] : ["<speak>\(strippedBody)</speak>"]
+            let fallback = trimmed.isEmpty ? ssml : "<speak>\(strippedBody)</speak>"
+            return [PipelineFragment(ssml: fallback, continuesSentence: false)]
         }()
         let bodyFragments = splitPipelineBodyIntoSentenceFragments(strippedBody)
         let pipelineFragments = bodyFragments.flatMap { splitLongPipelineFragment($0) }
@@ -29,12 +39,14 @@ enum RHVoicePipelineSplitter {
 
         let mergedFragments = mergeSmallPipelineFragments(priorityFragments)
         guard mergedFragments.count > 1,
-              mergedFragments.allSatisfy({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+              mergedFragments.allSatisfy({ !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
             logPipelinePlan(fragmentCount: 1, totalLength: ssml.count)
             return cleanedWholeUtterance
         }
 
-        let fragments = mergedFragments.map { "<speak>\($0)</speak>" }
+        let fragments = mergedFragments.map {
+            PipelineFragment(ssml: "<speak>\($0.text)</speak>", continuesSentence: $0.continuesSentence)
+        }
         logPipelinePlan(fragmentCount: fragments.count, totalLength: ssml.count)
         return fragments
     }
@@ -89,7 +101,7 @@ enum RHVoicePipelineSplitter {
         return trimmed.range(of: #"^<\s*break\b[^>]*/\s*>$"#, options: .regularExpression) != nil
     }
 
-    private static func splitPipelineBodyIntoSentenceFragments(_ body: String) -> [String] {
+    private static func splitPipelineBodyIntoSentenceFragments(_ body: String) -> [FragmentBody] {
         var fragments: [String] = []
         var current = ""
         var tag = ""
@@ -140,21 +152,21 @@ enum RHVoicePipelineSplitter {
         }
 
         if insideTag {
-            return [body]
+            return [FragmentBody(text: body, continuesSentence: false)]
         }
         flushCurrent()
-        return fragments
+        return fragments.map { FragmentBody(text: $0, continuesSentence: false) }
     }
 
-    private static func splitLongPipelineFragment(_ fragment: String) -> [String] {
-        guard textCharacterCount(in: fragment) > 80 else { return [fragment] }
+    private static func splitLongPipelineFragment(_ fragment: FragmentBody) -> [FragmentBody] {
+        guard textCharacterCount(in: fragment.text) > 80 else { return [fragment] }
 
-        var fragments: [String] = []
+        var fragments: [FragmentBody] = []
         var current = ""
         var currentTextCount = 0
         var tag = ""
         var insideTag = false
-        let characters = Array(fragment)
+        let characters = Array(fragment.text)
 
         func appendCurrent() {
             let trimmed = current.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -165,9 +177,10 @@ enum RHVoicePipelineSplitter {
             }
 
             if textCharacterCount(in: trimmed) < 15, !fragments.isEmpty {
-                fragments[fragments.count - 1] += " " + trimmed
+                fragments[fragments.count - 1].text += " " + trimmed
             } else {
-                fragments.append(trimmed)
+                let continuesSentence = !fragments.isEmpty || fragment.continuesSentence
+                fragments.append(FragmentBody(text: trimmed, continuesSentence: continuesSentence))
             }
 
             current.removeAll(keepingCapacity: true)
@@ -210,18 +223,21 @@ enum RHVoicePipelineSplitter {
         return fragments.count > 1 ? fragments : [fragment]
     }
 
-    private static func splitPriorityFirstFragment(_ fragments: [String]) -> [String] {
+    private static func splitPriorityFirstFragment(_ fragments: [FragmentBody]) -> [FragmentBody] {
         guard let first = fragments.first,
-              textCharacterCount(in: first) > 30,
-              let splitIndex = priorityFirstFragmentSplitIndex(in: first) else {
+              textCharacterCount(in: first.text) > 30,
+              let splitIndex = priorityFirstFragmentSplitIndex(in: first.text) else {
             return fragments
         }
 
-        let firstPart = first[..<splitIndex].trimmingCharacters(in: .whitespacesAndNewlines)
-        let remainder = first[splitIndex...].trimmingCharacters(in: .whitespacesAndNewlines)
+        let firstPart = first.text[..<splitIndex].trimmingCharacters(in: .whitespacesAndNewlines)
+        let remainder = first.text[splitIndex...].trimmingCharacters(in: .whitespacesAndNewlines)
         guard !firstPart.isEmpty, !remainder.isEmpty else { return fragments }
 
-        return [String(firstPart), String(remainder)] + Array(fragments.dropFirst())
+        return [
+            FragmentBody(text: String(firstPart), continuesSentence: first.continuesSentence),
+            FragmentBody(text: String(remainder), continuesSentence: true)
+        ] + Array(fragments.dropFirst())
     }
 
     private static func priorityFirstFragmentSplitIndex(in fragment: String) -> String.Index? {
@@ -296,19 +312,19 @@ enum RHVoicePipelineSplitter {
         return isWhitespace(characters[nextIndex])
     }
 
-    private static func mergeSmallPipelineFragments(_ fragments: [String]) -> [String] {
-        var merged: [String] = []
+    private static func mergeSmallPipelineFragments(_ fragments: [FragmentBody]) -> [FragmentBody] {
+        var merged: [FragmentBody] = []
 
         for fragment in fragments {
-            if textCharacterCount(in: fragment) < 10, !merged.isEmpty {
-                merged[merged.count - 1] += fragment
+            if textCharacterCount(in: fragment.text) < 10, !merged.isEmpty {
+                merged[merged.count - 1].text += fragment.text
             } else {
                 merged.append(fragment)
             }
         }
 
-        if merged.count > 1, let last = merged.last, textCharacterCount(in: last) < 10 {
-            merged[merged.count - 2] += last
+        if merged.count > 1, let last = merged.last, textCharacterCount(in: last.text) < 10 {
+            merged[merged.count - 2].text += last.text
             merged.removeLast()
         }
 
@@ -430,6 +446,11 @@ enum RHVoicePipelineSplitter {
         let name: String
         let openingTag: String
         let closingTag: String
+    }
+
+    private struct FragmentBody {
+        var text: String
+        let continuesSentence: Bool
     }
 
     private struct ParsedSSMLTag {

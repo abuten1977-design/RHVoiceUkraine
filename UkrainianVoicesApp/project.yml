@@ -311,8 +311,10 @@ targets:
     sources:
       - path: Shared/RHVoicePipelineSplitter.swift
       - path: Shared/RHVoiceApostropheNormalizer.swift
+      - path: Shared/RHVoiceSilenceAnalyzer.swift
       - path: Tests/RHVoicePipelineSplitterTests.swift
       - path: Tests/RHVoiceApostropheNormalizerTests.swift
+      - path: Tests/RHVoiceSilenceAnalyzerTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoicePipelineSplitterTests

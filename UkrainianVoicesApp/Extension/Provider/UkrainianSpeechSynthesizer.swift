@@ -396,7 +396,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
 
-        let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: synthesisText)
+        let fragments = RHVoicePipelineSplitter.pipelineFragments(from: synthesisText)
         let preprocessingMs = Self.elapsedMs(since: preprocessingStart)
         rhLog("LATENCY_DIAG prepare voice=\(profileName) chars=\(text.count) settingsMs=\(settingsMs) backgroundPreprocessingMs=\(preprocessingMs) beforeSynthesizeMs=\(Self.elapsedMs(since: requestStart))")
         rhLog("LATENCY_DIAG pipeline plan fragments=\(fragments.count) chars=\(synthesisText.count)")
@@ -406,11 +406,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         var firstFragmentSynthMs: Int?
         var fragmentSynthMsTotal = 0
 
-        for (index, fragment) in fragments.enumerated() {
+        for (index, pipelineFragment) in fragments.enumerated() {
             if !self.shouldContinueSynthesis(generation: generation) {
                 rhLog("LATENCY_DIAG pipeline cancelled beforeFragment=\(index + 1)")
                 break
             }
+            let fragment = pipelineFragment.ssml
 
             let fragmentStart = CFAbsoluteTimeGetCurrent()
             var pcmBuffer = rhvoiceEngine.synthesize(
@@ -450,12 +451,21 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
             let frameCount = Int(buffer.frameLength)
             let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
-            totalSamples += samples.count
+            let silence = RHVoiceSilenceAnalyzer.measure(samples: samples, sampleRate: buffer.format.sampleRate)
+            let trimLeading = pipelineFragment.continuesSentence
+            let trimTrailing = index + 1 < fragments.count && fragments[index + 1].continuesSentence
+            let outputSamples = RHVoiceSilenceAnalyzer.trimMidSentenceSilence(
+                samples: samples,
+                sampleRate: buffer.format.sampleRate,
+                trimLeading: trimLeading,
+                trimTrailing: trimTrailing
+            )
+            totalSamples += outputSamples.count
 
             self.outputMutex.wait()
             let appendAllowed = self.isSynthesizing && self.synthesisGeneration == generation
             if appendAllowed {
-                self.output.append(contentsOf: samples)
+                self.output.append(contentsOf: outputSamples)
             }
             self.outputMutex.signal()
 
@@ -464,8 +474,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 break
             }
 
-            rhLog("synth fragment output index=\(index + 1) samples=\(samples.count)")
-            rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) synthMs=\(fragmentSynthMs) samples=\(samples.count)")
+            rhLog("synth fragment output index=\(index + 1) samples=\(outputSamples.count)")
+            rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) leadingSilenceMs=\(silence.leadingSilenceMs) trailingSilenceMs=\(silence.trailingSilenceMs) trimLeading=\(trimLeading ? 1 : 0) trimTrailing=\(trimTrailing ? 1 : 0) synthMs=\(fragmentSynthMs) samples=\(outputSamples.count) rawSamples=\(samples.count)")
         }
 
         self.outputMutex.wait()

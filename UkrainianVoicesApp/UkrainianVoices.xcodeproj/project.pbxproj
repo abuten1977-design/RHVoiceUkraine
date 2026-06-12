@@ -13,7 +13,9 @@
 		0B7397098AAA444015ABD91D /* playback_stream_impl.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F3FCB18C32F1BE8010CF2EAE /* playback_stream_impl.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		0B78FF9B5075CFAB47404FE9 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DE393252B774F70C2EC2186 /* AVFoundation.framework */; };
 		0CE8E17BA1E5F8596DCAF304 /* RHVoiceApostropheNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */; };
+		1096D3488E16F60DA3DD16AA /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		12BFD7FE487C1F3376D29048 /* english_id.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64AB9E2C5C542AB3C6CA16A /* english_id.cpp */; };
+		169AB627DDA229BB9F3671F7 /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		184BB8C61E94E9F02C83CFC5 /* RHVoiceEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = DA4BEFD7AB65DCD7844523D6 /* RHVoiceEngine.mm */; };
 		1954FBD0952E35C71B2D02F4 /* language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4F093732EB8EC9C92C7B1BF /* language.cpp */; };
 		1EBAB05E1E7F3AB28E7FCF69 /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
@@ -25,6 +27,7 @@
 		264861D37B12DDB14E99249F /* talking.wav in Resources */ = {isa = PBXBuildFile; fileRef = E4E4C5DE6ADB4F20045D6B20 /* talking.wav */; };
 		27D4F70A68769B847FC6FF63 /* RHVoiceBridge in Frameworks */ = {isa = PBXBuildFile; productRef = 632514FFD006497A3CCF7840 /* RHVoiceBridge */; };
 		2940F1F3A3B009F6AE501C72 /* RHVoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 80832B21A94FE2AB793DA2C6 /* RHVoice.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		2ACE70E8A45833642018757F /* RHVoiceSilenceAnalyzerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9237E58693FC24E1BFB2956 /* RHVoiceSilenceAnalyzerTests.swift */; };
 		2BF768D36BC34DDBA3C8B5E0 /* HTS_pstream.c in Sources */ = {isa = PBXBuildFile; fileRef = CF7C8FFB74AC79C3DFF3FC43 /* HTS_pstream.c */; };
 		2C4B5D7431A1CFDEA47EEEED /* lib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 174B5BD6981063CFB8C0912E /* lib.cpp */; };
 		2CC67F2FF85E657450AB79D7 /* sonic.odt in Resources */ = {isa = PBXBuildFile; fileRef = 2CD13DAC554046376382398C /* sonic.odt */; };
@@ -58,6 +61,7 @@
 		55BCB58D8FE2879B5D774927 /* HTS_model.c in Sources */ = {isa = PBXBuildFile; fileRef = D9B1B6E0153C29DDB84C39D7 /* HTS_model.c */; };
 		57F36CDA85F309EA50A78B64 /* sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = 972E54B65169F1EEB09D9645 /* sonic.wav */; };
 		596D90DFE36FEF695B3D6181 /* speech_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8EA50BC82A343E987BC1AEFC /* speech_processor.cpp */; };
+		5A1F99705759FEAF4D0C611F /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		5B08D5306F5DDC699B728542 /* Main.java in Resources */ = {isa = PBXBuildFile; fileRef = A221799EFC8865EDA8E3A5EA /* Main.java */; };
 		5B70FB1FBFC261C5597956D9 /* kyrgyz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 245C395B6261E25D96F53AF4 /* kyrgyz.cpp */; };
 		5B9EAC1223192F335D2C11B0 /* RHVoiceKitMac.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F5C7259148889146602EF0F2 /* RHVoiceKitMac.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -126,6 +130,7 @@
 		A7EA436630848CDFF2C5F662 /* sonic.manpages in Resources */ = {isa = PBXBuildFile; fileRef = 5ECDD711F591446DFC2EBA93 /* sonic.manpages */; };
 		A86A4F676E28D638AF012B1D /* RHVoiceBridge in Frameworks */ = {isa = PBXBuildFile; productRef = 411FE67F39B572C7A482B89D /* RHVoiceBridge */; };
 		AB20B859310241C37220B708 /* vietnamese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 49741CCCD439C31CD3A0921D /* vietnamese.cpp */; };
+		ABB2E51CAD70A3229B16B516 /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		ADE06875A990016BA61CD2D1 /* espeak_sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = 8B4C976B11D933F2608AB2E1 /* espeak_sonic.wav */; };
 		B10CC1C7AE90D8071DD049BA /* RHVoiceSelfTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */; };
 		B314219133998B7FA4BCFD41 /* sonic.install in Resources */ = {isa = PBXBuildFile; fileRef = 7DE7BD3D387C9F5E2BE79CA4 /* sonic.install */; };
@@ -160,6 +165,7 @@
 		E544FB5B4FC87EECD82E82C4 /* library.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 17C0CFF865C09DB88D17DE39 /* library.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		E5870359B3397973DE6FB416 /* equalizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7455425D67DFC54E76F517F5 /* equalizer.cpp */; };
 		E630DD7CCA70A1E9B2341155 /* utterance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C6DF28141F970584D9065C42 /* utterance.cpp */; };
+		E63E7D123E49EE485813BEB6 /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		EAAA37DB75618A2C3DF67A78 /* changelog.vinux in Resources */ = {isa = PBXBuildFile; fileRef = 381DE1F4A1240BEFD94775BE /* changelog.vinux */; };
 		EB3A156B3A8D12D28D0C5E1A /* pitch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7E706B30D374EEE869A647D8 /* pitch.cpp */; };
 		EB544DDBB54AF459DEFD550A /* dtree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 508BBC3135BBF9A8A106A9E6 /* dtree.cpp */; };
@@ -294,6 +300,7 @@
 		4E27232100E742850D71D852 /* UkrainianVoicesExtensionMac.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UkrainianVoicesExtensionMac.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F339A4B56DB55C2CE79DBDC /* UkrainianSpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UkrainianSpeechSynthesizer.swift; sourceTree = "<group>"; };
 		4FB1FA5FCD63ECC58D9C9649 /* RHVoicePipelineSplitterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RHVoicePipelineSplitterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSilenceAnalyzer.swift; sourceTree = "<group>"; };
 		508BBC3135BBF9A8A106A9E6 /* dtree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dtree.cpp; sourceTree = "<group>"; };
 		52A6FA8233FE41C30B5E3A9D /* stereo_test.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = stereo_test.wav; sourceTree = "<group>"; };
 		53A8D756ABC076A34D7CBA02 /* phoneme_set.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = phoneme_set.cpp; sourceTree = "<group>"; };
@@ -365,6 +372,7 @@
 		C3F4558FFE88BFBCCDCF1226 /* english.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = english.cpp; sourceTree = "<group>"; };
 		C554D588C953BB9F5EE4B9FA /* .gitignore */ = {isa = PBXFileReference; path = .gitignore; sourceTree = "<group>"; };
 		C6DF28141F970584D9065C42 /* utterance.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utterance.cpp; sourceTree = "<group>"; };
+		C9237E58693FC24E1BFB2956 /* RHVoiceSilenceAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSilenceAnalyzerTests.swift; sourceTree = "<group>"; };
 		CA6DB78C17B744FA161358CE /* UkrainianVoices.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = UkrainianVoices.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSelfTestRunner.swift; sourceTree = "<group>"; };
 		CDCB7806B0857EAE8DDDF1DE /* sonic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sonic.c; sourceTree = "<group>"; };
@@ -687,6 +695,7 @@
 			children = (
 				B12F510FA5E09E697DE2F15C /* RHVoiceApostropheNormalizerTests.swift */,
 				222E6C35B476BE184E65F68B /* RHVoicePipelineSplitterTests.swift */,
+				C9237E58693FC24E1BFB2956 /* RHVoiceSilenceAnalyzerTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -757,6 +766,7 @@
 				3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */,
 				4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */,
 				985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */,
+				50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -1153,6 +1163,7 @@
 				D10301D3DAE4BDE5D7A04E33 /* RHVoicePipelineSplitter.swift in Sources */,
 				B10CC1C7AE90D8071DD049BA /* RHVoiceSelfTestRunner.swift in Sources */,
 				69CFD1576CC03A0FD18C4A04 /* RHVoiceSharedSettings.swift in Sources */,
+				1096D3488E16F60DA3DD16AA /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				73698DB84895C254F51CB9F6 /* UkrainianVoicesApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1169,6 +1180,7 @@
 				8D9DB560169CF416BA886CF5 /* RHVoicePipelineSplitter.swift in Sources */,
 				5361E5B92C79BCBFCA644B77 /* RHVoiceSelfTestRunner.swift in Sources */,
 				A03AAB36BFFC79BD093525D3 /* RHVoiceSharedSettings.swift in Sources */,
+				E63E7D123E49EE485813BEB6 /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				21EB49301DCED629335E1FD4 /* UkrainianVoicesApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1182,6 +1194,7 @@
 				89C31E2FE218B3E725B0F423 /* RHVoiceApostropheNormalizer.swift in Sources */,
 				6FE678EC7A6F8785AE8B7D29 /* RHVoicePipelineSplitter.swift in Sources */,
 				8E8BB496F5F02186BFB9A0D4 /* RHVoiceSharedSettings.swift in Sources */,
+				ABB2E51CAD70A3229B16B516 /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				87E06907937D4AB5E50F1E82 /* UkrainianSpeechSynthesizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1204,6 +1217,7 @@
 				8A67E734E8D664687B1CF4CC /* RHVoiceApostropheNormalizer.swift in Sources */,
 				931CEA15DDE361ECA551D7A0 /* RHVoicePipelineSplitter.swift in Sources */,
 				78FD62E43BA23F4AF77E9EB8 /* RHVoiceSharedSettings.swift in Sources */,
+				5A1F99705759FEAF4D0C611F /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				2DEE6B104AD4F30A237402CC /* UkrainianSpeechSynthesizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1285,6 +1299,8 @@
 				44ADCC9AC5FD1C8F98F8AB16 /* RHVoiceApostropheNormalizerTests.swift in Sources */,
 				25242C8263697EE99E70F59E /* RHVoicePipelineSplitter.swift in Sources */,
 				B503097BF435BA449F101C4E /* RHVoicePipelineSplitterTests.swift in Sources */,
+				169AB627DDA229BB9F3671F7 /* RHVoiceSilenceAnalyzer.swift in Sources */,
+				2ACE70E8A45833642018757F /* RHVoiceSilenceAnalyzerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
