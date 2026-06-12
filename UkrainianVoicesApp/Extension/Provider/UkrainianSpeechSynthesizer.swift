@@ -612,51 +612,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
-        var output = ""
-        var textSegment = ""
-        var tagSegment = ""
-        var insideTag = false
-
-        for character in ssml {
-            if insideTag {
-                tagSegment.append(character)
-                if character == ">" {
-                    output += normalizeApostrophes(textSegment)
-                    textSegment.removeAll(keepingCapacity: true)
-                    output += tagSegment
-                    tagSegment.removeAll(keepingCapacity: true)
-                    insideTag = false
-                }
-            } else if character == "<" {
-                insideTag = true
-                tagSegment.append(character)
-            } else {
-                textSegment.append(character)
-            }
-        }
-
-        if insideTag {
-            output += normalizeApostrophes(textSegment) + tagSegment
-        } else {
-            output += normalizeApostrophes(textSegment)
-        }
-        return output
+        RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml)
     }
 
     private static func normalizeApostrophes(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&apos;", with: "`")
-            .replacingOccurrences(of: "&#39;", with: "`")
-            .replacingOccurrences(of: "&#x27;", with: "`")
-            .replacingOccurrences(of: "&#X27;", with: "`")
-            .replacingOccurrences(of: "\u{0027}", with: "`")
-            .replacingOccurrences(of: "\u{2019}", with: "`")
-            .replacingOccurrences(of: "\u{02BC}", with: "`")
-            .replacingOccurrences(of: "\u{2018}", with: "`")
-            .replacingOccurrences(of: "\u{2032}", with: "`")
-            .replacingOccurrences(of: "\u{00B4}", with: "`")
-            .replacingOccurrences(of: "\u{FF07}", with: "`")
-            .replacingOccurrences(of: "\u{0060}", with: "`")
+        RHVoiceApostropheNormalizer.normalizeText(text)
     }
 
     private static func logApostropheEncoding(label: String, ssml: String) {
