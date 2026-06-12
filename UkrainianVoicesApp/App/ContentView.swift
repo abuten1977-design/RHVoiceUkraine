@@ -106,7 +106,13 @@ private final class PreviewPlaybackController {
         }
     }
 
-    private let previewEngine = RHVoiceEngine()
+    // Двигун створюється ЛІНИВО і ТІЛЬКИ на цій черзі: RHVoiceEngine init пише в
+    // App-Group контейнер (RHVoiceConfig), що на macOS 26 може заблокуватись
+    // назавжди — блокуватись має фоновий потік, а не вікно (task-082, частина 2:
+    // раніше движок створювався в init моделі вікна і вішав застосунок, щойно
+    // VoiceOver заходив у вікно).
+    private let engineQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.preview-engine", qos: .userInitiated)
+    private var previewEngine: RHVoiceEngine?
     private let audioEngine = AVAudioEngine()
     private let playerNode = AVAudioPlayerNode()
     private var isPlayerAttached = false
@@ -117,47 +123,62 @@ private final class PreviewPlaybackController {
         rate: Double,
         volume: Double,
         pitch: Double = 1.0,
-        onFinish: @escaping @MainActor () -> Void
-    ) throws {
+        onFinish: @escaping @MainActor () -> Void,
+        onError: @escaping @MainActor (Error) -> Void
+    ) {
         let requestStart = CFAbsoluteTimeGetCurrent()
-        #if os(iOS)
-        // Audio session must be active before local preview playback on iOS.
-        try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-        try AVAudioSession.sharedInstance().setActive(true)
-        #endif
+        engineQueue.async { [weak self] in
+            guard let self else { return }
+            if self.previewEngine == nil {
+                self.previewEngine = RHVoiceEngine()
+            }
+            let synthStart = CFAbsoluteTimeGetCurrent()
+            guard let engine = self.previewEngine,
+                  let buffer = engine.synthesize(
+                      text,
+                      voice: voiceName,
+                      rate: rate,
+                      volume: volume,
+                      pitch: pitch
+                  ) else {
+                DispatchQueue.main.async { onError(PreviewError.synthesisFailed(voiceName)) }
+                return
+            }
+            let synthMs = Int(((CFAbsoluteTimeGetCurrent() - synthStart) * 1000).rounded())
 
-        let synthStart = CFAbsoluteTimeGetCurrent()
-        guard let buffer = previewEngine.synthesize(
-            text,
-            voice: voiceName,
-            rate: rate,
-            volume: volume,
-            pitch: pitch
-        ) else {
-            throw PreviewError.synthesisFailed(voiceName)
-        }
-        let synthMs = Int(((CFAbsoluteTimeGetCurrent() - synthStart) * 1000).rounded())
-
-        playerNode.stop()
-        audioEngine.stop()
-        audioEngine.reset()
-
-        if !isPlayerAttached {
-            audioEngine.attach(playerNode)
-            isPlayerAttached = true
-        }
-
-        audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: buffer.format)
-        try audioEngine.start()
-
-        playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts) {
             DispatchQueue.main.async {
-                onFinish()
+                do {
+                    #if os(iOS)
+                    // Audio session must be active before local preview playback on iOS.
+                    try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+                    try AVAudioSession.sharedInstance().setActive(true)
+                    #endif
+
+                    self.playerNode.stop()
+                    self.audioEngine.stop()
+                    self.audioEngine.reset()
+
+                    if !self.isPlayerAttached {
+                        self.audioEngine.attach(self.playerNode)
+                        self.isPlayerAttached = true
+                    }
+
+                    self.audioEngine.connect(self.playerNode, to: self.audioEngine.mainMixerNode, format: buffer.format)
+                    try self.audioEngine.start()
+
+                    self.playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts) {
+                        DispatchQueue.main.async {
+                            onFinish()
+                        }
+                    }
+                    self.playerNode.play()
+                    let totalMs = Int(((CFAbsoluteTimeGetCurrent() - requestStart) * 1000).rounded())
+                    LogCollector.shared.log("Preview latency voice=\(voiceName) chars=\(text.count) synthMs=\(synthMs) totalToPlayMs=\(totalMs)")
+                } catch {
+                    onError(error)
+                }
             }
         }
-        playerNode.play()
-        let totalMs = Int(((CFAbsoluteTimeGetCurrent() - requestStart) * 1000).rounded())
-        LogCollector.shared.log("Preview latency voice=\(voiceName) chars=\(text.count) synthMs=\(synthMs) totalToPlayMs=\(totalMs)")
     }
 
     func stop() {
@@ -184,36 +205,106 @@ private final class ContentViewModel: ObservableObject {
     @Published var statusMessage = ""
     @Published var isRunningSpeechComponentDiagnostics = false
     @Published var speechComponentDiagnosticReport: SpeechComponentDiagnosticReport?
-    @Published var debugLogSize = DebugLogShareHelper.logSize()
+    @Published var debugLogSize: Int = 0
+    @Published var debugLogShareURL: URL?
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
+    @Published var sharedStorageState: SharedStorageState = .loading
+
+    enum SharedStorageState: Equatable {
+        case loading
+        case ready
+        case unavailable
+    }
+
+    // App-Group disk IO must never run on the main thread: on macOS 26 an
+    // unauthorized group container makes mkdirat/open block forever, freezing
+    // the whole window (new-Mac launch hang, task-082).
+    private static let storageQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.app-storage", qos: .userInitiated)
 
     private let playbackController = PreviewPlaybackController()
 
     init() {
-        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        let general = RHVoiceSpeechSettings.recommended
+        self.rate = 0.5
+        self.volume = Self.clampBaselineMultiplier(general.volume)
+        self.speedMultiplier = Self.clampSpeedMultiplier(general.speedMultiplier)
+        self.pitch = general.pitch
+        self.sentencePause = general.sentencePause
+        self.wordGap = Self.clampWordGap(general.wordGap)
+        self.testText = "Привіт! Це тест українського голосу."
+        self.enabledVoiceIdentifiers = Self.normalizedEnabledVoices([])
+        self.selectedVoiceIdentifier = RHVoiceSharedSettings.defaultVoiceIdentifier
+        self.personalDictionaryEntries = []
+        self.personalDictionaryStatus = PersonalDictionaryFileStatus(
+            dictionaryPath: nil,
+            metadataPath: nil,
+            dictionaryExists: false,
+            metadataExists: false,
+            dictionarySize: 0,
+            metadataSize: 0,
+            dictionaryModifiedAt: nil,
+            metadataModifiedAt: nil
+        )
+        self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
+            (voice.identifier, VoiceSettingsState(
+                useCustomSettings: true,
+                rate: 0.5,
+                volume: 1.0,
+                speedMultiplier: Self.clampSpeedMultiplier(general.speedMultiplier),
+                sentencePause: general.sentencePause,
+                wordGap: Self.clampWordGap(general.wordGap),
+                pitch: 1.0
+            ))
+        })
+
+        bootstrapFromDisk()
+    }
+
+    private func bootstrapFromDisk() {
+        Self.storageQueue.async { [weak self] in
+            let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+            let entries = PersonalUserDictionary.loadEntries()
+            let status = PersonalUserDictionary.fileStatus()
+            let logSize = DebugLogShareHelper.logSize()
+            let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
+            DispatchQueue.main.async {
+                self?.applyLoadedState(snapshot: snapshot, entries: entries, status: status, logSize: logSize, shareURL: shareURL)
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            guard let self, self.sharedStorageState == .loading else { return }
+            self.sharedStorageState = .unavailable
+            self.setStatus("Спільне сховище недоступне: налаштування і словник тимчасово не зберігаються. Голоси працюють.")
+        }
+    }
+
+    private func applyLoadedState(
+        snapshot: RHVoiceSharedSettingsSnapshot,
+        entries: [PersonalDictionaryEntry],
+        status: PersonalDictionaryFileStatus,
+        logSize: Int,
+        shareURL: URL?
+    ) {
         let storedEnabled = Set(snapshot.enabledVoiceIdentifiers)
-        let effectiveEnabled = Self.normalizedEnabledVoices(storedEnabled)
-        let storedSelected = snapshot.selectedVoiceIdentifier
         let initialRate = snapshot.generalSettings.rate
         let initialVolume = Self.clampBaselineMultiplier(snapshot.generalSettings.volume)
         let initialSpeedMultiplier = Self.clampSpeedMultiplier(snapshot.generalSettings.speedMultiplier)
         let initialSentencePause = snapshot.generalSettings.sentencePause
         let initialWordGap = Self.clampWordGap(snapshot.generalSettings.wordGap)
-        let initialPitch = snapshot.generalSettings.pitch
 
-        self.rate = 0.5
-        self.volume = initialVolume
-        self.speedMultiplier = initialSpeedMultiplier
-        self.pitch = initialPitch
-        self.sentencePause = initialSentencePause
-        self.wordGap = initialWordGap
-        self.testText = "Привіт! Це тест українського голосу."
-        self.enabledVoiceIdentifiers = effectiveEnabled
-        self.selectedVoiceIdentifier = storedSelected
-        self.personalDictionaryEntries = PersonalUserDictionary.loadEntries()
-        self.personalDictionaryStatus = PersonalUserDictionary.fileStatus()
-        self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
+        enabledVoiceIdentifiers = Self.normalizedEnabledVoices(storedEnabled)
+        selectedVoiceIdentifier = snapshot.selectedVoiceIdentifier
+        volume = initialVolume
+        speedMultiplier = initialSpeedMultiplier
+        sentencePause = initialSentencePause
+        wordGap = initialWordGap
+        pitch = snapshot.generalSettings.pitch
+        personalDictionaryEntries = entries
+        personalDictionaryStatus = status
+        debugLogSize = logSize
+        debugLogShareURL = shareURL
+        voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
             if let stored = snapshot.perVoiceSettings[voice.identifier] {
                 return (voice.identifier, VoiceSettingsState(
                     useCustomSettings: true,
@@ -225,10 +316,11 @@ private final class ContentViewModel: ObservableObject {
                     pitch: 1.0
                 ).neutralizedVoiceOverControlledSettings())
             }
-            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: initialPitch))
+            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: snapshot.generalSettings.pitch))
         })
 
         normalizeSelection()
+        sharedStorageState = .ready
         persistGeneralSettings()
         persistVoiceState()
     }
@@ -319,11 +411,22 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func reloadPersonalDictionary() {
-        personalDictionaryEntries = PersonalUserDictionary.loadEntries()
-        personalDictionaryStatus = PersonalUserDictionary.fileStatus()
+        guard sharedStorageState == .ready else { return }
+        Self.storageQueue.async { [weak self] in
+            let entries = PersonalUserDictionary.loadEntries()
+            let status = PersonalUserDictionary.fileStatus()
+            DispatchQueue.main.async {
+                self?.personalDictionaryEntries = entries
+                self?.personalDictionaryStatus = status
+            }
+        }
     }
 
     func savePersonalDictionaryEntry(id: UUID?, displayWord: String, stressedWord: String) -> Bool {
+        guard sharedStorageState == .ready else {
+            setStatus(PersonalUserDictionaryError.appGroupUnavailable.localizedDescription)
+            return false
+        }
         do {
             if let id {
                 try PersonalUserDictionary.updateEntry(id: id, displayWord: displayWord, stressedWord: stressedWord)
@@ -341,6 +444,10 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func removePersonalDictionaryEntry(_ entry: PersonalDictionaryEntry) {
+        guard sharedStorageState == .ready else {
+            setStatus(PersonalUserDictionaryError.appGroupUnavailable.localizedDescription)
+            return
+        }
         do {
             try PersonalUserDictionary.removeEntry(id: entry.id)
             reloadPersonalDictionary()
@@ -440,13 +547,27 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func refreshDebugLogState() {
-        debugLogSize = DebugLogShareHelper.logSize()
+        Self.storageQueue.async { [weak self] in
+            let size = DebugLogShareHelper.logSize()
+            let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
+            DispatchQueue.main.async {
+                self?.debugLogSize = size
+                self?.debugLogShareURL = shareURL
+            }
+        }
     }
 
     func clearDebugLog() {
-        DebugLogShareHelper.clearLog()
-        refreshDebugLogState()
-        setStatus("Лог очищено.")
+        Self.storageQueue.async { [weak self] in
+            DebugLogShareHelper.clearLog()
+            let size = DebugLogShareHelper.logSize()
+            let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
+            DispatchQueue.main.async {
+                self?.debugLogSize = size
+                self?.debugLogShareURL = shareURL
+                self?.setStatus("Лог очищено.")
+            }
+        }
     }
 
     func updateGeneralRate(_ value: Double) {
@@ -500,24 +621,25 @@ private final class ContentViewModel: ObservableObject {
 
         LogCollector.shared.log("Preview request voice=\(voice.name) profile=\(voiceName) textLength=\(text.count)")
 
-        do {
-            try playbackController.play(
-                text: text,
-                voiceName: voiceName,
-                rate: currentSettings.speedMultiplier,
-                volume: 1.0,
-                pitch: 1.0
-            ) { [weak self] in
+        isPreviewPlaying = true
+        setStatus("Готую голос \(voice.name)…")
+        playbackController.play(
+            text: text,
+            voiceName: voiceName,
+            rate: currentSettings.speedMultiplier,
+            volume: 1.0,
+            pitch: 1.0,
+            onFinish: { [weak self] in
                 guard let self else { return }
                 self.isPreviewPlaying = false
                 self.setStatus("Прослуховування завершено.")
+            },
+            onError: { [weak self] error in
+                guard let self else { return }
+                self.isPreviewPlaying = false
+                self.setStatus(error.localizedDescription)
             }
-            isPreviewPlaying = true
-            setStatus("Прослуховується голос \(voice.name).")
-        } catch {
-            isPreviewPlaying = false
-            setStatus(error.localizedDescription)
-        }
+        )
     }
 
     private func persistVoiceState() {
@@ -556,6 +678,9 @@ private final class ContentViewModel: ObservableObject {
     }
 
     private func persistSharedSnapshot() {
+        // Не писати, поки фонове завантаження не підтвердило доступність сховища:
+        // на несправному контейнері запис висне, а до .ready писати ще й нічого.
+        guard sharedStorageState == .ready else { return }
         let settings = RHVoiceSpeechSettings(
             rate: 0.5,
             volume: 1.0,
@@ -589,22 +714,30 @@ private final class ContentViewModel: ObservableObject {
                 )
             )
         })
-        let previousRevision = RHVoiceSharedSettingsStore.loadSnapshot().revision
-        let snapshot = RHVoiceSharedSettingsSnapshot(
-            schemaVersion: 1,
-            revision: previousRevision + 1,
-            updatedAt: Date(),
-            voiceCatalog: RHVoiceSharedSettings.voiceCatalog,
-            enabledVoiceIdentifiers: Array(enabledVoiceIdentifiers).sorted(),
-            selectedVoiceIdentifier: selectedVoiceIdentifier,
-            generalSettings: settings,
-            perVoiceSettings: perVoice
-        )
+        let enabledSorted = Array(enabledVoiceIdentifiers).sorted()
+        let selected = selectedVoiceIdentifier
 
-        do {
-            try RHVoiceSharedSettingsStore.saveSnapshot(snapshot)
-        } catch {
-            setStatus("Не вдалося зберегти спільні налаштування: \(error.localizedDescription)")
+        // Дискова частина (читання revision + запис) — у фоновій черзі: див. коментар
+        // біля storageQueue. Значення зібрані на main вище.
+        Self.storageQueue.async { [weak self] in
+            let previousRevision = RHVoiceSharedSettingsStore.loadSnapshot().revision
+            let snapshot = RHVoiceSharedSettingsSnapshot(
+                schemaVersion: 1,
+                revision: previousRevision + 1,
+                updatedAt: Date(),
+                voiceCatalog: RHVoiceSharedSettings.voiceCatalog,
+                enabledVoiceIdentifiers: enabledSorted,
+                selectedVoiceIdentifier: selected,
+                generalSettings: settings,
+                perVoiceSettings: perVoice
+            )
+            do {
+                try RHVoiceSharedSettingsStore.saveSnapshot(snapshot)
+            } catch {
+                DispatchQueue.main.async {
+                    self?.setStatus("Не вдалося зберегти спільні налаштування: \(error.localizedDescription)")
+                }
+            }
         }
     }
 
@@ -699,6 +832,15 @@ struct ContentView: View {
                     personalDictionaryLink
                 }
 
+                if model.sharedStorageState == .unavailable {
+                    Section {
+                        Text("Спільне сховище недоступне — зміни налаштувань і словника не зберігаються.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .accessibilityLabel("Увага: спільне сховище недоступне, зміни не зберігаються")
+                    }
+                }
+
                 if !model.statusMessage.isEmpty {
                     Section {
                         Text(model.statusMessage)
@@ -732,6 +874,16 @@ struct ContentView: View {
     private var macBody: some View {
         NavigationStack {
             ScrollView {
+                if model.sharedStorageState == .unavailable {
+                    Text("Спільне сховище недоступне — зміни налаштувань і словника не зберігаються.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
+                        .accessibilityLabel("Увага: спільне сховище недоступне, зміни не зберігаються")
+                }
+
                 VStack(spacing: 0) {
                     ForEach(voiceCatalog) { voice in
                         NavigationLink {
@@ -826,7 +978,10 @@ struct ContentView: View {
             .accessibilityLabel("Очистити лог")
             .accessibilityHint("Стирає поточний лог-файл для нового вимірювання.")
 
-            if let url = DebugLogShareHelper.logURL, DebugLogShareHelper.logExists() {
+            // Кеш із моделі, а не прямий виклик до контейнера: тіло view виконується
+            // на main під час обходу VoiceOver, а containerURL/stat на macOS 26
+            // може заблокуватись (task-082).
+            if let url = model.debugLogShareURL {
                 ShareLink(item: url) {
                     Label("Поділитись логом", systemImage: "square.and.arrow.up")
                 }
