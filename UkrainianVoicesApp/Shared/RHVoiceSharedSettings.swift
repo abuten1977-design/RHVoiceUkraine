@@ -1,7 +1,12 @@
 import Foundation
 
 enum RHVoiceSharedSettings {
+    static let legacyAppGroupID = "group.rhvoice.UkrainianVoices.shared"
+    #if os(macOS)
+    static let appGroupID = "5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared"
+    #else
     static let appGroupID = "group.rhvoice.UkrainianVoices.shared"
+    #endif
     static let snapshotFileName = "SharedSettingsSnapshot.json"
 
     static let enabledVoiceIdentifiersKey = "enabledVoiceIdentifiers"
@@ -24,6 +29,63 @@ enum RHVoiceSharedSettings {
         .init(name: "Natalia", identifier: "com.rhvoice.UkrainianVoices.natalia", language: "uk-UA", profileName: "Natalia", sampleText: "Привіт! Це тест голосу Наталія."),
         .init(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr", language: "uk-UA", profileName: "Volodymyr", sampleText: "Привіт! Це тест голосу Володимир.")
     ]
+}
+
+enum RHVoiceMacAppGroupMigration {
+    static func migrateIfNeeded(log: (String) -> Void = { NSLog("%@", $0) }) {
+        #if os(macOS)
+        guard RHVoiceSharedSettings.appGroupID != RHVoiceSharedSettings.legacyAppGroupID else { return }
+
+        let fileManager = FileManager.default
+        guard let newContainer = fileManager.containerURL(
+            forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID
+        ) else {
+            log("APPGROUP_MIGRATION skipped: new container unavailable")
+            return
+        }
+
+        guard let oldContainer = fileManager.containerURL(
+            forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.legacyAppGroupID
+        ) else {
+            log("APPGROUP_MIGRATION skipped: legacy container unavailable")
+            return
+        }
+
+        let entries: [(String, Bool)] = [
+            (RHVoiceSharedSettings.snapshotFileName, false),
+            ("user_dictionary.txt", false),
+            ("user_dictionary_meta.json", false),
+            ("RHVoiceConfig", true)
+        ]
+
+        do {
+            try fileManager.createDirectory(at: newContainer, withIntermediateDirectories: true)
+        } catch {
+            log("APPGROUP_MIGRATION failed: cannot create new container directory: \(error.localizedDescription)")
+            return
+        }
+
+        var copied = [String]()
+        for entry in entries {
+            let source = oldContainer.appendingPathComponent(entry.0, isDirectory: entry.1)
+            let target = newContainer.appendingPathComponent(entry.0, isDirectory: entry.1)
+            guard fileManager.fileExists(atPath: source.path) else { continue }
+            guard !fileManager.fileExists(atPath: target.path) else { continue }
+            do {
+                try fileManager.copyItem(at: source, to: target)
+                copied.append(entry.0)
+            } catch {
+                log("APPGROUP_MIGRATION copy failed item=\(entry.0): \(error.localizedDescription)")
+            }
+        }
+
+        if copied.isEmpty {
+            log("APPGROUP_MIGRATION finished: no legacy files found")
+        } else {
+            log("APPGROUP_MIGRATION finished: copied \(copied.joined(separator: ","))")
+        }
+        #endif
+    }
 }
 
 struct RHVoiceVoiceDescriptor: Codable, Hashable, Identifiable {

@@ -7,6 +7,7 @@
 #include "RHVoice.h"
 #import <AVFoundation/AVFoundation.h>
 #import <os/log.h>
+#import <TargetConditionals.h>
 #include <atomic>
 #include <cstdint>
 #include <cstring>
@@ -111,7 +112,11 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     return nil;
 }
 
+#if TARGET_OS_OSX
+static NSString* const RHVoiceAppGroupIdentifier = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
+#else
 static NSString* const RHVoiceAppGroupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
+#endif
 static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt";
 
 static NSURL* RHVoiceSharedContainerURL(void) {

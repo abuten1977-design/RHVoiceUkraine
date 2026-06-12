@@ -263,6 +263,9 @@ private final class ContentViewModel: ObservableObject {
 
     private func bootstrapFromDisk() {
         Self.storageQueue.async { [weak self] in
+            RHVoiceMacAppGroupMigration.migrateIfNeeded { message in
+                LogCollector.shared.log(message)
+            }
             let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
             let entries = PersonalUserDictionary.loadEntries()
             let status = PersonalUserDictionary.fileStatus()

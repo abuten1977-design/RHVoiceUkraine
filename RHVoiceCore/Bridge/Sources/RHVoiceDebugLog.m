@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <os/log.h>
+#import <TargetConditionals.h>
 #include <stdarg.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -16,8 +17,13 @@ static void ensureLogQueue(void) {
 }
 
 static NSString* currentLogPath(void) {
+#if TARGET_OS_OSX
+    NSString* groupIdentifier = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
+#else
+    NSString* groupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
+#endif
     NSURL* groupURL = [[NSFileManager defaultManager]
-        containerURLForSecurityApplicationGroupIdentifier:@"group.rhvoice.UkrainianVoices.shared"];
+        containerURLForSecurityApplicationGroupIdentifier:groupIdentifier];
     if (!groupURL) {
         _logPath = nil;
         return nil;
