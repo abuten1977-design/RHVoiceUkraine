@@ -33,6 +33,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private var rateValue: AUValue?
     private var volumeValue: AUValue?
     private var pitchValue: AUValue?
+    private let sharedSettingsCache = RHVoiceSharedSettingsSnapshotCache()
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -69,10 +70,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
         self.setupParameterTree()
         rhLog("EXT_DIAG synthesizer init")
-        let appGroupURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.rhvoice.UkrainianVoices.shared"
-        )
-        rhLog("EXT_DIAG appgroup container=\(appGroupURL?.path ?? "nil")")
+        self.sharedSettingsCache.start()
         self.startEngineWarmup()
     }
 
@@ -370,8 +368,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let ssmlVolume = Self.extractSSMLVolumeIfPresent(from: text)
         let ssmlPitch = Self.extractSSMLPitch(from: text)
 
-        // Read user settings from App Group
-        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        let snapshot = self.sharedSettingsCache.snapshot()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
         let settingsMs = Self.elapsedMs(since: preprocessingStart)
 

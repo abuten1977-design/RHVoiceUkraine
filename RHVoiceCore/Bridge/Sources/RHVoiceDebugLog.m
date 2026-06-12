@@ -104,11 +104,7 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
                   _logQueue ? 1 : 0);
         }
     };
-    if (important) {
-        dispatch_sync(_logQueue, writeBlock);
-    } else {
-        dispatch_async(_logQueue, writeBlock);
-    }
+    dispatch_async(_logQueue, writeBlock);
 }
 
 void RHVoiceDebugLogString(const char* message) {
@@ -119,7 +115,7 @@ void RHVoiceDebugLogClear(void) {
     ensureLogQueue();
     if (!_logQueue) return;
 
-    dispatch_sync(_logQueue, ^{
+    dispatch_async(_logQueue, ^{
         NSString* path = currentLogPath();
         if (!path) return;
         int fd = open([path fileSystemRepresentation], O_WRONLY | O_CREAT | O_TRUNC, 0644);

@@ -223,6 +223,84 @@ enum RHVoiceSharedSettingsStore {
     }
 }
 
+final class RHVoiceSharedSettingsSnapshotCache {
+    typealias SnapshotLoader = () -> RHVoiceSharedSettingsSnapshot
+
+    private let queue: DispatchQueue
+    private let lock = NSLock()
+    private let loader: SnapshotLoader
+    private let notificationName: String
+    private var cachedSnapshot: RHVoiceSharedSettingsSnapshot
+    private var observingDarwinNotifications = false
+
+    init(
+        queue: DispatchQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.shared-settings-cache", qos: .utility),
+        notificationName: String = "com.rhvoice.UkrainianVoices.personalDictionaryChanged",
+        initialSnapshot: RHVoiceSharedSettingsSnapshot = .initial(),
+        loader: @escaping SnapshotLoader = RHVoiceSharedSettingsStore.loadSnapshot
+    ) {
+        self.queue = queue
+        self.notificationName = notificationName
+        self.cachedSnapshot = initialSnapshot
+        self.loader = loader
+    }
+
+    deinit {
+        if observingDarwinNotifications {
+            CFNotificationCenterRemoveObserver(
+                CFNotificationCenterGetDarwinNotifyCenter(),
+                Unmanaged.passUnretained(self).toOpaque(),
+                CFNotificationName(notificationName as CFString),
+                nil
+            )
+        }
+    }
+
+    func start() {
+        startObservingDarwinNotifications()
+        refreshAsync(reason: "startup")
+    }
+
+    func snapshot() -> RHVoiceSharedSettingsSnapshot {
+        lock.lock()
+        let snapshot = cachedSnapshot
+        lock.unlock()
+        return snapshot
+    }
+
+    func refreshAsync(reason: String) {
+        queue.async { [weak self] in
+            guard let self else { return }
+            let snapshot = self.loader()
+            self.lock.lock()
+            self.cachedSnapshot = snapshot
+            self.lock.unlock()
+            NSLog("RHVoiceSharedSettingsSnapshotCache refreshed reason=\(reason) revision=\(snapshot.revision)")
+        }
+    }
+
+    private func startObservingDarwinNotifications() {
+        guard !observingDarwinNotifications else { return }
+        observingDarwinNotifications = true
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque(),
+            Self.darwinNotificationCallback,
+            notificationName as CFString,
+            nil,
+            .deliverImmediately
+        )
+    }
+
+    private static let darwinNotificationCallback: CFNotificationCallback = { _, observer, _, _, _ in
+        guard let observer else { return }
+        let cache = Unmanaged<RHVoiceSharedSettingsSnapshotCache>
+            .fromOpaque(observer)
+            .takeUnretainedValue()
+        cache.refreshAsync(reason: "darwin")
+    }
+}
+
 private extension JSONEncoder {
     static var rhvoiceEncoder: JSONEncoder {
         let encoder = JSONEncoder()

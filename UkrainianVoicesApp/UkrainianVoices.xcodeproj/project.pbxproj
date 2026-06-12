@@ -53,6 +53,7 @@
 		482A33BBC23DB5AA5895E538 /* config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED08F7F49911AC2D9B4F82DC /* config.cpp */; };
 		48FC1E69279B8B16544F9081 /* HTS_gstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 2C3A96B02349D3A36360075B /* HTS_gstream.c */; };
 		4E03B70A054DD91EC1D7E423 /* userdict_parser.g in Resources */ = {isa = PBXBuildFile; fileRef = 65AE52399251746E336A156E /* userdict_parser.g */; };
+		4EEBBD0026CA0DD445709364 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
 		506745DB112D1532C9C2AD8D /* HTS_audio.c in Sources */ = {isa = PBXBuildFile; fileRef = 5C706F38FB146185F548F3E0 /* HTS_audio.c */; };
 		50EFCC5F520C0A693191EFDC /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
 		528AD249739E87451E97CB8A /* test1.txt in Resources */ = {isa = PBXBuildFile; fileRef = 38CD5A7254D0DBADFF9D55B6 /* test1.txt */; };
@@ -143,6 +144,7 @@
 		BBFD5EC0A87665EAC722501F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3DD68D3AB8E680055D89C0 /* ContentView.swift */; };
 		BF892D809EDB453B3FBA2F20 /* voice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5DF5993E3398006C1ED4470B /* voice.cpp */; };
 		C0AE845367CCAF2F333B20C5 /* RHVoiceKitMac.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5C7259148889146602EF0F2 /* RHVoiceKitMac.framework */; };
+		C0D8696ACDFB4031ED73C10B /* RHVoiceSharedSettingsSnapshotCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99E70FB91F35F463AD3C901 /* RHVoiceSharedSettingsSnapshotCacheTests.swift */; };
 		C10E4861C2A4A4B557E33602 /* tts_api.h in Headers */ = {isa = PBXBuildFile; fileRef = 6CA2096CE4E6D02EFFEF0A6F /* tts_api.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C25CBEAA8FF204E1F22231BC /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9435D1BF5C88934351ABD065 /* AudioToolbox.framework */; };
 		C2E31DC22A29ABFE06EFD7A0 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = D00217A3EB0AA03BFA65831B /* config.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -356,6 +358,7 @@
 		A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RHVoiceDebugLog.m; sourceTree = "<group>"; };
 		A3C3AF4B8B9151C3159D3D12 /* soundstretch.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = soundstretch.wav; sourceTree = "<group>"; };
 		A98A3D0A7D9319EE30E040C2 /* rules */ = {isa = PBXFileReference; path = rules; sourceTree = "<group>"; };
+		A99E70FB91F35F463AD3C901 /* RHVoiceSharedSettingsSnapshotCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSharedSettingsSnapshotCacheTests.swift; sourceTree = "<group>"; };
 		AD4A7F8E301506474EEA5261 /* playback_stream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = playback_stream.cpp; sourceTree = "<group>"; };
 		ADC00C76BDA57C36FCE597D7 /* DebugLogShareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogShareHelper.swift; sourceTree = "<group>"; };
 		B01AC93DE830D9FB966678C1 /* limiter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = limiter.cpp; sourceTree = "<group>"; };
@@ -695,6 +698,7 @@
 			children = (
 				B12F510FA5E09E697DE2F15C /* RHVoiceApostropheNormalizerTests.swift */,
 				222E6C35B476BE184E65F68B /* RHVoicePipelineSplitterTests.swift */,
+				A99E70FB91F35F463AD3C901 /* RHVoiceSharedSettingsSnapshotCacheTests.swift */,
 				C9237E58693FC24E1BFB2956 /* RHVoiceSilenceAnalyzerTests.swift */,
 			);
 			path = Tests;
@@ -1299,6 +1303,8 @@
 				44ADCC9AC5FD1C8F98F8AB16 /* RHVoiceApostropheNormalizerTests.swift in Sources */,
 				25242C8263697EE99E70F59E /* RHVoicePipelineSplitter.swift in Sources */,
 				B503097BF435BA449F101C4E /* RHVoicePipelineSplitterTests.swift in Sources */,
+				4EEBBD0026CA0DD445709364 /* RHVoiceSharedSettings.swift in Sources */,
+				C0D8696ACDFB4031ED73C10B /* RHVoiceSharedSettingsSnapshotCacheTests.swift in Sources */,
 				169AB627DDA229BB9F3671F7 /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				2ACE70E8A45833642018757F /* RHVoiceSilenceAnalyzerTests.swift in Sources */,
 			);
