@@ -163,11 +163,15 @@ SWIFT
 OBJECT_ROOT="$DERIVED_DATA/Build/Intermediates.noindex/UkrainianVoices.build/Debug/UkrainianVoicesExtensionMac.build/Objects-normal"
 OBJECT_DIR="$(find "$OBJECT_ROOT" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
 BRIDGE_OBJ="$(find "$DERIVED_DATA/Build/Products/Debug" -name RHVoiceBridge.o -print -quit)"
+APOSTROPHE_NORMALIZER_OBJ="$OBJECT_DIR/RHVoiceApostropheNormalizer.o"
 PIPELINE_SPLITTER_OBJ="$OBJECT_DIR/RHVoicePipelineSplitter.o"
+SILENCE_ANALYZER_OBJ="$OBJECT_DIR/RHVoiceSilenceAnalyzer.o"
 
 test -n "$OBJECT_DIR"
 test -n "$BRIDGE_OBJ"
+test -f "$APOSTROPHE_NORMALIZER_OBJ"
 test -f "$PIPELINE_SPLITTER_OBJ"
+test -f "$SILENCE_ANALYZER_OBJ"
 
 swiftc "$PROOF_SWIFT" \
   -I "$DERIVED_DATA/Build/Products/Debug" \
@@ -180,7 +184,9 @@ swiftc "$PROOF_SWIFT" \
   -lc++ \
   "$OBJECT_DIR/UkrainianSpeechSynthesizer.o" \
   "$OBJECT_DIR/RHVoiceSharedSettings.o" \
+  "$APOSTROPHE_NORMALIZER_OBJ" \
   "$PIPELINE_SPLITTER_OBJ" \
+  "$SILENCE_ANALYZER_OBJ" \
   "$OBJECT_DIR/AudioUnitFactory.o" \
   "$BRIDGE_OBJ" \
   -Xlinker -rpath \
