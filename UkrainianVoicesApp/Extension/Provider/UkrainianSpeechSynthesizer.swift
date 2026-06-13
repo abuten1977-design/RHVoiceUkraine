@@ -12,10 +12,6 @@ private func rhLog(_ msg: String) {
     msg.withCString { RHVoiceDebugLogString($0) }
 }
 
-private enum RHVoiceAUParameter: AUParameterAddress {
-    case rate, volume, pitch
-}
-
 @available(iOS 16.0, macOS 13.0, *)
 @objc(UkrainianSpeechSynthesizer)
 public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUnit {
@@ -30,9 +26,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private var isSynthesizing = false
     private let synthesisQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.synthesis", qos: .userInitiated)
     private var synthesisGeneration: UInt64 = 0
-    private var rateValue: AUValue?
-    private var volumeValue: AUValue?
-    private var pitchValue: AUValue?
     private let sharedSettingsCache = RHVoiceSharedSettingsSnapshotCache()
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
@@ -68,7 +61,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         try super.init(componentDescription: componentDescription, options: options)
 
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
-        self.setupParameterTree()
+        // Do not restore AUParameterTree here. It regressed the macOS VoiceOver rotor
+        // into announcing numeric percentages instead of voices (fixed in 151a4aec,
+        // accidentally restored in ed59926a, removed again by task-087). VoiceOver
+        // rate/volume/pitch arrive through SSML prosody, and app settings arrive
+        // through the App Group snapshot cache.
         rhLog("EXT_DIAG synthesizer init")
         self.sharedSettingsCache.start()
         self.startEngineWarmup()
@@ -81,82 +78,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             rhLog("WARMUP started")
             _ = self.rhvoiceEngine
             rhLog("WARMUP done elapsedMs=\(Self.elapsedMs(since: warmupStart))")
-        }
-    }
-
-    private func setupParameterTree() {
-        self.parameterTree = .createTree(withChildren: [
-            AUParameterTree.createGroup(
-                withIdentifier: "rhvoice",
-                name: "RHVoice Ukrainian",
-                children: [
-                    AUParameterTree.createParameter(
-                        withIdentifier: "rate",
-                        name: "Rate",
-                        address: RHVoiceAUParameter.rate.rawValue,
-                        min: 0.5,
-                        max: 4.5,
-                        unit: .rate,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "volume",
-                        name: "Volume",
-                        address: RHVoiceAUParameter.volume.rawValue,
-                        min: 0.0,
-                        max: 1.0,
-                        unit: .linearGain,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "pitch",
-                        name: "Pitch",
-                        address: RHVoiceAUParameter.pitch.rawValue,
-                        min: 0.5,
-                        max: 2.0,
-                        unit: .customUnit,
-                        unitName: "multiplier",
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                ]
-            )
-        ])
-
-        self.parameterTree?.implementorValueProvider = { [weak self] parameter in
-            guard let self else { return 0 }
-            switch parameter.address {
-            case RHVoiceAUParameter.rate.rawValue:
-                return self.rateValue ?? 1.0
-            case RHVoiceAUParameter.volume.rawValue:
-                return self.volumeValue ?? 1.0
-            case RHVoiceAUParameter.pitch.rawValue:
-                return self.pitchValue ?? 1.0
-            default:
-                return 0
-            }
-        }
-
-        for parameter in self.parameterTree?.allParameters ?? [] {
-            parameter.value = self.parameterTree?.implementorValueProvider(parameter) ?? 0
-        }
-
-        self.parameterTree?.implementorValueObserver = { [weak self] parameter, value in
-            guard let self else { return }
-            switch parameter.address {
-            case RHVoiceAUParameter.rate.rawValue:
-                self.rateValue = value
-            case RHVoiceAUParameter.volume.rawValue:
-                self.volumeValue = value
-            case RHVoiceAUParameter.pitch.rawValue:
-                self.pitchValue = value
-            default:
-                break
-            }
         }
     }
 
@@ -312,10 +233,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         let ssmlSnippet = String(text.prefix(200))
         rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")
-        let currentRateValue = self.rateValue
-        let currentVolumeValue = self.volumeValue
-        let currentPitchValue = self.pitchValue
-
         self.outputMutex.wait()
         self.isSynthesizing = true
         self.synthesisGeneration &+= 1
@@ -330,9 +247,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             self?.runSynthesisPipeline(
                 text: text,
                 voiceId: voiceId,
-                rateValue: currentRateValue,
-                volumeValue: currentVolumeValue,
-                pitchValue: currentPitchValue,
                 requestStart: requestStart,
                 generation: generation
             )
@@ -342,9 +256,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private func runSynthesisPipeline(
         text: String,
         voiceId: String,
-        rateValue: AUValue?,
-        volumeValue: AUValue?,
-        pitchValue: AUValue?,
         requestStart: CFAbsoluteTime,
         generation: UInt64
     ) {
@@ -374,12 +285,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         let effectiveRatePercent = ssmlRatePercent ?? 100.0
         let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
-            ?? Double(rateValue ?? 1.0)
+            ?? 1.0
         let accelerator = Self.clampSpeedMultiplier(voiceSettings.speedMultiplier)
         let finalRate = Self.clampRate(mappedRate * accelerator)
-        let effectiveVolume = ssmlVolume ?? Self.clampVolume(Double(volumeValue ?? 1.0))
+        let effectiveVolume = ssmlVolume ?? 1.0
         let finalVolume = Self.clampVolume(effectiveVolume)
-        let effectivePitch = Self.clampPitch(ssmlPitch ?? Double(pitchValue ?? 1.0))
+        let effectivePitch = Self.clampPitch(ssmlPitch ?? 1.0)
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeApostrophesInTextSegments(text)
@@ -388,9 +299,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
         rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
         #if DEBUG
-        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
+        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
 
         let fragments = RHVoicePipelineSplitter.pipelineFragments(from: synthesisText)
