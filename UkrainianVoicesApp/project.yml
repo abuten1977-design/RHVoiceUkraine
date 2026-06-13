@@ -313,10 +313,12 @@ targets:
       - path: Shared/RHVoiceApostropheNormalizer.swift
       - path: Shared/RHVoiceSilenceAnalyzer.swift
       - path: Shared/RHVoiceSharedSettings.swift
+      - path: Shared/PersonalUserDictionary.swift
       - path: Tests/RHVoicePipelineSplitterTests.swift
       - path: Tests/RHVoiceApostropheNormalizerTests.swift
       - path: Tests/RHVoiceSilenceAnalyzerTests.swift
       - path: Tests/RHVoiceSharedSettingsSnapshotCacheTests.swift
+      - path: Tests/PersonalUserDictionaryTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoicePipelineSplitterTests

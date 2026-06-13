@@ -118,6 +118,7 @@ static NSString* const RHVoiceAppGroupIdentifier = @"5NNZPP8CRR.group.rhvoice.Uk
 static NSString* const RHVoiceAppGroupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
 #endif
 static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt";
+static NSString* const RHVoicePersonalDictionaryChangedNotification = @"com.rhvoice.UkrainianVoices.personalDictionaryChanged";
 
 static NSURL* RHVoiceSharedContainerURL(void) {
     return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];
@@ -228,7 +229,19 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @property (strong) NSCondition* activeStateCondition;
 @property (assign) EngineState* activeStreamingState;
 @property (copy) NSString* personalDictionarySignature;
+@property (assign) BOOL personalDictionaryRefreshRequested;
 @end
+
+static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
+                                                     void* observer,
+                                                     CFNotificationName,
+                                                     const void*,
+                                                     CFDictionaryRef) {
+    if (!observer) return;
+    RHVoiceEngine* engine = (__bridge RHVoiceEngine*)observer;
+    engine.personalDictionaryRefreshRequested = YES;
+    RHVoiceDebugLogWrite("USERDICT refresh requested by Darwin notification");
+}
 
 // MARK: - @implementation
 
@@ -255,6 +268,13 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         _engine = NULL;
         _activeStateCondition = [[NSCondition alloc] init];
         _personalDictionarySignature = @"";
+        _personalDictionaryRefreshRequested = NO;
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                        (__bridge const void*)self,
+                                        RHVoicePersonalDictionaryChangedCallback,
+                                        (__bridge CFStringRef)RHVoicePersonalDictionaryChangedNotification,
+                                        NULL,
+                                        CFNotificationSuspensionBehaviorDeliverImmediately);
         [self initializeEngine];
     }
     return self;
@@ -262,9 +282,11 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (void)refreshPersonalDictionaryIfNeeded {
     NSString* signature = RHVoicePersonalDictionarySignature();
-    if (!self.initialized || [signature isEqualToString:self.personalDictionarySignature]) {
+    BOOL forced = self.personalDictionaryRefreshRequested;
+    if (!self.initialized || (!forced && [signature isEqualToString:self.personalDictionarySignature])) {
         return;
     }
+    self.personalDictionaryRefreshRequested = NO;
 
     RHVoiceDebugLogWrite("USERDICT personal changed old=%s new=%s",
                          self.personalDictionarySignature.UTF8String,
@@ -547,6 +569,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 }
 
 - (void)dealloc {
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                       (__bridge const void*)self,
+                                       (__bridge CFStringRef)RHVoicePersonalDictionaryChangedNotification,
+                                       NULL);
     if (self.engine) {
         RHVoice_delete_tts_engine(self.engine);
     }

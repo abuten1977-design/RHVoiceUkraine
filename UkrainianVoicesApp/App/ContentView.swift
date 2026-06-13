@@ -1235,16 +1235,16 @@ private struct PersonalDictionaryEditorView: View {
                         .focused($focusedField, equals: .displayWord)
                         .personalDictionaryTextInputSettings()
                         .accessibilityLabel("Слово як воно пишеться")
-                        .accessibilityHint("Введіть слово без позначки наголосу.")
+                        .accessibilityHint("Слово як пишеться.")
                     TextField("", text: $stressedWord, prompt: Text("наприклад: листоп+ад"))
                         .focused($focusedField, equals: .stressedWord)
                         .personalDictionaryTextInputSettings()
-                        .accessibilityLabel("Слово з позначкою наголосу")
-                        .accessibilityHint("Поставте плюс перед голосною, на яку хочете наголос.")
-                    Text("Поставте + перед голосною, на яку хочете наголос.")
+                        .accessibilityLabel("Вимова")
+                        .accessibilityHint("Те саме слово зі знаком плюс перед наголошеною голосною, або інше слово чи фраза, як це читати.")
+                    Text("Слово — як пишеться. Вимова — те саме слово зі знаком + перед наголошеною голосною, або інше слово чи фраза, як це читати.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
-                        .accessibilityLabel("Підказка: поставте плюс перед голосною, на яку хочете наголос.")
+                        .accessibilityLabel("Підказка: слово — як пишеться. Вимова — те саме слово зі знаком плюс перед наголошеною голосною, або інше слово чи фраза, як це читати.")
                 }
 
                 Section {

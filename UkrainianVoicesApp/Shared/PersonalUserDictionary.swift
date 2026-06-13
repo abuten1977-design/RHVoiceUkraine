@@ -114,7 +114,7 @@ enum PersonalUserDictionary {
         try atomicWrite(metaData, to: metaURL)
 
         let text = sortedEntries
-            .map(\.stressedWord)
+            .map(dictionaryLine)
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
         let body = text.isEmpty ? "" : text + "\n"
@@ -132,6 +132,14 @@ enum PersonalUserDictionary {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw PersonalUserDictionaryError.emptyStressedWord }
         return trimmed
+    }
+
+    static func dictionaryLine(for entry: PersonalDictionaryEntry) -> String {
+        let display = entry.displayWord.trimmingCharacters(in: .whitespacesAndNewlines)
+        let stressed = entry.stressedWord.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !stressed.isEmpty else { return "" }
+        guard !display.isEmpty else { return stressed }
+        return "\(display)=\(stressed)"
     }
 
     private static func atomicWrite(_ data: Data, to url: URL) throws {
