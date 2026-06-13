@@ -38,6 +38,28 @@ final class RHVoiceSharedSettingsSnapshotCacheTests: XCTestCase {
         XCTAssertEqual(cache.snapshot(), loaded)
     }
 
+    func testDarwinNotificationRefreshesCachedSnapshot() {
+        let notificationName = "com.rhvoice.tests.settingsChanged.\(UUID().uuidString)"
+        let initial = Self.snapshot(revision: 30, speedMultiplier: 1.0)
+        let updated = Self.snapshot(revision: 31, speedMultiplier: 1.6)
+        let state = LockedSnapshot(initial)
+        let cache = RHVoiceSharedSettingsSnapshotCache(
+            queue: DispatchQueue(label: "com.rhvoice.tests.settings-cache-darwin"),
+            notificationName: notificationName,
+            initialSnapshot: initial,
+            loader: { state.value }
+        )
+
+        cache.start()
+        waitUntilSnapshot(cache, equals: initial)
+
+        state.value = updated
+        RHVoiceDarwinNotifications.post(notificationName)
+
+        waitUntilSnapshot(cache, equals: updated)
+        XCTAssertEqual(cache.snapshot().generalSettings.speedMultiplier, 1.6)
+    }
+
     private static func snapshot(revision: Int, speedMultiplier: Double) -> RHVoiceSharedSettingsSnapshot {
         let settings = RHVoiceSpeechSettings(
             rate: RHVoiceSpeechSettings.recommended.rate,
@@ -61,5 +83,39 @@ final class RHVoiceSharedSettingsSnapshotCacheTests: XCTestCase {
                 }
             )
         )
+    }
+
+    private func waitUntilSnapshot(
+        _ cache: RHVoiceSharedSettingsSnapshotCache,
+        equals expected: RHVoiceSharedSettingsSnapshot,
+        timeout: TimeInterval = 2.0
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while cache.snapshot() != expected && Date() < deadline {
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.01))
+        }
+    }
+}
+
+private final class LockedSnapshot {
+    private let lock = NSLock()
+    private var snapshot: RHVoiceSharedSettingsSnapshot
+
+    init(_ snapshot: RHVoiceSharedSettingsSnapshot) {
+        self.snapshot = snapshot
+    }
+
+    var value: RHVoiceSharedSettingsSnapshot {
+        get {
+            lock.lock()
+            let value = snapshot
+            lock.unlock()
+            return value
+        }
+        set {
+            lock.lock()
+            snapshot = newValue
+            lock.unlock()
+        }
     }
 }

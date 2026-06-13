@@ -17,6 +17,8 @@ enum RHVoiceSharedSettings {
     static let sentencePauseKey = "sentencePause"
     static let wordGapKey = "wordGap"
     static let pitchKey = "pitch"
+    static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
+    static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
 
     static let defaultVoiceIdentifier = "com.rhvoice.UkrainianVoices.anatol"
     static var defaultEnabledVoiceIdentifiers: Set<String> {
@@ -29,6 +31,26 @@ enum RHVoiceSharedSettings {
         .init(name: "Natalia", identifier: "com.rhvoice.UkrainianVoices.natalia", language: "uk-UA", profileName: "Natalia", sampleText: "Привіт! Це тест голосу Наталія."),
         .init(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr", language: "uk-UA", profileName: "Volodymyr", sampleText: "Привіт! Це тест голосу Володимир.")
     ]
+}
+
+enum RHVoiceDarwinNotifications {
+    static func post(_ name: String) {
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            CFNotificationName(name as CFString),
+            nil,
+            nil,
+            true
+        )
+    }
+
+    static func notifySharedSettingsChanged() {
+        post(RHVoiceSharedSettings.settingsChangedNotificationName)
+    }
+
+    static func notifyPersonalDictionaryChanged() {
+        post(RHVoiceSharedSettings.personalDictionaryChangedNotificationName)
+    }
 }
 
 enum RHVoiceMacAppGroupMigration {
@@ -222,6 +244,8 @@ enum RHVoiceSharedSettingsStore {
                 defaults.set(perVoice.settings.pitch, forKey: "\(prefix).pitch")
             }
         }
+
+        RHVoiceDarwinNotifications.notifySharedSettingsChanged()
     }
 
     private static func loadSnapshotFromFile() -> RHVoiceSharedSettingsSnapshot? {
@@ -291,20 +315,37 @@ final class RHVoiceSharedSettingsSnapshotCache {
     private let queue: DispatchQueue
     private let lock = NSLock()
     private let loader: SnapshotLoader
-    private let notificationName: String
+    private let notificationNames: [String]
     private var cachedSnapshot: RHVoiceSharedSettingsSnapshot
     private var observingDarwinNotifications = false
 
     init(
         queue: DispatchQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.shared-settings-cache", qos: .utility),
-        notificationName: String = "com.rhvoice.UkrainianVoices.personalDictionaryChanged",
+        notificationNames: [String] = [
+            RHVoiceSharedSettings.settingsChangedNotificationName,
+            RHVoiceSharedSettings.personalDictionaryChangedNotificationName
+        ],
         initialSnapshot: RHVoiceSharedSettingsSnapshot = .initial(),
         loader: @escaping SnapshotLoader = RHVoiceSharedSettingsStore.loadSnapshot
     ) {
         self.queue = queue
-        self.notificationName = notificationName
+        self.notificationNames = notificationNames
         self.cachedSnapshot = initialSnapshot
         self.loader = loader
+    }
+
+    convenience init(
+        queue: DispatchQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.shared-settings-cache", qos: .utility),
+        notificationName: String,
+        initialSnapshot: RHVoiceSharedSettingsSnapshot = .initial(),
+        loader: @escaping SnapshotLoader = RHVoiceSharedSettingsStore.loadSnapshot
+    ) {
+        self.init(
+            queue: queue,
+            notificationNames: [notificationName],
+            initialSnapshot: initialSnapshot,
+            loader: loader
+        )
     }
 
     deinit {
@@ -312,7 +353,7 @@ final class RHVoiceSharedSettingsSnapshotCache {
             CFNotificationCenterRemoveObserver(
                 CFNotificationCenterGetDarwinNotifyCenter(),
                 Unmanaged.passUnretained(self).toOpaque(),
-                CFNotificationName(notificationName as CFString),
+                nil,
                 nil
             )
         }
@@ -344,14 +385,16 @@ final class RHVoiceSharedSettingsSnapshotCache {
     private func startObservingDarwinNotifications() {
         guard !observingDarwinNotifications else { return }
         observingDarwinNotifications = true
-        CFNotificationCenterAddObserver(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            Unmanaged.passUnretained(self).toOpaque(),
-            Self.darwinNotificationCallback,
-            notificationName as CFString,
-            nil,
-            .deliverImmediately
-        )
+        for notificationName in notificationNames {
+            CFNotificationCenterAddObserver(
+                CFNotificationCenterGetDarwinNotifyCenter(),
+                Unmanaged.passUnretained(self).toOpaque(),
+                Self.darwinNotificationCallback,
+                notificationName as CFString,
+                nil,
+                .deliverImmediately
+            )
+        }
     }
 
     private static let darwinNotificationCallback: CFNotificationCallback = { _, observer, _, _, _ in
