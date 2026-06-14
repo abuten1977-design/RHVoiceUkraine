@@ -7,9 +7,15 @@ import RHVoiceBridge
 import os.log
 
 private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
+private let apostropheLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "apostrophe")
 
 private func rhLog(_ msg: String) {
     msg.withCString { RHVoiceDebugLogString($0) }
+}
+
+private func apostropheDiagLog(_ msg: String) {
+    rhLog(msg)
+    os_log(.info, log: apostropheLog, "%{public}@", msg as NSString)
 }
 
 @available(iOS 16.0, macOS 13.0, *)
@@ -544,12 +550,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let matches = textSegments.flatMap { apostropheDiagnostics(in: $0) }
 
         guard !matches.isEmpty else {
-            rhLog("APOSTROPHE_DIAG \(label): no apostrophe-like scalars in text segments")
+            apostropheDiagLog("APOSTROPHE_DIAG \(label): no apostrophe-like scalars in text segments")
             return
         }
 
         for (index, match) in matches.enumerated() {
-            rhLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
+            apostropheDiagLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
         }
     }
 
