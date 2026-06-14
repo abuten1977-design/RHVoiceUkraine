@@ -279,7 +279,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let ssmlVolume = Self.extractSSMLVolumeIfPresent(from: text)
         let ssmlPitch = Self.extractSSMLPitch(from: text)
 
-        let snapshot = self.sharedSettingsCache.snapshot()
+        // Read the accelerator/speed fresh at the moment of speaking (like builds
+        // ≤157), bounded so a wedged container can never freeze the voice (task-086).
+        let snapshot = self.sharedSettingsCache.snapshotRefreshingNow()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
         let settingsMs = Self.elapsedMs(since: preprocessingStart)
 

@@ -371,6 +371,27 @@ final class RHVoiceSharedSettingsSnapshotCache {
         return snapshot
     }
 
+    /// Returns the freshest snapshot it can read without blocking the caller for
+    /// longer than `timeout`. On a healthy App Group the disk read finishes in well
+    /// under a millisecond, so a changed accelerator/speed applies on the very next
+    /// utterance — the behaviour builds up to 157 had. On a wedged container (the
+    /// macOS 26 unauthorised-group hang) the read is abandoned after `timeout` and
+    /// the last cached value is used, so the voice never freezes (task-086's goal).
+    func snapshotRefreshingNow(timeout: TimeInterval = 0.2) -> RHVoiceSharedSettingsSnapshot {
+        let semaphore = DispatchSemaphore(value: 0)
+        queue.async { [weak self] in
+            guard let self else { semaphore.signal(); return }
+            let snapshot = self.loader()
+            self.lock.lock()
+            self.cachedSnapshot = snapshot
+            self.lock.unlock()
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + timeout)
+        // Fresh value if the load finished in time; last-known value if it timed out.
+        return snapshot()
+    }
+
     func refreshAsync(reason: String) {
         queue.async { [weak self] in
             guard let self else { return }
