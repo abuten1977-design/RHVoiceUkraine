@@ -1,7 +1,7 @@
 import XCTest
 
 final class RHVoiceApostropheNormalizerTests: XCTestCase {
-    func testApostropheVariantsNormalizeToModifierLetterApostrophe() {
+    func testApostropheVariantsNormalizeToAsciiApostrophe() {
         let variants = [
             "&apos;",
             "&#39;",
@@ -20,16 +20,16 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         for variant in variants {
             XCTAssertEqual(
                 RHVoiceApostropheNormalizer.normalizeText("п\(variant)ятниця"),
-                "п\u{02BC}ятниця",
+                "п'ятниця",
                 "Failed to normalize \(variant.unicodeScalars.map { String(format: "U+%04X", $0.value) }.joined(separator: " "))"
             )
         }
     }
 
     func testWordsNormalizeToEngineApostrophe() {
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText("п'ятниця"), "п\u{02BC}ятниця")
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText("п’ятниця"), "п\u{02BC}ятниця")
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText("п&apos;ятниця"), "п\u{02BC}ятниця")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText("п'ятниця"), "п'ятниця")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText("п’ятниця"), "п'ятниця")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText("п&apos;ятниця"), "п'ятниця")
     }
 
     func testStandaloneApostropheRequestSpeaksApostrophe() {
@@ -48,12 +48,12 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
 
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml),
-            "<speak><tag value=\"п&apos;ятниця\">м\u{02BC}ясо</tag></speak>"
+            "<speak><tag value=\"п&apos;ятниця\">м'ясо</tag></speak>"
         )
     }
 
     func testNormalizationIsIdempotent() {
-        let normalized = "ім\u{02BC}я об\u{02BC}єкт сім\u{02BC}я"
+        let normalized = "ім'я об'єкт сім'я"
 
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText(normalized), normalized)
     }

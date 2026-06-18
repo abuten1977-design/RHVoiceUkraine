@@ -1,7 +1,7 @@
 import Foundation
 
 enum RHVoiceApostropheNormalizer {
-    static let engineApostrophe = "\u{02BC}"
+    static let engineApostrophe = "\u{0027}"
     private static let spokenStandaloneApostrophe = "апостроф"
 
     static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {
