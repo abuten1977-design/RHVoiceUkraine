@@ -33,9 +33,11 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     }
 
     func testStandaloneApostropheRequestSpeaksApostrophe() {
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("'"), "апостроф")
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("’"), "апостроф")
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("<speak><voice name=\"x\">ʼ</voice></speak>"), "апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("'"), "прямий апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("’"), "правий апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("‘"), "лівий апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("`"), "зворотний апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("<speak><voice name=\"x\">ʼ</voice></speak>"), "буквений апостроф")
     }
 
     func testStandaloneApostropheDoesNotRewriteWords() {
@@ -56,5 +58,31 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         let normalized = "ім'я об'єкт сім'я"
 
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText(normalized), normalized)
+    }
+
+    func testLargeIntegersNormalizeToWordsInTextSegments() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Число 123456 готове."),
+            "Число сто двадцять три тисячі чотириста п'ятдесят шість готове."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Число 1234567 готове."),
+            "Число один мільйон двісті тридцять чотири тисячі п'ятсот шістдесят сім готове."
+        )
+    }
+
+    func testDecimalFractionsNormalizeToUkrainianFractionWords() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 0,1."),
+            "Значення нуль цілих одна десята."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 2,08."),
+            "Значення два цілих вісім сотих."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 4,1006."),
+            "Значення чотири цілих одна тисяча шість десятитисячних."
+        )
     }
 }
