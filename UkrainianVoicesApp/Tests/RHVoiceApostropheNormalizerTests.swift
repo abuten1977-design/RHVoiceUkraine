@@ -32,6 +32,17 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeText("п&apos;ятниця"), "п\u{02BC}ятниця")
     }
 
+    func testStandaloneApostropheRequestSpeaksApostrophe() {
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("'"), "апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("’"), "апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("<speak><voice name=\"x\">ʼ</voice></speak>"), "апостроф")
+    }
+
+    func testStandaloneApostropheDoesNotRewriteWords() {
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("п'ятниця"))
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("<speak>ім'я</speak>"))
+    }
+
     func testSSMLTagsAreNotModified() {
         let ssml = "<speak><tag value=\"п&apos;ятниця\">м'ясо</tag></speak>"
 

@@ -2,6 +2,14 @@ import Foundation
 
 enum RHVoiceApostropheNormalizer {
     static let engineApostrophe = "\u{02BC}"
+    private static let spokenStandaloneApostrophe = "апостроф"
+
+    static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {
+        let text = extractTextSegments(from: ssml).joined().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+
+        return normalizeText(text) == engineApostrophe ? spokenStandaloneApostrophe : nil
+    }
 
     static func normalizeInTextSegments(_ ssml: String) -> String {
         var output = ""
@@ -49,5 +57,33 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: "\u{00B4}", with: engineApostrophe)
             .replacingOccurrences(of: "\u{FF07}", with: engineApostrophe)
             .replacingOccurrences(of: "\u{0060}", with: engineApostrophe)
+    }
+
+    private static func extractTextSegments(from ssml: String) -> [String] {
+        var segments: [String] = []
+        var textSegment = ""
+        var insideTag = false
+
+        for character in ssml {
+            if insideTag {
+                if character == ">" {
+                    insideTag = false
+                }
+            } else if character == "<" {
+                if !textSegment.isEmpty {
+                    segments.append(textSegment)
+                    textSegment.removeAll(keepingCapacity: true)
+                }
+                insideTag = true
+            } else {
+                textSegment.append(character)
+            }
+        }
+
+        if !textSegment.isEmpty {
+            segments.append(textSegment)
+        }
+
+        return segments
     }
 }

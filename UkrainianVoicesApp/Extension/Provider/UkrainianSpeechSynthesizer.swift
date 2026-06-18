@@ -301,7 +301,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let effectivePitch = Self.clampPitch(ssmlPitch ?? 1.0)
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
-        let normalizedText = Self.normalizeApostrophesInTextSegments(text)
+        let normalizedText = Self.normalizeStandaloneApostropheRequest(text)
+            ?? Self.normalizeApostrophesInTextSegments(text)
         Self.logApostropheEncoding(label: "after-apostrophe-normalize", ssml: normalizedText)
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
@@ -539,6 +540,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
         RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml)
+    }
+
+    private static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {
+        RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest(ssml)
     }
 
     private static func normalizeApostrophes(_ text: String) -> String {
