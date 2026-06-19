@@ -48,6 +48,10 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: "&#39;", with: engineApostrophe)
             .replacingOccurrences(of: "&#x27;", with: engineApostrophe)
             .replacingOccurrences(of: "&#X27;", with: engineApostrophe)
+            .replacingOccurrences(of: "&#96;", with: engineApostrophe)
+            .replacingOccurrences(of: "&#x60;", with: engineApostrophe)
+            .replacingOccurrences(of: "&#X60;", with: engineApostrophe)
+            .replacingOccurrences(of: "&grave;", with: engineApostrophe)
             .replacingOccurrences(of: "\u{0027}", with: engineApostrophe)
             .replacingOccurrences(of: "\u{2019}", with: engineApostrophe)
             .replacingOccurrences(of: "\u{2018}", with: engineApostrophe)
@@ -72,7 +76,7 @@ enum RHVoiceApostropheNormalizer {
             return "лівий апостроф"
         case "\u{02BC}":
             return "буквений апостроф"
-        case "\u{0060}":
+        case "\u{0060}", "&#96;", "&#x60;", "&#X60;", "&grave;":
             return "зворотний апостроф"
         case "\u{2032}":
             return "штрих"
