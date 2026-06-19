@@ -85,8 +85,12 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             "Значення нуль цілих одна десята."
         )
         XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 1,5."),
+            "Значення одна ціла п'ять десятих."
+        )
+        XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 2,08."),
-            "Значення два цілих вісім сотих."
+            "Значення дві цілих вісім сотих."
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 4,1006."),
@@ -94,7 +98,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 2,000001."),
-            "Значення два цілих одна мільйонна."
+            "Значення дві цілих одна мільйонна."
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 3,1234567."),

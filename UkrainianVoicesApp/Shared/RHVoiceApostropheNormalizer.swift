@@ -103,11 +103,12 @@ enum RHVoiceApostropheNormalizer {
             let fractionDigits = String(text[fractionRange])
             guard let fractionValue = Int(fractionDigits), fractionValue != 0 else { return nil }
 
-            let integerWords = integerToWords(integerValue)
+            let integerWords = integerToWords(integerValue, feminineLastGroup: true)
+            let wholePartName = nounForm(for: integerValue, one: "ціла", few: "цілих", many: "цілих")
             let fractionWords = integerToWords(fractionValue, feminineLastGroup: true)
             let denominator = fractionalDenominatorName(digitCount: fractionDigits.count, value: fractionValue)
 
-            return "\(integerWords) цілих \(fractionWords) \(denominator)"
+            return "\(integerWords) \(wholePartName) \(fractionWords) \(denominator)"
         }
 
         return replacingMatches(
