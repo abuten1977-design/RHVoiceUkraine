@@ -92,7 +92,7 @@ enum RHVoiceApostropheNormalizer {
     private static func normalizeNumbers(in text: String) -> String {
         let withDecimals = replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,12}),([0-9]{1,6})(?![\p{L}\p{N}])"#
+            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,12}),([0-9]{1,12})(?![\p{L}\p{N}])"#
         ) { match in
             guard
                 let integerRange = Range(match.range(at: 1), in: text),
@@ -224,8 +224,22 @@ enum RHVoiceApostropheNormalizer {
             return nounForm(for: value, one: "десятитисячна", few: "десятитисячних", many: "десятитисячних")
         case 5:
             return nounForm(for: value, one: "стотисячна", few: "стотисячних", many: "стотисячних")
-        default:
+        case 6:
             return nounForm(for: value, one: "мільйонна", few: "мільйонних", many: "мільйонних")
+        case 7:
+            return nounForm(for: value, one: "десятимільйонна", few: "десятимільйонних", many: "десятимільйонних")
+        case 8:
+            return nounForm(for: value, one: "стомільйонна", few: "стомільйонних", many: "стомільйонних")
+        case 9:
+            return nounForm(for: value, one: "мільярдна", few: "мільярдних", many: "мільярдних")
+        case 10:
+            return nounForm(for: value, one: "десятимільярдна", few: "десятимільярдних", many: "десятимільярдних")
+        case 11:
+            return nounForm(for: value, one: "стомільярдна", few: "стомільярдних", many: "стомільярдних")
+        case 12:
+            return nounForm(for: value, one: "трильйонна", few: "трильйонних", many: "трильйонних")
+        default:
+            return ""
         }
     }
 
