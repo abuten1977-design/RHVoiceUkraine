@@ -1,5 +1,0 @@
----
-triple:          'arm64-apple-darwin'
-binary-path:     '/Users/m1/rhvoice/RHVoice/build_ios_simulator/src/lib/Debug-iphonesimulator/libRHVoice..dylib'
-relocations:     []
-...

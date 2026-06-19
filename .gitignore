@@ -61,3 +61,19 @@ MorseSynthesizer/
 # Keep Important Files
 !.gitignore
 !.github/
+
+# --- Secrets / signing material (never commit) ---
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+AuthKey_*
+*.keychain-db
+.token
+
+# --- Stray backups / probes ---
+*.bak
+*.orig
+*.codexprobe
+*.pre_*
+project.yml.backup_*
