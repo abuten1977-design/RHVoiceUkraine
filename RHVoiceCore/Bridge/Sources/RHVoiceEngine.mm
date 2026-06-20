@@ -308,14 +308,18 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     NSString* dataPath = RHVoiceResolveDataPath([self class], &resolvedBundle);
 
     if (!dataPath) {
+#if DEBUG
         NSLog(@"❌ RHVoiceData not found in app/framework bundles. main=%@ framework=%@",
               [NSBundle mainBundle].resourcePath,
               [NSBundle bundleForClass:[self class]].resourcePath);
+#endif
         return NO;
     }
 
+#if DEBUG
     NSLog(@"✅ RHVoice data path: %@ (bundle=%@)", dataPath, resolvedBundle.resourcePath);
     NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
+#endif
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
@@ -324,7 +328,9 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
 
     NSString* configPath = RHVoicePrepareWritableConfigPath(dataPath);
     self.personalDictionarySignature = RHVoicePersonalDictionarySignature();
+#if DEBUG
     NSLog(@"✅ RHVoice config path: %@", configPath);
+#endif
     RHVoiceDebugLogWrite("USERDICT config path=%s signature=%s",
                          configPath.UTF8String,
                          self.personalDictionarySignature.UTF8String);
@@ -338,9 +344,12 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     @try {
         self.engine = RHVoice_new_tts_engine(&params);
     } @catch (NSException *exception) {
+#if DEBUG
         NSLog(@"❌ Engine threw NSException: %@ — %@", exception.name, exception.reason);
+#endif
     }
     if (!self.engine) {
+#if DEBUG
         NSLog(@"❌ Engine init failed for data_path: %@", dataPath);
         // Diagnostic: check subdirectories
         NSString* langPath = [dataPath stringByAppendingPathComponent:@"languages"];
@@ -359,12 +368,14 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
         NSLog(@"❌ anatol/ exists: %d, contents: %@",
               [fm fileExistsAtPath:anatol],
               [fm contentsOfDirectoryAtPath:anatol error:nil]);
+#endif
         return NO;
     }
 
     // Verify voices loaded
     unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
     unsigned int nProfiles = RHVoice_get_number_of_voice_profiles(self.engine);
+#if DEBUG
     NSLog(@"✅ Engine ready: %u voices, %u profiles", nVoices, nProfiles);
     
     // Log available voice profiles.
@@ -381,6 +392,7 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
             }
         }
     }
+#endif
 
     self.initialized = YES;
     return YES;
@@ -419,8 +431,9 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     }
 
     const char* t = [text UTF8String];
+#if DEBUG
     NSString* textPreview = text.length > 300 ? [text substringToIndex:300] : text;
-    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] buildMessage textLength=%{public}lu", (unsigned long)text.length);
+    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] buildMessage textLength=%lu", (unsigned long)text.length);
     RHVoiceDebugLogWrite("buildMessage text: %s", [textPreview UTF8String]);
     NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
           normalizedVoice, rate, p.absolute_rate, p.relative_rate,
@@ -428,6 +441,7 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     RHVoiceDebugLogWrite("buildMessage voice=%s rate=%.2f->abs=%.2f/rel=%.2f pitch=%.2f->abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
           [normalizedVoice UTF8String], rate, p.absolute_rate, p.relative_rate,
           pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
+#endif
 
     RHVoice_message_type msgType = isSSML ? RHVoice_message_ssml : RHVoice_message_text;
 
@@ -435,7 +449,9 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
                                msgType, &p,
                                (void*)state);  // Pass EngineState as user_data
     if (!msg) {
+#if DEBUG
         NSLog(@"❌ RHVoice_new_message returned NULL for voice='%@'", normalizedVoice);
+#endif
     }
     return msg;
 }
@@ -455,11 +471,15 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
 
 - (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
                                     rate:(double)rate volume:(double)volume pitch:(double)pitch {
+#if DEBUG
     NSLog(@"🔍 synthesize called: initialized=%d, text='%@', voice='%@'", self.initialized, text, voice);
+#endif
     [self refreshPersonalDictionaryIfNeeded];
     
     if (!self.initialized || !text.length) {
+#if DEBUG
         NSLog(@"❌ synthesize failed: initialized=%d, textLength=%lu", self.initialized, (unsigned long)text.length);
+#endif
         return nil;
     }
 
@@ -476,7 +496,9 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
 
     RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch state:&state];
     if (!msg) {
+#if DEBUG
         NSLog(@"❌ buildMessage failed for voice '%@'", voice);
+#endif
         tls_engineState = nullptr;
         return nil;
     }
@@ -485,19 +507,27 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     RHVoice_delete_message(msg);
 
     if (speakResult == 0) {
+#if DEBUG
         NSLog(@"❌ RHVoice_speak returned 0 for voice '%@', retrying with default profile", voice);
+#endif
         RHVoice_message fallbackMsg = [self buildDefaultMessage:text state:&state];
         if (fallbackMsg) {
             speakResult = RHVoice_speak(fallbackMsg);
             RHVoice_delete_message(fallbackMsg);
+#if DEBUG
             NSLog(@"ℹ️ Fallback RHVoice_speak result=%d sampleRate=%d", speakResult,
                   state.sampleRate.load(std::memory_order_acquire));
+#endif
         } else {
+#if DEBUG
             NSLog(@"❌ Failed to create fallback RHVoice message");
+#endif
         }
     } else {
+#if DEBUG
         NSLog(@"ℹ️ RHVoice_speak result=%d sampleRate=%d", speakResult,
               state.sampleRate.load(std::memory_order_acquire));
+#endif
     }
 
     tls_engineState = nullptr;
@@ -513,14 +543,18 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     }
 
     if (!audioBuffer.length) {
+#if DEBUG
         NSLog(@"❌ No audio data synthesized");
+#endif
         return nil;
     }
 
     int sr = state.sampleRate.load(std::memory_order_acquire);
     if (sr <= 0) sr = 24000;
     
+#if DEBUG
     NSLog(@"✅ Synthesized %lu bytes at %d Hz", (unsigned long)audioBuffer.length, sr);
+#endif
     return [self pcmBufferFrom:audioBuffer sampleRate:sr];
 }
 
@@ -530,8 +564,10 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     EngineState* state = self.activeStreamingState;
     if (!state) {
         [self.activeStateCondition unlock];
-        os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: no active state (%{public}.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#if DEBUG
+        os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
         RHVoiceDebugLogWrite("cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#endif
         return;
     }
 
@@ -543,8 +579,10 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
         [state->dataCondition unlock];
     }
     [self.activeStateCondition unlock];
-    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: flagged in %{public}.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#if DEBUG
+    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
     RHVoiceDebugLogWrite("cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#endif
 }
 
 // MARK: - Int16 → Float32

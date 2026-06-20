@@ -9,13 +9,19 @@ import os.log
 private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
 private let apostropheLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "apostrophe")
 
-private func rhLog(_ msg: String) {
-    msg.withCString { RHVoiceDebugLogString($0) }
+private func rhLog(_ msg: @autoclosure () -> String) {
+    #if DEBUG
+    let text = msg()
+    text.withCString { RHVoiceDebugLogString($0) }
+    #endif
 }
 
-private func apostropheDiagLog(_ msg: String) {
-    rhLog(msg)
-    os_log(.info, log: apostropheLog, "%{public}@", msg as NSString)
+private func apostropheDiagLog(_ msg: @autoclosure () -> String) {
+    #if DEBUG
+    let text = msg()
+    rhLog(text)
+    os_log(.info, log: apostropheLog, "%@", text as NSString)
+    #endif
 }
 
 @available(iOS 16.0, macOS 13.0, *)
@@ -307,9 +313,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
-        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
         #if DEBUG
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
         fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
 
@@ -551,6 +557,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func logApostropheEncoding(label: String, ssml: String) {
+        #if DEBUG
         let textSegments = extractTextSegments(from: ssml)
         let matches = textSegments.flatMap { apostropheDiagnostics(in: $0) }
 
@@ -562,6 +569,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         for (index, match) in matches.enumerated() {
             apostropheDiagLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
         }
+        #endif
     }
 
     private static func extractTextSegments(from ssml: String) -> [String] {

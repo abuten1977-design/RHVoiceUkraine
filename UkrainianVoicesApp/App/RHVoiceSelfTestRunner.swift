@@ -1,3 +1,4 @@
+#if DEBUG
 import Foundation
 import AVFoundation
 #if os(iOS)
@@ -397,3 +398,4 @@ enum RHVoiceSelfTestRunner {
         exit(0)
     }
 }
+#endif

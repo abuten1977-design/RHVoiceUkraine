@@ -68,6 +68,7 @@ static BOOL appendLine(NSString* line, BOOL important) {
 }
 
 void RHVoiceDebugLogWrite(const char* format, ...) {
+#if DEBUG
     va_list args;
     va_start(args, format);
     NSString* msg = [[NSString alloc] initWithFormat:[NSString stringWithUTF8String:format] arguments:args];
@@ -82,7 +83,7 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
 
     if (important) {
         if (publicDiagnostic) {
-            os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "%{public}@", msg);
+            os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "%@", msg);
         } else {
             NSLog(@"%@", msg);
         }
@@ -111,13 +112,17 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
         }
     };
     dispatch_async(_logQueue, writeBlock);
+#endif
 }
 
 void RHVoiceDebugLogString(const char* message) {
+#if DEBUG
     RHVoiceDebugLogWrite("%s", message);
+#endif
 }
 
 void RHVoiceDebugLogClear(void) {
+#if DEBUG
     ensureLogQueue();
     if (!_logQueue) return;
 
@@ -130,4 +135,5 @@ void RHVoiceDebugLogClear(void) {
             close(fd);
         }
     });
+#endif
 }

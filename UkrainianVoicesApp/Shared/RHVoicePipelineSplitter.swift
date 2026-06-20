@@ -367,13 +367,17 @@ enum RHVoicePipelineSplitter {
     }
 
     private static func logSSMLTagNames(from ssml: String) {
+        #if DEBUG
         let names = ssmlTagNames(from: ssml)
         let tagList = names.isEmpty ? "none" : names.joined(separator: ",")
-        os_log(.info, log: diagnosticLog, "LATENCY_DIAG ssml tags=%{public}@", tagList)
+        os_log(.info, log: diagnosticLog, "LATENCY_DIAG ssml tags=%@", tagList)
+        #endif
     }
 
     private static func logPipelinePlan(fragmentCount: Int, totalLength: Int) {
-        os_log(.info, log: diagnosticLog, "LATENCY_DIAG pipeline plan fragments=%{public}d totalLen=%{public}d", fragmentCount, totalLength)
+        #if DEBUG
+        os_log(.info, log: diagnosticLog, "LATENCY_DIAG pipeline plan fragments=%d totalLen=%d", fragmentCount, totalLength)
+        #endif
     }
 
     private static func ssmlTagNames(from ssml: String) -> [String] {

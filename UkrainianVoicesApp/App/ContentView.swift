@@ -853,17 +853,23 @@ struct ContentView: View {
                     }
                 }
 
+                #if DEBUG
                 diagnosticSection
+                #endif
             }
             .navigationTitle("Українські голоси")
+            #if DEBUG
             .onAppear {
                 model.refreshDebugLogState()
             }
+            #endif
         }
 #if os(macOS)
         .frame(minWidth: 520, minHeight: 520)
         .onAppear {
+            #if DEBUG
             model.refreshDebugLogState()
+            #endif
             DispatchQueue.main.async {
                 NSApp.setActivationPolicy(.regular)
                 NSApp.activate(ignoringOtherApps: true)
@@ -918,9 +924,11 @@ struct ContentView: View {
 
                 Divider()
 
+                #if DEBUG
                 diagnosticSection
                     .padding(.horizontal, 12)
                     .padding(.bottom, 16)
+                #endif
             }
             .navigationTitle("Українські голоси")
         }
@@ -965,6 +973,7 @@ struct ContentView: View {
         }
     }
 
+    #if DEBUG
     @ViewBuilder
     private var diagnosticSection: some View {
         Section("Діагностика") {
@@ -1001,6 +1010,7 @@ struct ContentView: View {
                 .accessibilityLabel("Розмір логу: \(model.debugLogSize) байт")
         }
     }
+    #endif
 
     private var personalDictionaryLink: some View {
         NavigationLink {

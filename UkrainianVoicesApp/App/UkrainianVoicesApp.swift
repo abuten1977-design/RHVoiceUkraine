@@ -70,19 +70,23 @@ private final class MacAppDelegate: NSObject, NSApplicationDelegate {
 
 @main
 struct UkrainianVoicesApp: App {
+    #if DEBUG
     private let isSelfTestMode = CommandLine.arguments.contains("--self-test")
+    #else
+    private let isSelfTestMode = false
+    #endif
     #if os(macOS)
     @NSApplicationDelegateAdaptor(MacAppDelegate.self) private var macAppDelegate
     #endif
 
     init() {
-        #if os(iOS)
+        #if os(iOS) && DEBUG
         let version = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
         "APP_DIAG init build=\(version) bundle=\(Bundle.main.bundleIdentifier ?? "nil")".withCString {
             RHVoiceDebugLogString($0)
         }
         #endif
-        #if os(macOS)
+        #if os(macOS) && DEBUG
         macAppDelegate.isSelfTestMode = isSelfTestMode
         if isSelfTestMode {
             Task { @MainActor in
@@ -94,12 +98,16 @@ struct UkrainianVoicesApp: App {
 
     var body: some Scene {
         WindowGroup {
+            #if DEBUG
             if isSelfTestMode {
                 Text("Running RHVoice self-test…")
                     .padding()
             } else {
                 ContentView()
             }
+            #else
+            ContentView()
+            #endif
         }
     }
 }
