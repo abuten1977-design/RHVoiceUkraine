@@ -20,6 +20,56 @@ private let enabledVoiceIdentifiersKey = RHVoiceSharedSettings.enabledVoiceIdent
 private let selectedVoiceIdentifierKey = RHVoiceSharedSettings.selectedVoiceIdentifierKey
 private let defaultEnabledVoiceIdentifiers = RHVoiceSharedSettings.defaultEnabledVoiceIdentifiers
 private let preferredLanguageOrder = ["Українська", "Англійська"]
+private let donorDisclaimerText = "Додаток RHVoice Ukrainian розробляється ГО «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу."
+private let donorLogosAccessibilityLabel = "Логотипи донорів: Європейський Союз — Прямуємо разом, Фонд Східна Європа, Фенікс — Сила спільнот, Act to Drive Change."
+
+private struct LicenseItem: Identifiable {
+    let title: String
+    let license: String
+    let attribution: String
+    let note: String
+    let url: URL?
+
+    var id: String { title }
+}
+
+private let licenseItems: [LicenseItem] = [
+    .init(
+        title: "RHVoice engine",
+        license: "LGPL v2.1",
+        attribution: "RHVoice project",
+        note: "Core speech engine. MAGE/GPLv3 components are not built into this app.",
+        url: URL(string: "https://github.com/RHVoice/RHVoice")
+    ),
+    .init(
+        title: "Anatol",
+        license: "LGPL v2.1",
+        attribution: "Анатолій Подорожко",
+        note: "Ukrainian voice data distributed unmodified.",
+        url: URL(string: "https://github.com/RHVoice/RHVoice")
+    ),
+    .init(
+        title: "Natalia",
+        license: "LGPL v2.1",
+        attribution: "Наталія Чехаль",
+        note: "Ukrainian voice data distributed unmodified.",
+        url: URL(string: "https://github.com/RHVoice/RHVoice")
+    ),
+    .init(
+        title: "Marianna",
+        license: "CC BY-ND 4.0",
+        attribution: "Marianna Firtka",
+        note: "Ukrainian voice data distributed unmodified.",
+        url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
+    ),
+    .init(
+        title: "Volodymyr",
+        license: "CC BY-ND 4.0",
+        attribution: "Володимир Беглов",
+        note: "Ukrainian voice data distributed unmodified.",
+        url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
+    )
+]
 
 private struct SpeechComponentDiagnosticReport: Equatable {
     let summary: String
@@ -835,6 +885,12 @@ struct ContentView: View {
                     personalDictionaryLink
                 }
 
+                Section("Довідка") {
+                    howToLink
+                    aboutLink
+                    licensesLink
+                }
+
                 if model.sharedStorageState == .unavailable {
                     Section {
                         Text("Спільне сховище недоступне — зміни налаштувань і словника не зберігаються.")
@@ -921,6 +977,26 @@ struct ContentView: View {
                 personalDictionaryLink
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
+
+                Divider()
+
+                VStack(spacing: 0) {
+                    howToLink
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+
+                    Divider()
+
+                    aboutLink
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+
+                    Divider()
+
+                    licensesLink
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                }
 
                 Divider()
 
@@ -1035,6 +1111,36 @@ struct ContentView: View {
         }
         .accessibilityLabel("Мій словник")
         .accessibilityHint("Відкрити особистий словник вимови.")
+    }
+
+    private var howToLink: some View {
+        NavigationLink {
+            VoiceOverHowToView()
+        } label: {
+            Label("Як увімкнути голос", systemImage: "checklist")
+        }
+        .accessibilityLabel("Як увімкнути голос")
+        .accessibilityHint("Відкрити інструкцію для увімкнення українського голосу у VoiceOver.")
+    }
+
+    private var aboutLink: some View {
+        NavigationLink {
+            AboutAcknowledgementView()
+        } label: {
+            Label("Про застосунок", systemImage: "info.circle")
+        }
+        .accessibilityLabel("Про застосунок")
+        .accessibilityHint("Відкрити інформацію про застосунок і підтримку проєкту.")
+    }
+
+    private var licensesLink: some View {
+        NavigationLink {
+            LicensesView()
+        } label: {
+            Label("Ліцензії", systemImage: "doc.text")
+        }
+        .accessibilityLabel("Ліцензії")
+        .accessibilityHint("Відкрити ліцензії і атрибуцію RHVoice та голосів.")
     }
 }
 
@@ -1202,6 +1308,206 @@ private struct PersonalDictionaryView: View {
         .frame(minWidth: 460, minHeight: 520)
 #endif
     }
+}
+
+private struct AboutAcknowledgementView: View {
+    var body: some View {
+        List {
+            Section("Застосунок") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("RHVoice Ukrainian")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(appVersionText)
+                        .foregroundColor(.secondary)
+                }
+                .textSelection(.enabled)
+                .accessibilityElement(children: .combine)
+            }
+
+            Section("Підтримка проєкту") {
+                Text(donorDisclaimerText)
+                    .textSelection(.enabled)
+                    .accessibilityLabel(donorDisclaimerText)
+            }
+
+            Section("Логотипи партнерів") {
+                DonorLogosBarView()
+            }
+
+            Section {
+                NavigationLink {
+                    LicensesView()
+                } label: {
+                    Label("Ліцензії та атрибуція", systemImage: "doc.text")
+                }
+                .accessibilityLabel("Ліцензії та атрибуція")
+                .accessibilityHint("Відкрити список ліцензій і авторів голосів.")
+            }
+        }
+        .navigationTitle("Про застосунок")
+#if os(macOS)
+        .frame(minWidth: 520, minHeight: 520)
+#endif
+    }
+}
+
+private struct DonorLogosBarView: View {
+    var body: some View {
+        ZStack {
+            Color.white
+            Image("DonorLogosBar")
+                .resizable()
+                .scaledToFit()
+                .padding(12)
+                .accessibilityHidden(true)
+        }
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+#if os(macOS)
+            .overlay {
+                DonorLogosAccessibilityOverlay(label: donorLogosAccessibilityLabel)
+            }
+#else
+            .accessibilityElement()
+            .accessibilityLabel(donorLogosAccessibilityLabel)
+            .accessibilityAddTraits(.isImage)
+#endif
+    }
+}
+
+#if os(macOS)
+private struct DonorLogosAccessibilityOverlay: NSViewRepresentable {
+    let label: String
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.setAccessibilityElement(true)
+        view.setAccessibilityRole(.image)
+        view.setAccessibilityLabel(label)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        nsView.setAccessibilityLabel(label)
+    }
+}
+#endif
+
+private struct LicensesView: View {
+    var body: some View {
+        List {
+            Section("Компоненти") {
+                ForEach(licenseItems) { item in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(item.title)
+                            .font(.headline)
+                            .accessibilityAddTraits(.isHeader)
+                        Text("Ліцензія: \(item.license)")
+                        Text("Атрибуція: \(item.attribution)")
+                        Text(item.note)
+                            .foregroundColor(.secondary)
+                        if let url = item.url {
+                            Link("Відкрити ліцензію або проєкт", destination: url)
+                                .accessibilityLabel("Відкрити посилання для \(item.title)")
+                                .accessibilityHint(url.absoluteString)
+                        }
+                    }
+                    .textSelection(.enabled)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel("\(item.title). Ліцензія: \(item.license). Атрибуція: \(item.attribution). \(item.note)")
+                }
+            }
+
+            Section("Команда голосів") {
+                Text("Голоси створені в межах проєкту «Синтезатор української мови». Контакти: facebook.com/syntezator, vp88.mobile@gmail.com, rhvoice.su.")
+                    .textSelection(.enabled)
+            }
+
+            Section("Повні тексти") {
+                Text("Повні тексти ліцензій зберігаються у вихідному дереві RHVoice: RHVoiceCore/RHVoice/LICENSE.md та RHVoiceCore/RHVoice/licenses/.")
+                    .textSelection(.enabled)
+                    .foregroundColor(.secondary)
+                    .accessibilityLabel("Повні тексти ліцензій зберігаються у вихідному дереві RHVoice.")
+            }
+        }
+        .navigationTitle("Ліцензії")
+#if os(macOS)
+        .frame(minWidth: 560, minHeight: 560)
+#endif
+    }
+}
+
+private struct VoiceOverHowToView: View {
+    var body: some View {
+        List {
+            Section("Перед початком") {
+                Text("У головному списку застосунку переконайтесь, що потрібні голоси RHVoice позначені як доступні. Кнопка «Прослухати» у налаштуваннях кожного голосу дає швидку перевірку звучання.")
+                    .textSelection(.enabled)
+            }
+
+            Section("iPhone або iPad") {
+                NumberedInstructionList(items: [
+                    "Відкрийте Налаштування.",
+                    "Перейдіть до Універсальний доступ.",
+                    "Відкрийте VoiceOver.",
+                    "Відкрийте Мовлення.",
+                    "Додайте або виберіть українську мову.",
+                    "У списку голосів виберіть Anatol, Marianna, Natalia або Volodymyr."
+                ])
+            }
+
+            Section("Mac") {
+                NumberedInstructionList(items: [
+                    "Відкрийте Системні параметри.",
+                    "Перейдіть до Універсальний доступ.",
+                    "Відкрийте VoiceOver.",
+                    "Відкрийте налаштування голосу або мовлення VoiceOver.",
+                    "Додайте українську мову або виберіть український голос.",
+                    "Виберіть Anatol, Marianna, Natalia або Volodymyr."
+                ])
+            }
+
+            Section("Якщо голос не з'явився") {
+                Text("Поверніться до цього застосунку, увімкніть потрібний голос у списку і знову відкрийте налаштування VoiceOver. Після оновлення застосунку може знадобитися повторно вибрати голос у системних налаштуваннях.")
+                    .textSelection(.enabled)
+            }
+        }
+        .navigationTitle("Як увімкнути голос")
+#if os(macOS)
+        .frame(minWidth: 560, minHeight: 560)
+#endif
+    }
+}
+
+private struct NumberedInstructionList: View {
+    let items: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                HStack(alignment: .top, spacing: 8) {
+                    Text("\(index + 1).")
+                        .fontWeight(.semibold)
+                        .frame(width: 26, alignment: .trailing)
+                        .accessibilityHidden(true)
+                    Text(item)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Крок \(index + 1): \(item)")
+            }
+        }
+        .textSelection(.enabled)
+    }
+}
+
+private var appVersionText: String {
+    let info = Bundle.main.infoDictionary ?? [:]
+    let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
+    let build = info["CFBundleVersion"] as? String ?? "1"
+    return "Версія \(version), збірка \(build)"
 }
 
 private struct PersonalDictionaryEditorView: View {
