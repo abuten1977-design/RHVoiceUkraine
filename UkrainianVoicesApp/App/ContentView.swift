@@ -1410,8 +1410,8 @@ private struct LicensesView: View {
                             .foregroundColor(.secondary)
                         if let url = item.url {
                             Link("Відкрити ліцензію або проєкт", destination: url)
-                                .accessibilityLabel("Відкрити посилання для \(item.title)")
-                                .accessibilityHint(url.absoluteString)
+                                .accessibilityLabel("Відкрити ліцензію для \(item.title)")
+                                .accessibilityAddTraits(.isLink)
                         }
                     }
                     .textSelection(.enabled)
