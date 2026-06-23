@@ -90,17 +90,50 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func normalizeNumbers(in text: String) -> String {
-        let withDecimals = replacingMatches(
+        let withMixedFractions = replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,12}),([0-9]{1,12})(?![\p{L}\p{N}])"#
+            pattern: #"(?<![\p{L}\p{N}/])([0-9]{1,12})\s+цілих\s+([0-9]{1,3})/([0-9]{1,3})(?![\p{L}\p{N}/])"#
         ) { match in
             guard
                 let integerRange = Range(match.range(at: 1), in: text),
-                let fractionRange = Range(match.range(at: 2), in: text),
-                let integerValue = Int(String(text[integerRange]))
+                let numeratorRange = Range(match.range(at: 2), in: text),
+                let denominatorRange = Range(match.range(at: 3), in: text),
+                let integerValue = Int(String(text[integerRange])),
+                let numerator = Int(String(text[numeratorRange])),
+                let denominator = Int(String(text[denominatorRange])),
+                let fractionWords = simpleFractionToWords(numerator: numerator, denominator: denominator)
             else { return nil }
 
-            let fractionDigits = String(text[fractionRange])
+            let integerWords = integerToWords(integerValue, feminineLastGroup: true)
+            let wholePartName = nounForm(for: integerValue, one: "ціла", few: "цілих", many: "цілих")
+            return "\(integerWords) \(wholePartName) \(fractionWords)"
+        }
+
+        let withSimpleFractions = replacingMatches(
+            in: withMixedFractions,
+            pattern: #"(?<![\p{L}\p{N}/])([0-9]{1,3})/([0-9]{1,3})(?![\p{L}\p{N}/])"#
+        ) { match in
+            guard
+                let numeratorRange = Range(match.range(at: 1), in: withMixedFractions),
+                let denominatorRange = Range(match.range(at: 2), in: withMixedFractions),
+                let numerator = Int(String(withMixedFractions[numeratorRange])),
+                let denominator = Int(String(withMixedFractions[denominatorRange]))
+            else { return nil }
+
+            return simpleFractionToWords(numerator: numerator, denominator: denominator)
+        }
+
+        let withDecimals = replacingMatches(
+            in: withSimpleFractions,
+            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,12}),([0-9]{1,12})(?![\p{L}\p{N}])"#
+        ) { match in
+            guard
+                let integerRange = Range(match.range(at: 1), in: withSimpleFractions),
+                let fractionRange = Range(match.range(at: 2), in: withSimpleFractions),
+                let integerValue = Int(String(withSimpleFractions[integerRange]))
+            else { return nil }
+
+            let fractionDigits = String(withSimpleFractions[fractionRange])
             guard let fractionValue = Int(fractionDigits), fractionValue != 0 else { return nil }
 
             let integerWords = integerToWords(integerValue, feminineLastGroup: true)
@@ -242,6 +275,83 @@ enum RHVoiceApostropheNormalizer {
         default:
             return ""
         }
+    }
+
+    private static func simpleFractionToWords(numerator: Int, denominator: Int) -> String? {
+        guard numerator > 0, denominator > 1 else { return nil }
+        guard let denominatorWords = simpleFractionDenominatorName(denominator, numerator: numerator) else {
+            return nil
+        }
+
+        return "\(integerToWords(numerator, feminineLastGroup: true)) \(denominatorWords)"
+    }
+
+    private static func simpleFractionDenominatorName(_ denominator: Int, numerator: Int) -> String? {
+        guard denominator > 1, denominator < 100 else { return nil }
+
+        let useSingular = usesSingularFractionDenominator(for: numerator)
+
+        if denominator < 20 {
+            let names = [
+                2: ("друга", "других"),
+                3: ("третя", "третіх"),
+                4: ("четверта", "четвертих"),
+                5: ("п'ята", "п'ятих"),
+                6: ("шоста", "шостих"),
+                7: ("сьома", "сьомих"),
+                8: ("восьма", "восьмих"),
+                9: ("дев'ята", "дев'ятих"),
+                10: ("десята", "десятих"),
+                11: ("одинадцята", "одинадцятих"),
+                12: ("дванадцята", "дванадцятих"),
+                13: ("тринадцята", "тринадцятих"),
+                14: ("чотирнадцята", "чотирнадцятих"),
+                15: ("п'ятнадцята", "п'ятнадцятих"),
+                16: ("шістнадцята", "шістнадцятих"),
+                17: ("сімнадцята", "сімнадцятих"),
+                18: ("вісімнадцята", "вісімнадцятих"),
+                19: ("дев'ятнадцята", "дев'ятнадцятих")
+            ]
+            guard let forms = names[denominator] else { return nil }
+            return useSingular ? forms.0 : forms.1
+        }
+
+        if denominator % 10 == 0 {
+            let names = [
+                20: ("двадцята", "двадцятих"),
+                30: ("тридцята", "тридцятих"),
+                40: ("сорокова", "сорокових"),
+                50: ("п'ятдесята", "п'ятдесятих"),
+                60: ("шістдесята", "шістдесятих"),
+                70: ("сімдесята", "сімдесятих"),
+                80: ("вісімдесята", "вісімдесятих"),
+                90: ("дев'яноста", "дев'яностих")
+            ]
+            guard let forms = names[denominator] else { return nil }
+            return useSingular ? forms.0 : forms.1
+        }
+
+        let tensWords = underThousandToWords((denominator / 10) * 10, feminine: false)
+        let unit = denominator % 10
+        let unitNames = [
+            1: ("перша", "перших"),
+            2: ("друга", "других"),
+            3: ("третя", "третіх"),
+            4: ("четверта", "четвертих"),
+            5: ("п'ята", "п'ятих"),
+            6: ("шоста", "шостих"),
+            7: ("сьома", "сьомих"),
+            8: ("восьма", "восьмих"),
+            9: ("дев'ята", "дев'ятих")
+        ]
+        guard let forms = unitNames[unit] else { return nil }
+        return "\(tensWords) \(useSingular ? forms.0 : forms.1)"
+    }
+
+    private static func usesSingularFractionDenominator(for numerator: Int) -> Bool {
+        let lastTwo = abs(numerator) % 100
+        let last = abs(numerator) % 10
+        return last == 1 && !(11...14).contains(lastTwo)
     }
 
     private static func nounForm(for value: Int, one: String, few: String, many: String) -> String {

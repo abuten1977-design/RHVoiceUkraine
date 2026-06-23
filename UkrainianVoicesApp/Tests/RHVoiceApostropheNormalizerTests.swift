@@ -79,6 +79,13 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testReportedLargeIntegersNormalizeInsideMarkdownList() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("* 145928\n* 3025471\n* 25896314\n* 104857600\n* 9531847206"),
+            "* сто сорок п'ять тисяч дев'ятсот двадцять вісім\n* три мільйони двадцять п'ять тисяч чотириста сімдесят один\n* двадцять п'ять мільйонів вісімсот дев'яносто шість тисяч триста чотирнадцять\n* сто чотири мільйони вісімсот п'ятдесят сім тисяч шістсот\n* дев'ять мільярдів п'ятсот тридцять один мільйон вісімсот сорок сім тисяч двісті шість"
+        )
+    }
+
     func testDecimalFractionsNormalizeToUkrainianFractionWords() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 0,1."),
@@ -107,6 +114,28 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 4,000000000001."),
             "Значення чотири цілих одна трильйонна."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 124,000005."),
+            "Значення сто двадцять чотири цілих п'ять мільйонних."
+        )
+    }
+
+    func testSlashFractionsNormalizeToUkrainianFractionWords() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дроби 3/5, 9/10, 15/32."),
+            "Дроби три п'ятих, дев'ять десятих, п'ятнадцять тридцять других."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Половина 1/2 і третина 1/3."),
+            "Половина одна друга і третина одна третя."
+        )
+    }
+
+    func testMixedSlashFractionsNormalizeToUkrainianFractionWords() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Мішані: 2 цілих 4/7; 10 цілих 11/12; 154 цілих 1/3."),
+            "Мішані: дві цілих чотири сьомих; десять цілих одинадцять дванадцятих; сто п'ятдесят чотири цілих одна третя."
         )
     }
 }
