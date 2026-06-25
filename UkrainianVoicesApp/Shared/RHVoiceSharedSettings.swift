@@ -304,7 +304,9 @@ enum RHVoiceSharedSettingsStore {
     private static func snapshotFileURL() -> URL? {
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID)
         let url = containerURL?.appendingPathComponent(RHVoiceSharedSettings.snapshotFileName)
-        NSLog("ðŸ“ SNAPSHOT URL: \(url?.path ?? "nil") (Group: \(RHVoiceSharedSettings.appGroupID))")
+        #if DEBUG
+        NSLog("SNAPSHOT URL: \(url?.path ?? "nil") (Group: \(RHVoiceSharedSettings.appGroupID))")
+        #endif
         return url
     }
 }
@@ -399,7 +401,9 @@ final class RHVoiceSharedSettingsSnapshotCache {
             self.lock.lock()
             self.cachedSnapshot = snapshot
             self.lock.unlock()
+            #if DEBUG
             NSLog("RHVoiceSharedSettingsSnapshotCache refreshed reason=\(reason) revision=\(snapshot.revision)")
+            #endif
         }
     }
 
