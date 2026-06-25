@@ -121,14 +121,22 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
-    func testSlashFractionsNormalizeToUkrainianFractionWords() {
+    func testSlashBetweenNumbersIsSpokenAsDrib() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Дроби 3/5, 9/10, 15/32."),
-            "Дроби три п'ятих, дев'ять десятих, п'ятнадцять тридцять других."
+            "Дроби три дріб п'ять, дев'ять дріб десять, п'ятнадцять дріб тридцять два."
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Половина 1/2 і третина 1/3."),
-            "Половина одна друга і третина одна третя."
+            "Половина один дріб два і третина один дріб три."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Сторінка 100/200."),
+            "Сторінка сто дріб двісті."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 3/11."),
+            "Дата три дріб одинадцять."
         )
     }
 

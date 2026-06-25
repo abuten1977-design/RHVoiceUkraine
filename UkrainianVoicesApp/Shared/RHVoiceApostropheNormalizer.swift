@@ -111,7 +111,7 @@ enum RHVoiceApostropheNormalizer {
 
         let withSimpleFractions = replacingMatches(
             in: withMixedFractions,
-            pattern: #"(?<![\p{L}\p{N}/])([0-9]{1,3})/([0-9]{1,3})(?![\p{L}\p{N}/])"#
+            pattern: #"(?<![\p{L}\p{N}/])([0-9]{1,12})/([0-9]{1,12})(?![\p{L}\p{N}/])"#
         ) { match in
             guard
                 let numeratorRange = Range(match.range(at: 1), in: withMixedFractions),
@@ -120,7 +120,7 @@ enum RHVoiceApostropheNormalizer {
                 let denominator = Int(String(withMixedFractions[denominatorRange]))
             else { return nil }
 
-            return simpleFractionToWords(numerator: numerator, denominator: denominator)
+            return "\(integerToWords(numerator)) дріб \(integerToWords(denominator))"
         }
 
         let withDecimals = replacingMatches(
