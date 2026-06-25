@@ -8,6 +8,7 @@ import os.log
 
 private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
 private let apostropheLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "apostrophe")
+private let numberDiagLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "number-diag")
 
 private func rhLog(_ msg: @autoclosure () -> String) {
     #if DEBUG
@@ -50,6 +51,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         AVSpeechSynthesisProviderVoice(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr",
             primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
     ]
+    private static var didLogNumberDiagActiveBuild = false
 
     @objc
     public override init(
@@ -276,6 +278,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             rhLog("LATENCY_DIAG pipeline cancelled beforePreprocessing")
             return
         }
+        let shouldLogNumberDiag = Self.shouldLogNumberDiagnostics(for: text)
+        Self.logNumberDiagnostics(label: "input-ssml", ssml: text, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "input-ssml", ssml: text)
 
         // Resolve voice profile name
@@ -309,8 +313,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeStandaloneApostropheRequest(text)
             ?? Self.normalizeApostrophesInTextSegments(text)
+        Self.logNumberDiagnostics(label: "after-apostrophe-normalize", ssml: normalizedText, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "after-apostrophe-normalize", ssml: normalizedText)
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        Self.logNumberDiagnostics(label: "final-engine-input", ssml: synthesisText, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
         #if DEBUG
@@ -570,6 +576,110 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             apostropheDiagLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
         }
         #endif
+    }
+
+    private static func shouldLogNumberDiagnostics(for ssml: String) -> Bool {
+        ssml.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) }
+    }
+
+    private static func logNumberDiagnostics(label: String, ssml: String, force: Bool) {
+        if !didLogNumberDiagActiveBuild {
+            didLogNumberDiagActiveBuild = true
+            let info = Bundle.main.infoDictionary ?? [:]
+            let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
+            let version = info["CFBundleShortVersionString"] as? String ?? "unknown"
+            let build = info["CFBundleVersion"] as? String ?? "unknown"
+            numberDiag("active-build bundle=\(bundleId) version=\(version) build=\(build)")
+        }
+
+        let textSegments = extractTextSegments(from: ssml)
+        let windows = textSegments.flatMap { numberDiagnosticWindows(in: $0) }
+        guard force || !windows.isEmpty else { return }
+
+        let preview = diagnosticPreview(ssml)
+        let previewScalars = diagnosticScalars(for: preview)
+        numberDiag("\(label): chars=\(ssml.count) textPreview=\"\(preview)\" scalars=[\(previewScalars)]")
+
+        if windows.isEmpty {
+            numberDiag("\(label): no digit windows in text segments")
+            return
+        }
+
+        for (index, window) in windows.prefix(8).enumerated() {
+            numberDiag("\(label)#\(index + 1): token=\"\(window.token)\" window=\"\(window.window)\" scalars=[\(window.scalars)]")
+        }
+    }
+
+    private static func numberDiag(_ message: String) {
+        os_log(.info, log: numberDiagLog, "NUMBER_DIAG %{public}@", message as NSString)
+        fputs("NUMBER_DIAG \(message)\n", stderr)
+    }
+
+    private struct NumberDiagnosticWindow {
+        let token: String
+        let window: String
+        let scalars: String
+    }
+
+    private static func numberDiagnosticWindows(in text: String) -> [NumberDiagnosticWindow] {
+        let scalars = Array(text.unicodeScalars)
+        var results: [NumberDiagnosticWindow] = []
+        var index = scalars.startIndex
+
+        while index < scalars.endIndex {
+            guard CharacterSet.decimalDigits.contains(scalars[index]) else {
+                index += 1
+                continue
+            }
+
+            let tokenStart = index
+            var tokenEnd = index + 1
+            while tokenEnd < scalars.endIndex, isNumberDiagnosticTokenScalar(scalars[tokenEnd]) {
+                tokenEnd += 1
+            }
+
+            let windowStart = max(scalars.startIndex, tokenStart - 16)
+            let windowEnd = min(scalars.endIndex, tokenEnd + 16)
+            let token = diagnosticPreview(String(String.UnicodeScalarView(scalars[tokenStart..<tokenEnd])), limit: 64)
+            let window = diagnosticPreview(String(String.UnicodeScalarView(scalars[windowStart..<windowEnd])), limit: 160)
+            let scalarCodes = scalars[windowStart..<windowEnd]
+                .map { String(format: "U+%04X", $0.value) }
+                .joined(separator: " ")
+            results.append(NumberDiagnosticWindow(token: token, window: window, scalars: scalarCodes))
+            index = tokenEnd
+        }
+
+        return results
+    }
+
+    private static func isNumberDiagnosticTokenScalar(_ scalar: UnicodeScalar) -> Bool {
+        CharacterSet.decimalDigits.contains(scalar)
+            || scalar == ","
+            || scalar == "."
+            || scalar == "/"
+            || CharacterSet.whitespaces.contains(scalar)
+    }
+
+    private static func diagnosticPreview(_ text: String, limit: Int = 320) -> String {
+        var preview = String(text.prefix(limit))
+        if text.count > limit {
+            preview += "..."
+        }
+        return preview
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\t", with: "\\t")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    private static func diagnosticScalars(for text: String, limit: Int = 120) -> String {
+        let scalars = Array(text.unicodeScalars.prefix(limit))
+        var codes = scalars.map { String(format: "U+%04X", $0.value) }
+        if text.unicodeScalars.count > limit {
+            codes.append("...")
+        }
+        return codes.joined(separator: " ")
     }
 
     private static func extractTextSegments(from ssml: String) -> [String] {
