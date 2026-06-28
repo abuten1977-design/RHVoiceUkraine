@@ -70,12 +70,23 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
 
     func testLargeIntegersNormalizeToWordsInTextSegments() {
         XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Число 12345 готове."),
+            "Число дванадцять тисяч триста сорок п'ять готове."
+        )
+        XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Число 123456 готове."),
             "Число сто двадцять три тисячі чотириста п'ятдесят шість готове."
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Число 1234567 готове."),
             "Число один мільйон двісті тридцять чотири тисячі п'ятсот шістдесят сім готове."
+        )
+    }
+
+    func testFourDigitYearsAreNotNormalizedAsLargeIntegers() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Рік 2026 готовий."),
+            "Рік 2026 готовий."
         )
     }
 
@@ -118,6 +129,35 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 124,000005."),
             "Значення сто двадцять чотири цілих п'ять мільйонних."
+        )
+    }
+
+    func testTelephoneSayAsShortBlocksNormalizeAsNumbers() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">124685</say-as>"#),
+            "сто двадцять чотири тисячі шістсот вісімдесят п'ять"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">1234567</say-as>"#),
+            "один мільйон двісті тридцять чотири тисячі п'ятсот шістдесят сім"
+        )
+    }
+
+    func testTelephoneSayAsSplitDecimalNormalizesAsFraction() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"Значення 0,<say-as interpret-as="telephone">365476</say-as>."#),
+            "Значення нуль цілих триста шістдесят п'ять тисяч чотириста сімдесят шість мільйонних."
+        )
+    }
+
+    func testTelephoneSayAsPhoneNumbersNormalizeDigitByDigit() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380501234567</say-as>"#),
+            "плюс три вісім нуль п'ять нуль один два три чотири п'ять шість сім"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380 50 123 45 67</say-as>"#),
+            "плюс три вісім нуль п'ять нуль один два три чотири п'ять шість сім"
         )
     }
 

@@ -11,6 +11,7 @@ enum RHVoiceApostropheNormalizer {
     }
 
     static func normalizeInTextSegments(_ ssml: String) -> String {
+        let ssml = normalizeTelephoneSayAsBlocks(in: ssml)
         var output = ""
         var textSegment = ""
         var tagSegment = ""
@@ -146,7 +147,7 @@ enum RHVoiceApostropheNormalizer {
 
         return replacingMatches(
             in: withDecimals,
-            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{6,12})(?![\p{L}\p{N}.,])"#
+            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{5,12})(?![\p{L}\p{N}.,])"#
         ) { match in
             guard
                 let range = Range(match.range(at: 1), in: withDecimals),
@@ -155,6 +156,91 @@ enum RHVoiceApostropheNormalizer {
 
             return integerToWords(value)
         }
+    }
+
+    private static func normalizeTelephoneSayAsBlocks(in ssml: String) -> String {
+        let withSplitDecimals = replacingMatches(
+            in: ssml,
+            pattern: #"([0-9]+),\s*<say-as\s+interpret-as=["']telephone["']\s*>([0-9]+)</say-as>"#,
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        ) { match, source in
+            guard
+                let integerRange = Range(match.range(at: 1), in: source),
+                let fractionRange = Range(match.range(at: 2), in: source)
+            else { return nil }
+
+            return decimalNumberToWords(integerPart: String(source[integerRange]), fractionPart: String(source[fractionRange]))
+        }
+
+        return replacingMatches(
+            in: withSplitDecimals,
+            pattern: #"<say-as\s+interpret-as=["']telephone["']\s*>(.*?)</say-as>"#,
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        ) { match, source in
+            guard let contentRange = Range(match.range(at: 1), in: source) else { return nil }
+
+            let content = String(source[contentRange])
+            let digits = content.filter(\.isNumber)
+            guard !digits.isEmpty else { return normalizeText(content) }
+
+            let isTelephone = content.contains("+") || hasDigitSeparator(in: content) || digits.count >= 10
+            if isTelephone {
+                return telephoneDigitsToWords(content)
+            }
+
+            guard let value = Int(digits) else { return nil }
+            return integerToWords(value)
+        }
+    }
+
+    private static func decimalNumberToWords(integerPart: String, fractionPart: String) -> String? {
+        guard
+            let integerValue = Int(integerPart),
+            let fractionValue = Int(fractionPart),
+            fractionValue != 0
+        else { return nil }
+
+        let integerWords = integerToWords(integerValue, feminineLastGroup: true)
+        let wholePartName = nounForm(for: integerValue, one: "ціла", few: "цілих", many: "цілих")
+        let fractionWords = integerToWords(fractionValue, feminineLastGroup: true)
+        let denominator = fractionalDenominatorName(digitCount: fractionPart.count, value: fractionValue)
+
+        return "\(integerWords) \(wholePartName) \(fractionWords) \(denominator)"
+    }
+
+    private static func hasDigitSeparator(in text: String) -> Bool {
+        let pattern = #"[0-9][\s\-()]+[0-9]"#
+        return (try? NSRegularExpression(pattern: pattern))
+            .map { regex in
+                let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
+                return regex.firstMatch(in: text, range: nsRange) != nil
+            } ?? false
+    }
+
+    private static func telephoneDigitsToWords(_ text: String) -> String {
+        let digitWords: [Character: String] = [
+            "0": "нуль",
+            "1": "один",
+            "2": "два",
+            "3": "три",
+            "4": "чотири",
+            "5": "п'ять",
+            "6": "шість",
+            "7": "сім",
+            "8": "вісім",
+            "9": "дев'ять"
+        ]
+
+        var words: [String] = []
+        for character in text {
+            if character == "+" {
+                words.append("плюс")
+            } else if let word = digitWords[character] {
+                words.append(word)
+            }
+        }
+
+        return words.joined(separator: " ")
     }
 
     private static func replacingMatches(
@@ -169,6 +255,27 @@ enum RHVoiceApostropheNormalizer {
 
         for match in matches {
             guard let replacement = transform(match), let range = Range(match.range, in: result) else {
+                continue
+            }
+            result.replaceSubrange(range, with: replacement)
+        }
+
+        return result
+    }
+
+    private static func replacingMatches(
+        in text: String,
+        pattern: String,
+        options: NSRegularExpression.Options,
+        transform: (NSTextCheckingResult, String) -> String?
+    ) -> String {
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: options) else { return text }
+        let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
+        let matches = regex.matches(in: text, range: nsRange).reversed()
+        var result = text
+
+        for match in matches {
+            guard let replacement = transform(match, text), let range = Range(match.range, in: result) else {
                 continue
             }
             result.replaceSubrange(range, with: replacement)
