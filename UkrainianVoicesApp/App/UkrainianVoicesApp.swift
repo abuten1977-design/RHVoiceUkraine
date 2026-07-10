@@ -5,6 +5,7 @@
 
 import SwiftUI
 #if os(iOS)
+import AVFoundation
 import RHVoiceBridge
 #elseif os(macOS)
 import RHVoiceKit
@@ -65,6 +66,22 @@ private final class MacAppDelegate: NSObject, NSApplicationDelegate {
 }
 #endif
 
+private enum RHVoiceVoiceRegistrationRefresher {
+    private static let lastRegisteredBuildKey = "lastSpeechVoiceRegistrationBuild"
+
+    static func refreshIfNeeded() {
+        #if os(iOS)
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+        guard defaults?.string(forKey: lastRegisteredBuildKey) != build else { return }
+
+        AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        defaults?.set(build, forKey: lastRegisteredBuildKey)
+        defaults?.synchronize()
+        #endif
+    }
+}
+
 // NOTE: Sentry SDK will be added after Distribution certificate is available.
 // Requires re-signing of Sentry.framework for App Store Connect upload.
 
@@ -80,6 +97,7 @@ struct UkrainianVoicesApp: App {
     #endif
 
     init() {
+        RHVoiceVoiceRegistrationRefresher.refreshIfNeeded()
         #if os(iOS) && DEBUG
         let version = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
         "APP_DIAG init build=\(version) bundle=\(Bundle.main.bundleIdentifier ?? "nil")".withCString {

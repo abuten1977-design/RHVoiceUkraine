@@ -157,12 +157,35 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             "Звіт здано п'яте липня дві тисячі двадцять шостого року вчасно."
         )
         XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 10.07.2026."),
+            "Дата десяте липня дві тисячі двадцять шостого року."
+        )
+        XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">10.07.2026</say-as>"#),
             "десяте липня дві тисячі двадцять шостого року"
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="date">10.07.2026</say-as>"#),
             #"<say-as interpret-as="date">десяте липня дві тисячі двадцять шостого року</say-as>"#
+        )
+    }
+
+    func testFullDotDatesSplitBySayAsTagsNormalizeToUkrainianWords() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"10.07.<say-as interpret-as="telephone">2026</say-as>"#),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">10</say-as>.<say-as interpret-as="telephone">07</say-as>.<say-as interpret-as="telephone">2026</say-as>"#),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<speak>Звіт здано 05.07.<say-as interpret-as="telephone">2026</say-as> вчасно.</speak>"#),
+            "<speak>Звіт здано п'яте липня дві тисячі двадцять шостого року вчасно.</speak>"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<speak>Звіт здано 10.07.<say-as interpret-as="telephone">2026</say-as>.</speak>"#),
+            "<speak>Звіт здано десяте липня дві тисячі двадцять шостого року.</speak>"
         )
     }
 
@@ -182,6 +205,10 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Версія 1.16.4 і 1.18."),
             "Версія 1.16.4 і 1.18."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"Дата 32.07.<say-as interpret-as="telephone">2026</say-as>."#),
+            "Дата 32.07.дві тисячі двадцять шість."
         )
     }
 

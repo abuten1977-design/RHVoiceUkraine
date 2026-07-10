@@ -11,7 +11,7 @@ enum RHVoiceApostropheNormalizer {
     }
 
     static func normalizeInTextSegments(_ ssml: String) -> String {
-        let ssml = normalizeTelephoneSayAsBlocks(in: ssml)
+        let ssml = normalizeTelephoneSayAsBlocks(in: normalizeSplitDateSayAsBlocks(in: ssml))
         var output = ""
         var textSegment = ""
         var tagSegment = ""
@@ -161,9 +161,31 @@ enum RHVoiceApostropheNormalizer {
     private static func normalizeDates(in text: String) -> String {
         replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}.,])"#
+            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#
         ) { match in
             dateMatchToWords(match, in: text)
+        }
+    }
+
+    private static func normalizeSplitDateSayAsBlocks(in ssml: String) -> String {
+        let dateComponent = #"(?:[0-9]{1,4}|<say-as\s+interpret-as=["'](?:telephone|date)["']\s*>[0-9]{1,4}</say-as>)"#
+        let pattern = #"(?<![\p{L}\p{N}.,])("# + dateComponent + #")\.("# + dateComponent + #")\.("# + dateComponent + #")(?![\p{L}\p{N}]|[.,][0-9])"#
+
+        return replacingMatches(
+            in: ssml,
+            pattern: pattern,
+            options: [.caseInsensitive, .dotMatchesLineSeparators]
+        ) { match, source in
+            guard
+                let dayRange = Range(match.range(at: 1), in: source),
+                let monthRange = Range(match.range(at: 2), in: source),
+                let yearRange = Range(match.range(at: 3), in: source),
+                let day = Int(String(source[dayRange]).filter(\.isNumber)),
+                let month = Int(String(source[monthRange]).filter(\.isNumber)),
+                let year = Int(String(source[yearRange]).filter(\.isNumber))
+            else { return nil }
+
+            return dateToWords(day: day, month: month, year: year)
         }
     }
 
