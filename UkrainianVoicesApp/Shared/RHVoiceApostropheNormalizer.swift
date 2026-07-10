@@ -64,7 +64,7 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func normalizeTextSegment(_ text: String) -> String {
-        normalizeNumbers(in: normalizeText(text))
+        normalizeNumbers(in: normalizeDates(in: normalizeText(text)))
     }
 
     private static func spokenStandaloneApostropheName(for text: String) -> String? {
@@ -158,6 +158,15 @@ enum RHVoiceApostropheNormalizer {
         }
     }
 
+    private static func normalizeDates(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}.,])"#
+        ) { match in
+            dateMatchToWords(match, in: text)
+        }
+    }
+
     private static func normalizeTelephoneSayAsBlocks(in ssml: String) -> String {
         let withSplitDecimals = replacingMatches(
             in: ssml,
@@ -180,6 +189,10 @@ enum RHVoiceApostropheNormalizer {
             guard let contentRange = Range(match.range(at: 1), in: source) else { return nil }
 
             let content = String(source[contentRange])
+            if let dateWords = dateStringToWords(content) {
+                return dateWords
+            }
+
             let digits = content.filter(\.isNumber)
             guard !digits.isEmpty else { return normalizeText(content) }
 
@@ -191,6 +204,160 @@ enum RHVoiceApostropheNormalizer {
             guard let value = Int(digits) else { return nil }
             return integerToWords(value)
         }
+    }
+
+    private static func dateMatchToWords(_ match: NSTextCheckingResult, in text: String) -> String? {
+        guard
+            let dayRange = Range(match.range(at: 1), in: text),
+            let monthRange = Range(match.range(at: 2), in: text),
+            let yearRange = Range(match.range(at: 3), in: text),
+            let day = Int(String(text[dayRange])),
+            let month = Int(String(text[monthRange])),
+            let year = Int(String(text[yearRange]))
+        else { return nil }
+
+        return dateToWords(day: day, month: month, year: year)
+    }
+
+    private static func dateStringToWords(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let pattern = #"^([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})$"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+
+        let nsRange = NSRange(trimmed.startIndex..<trimmed.endIndex, in: trimmed)
+        guard let match = regex.firstMatch(in: trimmed, range: nsRange) else { return nil }
+        return dateMatchToWords(match, in: trimmed)
+    }
+
+    private static func dateToWords(day: Int, month: Int, year: Int) -> String? {
+        guard
+            (1...31).contains(day),
+            (1...12).contains(month),
+            (1000...2999).contains(year),
+            let dayWords = dayOrdinalNeuter(day),
+            let yearWords = yearOrdinalGenitive(year)
+        else { return nil }
+
+        let months = [
+            "січня", "лютого", "березня", "квітня", "травня", "червня",
+            "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"
+        ]
+
+        return "\(dayWords) \(months[month - 1]) \(yearWords) року"
+    }
+
+    private static func dayOrdinalNeuter(_ day: Int) -> String? {
+        let names = [
+            1: "перше",
+            2: "друге",
+            3: "третє",
+            4: "четверте",
+            5: "п'яте",
+            6: "шосте",
+            7: "сьоме",
+            8: "восьме",
+            9: "дев'яте",
+            10: "десяте",
+            11: "одинадцяте",
+            12: "дванадцяте",
+            13: "тринадцяте",
+            14: "чотирнадцяте",
+            15: "п'ятнадцяте",
+            16: "шістнадцяте",
+            17: "сімнадцяте",
+            18: "вісімнадцяте",
+            19: "дев'ятнадцяте",
+            20: "двадцяте",
+            30: "тридцяте"
+        ]
+
+        if let name = names[day] {
+            return name
+        }
+
+        guard (21...31).contains(day), let unit = names[day % 10] else { return nil }
+        return "\(underThousandToWords((day / 10) * 10, feminine: false)) \(unit)"
+    }
+
+    private static func yearOrdinalGenitive(_ year: Int) -> String? {
+        switch year {
+        case 1000:
+            return "тисячного"
+        case 2000:
+            return "двохтисячного"
+        case 1001...1999:
+            guard let rest = underThousandOrdinalGenitive(year - 1000) else { return nil }
+            return "тисяча \(rest)"
+        case 2001...2999:
+            guard let rest = underThousandOrdinalGenitive(year - 2000) else { return nil }
+            return "дві тисячі \(rest)"
+        default:
+            return nil
+        }
+    }
+
+    private static func underThousandOrdinalGenitive(_ value: Int) -> String? {
+        guard (1...999).contains(value) else { return nil }
+
+        let unitNames = [
+            1: "першого",
+            2: "другого",
+            3: "третього",
+            4: "четвертого",
+            5: "п'ятого",
+            6: "шостого",
+            7: "сьомого",
+            8: "восьмого",
+            9: "дев'ятого"
+        ]
+        let teenNames = [
+            10: "десятого",
+            11: "одинадцятого",
+            12: "дванадцятого",
+            13: "тринадцятого",
+            14: "чотирнадцятого",
+            15: "п'ятнадцятого",
+            16: "шістнадцятого",
+            17: "сімнадцятого",
+            18: "вісімнадцятого",
+            19: "дев'ятнадцятого"
+        ]
+        let tensNames = [
+            20: "двадцятого",
+            30: "тридцятого",
+            40: "сорокового",
+            50: "п'ятдесятого",
+            60: "шістдесятого",
+            70: "сімдесятого",
+            80: "вісімдесятого",
+            90: "дев'яностого"
+        ]
+        let hundredsNames = [
+            100: "сотого",
+            200: "двохсотого",
+            300: "трьохсотого",
+            400: "чотирьохсотого",
+            500: "п'ятисотого",
+            600: "шестисотого",
+            700: "семисотого",
+            800: "восьмисотого",
+            900: "дев'ятисотого"
+        ]
+
+        if let name = unitNames[value] ?? teenNames[value] ?? tensNames[value] ?? hundredsNames[value] {
+            return name
+        }
+
+        if value < 100 {
+            let tens = (value / 10) * 10
+            guard let unit = unitNames[value % 10] else { return nil }
+            return "\(underThousandToWords(tens, feminine: false)) \(unit)"
+        }
+
+        let hundreds = (value / 100) * 100
+        let rest = value % 100
+        guard let restWords = underThousandOrdinalGenitive(rest) else { return nil }
+        return "\(underThousandToWords(hundreds, feminine: false)) \(restWords)"
     }
 
     private static func decimalNumberToWords(integerPart: String, fractionPart: String) -> String? {

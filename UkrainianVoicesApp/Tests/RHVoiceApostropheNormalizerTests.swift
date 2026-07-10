@@ -132,6 +132,59 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testFullDotDatesNormalizeToUkrainianWords() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10.07.2026"),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("01.01.2000"),
+            "перше січня двохтисячного року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("31.12.1999"),
+            "тридцять перше грудня тисяча дев'ятсот дев'яносто дев'ятого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("23.08.1991"),
+            "двадцять третє серпня тисяча дев'ятсот дев'яносто першого року"
+        )
+    }
+
+    func testFullDotDatesNormalizeInsideSentencesAndSayAs() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Звіт здано 05.07.2026 вчасно."),
+            "Звіт здано п'яте липня дві тисячі двадцять шостого року вчасно."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">10.07.2026</say-as>"#),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="date">10.07.2026</say-as>"#),
+            #"<say-as interpret-as="date">десяте липня дві тисячі двадцять шостого року</say-as>"#
+        )
+    }
+
+    func testInvalidDatesAndVersionsAreNotNormalized() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 32.07.2026."),
+            "Дата 32.07.2026."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 10.13.2026."),
+            "Дата 10.13.2026."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 10.07.20261."),
+            "Дата 10.07.20261."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Версія 1.16.4 і 1.18."),
+            "Версія 1.16.4 і 1.18."
+        )
+    }
+
     func testTelephoneSayAsShortBlocksNormalizeAsNumbers() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">124685</say-as>"#),
