@@ -37,7 +37,7 @@ Ukrainian voice is a matter of working independently with their device every day
 | iOS / iPadOS | 16.0 |
 | macOS | 13.0 |
 
-The current test build is distributed via **TestFlight (Build 175)**. App Store release is in progress.
+The current test build is distributed via **TestFlight (Build 181)**. App Store release is in progress.
 
 ---
 
@@ -74,7 +74,7 @@ A detailed technical description is in [docs/ARCHITECTURE.en.md](docs/ARCHITECTU
 | `RHVoiceCore/` | Swift package — bridge to the RHVoice engine for iOS |
 | `RHVoiceKit/` | Bridge to the RHVoice engine for macOS |
 | `RHVoice/` | RHVoice engine source (C/C++), unmodified |
-| `.github/workflows/` | CI/CD: iOS build → TestFlight, signed & notarized macOS build |
+| `.github/workflows/` | CI/CD: signed & notarized macOS build |
 
 ---
 
@@ -88,7 +88,8 @@ xcodegen generate          # generate the .xcodeproj from project.yml
 open UkrainianVoices.xcodeproj
 ```
 
-Building and signing for both platforms is automated via GitHub Actions.
+The signed and notarized macOS build is automated via GitHub Actions; the iOS build for
+TestFlight is produced by a local script on the Mac.
 
 ---
 

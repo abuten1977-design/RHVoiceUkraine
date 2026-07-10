@@ -38,7 +38,7 @@ Apple VoiceOver. Голоси з'являються в роторі VoiceOver п
 | iOS / iPadOS | 16.0 |
 | macOS | 13.0 |
 
-Поточна тестова збірка розповсюджується через **TestFlight (Build 175)**. Публікація в
+Поточна тестова збірка розповсюджується через **TestFlight (Build 181)**. Публікація в
 App Store — у роботі.
 
 ---
@@ -76,7 +76,7 @@ RHVoiceEngine (Objective-C++ міст) → рушій RHVoice 1.16.4 (C/C++, с�
 | `RHVoiceCore/` | Swift-пакет — міст до рушія RHVoice для iOS |
 | `RHVoiceKit/` | Міст до рушія RHVoice для macOS |
 | `RHVoice/` | Вихідний код рушія RHVoice (C/C++), без модифікацій |
-| `.github/workflows/` | CI/CD: збірка iOS → TestFlight, підписана та нотаризована збірка macOS |
+| `.github/workflows/` | CI/CD: підписана та нотаризована збірка macOS |
 
 ---
 
@@ -90,7 +90,8 @@ xcodegen generate          # згенерувати .xcodeproj з project.yml
 open UkrainianVoices.xcodeproj
 ```
 
-Збірка та підписання для обох платформ автоматизовані через GitHub Actions.
+Підписана та нотаризована збірка macOS автоматизована через GitHub Actions; збірка iOS
+для TestFlight виконується локальним скриптом на Mac.
 
 ---
 
