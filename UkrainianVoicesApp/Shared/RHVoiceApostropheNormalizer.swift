@@ -168,7 +168,7 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func normalizeSplitDateSayAsBlocks(in ssml: String) -> String {
-        let dateComponent = #"(?:[0-9]{1,4}|<say-as\s+interpret-as=["'](?:telephone|date)["']\s*>[0-9]{1,4}</say-as>)"#
+        let dateComponent = #"(?:[0-9]{1,4}|<say-as\b[^>]*>\s*[0-9]{1,4}\s*</say-as>)"#
         let pattern = #"(?<![\p{L}\p{N}.,])("# + dateComponent + #")\.("# + dateComponent + #")\.("# + dateComponent + #")(?![\p{L}\p{N}]|[.,][0-9])"#
 
         return replacingMatches(
@@ -180,19 +180,25 @@ enum RHVoiceApostropheNormalizer {
                 let dayRange = Range(match.range(at: 1), in: source),
                 let monthRange = Range(match.range(at: 2), in: source),
                 let yearRange = Range(match.range(at: 3), in: source),
-                let day = Int(String(source[dayRange]).filter(\.isNumber)),
-                let month = Int(String(source[monthRange]).filter(\.isNumber)),
-                let year = Int(String(source[yearRange]).filter(\.isNumber))
+                let day = dateComponentValue(String(source[dayRange])),
+                let month = dateComponentValue(String(source[monthRange])),
+                let year = dateComponentValue(String(source[yearRange]))
             else { return nil }
 
             return dateToWords(day: day, month: month, year: year)
         }
     }
 
+    private static func dateComponentValue(_ component: String) -> Int? {
+        let text = extractTextSegments(from: component).joined()
+        let digits = (text.isEmpty ? component : text).filter(\.isNumber)
+        return Int(digits)
+    }
+
     private static func normalizeTelephoneSayAsBlocks(in ssml: String) -> String {
         let withSplitDecimals = replacingMatches(
             in: ssml,
-            pattern: #"([0-9]+),\s*<say-as\s+interpret-as=["']telephone["']\s*>([0-9]+)</say-as>"#,
+            pattern: #"([0-9]+),\s*<say-as\b(?=[^>]*\binterpret-as\s*=\s*["']telephone["'])[^>]*>\s*([0-9]+)\s*</say-as>"#,
             options: [.caseInsensitive, .dotMatchesLineSeparators]
         ) { match, source in
             guard
@@ -205,7 +211,7 @@ enum RHVoiceApostropheNormalizer {
 
         return replacingMatches(
             in: withSplitDecimals,
-            pattern: #"<say-as\s+interpret-as=["']telephone["']\s*>(.*?)</say-as>"#,
+            pattern: #"<say-as\b(?=[^>]*\binterpret-as\s*=\s*["']telephone["'])[^>]*>(.*?)</say-as>"#,
             options: [.caseInsensitive, .dotMatchesLineSeparators]
         ) { match, source in
             guard let contentRange = Range(match.range(at: 1), in: source) else { return nil }

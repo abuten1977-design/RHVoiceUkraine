@@ -189,6 +189,21 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testFullDotDatesSplitBySayAsTagsWithExtraAttributesNormalize() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"10.07.<say-as interpret-as="telephone" format="digits">2026</say-as>"#),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"10.07.<say-as format="digits" interpret-as="characters"> 2026 </say-as>"#),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="number" detail="2">10</say-as>.<say-as interpret-as="number" detail="2">07</say-as>.<say-as interpret-as="number" detail="4">2026</say-as>"#),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+    }
+
     func testInvalidDatesAndVersionsAreNotNormalized() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 32.07.2026."),
