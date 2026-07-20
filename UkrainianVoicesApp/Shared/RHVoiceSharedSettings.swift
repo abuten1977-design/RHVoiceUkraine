@@ -17,6 +17,9 @@ enum RHVoiceSharedSettings {
     static let sentencePauseKey = "sentencePause"
     static let wordGapKey = "wordGap"
     static let pitchKey = "pitch"
+    // Opt-in запис прочитаного тексту в RHVoiceDebug.log у Release-збірках
+    // (діагностика дат/чисел у тестерів без кабеля). За замовчуванням вимкнено.
+    static let extendedDiagnosticsKey = "extendedDiagnostics"
     static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
     static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
 

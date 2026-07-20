@@ -257,6 +257,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var speechComponentDiagnosticReport: SpeechComponentDiagnosticReport?
     @Published var debugLogSize: Int = 0
     @Published var debugLogShareURL: URL?
+    @Published var extendedDiagnosticsEnabled: Bool = false
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
     @Published var sharedStorageState: SharedStorageState = .loading
@@ -603,9 +604,25 @@ private final class ContentViewModel: ObservableObject {
         Self.storageQueue.async { [weak self] in
             let size = DebugLogShareHelper.logSize()
             let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
+            let extendedEnabled = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
+                .bool(forKey: RHVoiceSharedSettings.extendedDiagnosticsKey) ?? false
             DispatchQueue.main.async {
                 self?.debugLogSize = size
                 self?.debugLogShareURL = shareURL
+                self?.extendedDiagnosticsEnabled = extendedEnabled
+            }
+        }
+    }
+
+    func setExtendedDiagnostics(_ enabled: Bool) {
+        extendedDiagnosticsEnabled = enabled
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
+                .set(enabled, forKey: RHVoiceSharedSettings.extendedDiagnosticsKey)
+            DispatchQueue.main.async {
+                self?.setStatus(enabled
+                    ? "Розширену діагностику увімкнено: прочитаний текст записується в лог на цьому пристрої."
+                    : "Розширену діагностику вимкнено.")
             }
         }
     }
@@ -909,23 +926,17 @@ struct ContentView: View {
                     }
                 }
 
-                #if DEBUG
                 diagnosticSection
-                #endif
             }
             .navigationTitle("Українські голоси")
-            #if DEBUG
             .onAppear {
                 model.refreshDebugLogState()
             }
-            #endif
         }
 #if os(macOS)
         .frame(minWidth: 520, minHeight: 520)
         .onAppear {
-            #if DEBUG
             model.refreshDebugLogState()
-            #endif
             DispatchQueue.main.async {
                 NSApp.setActivationPolicy(.regular)
                 NSApp.activate(ignoringOtherApps: true)
@@ -1000,11 +1011,9 @@ struct ContentView: View {
 
                 Divider()
 
-                #if DEBUG
                 diagnosticSection
                     .padding(.horizontal, 12)
                     .padding(.bottom, 16)
-                #endif
             }
             .navigationTitle("Українські голоси")
         }
@@ -1049,14 +1058,21 @@ struct ContentView: View {
         }
     }
 
-    #if DEBUG
     @ViewBuilder
     private var diagnosticSection: some View {
         Section("Діагностика") {
-            Text("Для перевірки затримки голосу:\n1. Тап «Очистити лог».\n2. Прочитай 3-4 фрази через VoiceOver у будь-якій програмі.\n3. Повернись сюди і тап «Поділитись логом».\n4. У шторці обери WhatsApp, Mail або AirDrop і надішли лог.")
+            Toggle(isOn: Binding(
+                get: { model.extendedDiagnosticsEnabled },
+                set: { model.setExtendedDiagnostics($0) }
+            )) {
+                Label("Розширена діагностика", systemImage: "stethoscope")
+            }
+            .accessibilityHint("Коли увімкнено, рушій записує прочитаний текст у лог-файл на цьому пристрої. Лог нікуди не надсилається автоматично — лише коли ви самі поділитесь ним.")
+
+            Text("Щоб надіслати діагностику розробникам:\n1. Увімкни «Розширена діагностика».\n2. Тап «Очистити лог».\n3. Прочитай потрібні фрази через VoiceOver у будь-якій програмі.\n4. Повернись сюди і тап «Поділитись логом».\n5. У шторці обери Mail, Telegram або AirDrop і надішли лог.")
                 .font(.footnote)
                 .foregroundColor(.secondary)
-                .accessibilityLabel("Підказка щодо діагностики затримки голосу")
+                .accessibilityLabel("Підказка щодо діагностики")
 
             Button {
                 model.clearDebugLog()
@@ -1086,7 +1102,6 @@ struct ContentView: View {
                 .accessibilityLabel("Розмір логу: \(model.debugLogSize) байт")
         }
     }
-    #endif
 
     private var personalDictionaryLink: some View {
         NavigationLink {

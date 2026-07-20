@@ -10,8 +10,21 @@ private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category:
 private let apostropheLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "apostrophe")
 private let numberDiagLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "number-diag")
 
+// «Розширена діагностика» вмикається перемикачем у застосунку (App Group defaults).
+// Читання UserDefaults не блокує аудіо-потік: значення кешує cfprefsd — на відміну
+// від containerURL/stat, які на macOS 26 можуть зависнути (task-082/086).
+private let rhDiagDefaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+
+private func rhExtendedDiagnosticsEnabled() -> Bool {
+    rhDiagDefaults?.bool(forKey: RHVoiceSharedSettings.extendedDiagnosticsKey) ?? false
+}
+
 private func rhLog(_ msg: @autoclosure () -> String) {
     #if DEBUG
+    let text = msg()
+    text.withCString { RHVoiceDebugLogString($0) }
+    #else
+    guard rhExtendedDiagnosticsEnabled() else { return }
     let text = msg()
     text.withCString { RHVoiceDebugLogString($0) }
     #endif
@@ -613,6 +626,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private static func numberDiag(_ message: String) {
         os_log(.info, log: numberDiagLog, "NUMBER_DIAG %{public}@", message as NSString)
         fputs("NUMBER_DIAG \(message)\n", stderr)
+        if rhExtendedDiagnosticsEnabled() {
+            "NUMBER_DIAG \(message)".withCString { RHVoiceDebugLogString($0) }
+        }
     }
 
     private struct NumberDiagnosticWindow {
