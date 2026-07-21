@@ -16,6 +16,27 @@ static void ensureLogQueue(void) {
     });
 }
 
+// Файл пишеться: у DEBUG — завжди; у Release — лише коли користувач увімкнув
+// «Розширену діагностику» в застосунку (App Store privacy: без згоди
+// прочитаний текст на диск не потрапляє).
+static BOOL rhFileLoggingEnabled(void) {
+#if DEBUG
+    return YES;
+#else
+    static NSUserDefaults* groupDefaults = nil;
+    static dispatch_once_t defaultsOnceToken;
+    dispatch_once(&defaultsOnceToken, ^{
+#if TARGET_OS_OSX
+        NSString* suite = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
+#else
+        NSString* suite = @"group.rhvoice.UkrainianVoices.shared";
+#endif
+        groupDefaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
+    });
+    return [groupDefaults boolForKey:@"extendedDiagnostics"];
+#endif
+}
+
 static NSString* currentLogPath(void) {
 #if TARGET_OS_OSX
     NSString* groupIdentifier = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
@@ -68,7 +89,6 @@ static BOOL appendLine(NSString* line, BOOL important) {
 }
 
 void RHVoiceDebugLogWrite(const char* format, ...) {
-#if DEBUG
     va_list args;
     va_start(args, format);
     NSString* msg = [[NSString alloc] initWithFormat:[NSString stringWithUTF8String:format] arguments:args];
@@ -88,6 +108,8 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
             NSLog(@"%@", msg);
         }
     }
+
+    if (!rhFileLoggingEnabled()) return;
 
     ensureLogQueue();
     if (!_logQueue) {
@@ -112,17 +134,13 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
         }
     };
     dispatch_async(_logQueue, writeBlock);
-#endif
 }
 
 void RHVoiceDebugLogString(const char* message) {
-#if DEBUG
     RHVoiceDebugLogWrite("%s", message);
-#endif
 }
 
 void RHVoiceDebugLogClear(void) {
-#if DEBUG
     ensureLogQueue();
     if (!_logQueue) return;
 
@@ -135,5 +153,4 @@ void RHVoiceDebugLogClear(void) {
             close(fd);
         }
     });
-#endif
 }
