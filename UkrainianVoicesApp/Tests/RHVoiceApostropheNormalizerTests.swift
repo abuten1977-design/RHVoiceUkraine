@@ -204,6 +204,42 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testVerbalizedDotDatesFromIOS26NormalizeToUkrainianWords() {
+        // iOS 26 VoiceOver замінює крапки словом «крапка» ще до синтезатора
+        // (доведено логом пристрою 2026-07-21).
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10 крапка 07 крапка 2026"),
+            "десяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Звіт здано 05 крапка 07 крапка 2026 вчасно."),
+            "Звіт здано п'яте липня дві тисячі двадцять шостого року вчасно."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("01 крапка 01 крапка 2000"),
+            "перше січня двохтисячного року"
+        )
+    }
+
+    func testVerbalizedDotNonDatesStayUntouched() {
+        // День 32 — невалідний: числа лишаються числами.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 32 крапка 07 крапка 2026."),
+            "Дата 32 крапка 07 крапка 2026."
+        )
+        // Місяць 13 — невалідний.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10 крапка 13 крапка 2026"),
+            "10 крапка 13 крапка 2026"
+        )
+        // Версія «1 крапка 16.4»: лише одна «крапка» — датний шаблон не збігається,
+        // рядок лишається без змін.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Версія 1 крапка 16.4."),
+            "Версія 1 крапка 16.4."
+        )
+    }
+
     func testInvalidDatesAndVersionsAreNotNormalized() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 32.07.2026."),

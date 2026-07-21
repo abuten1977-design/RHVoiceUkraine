@@ -159,11 +159,25 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func normalizeDates(in text: String) -> String {
-        replacingMatches(
+        // iOS 26 VoiceOver віддає дати з ОЗВУЧЕНИМИ крапками: «10 крапка 07 крапка 2026»
+        // (крапки замінені словом ще ДО синтезатора — доведено логом пристрою 2026-07-21).
+        // Розпізнаємо цю форму першою; валідність перевіряє dateToWords, тож
+        // «32 крапка 07 крапка 2026» лишається числами, а «1 крапка 16.4» не
+        // збігається взагалі (потрібні ДВІ «крапки» між числами).
+        let withVerbalizedDots = replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#
-        ) { match in
-            dateMatchToWords(match, in: text)
+            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\s+крапка\s+([0-9]{1,2})\s+крапка\s+([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
+            options: [.caseInsensitive]
+        ) { match, source in
+            dateMatchToWords(match, in: source)
+        }
+
+        return replacingMatches(
+            in: withVerbalizedDots,
+            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
+            options: []
+        ) { match, source in
+            dateMatchToWords(match, in: source)
         }
     }
 
