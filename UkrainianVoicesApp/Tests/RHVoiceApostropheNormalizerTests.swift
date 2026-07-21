@@ -240,6 +240,44 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testWeekdayAbbreviationsWithDatesNormalize() {
+        // Формати з багрепорту Даші (build 187): пт, 17.07.2026 / пт 17.07.2026 / пт17.07.2026 / Нд19.07.2026
+        let friday = "п'ятниця, сімнадцяте липня дві тисячі двадцять шостого року"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments("пт, 17.07.2026"), friday)
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments("пт 17.07.2026"), friday)
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments("пт17.07.2026"), friday)
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Нд19.07.2026"),
+            "неділя, дев'ятнадцяте липня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Вт23.06.2026"),
+            "вівторок, двадцять третє червня дві тисячі двадцять шостого року"
+        )
+        // Та сама дата з озвученими крапками (iOS 26).
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("пт, 17 крапка 07 крапка 2026"),
+            friday
+        )
+        // Невалідна дата: день тижня і числа лишаються як є.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("пт 32.07.2026"),
+            "пт 32.07.2026"
+        )
+    }
+
+    func testPlainTextPlusPhoneNumbersReadDigitByDigitInGroups() {
+        // Баг Даші (build 187): суцільний +380… читався мільйонами.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380671232323."),
+            "Телефон плюс три вісім нуль, шість сім, один два три, два три, два три."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380 67 123 23 23."),
+            "Телефон плюс три вісім нуль, шість сім, один два три, два три, два три."
+        )
+    }
+
     func testInvalidDatesAndVersionsAreNotNormalized() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 32.07.2026."),
@@ -284,11 +322,11 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     func testTelephoneSayAsPhoneNumbersNormalizeDigitByDigit() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380501234567</say-as>"#),
-            "плюс три вісім нуль п'ять нуль один два три чотири п'ять шість сім"
+            "плюс три вісім нуль, п'ять нуль, один два три, чотири п'ять, шість сім"
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380 50 123 45 67</say-as>"#),
-            "плюс три вісім нуль п'ять нуль один два три чотири п'ять шість сім"
+            "плюс три вісім нуль, п'ять нуль, один два три, чотири п'ять, шість сім"
         )
     }
 

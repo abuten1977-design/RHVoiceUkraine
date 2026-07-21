@@ -64,7 +64,7 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func normalizeTextSegment(_ text: String) -> String {
-        normalizeNumbers(in: normalizeDates(in: normalizeText(text)))
+        normalizeNumbers(in: normalizePhones(in: normalizeDates(in: normalizeText(text))))
     }
 
     private static func spokenStandaloneApostropheName(for text: String) -> String? {
@@ -158,32 +158,84 @@ enum RHVoiceApostropheNormalizer {
         }
     }
 
+    // Скорочення днів тижня, які тестери бачать приклеєними до дат:
+    // «Нд19.07.2026», «пт, 17.07.2026», «пт 17.07.2026», «пт17.07.2026».
+    private static let weekdayNames: [String: String] = [
+        "пн": "понеділок",
+        "вт": "вівторок",
+        "ср": "середа",
+        "чт": "четвер",
+        "пт": "п'ятниця",
+        "сб": "субота",
+        "нд": "неділя"
+    ]
+
     private static func normalizeDates(in text: String) -> String {
         // iOS 26 VoiceOver віддає дати з ОЗВУЧЕНИМИ крапками: «10 крапка 07 крапка 2026»
         // (крапки замінені словом ще ДО синтезатора — доведено логом пристрою 2026-07-21).
         // Розпізнаємо цю форму першою; валідність перевіряє dateToWords, тож
         // «32 крапка 07 крапка 2026» лишається числами, а «1 крапка 16.4» не
         // збігається взагалі (потрібні ДВІ «крапки» між числами).
+        let weekdayPrefix = #"(?:(пн|вт|ср|чт|пт|сб|нд)\.?,?\s*)?"#
+
         let withVerbalizedDots = replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\s+крапка\s+([0-9]{1,2})\s+крапка\s+([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
+            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+крапка\s+([0-9]{1,2})\s+крапка\s+([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
             options: [.caseInsensitive]
         ) { match, source in
-            dateMatchToWords(match, in: source)
+            weekdayDateMatchToWords(match, in: source)
         }
 
         return replacingMatches(
             in: withVerbalizedDots,
-            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
+            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
+            options: [.caseInsensitive]
+        ) { match, source in
+            weekdayDateMatchToWords(match, in: source)
+        }
+    }
+
+    private static func weekdayDateMatchToWords(_ match: NSTextCheckingResult, in text: String) -> String? {
+        guard
+            let dayRange = Range(match.range(at: 2), in: text),
+            let monthRange = Range(match.range(at: 3), in: text),
+            let yearRange = Range(match.range(at: 4), in: text),
+            let day = Int(String(text[dayRange])),
+            let month = Int(String(text[monthRange])),
+            let year = Int(String(text[yearRange])),
+            let dateWords = dateToWords(day: day, month: month, year: year)
+        else { return nil }
+
+        if match.range(at: 1).location != NSNotFound,
+           let weekdayRange = Range(match.range(at: 1), in: text),
+           let weekdayName = weekdayNames[String(text[weekdayRange]).lowercased()] {
+            return "\(weekdayName), \(dateWords)"
+        }
+        return dateWords
+    }
+
+    private static func normalizePhones(in text: String) -> String {
+        // Телефон у звичайному тексті: «+» і 7+ цифр (з пробілами/дефісами/дужками).
+        // Без цього правила суцільний «+380671232323» потрапляв у правило великих
+        // чисел і читався мільйонами (баг Даші, build 187).
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}])\+[0-9][0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
             options: []
         ) { match, source in
-            dateMatchToWords(match, in: source)
+            guard let range = Range(match.range, in: source) else { return nil }
+            let content = String(source[range])
+            guard content.filter(\.isNumber).count >= 7 else { return nil }
+            return telephoneDigitsToWords(content)
         }
     }
 
     private static func normalizeSplitDateSayAsBlocks(in ssml: String) -> String {
         let dateComponent = #"(?:[0-9]{1,4}|<say-as\b[^>]*>\s*[0-9]{1,4}\s*</say-as>)"#
-        let pattern = #"(?<![\p{L}\p{N}.,])("# + dateComponent + #")\.("# + dateComponent + #")\.("# + dateComponent + #")(?![\p{L}\p{N}]|[.,][0-9])"#
+        // Той самий необов'язковий день тижня, що й у normalizeDates: цей прохід
+        // працює ПЕРШИМ по всьому SSML і без нього з'їдав дату, лишаючи «пт, » сирим.
+        let weekdayPrefix = #"(?:(пн|вт|ср|чт|пт|сб|нд)\.?,?\s*)?"#
+        let pattern = #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"("# + dateComponent + #")\.("# + dateComponent + #")\.("# + dateComponent + #")(?![\p{L}\p{N}]|[.,][0-9])"#
 
         return replacingMatches(
             in: ssml,
@@ -191,15 +243,21 @@ enum RHVoiceApostropheNormalizer {
             options: [.caseInsensitive, .dotMatchesLineSeparators]
         ) { match, source in
             guard
-                let dayRange = Range(match.range(at: 1), in: source),
-                let monthRange = Range(match.range(at: 2), in: source),
-                let yearRange = Range(match.range(at: 3), in: source),
+                let dayRange = Range(match.range(at: 2), in: source),
+                let monthRange = Range(match.range(at: 3), in: source),
+                let yearRange = Range(match.range(at: 4), in: source),
                 let day = dateComponentValue(String(source[dayRange])),
                 let month = dateComponentValue(String(source[monthRange])),
-                let year = dateComponentValue(String(source[yearRange]))
+                let year = dateComponentValue(String(source[yearRange])),
+                let dateWords = dateToWords(day: day, month: month, year: year)
             else { return nil }
 
-            return dateToWords(day: day, month: month, year: year)
+            if match.range(at: 1).location != NSNotFound,
+               let weekdayRange = Range(match.range(at: 1), in: source),
+               let weekdayName = weekdayNames[String(source[weekdayRange]).lowercased()] {
+                return "\(weekdayName), \(dateWords)"
+            }
+            return dateWords
         }
     }
 
@@ -440,16 +498,72 @@ enum RHVoiceApostropheNormalizer {
             "9": "дев'ять"
         ]
 
-        var words: [String] = []
+        // Групи цифр розділяємо комами — рушій робить на них природні паузи,
+        // так номер легше сприймати і записувати (прохання тестерів, build 187).
+        // Межі груп: наявні розділювачі; суцільний номер групуємо самі.
+        var groups: [[Character]] = []
+        var current: [Character] = []
+        var hasPlus = false
         for character in text {
             if character == "+" {
-                words.append("плюс")
-            } else if let word = digitWords[character] {
-                words.append(word)
+                hasPlus = true
+            } else if digitWords[character] != nil {
+                current.append(character)
+            } else if !current.isEmpty {
+                groups.append(current)
+                current.removeAll()
+            }
+        }
+        if !current.isEmpty { groups.append(current) }
+
+        if groups.count == 1, let solid = groups.first, solid.count >= 9 {
+            groups = regroupSolidPhoneDigits(solid)
+        }
+
+        let spokenGroups = groups
+            .map { group in group.compactMap { digitWords[$0] }.joined(separator: " ") }
+            .filter { !$0.isEmpty }
+
+        let body = spokenGroups.joined(separator: ", ")
+        if hasPlus {
+            return body.isEmpty ? "плюс" : "плюс " + body
+        }
+        return body
+    }
+
+    private static func regroupSolidPhoneDigits(_ digits: [Character]) -> [[Character]] {
+        var sizes: [Int]
+        if digits.count == 12, digits.starts(with: ["3", "8", "0"]) {
+            sizes = [3, 2, 3, 2, 2]        // 380 67 123 45 67
+        } else if digits.count == 10, digits.first == "0" {
+            sizes = [3, 3, 2, 2]           // 067 123 45 67
+        } else {
+            sizes = []
+            var remaining = digits.count
+            while remaining > 4 {
+                sizes.append(3)
+                remaining -= 3
+            }
+            if remaining == 4 {
+                sizes.append(2)
+                sizes.append(2)
+            } else if remaining > 0 {
+                sizes.append(remaining)
             }
         }
 
-        return words.joined(separator: " ")
+        var result: [[Character]] = []
+        var index = 0
+        for size in sizes {
+            let end = min(index + size, digits.count)
+            guard index < end else { break }
+            result.append(Array(digits[index..<end]))
+            index = end
+        }
+        if index < digits.count {
+            result.append(Array(digits[index...]))
+        }
+        return result
     }
 
     private static func replacingMatches(
