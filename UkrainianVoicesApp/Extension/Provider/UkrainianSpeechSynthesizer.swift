@@ -19,6 +19,13 @@ private func rhExtendedDiagnosticsEnabled() -> Bool {
     rhDiagDefaults?.bool(forKey: RHVoiceSharedSettings.extendedDiagnosticsKey) ?? false
 }
 
+// «Читати дати словами»: відсутність ключа = увімкнено (типова поведінка).
+private func rhDatesAsWordsEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.datesAsWordsKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.datesAsWordsKey)
+}
+
 private func rhLog(_ msg: @autoclosure () -> String) {
     #if DEBUG
     let text = msg()
@@ -564,7 +571,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
-        RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml)
+        RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml, datesAsWords: rhDatesAsWordsEnabled())
     }
 
     private static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {

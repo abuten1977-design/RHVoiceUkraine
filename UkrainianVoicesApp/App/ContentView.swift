@@ -258,6 +258,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var debugLogSize: Int = 0
     @Published var debugLogShareURL: URL?
     @Published var extendedDiagnosticsEnabled: Bool = false
+    @Published var datesAsWordsEnabled: Bool = true
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
     @Published var sharedStorageState: SharedStorageState = .loading
@@ -606,10 +607,28 @@ private final class ContentViewModel: ObservableObject {
             let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
             let extendedEnabled = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
                 .bool(forKey: RHVoiceSharedSettings.extendedDiagnosticsKey) ?? false
+            let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+            let datesAsWords = defaults?.object(forKey: RHVoiceSharedSettings.datesAsWordsKey) == nil
+                ? true
+                : (defaults?.bool(forKey: RHVoiceSharedSettings.datesAsWordsKey) ?? true)
             DispatchQueue.main.async {
                 self?.debugLogSize = size
                 self?.debugLogShareURL = shareURL
                 self?.extendedDiagnosticsEnabled = extendedEnabled
+                self?.datesAsWordsEnabled = datesAsWords
+            }
+        }
+    }
+
+    func setDatesAsWords(_ enabled: Bool) {
+        datesAsWordsEnabled = enabled
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
+                .set(enabled, forKey: RHVoiceSharedSettings.datesAsWordsKey)
+            DispatchQueue.main.async {
+                self?.setStatus(enabled
+                    ? "Дати читаються словами."
+                    : "Дати читаються цифрами.")
             }
         }
     }
@@ -902,6 +921,8 @@ struct ContentView: View {
                     personalDictionaryLink
                 }
 
+                readingSection
+
                 Section("Довідка") {
                     howToLink
                     aboutLink
@@ -1011,6 +1032,11 @@ struct ContentView: View {
 
                 Divider()
 
+                readingSection
+                    .padding(.horizontal, 12)
+
+                Divider()
+
                 diagnosticSection
                     .padding(.horizontal, 12)
                     .padding(.bottom, 16)
@@ -1055,6 +1081,23 @@ struct ContentView: View {
             Text(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
                 .font(.caption)
                 .foregroundColor(model.isEnabled(voice) ? .secondary : .orange)
+        }
+    }
+
+    @ViewBuilder
+    private var readingSection: some View {
+        Section("Читання") {
+            Toggle(isOn: Binding(
+                get: { model.datesAsWordsEnabled },
+                set: { model.setDatesAsWords($0) }
+            )) {
+                Label("Читати дати словами", systemImage: "calendar")
+            }
+            .accessibilityHint("Увімкнено: повні дати, як-от 10.07.2026, читаються словами — «десяте липня дві тисячі двадцять шостого року». Вимкнено: дати читаються цифрами.")
+
+            Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
         }
     }
 

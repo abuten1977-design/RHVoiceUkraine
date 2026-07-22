@@ -20,6 +20,9 @@ enum RHVoiceSharedSettings {
     // Opt-in запис прочитаного тексту в RHVoiceDebug.log у Release-збірках
     // (діагностика дат/чисел у тестерів без кабеля). За замовчуванням вимкнено.
     static let extendedDiagnosticsKey = "extendedDiagnostics"
+    // «Читати дати словами»: увімкнено за замовчуванням; вимкнено — повні дати
+    // лишаються цифрами (запит тестерів, build 189). Відсутність ключа = true.
+    static let datesAsWordsKey = "datesAsWords"
     static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
     static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
 

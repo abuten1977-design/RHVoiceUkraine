@@ -10,8 +10,9 @@ enum RHVoiceApostropheNormalizer {
         return spokenStandaloneApostropheName(for: text)
     }
 
-    static func normalizeInTextSegments(_ ssml: String) -> String {
-        let ssml = normalizeTelephoneSayAsBlocks(in: normalizeSplitDateSayAsBlocks(in: ssml))
+    static func normalizeInTextSegments(_ ssml: String, datesAsWords: Bool = true) -> String {
+        let withDates = datesAsWords ? normalizeSplitDateSayAsBlocks(in: ssml) : ssml
+        let ssml = normalizeTelephoneSayAsBlocks(in: withDates, datesAsWords: datesAsWords)
         var output = ""
         var textSegment = ""
         var tagSegment = ""
@@ -21,7 +22,7 @@ enum RHVoiceApostropheNormalizer {
             if insideTag {
                 tagSegment.append(character)
                 if character == ">" {
-                    output += normalizeTextSegment(textSegment)
+                    output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords)
                     textSegment.removeAll(keepingCapacity: true)
                     output += tagSegment
                     tagSegment.removeAll(keepingCapacity: true)
@@ -36,9 +37,9 @@ enum RHVoiceApostropheNormalizer {
         }
 
         if insideTag {
-            output += normalizeTextSegment(textSegment) + tagSegment
+            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords) + tagSegment
         } else {
-            output += normalizeTextSegment(textSegment)
+            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords)
         }
         return output
     }
@@ -63,8 +64,9 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: "\u{0060}", with: engineApostrophe)
     }
 
-    private static func normalizeTextSegment(_ text: String) -> String {
-        normalizeNumbers(in: normalizePhones(in: normalizeDates(in: normalizeText(text))))
+    private static func normalizeTextSegment(_ text: String, datesAsWords: Bool = true) -> String {
+        let withDates = datesAsWords ? normalizeDates(in: normalizeText(text)) : normalizeText(text)
+        return normalizeNumbers(in: normalizePhones(in: withDates))
     }
 
     private static func spokenStandaloneApostropheName(for text: String) -> String? {
@@ -267,7 +269,7 @@ enum RHVoiceApostropheNormalizer {
         return Int(digits)
     }
 
-    private static func normalizeTelephoneSayAsBlocks(in ssml: String) -> String {
+    private static func normalizeTelephoneSayAsBlocks(in ssml: String, datesAsWords: Bool = true) -> String {
         let withSplitDecimals = replacingMatches(
             in: ssml,
             pattern: #"([0-9]+),\s*<say-as\b(?=[^>]*\binterpret-as\s*=\s*["']telephone["'])[^>]*>\s*([0-9]+)\s*</say-as>"#,
@@ -289,7 +291,7 @@ enum RHVoiceApostropheNormalizer {
             guard let contentRange = Range(match.range(at: 1), in: source) else { return nil }
 
             let content = String(source[contentRange])
-            if let dateWords = dateStringToWords(content) {
+            if datesAsWords, let dateWords = dateStringToWords(content) {
                 return dateWords
             }
 
@@ -534,9 +536,9 @@ enum RHVoiceApostropheNormalizer {
     private static func regroupSolidPhoneDigits(_ digits: [Character]) -> [[Character]] {
         var sizes: [Int]
         if digits.count == 12, digits.starts(with: ["3", "8", "0"]) {
-            sizes = [3, 2, 3, 2, 2]        // 380 67 123 45 67
+            sizes = [2, 3, 3, 2, 2]        // 38 067 344 91 61 (формат Андрія)
         } else if digits.count == 10, digits.first == "0" {
-            sizes = [3, 3, 2, 2]           // 067 123 45 67
+            sizes = [3, 3, 2, 2]           // 067 344 91 61
         } else {
             sizes = []
             var remaining = digits.count

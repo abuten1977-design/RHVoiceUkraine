@@ -268,13 +268,35 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
 
     func testPlainTextPlusPhoneNumbersReadDigitByDigitInGroups() {
         // Баг Даші (build 187): суцільний +380… читався мільйонами.
+        // Групування суцільного номера — за форматом Андрія: +38 067 344 91 61.
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380671232323."),
-            "Телефон плюс три вісім нуль, шість сім, один два три, два три, два три."
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380673449161."),
+            "Телефон плюс три вісім, нуль шість сім, три чотири чотири, дев'ять один, шість один."
         )
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380 67 123 23 23."),
-            "Телефон плюс три вісім нуль, шість сім, один два три, два три, два три."
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +38 067 344 91 61."),
+            "Телефон плюс три вісім, нуль шість сім, три чотири чотири, дев'ять один, шість один."
+        )
+    }
+
+    func testDatesAsWordsToggleOffKeepsDatesAsDigits() {
+        // Перемикач «Читати дати словами» ВИМКНЕНО — дати лишаються цифрами.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10.07.2026", datesAsWords: false),
+            "10.07.2026"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Звіт здано 05 крапка 07 крапка 2026 вчасно.", datesAsWords: false),
+            "Звіт здано 05 крапка 07 крапка 2026 вчасно."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("пт, 17.07.2026", datesAsWords: false),
+            "пт, 17.07.2026"
+        )
+        // Телефони працюють НЕЗАЛЕЖНО від перемикача дат.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +38 067 344 91 61.", datesAsWords: false),
+            "Телефон плюс три вісім, нуль шість сім, три чотири чотири, дев'ять один, шість один."
         )
     }
 
@@ -322,7 +344,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     func testTelephoneSayAsPhoneNumbersNormalizeDigitByDigit() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380501234567</say-as>"#),
-            "плюс три вісім нуль, п'ять нуль, один два три, чотири п'ять, шість сім"
+            "плюс три вісім, нуль п'ять нуль, один два три, чотири п'ять, шість сім"
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380 50 123 45 67</say-as>"#),
