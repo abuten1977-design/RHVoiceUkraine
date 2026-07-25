@@ -377,4 +377,110 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             "Мішані: дві цілих чотири сьомих; десять цілих одинадцять дванадцятих; сто п'ятдесят чотири цілих одна третя."
         )
     }
+
+    // MARK: - build 190, фікс 1: скорочені текстові місяці (екран блокування)
+
+    func testAbbreviatedTextMonthDatesNormalizeToUkrainianWords() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("чт 23 лип."),
+            "четвер, двадцять третє липня"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("23 лип."),
+            "двадцять третє липня"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("чт, 23 лип."),
+            "четвер, двадцять третє липня"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("23 лип. 2026"),
+            "двадцять третє липня дві тисячі двадцять шостого року"
+        )
+        // Повна назва місяця в родовому відмінку теж приймається.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("23 липня 2026"),
+            "двадцять третє липня дві тисячі двадцять шостого року"
+        )
+        // Невалідний день — не чіпати.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("32 лип."),
+            "32 лип."
+        )
+        // Перемикач «Читати дати словами» вимкнено — лишається як є.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("чт 23 лип.", datesAsWords: false),
+            "чт 23 лип."
+        )
+    }
+
+    // MARK: - build 190, фікс 2: час ГГ:ХХ словами
+
+    func testTimeHHMMNormalizesToUkrainianWords() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("17:01"),
+            "сімнадцята година одна хвилина"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("09:00"),
+            "дев'ята година рівно"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("17:05"),
+            "сімнадцята година п'ять хвилин"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("00:22"),
+            "нульова година двадцять дві хвилини"
+        )
+    }
+
+    func testTimeLikeRatiosWithNonTwoDigitMinutesAreNotTouched() {
+        // «3:1» — рахунок, а не час: хвилини мають бути рівно 2 цифри.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Рахунок 3:1."),
+            "Рахунок 3:1."
+        )
+    }
+
+    // MARK: - build 190, фікс 3: латинські абревіатури по буквах
+
+    func testLatinAllCapsAbbreviationsWrapInCharacterSayAs() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Увімкни VPN."),
+            #"Увімкни <say-as interpret-as="characters">VPN</say-as>."#
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Мережа LTE недоступна."),
+            #"Мережа <say-as interpret-as="characters">LTE</say-as> недоступна."#
+        )
+    }
+
+    func testRomanNumeralsAreNotWrappedAsLatinAbbreviations() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Розділ III готовий."),
+            "Розділ III готовий."
+        )
+    }
+
+    func testLatinAbbreviationsWithDigitsAreNotTouched() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Стандарт 4G і iOS26 тут."),
+            "Стандарт 4G і iOS26 тут."
+        )
+    }
+
+    // MARK: - build 190, фікс 4: «плюс» для номерів з 380 без явного «+»
+
+    func testBarePhoneNumbersStartingWith380GetImplicitPlus() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон 380671234567."),
+            "Телефон плюс три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
+        )
+        // Явний «+» і далі працює так само, як раніше (build 187).
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380671234567."),
+            "Телефон плюс три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
+        )
+    }
 }

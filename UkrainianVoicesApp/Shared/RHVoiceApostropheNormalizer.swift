@@ -66,7 +66,12 @@ enum RHVoiceApostropheNormalizer {
 
     private static func normalizeTextSegment(_ text: String, datesAsWords: Bool = true) -> String {
         let withDates = datesAsWords ? normalizeDates(in: normalizeText(text)) : normalizeText(text)
-        return normalizeNumbers(in: normalizePhones(in: withDates))
+        // Час має бути розібраний ДО normalizeNumbers, інакше «17» і «01»
+        // з «17:01» будуть з'їдені як окремі числа ще до того, як ми
+        // побачимо двокрапку між ними.
+        let withTime = normalizeTime(in: withDates)
+        let withNumbers = normalizeNumbers(in: normalizePhones(in: withTime))
+        return normalizeLatinAbbreviations(in: withNumbers)
     }
 
     private static func spokenStandaloneApostropheName(for text: String) -> String? {
@@ -172,6 +177,33 @@ enum RHVoiceApostropheNormalizer {
         "нд": "неділя"
     ]
 
+    // Скорочення місяців з екрана блокування iOS 26 («чт 23 лип.») → повна
+    // назва в родовому відмінку. Значення словника — і є повні назви, тож
+    // ними ж перевіряємо «вже повну» назву місяця (родовий відмінок).
+    private static let monthAbbreviations: [String: String] = [
+        "січ": "січня",
+        "лют": "лютого",
+        "бер": "березня",
+        "квіт": "квітня",
+        "трав": "травня",
+        "черв": "червня",
+        "лип": "липня",
+        "серп": "серпня",
+        "вер": "вересня",
+        "жовт": "жовтня",
+        "лист": "листопада",
+        "груд": "грудня"
+    ]
+
+    private static let monthTokenAlternation = #"(?:січ|лют|бер|квіт|трав|черв|лип|серп|вер|жовт|лист|груд|січня|лютого|березня|квітня|травня|червня|липня|серпня|вересня|жовтня|листопада|грудня)"#
+
+    private static func monthGenitiveName(_ token: String) -> String? {
+        let lower = token.lowercased()
+        if let full = monthAbbreviations[lower] { return full }
+        if monthAbbreviations.values.contains(lower) { return lower }
+        return nil
+    }
+
     private static func normalizeDates(in text: String) -> String {
         // iOS 26 VoiceOver віддає дати з ОЗВУЧЕНИМИ крапками: «10 крапка 07 крапка 2026»
         // (крапки замінені словом ще ДО синтезатора — доведено логом пристрою 2026-07-21).
@@ -188,12 +220,23 @@ enum RHVoiceApostropheNormalizer {
             weekdayDateMatchToWords(match, in: source)
         }
 
-        return replacingMatches(
+        let withDottedDates = replacingMatches(
             in: withVerbalizedDots,
             pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
             options: [.caseInsensitive]
         ) { match, source in
             weekdayDateMatchToWords(match, in: source)
+        }
+
+        // Екран блокування: «чт 23 лип.», «23 лип.», «чт, 23 лип.», «23 лип. 2026».
+        // Рік опційний; місяць — скорочення (з опційною крапкою) або повна назва
+        // в родовому відмінку.
+        return replacingMatches(
+            in: withDottedDates,
+            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+("# + monthTokenAlternation + #")\.?(?![\p{L}])(?:\s+([1-2][0-9]{3}))?(?![\p{L}\p{N}])"#,
+            options: [.caseInsensitive]
+        ) { match, source in
+            weekdayMonthAbbrevDateMatchToWords(match, in: source)
         }
     }
 
@@ -216,11 +259,38 @@ enum RHVoiceApostropheNormalizer {
         return dateWords
     }
 
+    private static func weekdayMonthAbbrevDateMatchToWords(_ match: NSTextCheckingResult, in text: String) -> String? {
+        guard
+            let dayRange = Range(match.range(at: 2), in: text),
+            let monthRange = Range(match.range(at: 3), in: text),
+            let day = Int(String(text[dayRange])),
+            (1...31).contains(day),
+            let dayWords = dayOrdinalNeuter(day),
+            let monthGenitive = monthGenitiveName(String(text[monthRange]))
+        else { return nil }
+
+        var result = "\(dayWords) \(monthGenitive)"
+
+        if match.range(at: 4).location != NSNotFound,
+           let yearRange = Range(match.range(at: 4), in: text),
+           let year = Int(String(text[yearRange])),
+           let yearWords = yearOrdinalGenitive(year) {
+            result += " \(yearWords) року"
+        }
+
+        if match.range(at: 1).location != NSNotFound,
+           let weekdayRange = Range(match.range(at: 1), in: text),
+           let weekdayName = weekdayNames[String(text[weekdayRange]).lowercased()] {
+            return "\(weekdayName), \(result)"
+        }
+        return result
+    }
+
     private static func normalizePhones(in text: String) -> String {
         // Телефон у звичайному тексті: «+» і 7+ цифр (з пробілами/дефісами/дужками).
         // Без цього правила суцільний «+380671232323» потрапляв у правило великих
         // чисел і читався мільйонами (баг Даші, build 187).
-        replacingMatches(
+        let withPlusPrefixed = replacingMatches(
             in: text,
             pattern: #"(?<![\p{L}\p{N}])\+[0-9][0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
             options: []
@@ -229,6 +299,19 @@ enum RHVoiceApostropheNormalizer {
             let content = String(source[range])
             guard content.filter(\.isNumber).count >= 7 else { return nil }
             return telephoneDigitsToWords(content)
+        }
+
+        // На iOS 26 VoiceOver подеколи віддає номер з кодом 380 БЕЗ «+» (тестер
+        // Даниїл). Той самий номер має звучати з «плюс» на початку, як і явний «+380…».
+        return replacingMatches(
+            in: withPlusPrefixed,
+            pattern: #"(?<![\p{L}\p{N}+])380[0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
+            options: []
+        ) { match, source in
+            guard let range = Range(match.range, in: source) else { return nil }
+            let content = String(source[range])
+            guard content.filter(\.isNumber).count >= 10 else { return nil }
+            return telephoneDigitsToWords("+" + content)
         }
     }
 
@@ -475,6 +558,69 @@ enum RHVoiceApostropheNormalizer {
         let denominator = fractionalDenominatorName(digitCount: fractionPart.count, value: fractionValue)
 
         return "\(integerWords) \(wholePartName) \(fractionWords) \(denominator)"
+    }
+
+    private static func normalizeTime(in text: String) -> String {
+        // ГГ:ХХ, ГГ 0-23, ХХ рівно 2 цифри (інакше це не час, напр. рахунок «3:1»).
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}:])([0-9]{1,2}):([0-9]{2})(?![\p{L}\p{N}:])"#,
+            options: []
+        ) { match, source in
+            guard
+                let hourRange = Range(match.range(at: 1), in: source),
+                let minuteRange = Range(match.range(at: 2), in: source),
+                let hour = Int(String(source[hourRange])),
+                let minute = Int(String(source[minuteRange])),
+                (0...23).contains(hour),
+                (0...59).contains(minute),
+                let hourWords = hourOrdinalFeminine(hour)
+            else { return nil }
+
+            if minute == 0 {
+                return "\(hourWords) година рівно"
+            }
+
+            let minuteWords = integerToWords(minute, feminineLastGroup: true)
+            let minuteNoun = nounForm(for: minute, one: "хвилина", few: "хвилини", many: "хвилин")
+            return "\(hourWords) година \(minuteWords) \(minuteNoun)"
+        }
+    }
+
+    private static func hourOrdinalFeminine(_ hour: Int) -> String? {
+        let names: [Int: String] = [
+            0: "нульова", 1: "перша", 2: "друга", 3: "третя", 4: "четверта",
+            5: "п'ята", 6: "шоста", 7: "сьома", 8: "восьма", 9: "дев'ята",
+            10: "десята", 11: "одинадцята", 12: "дванадцята", 13: "тринадцята",
+            14: "чотирнадцята", 15: "п'ятнадцята", 16: "шістнадцята", 17: "сімнадцята",
+            18: "вісімнадцята", 19: "дев'ятнадцята", 20: "двадцята"
+        ]
+        if let name = names[hour] { return name }
+
+        guard (21...23).contains(hour) else { return nil }
+        let units: [Int: String] = [1: "перша", 2: "друга", 3: "третя"]
+        guard let unit = units[hour % 10] else { return nil }
+        return "двадцять \(unit)"
+    }
+
+    // Латинські ВЕЛИКІ абревіатури (VPN, LTE) — по буквах через наявний
+    // EnglishLetter у spell.foma, а не спробою прочитати як слово (build 190).
+    private static func normalizeLatinAbbreviations(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"\b[A-Z]{2,}\b"#,
+            options: []
+        ) { match, source in
+            guard let range = Range(match.range, in: source) else { return nil }
+            let token = String(source[range])
+            guard !isPureRomanNumeralToken(token) else { return nil }
+            return #"<say-as interpret-as="characters">"# + token + "</say-as>"
+        }
+    }
+
+    private static func isPureRomanNumeralToken(_ token: String) -> Bool {
+        let romanChars = Set("IVXLCDM")
+        return !token.isEmpty && token.allSatisfy { romanChars.contains($0) }
     }
 
     private static func hasDigitSeparator(in text: String) -> Bool {
