@@ -4,6 +4,9 @@
 <dict>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
+	<!-- Вихідні з'єднання: завантаження голосів додаткових мов з GitHub-релізу. -->
+	<key>com.apple.security.network.client</key>
+	<true/>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared</string>

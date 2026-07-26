@@ -97,6 +97,9 @@ struct UkrainianVoicesApp: App {
     #endif
 
     init() {
+        // Кеш завантажених голосів: щоб voiceCatalog бачив англійські голоси
+        // і в процесі застосунку (головний список, preview).
+        RHVoiceDownloadedVoicesCache.shared.start()
         RHVoiceVoiceRegistrationRefresher.refreshIfNeeded()
         #if os(iOS) && DEBUG
         let version = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"

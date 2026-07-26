@@ -102,6 +102,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         // through the App Group snapshot cache.
         rhLog("EXT_DIAG synthesizer init")
         self.sharedSettingsCache.start()
+        RHVoiceDownloadedVoicesCache.shared.start()
         self.startEngineWarmup()
     }
 
@@ -123,8 +124,21 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { Self.staticVoices }
+        get { Self.staticVoices + Self.downloadedProviderVoices() }
         set { }
+    }
+
+    /// Завантажені голоси (напр. англійські) — з кешу, без файлового I/O
+    /// на цьому шляху (система може питати speechVoices часто).
+    private static func downloadedProviderVoices() -> [AVSpeechSynthesisProviderVoice] {
+        RHVoiceDownloadedVoicesCache.shared.currentVoices().map { descriptor in
+            AVSpeechSynthesisProviderVoice(
+                name: descriptor.name,
+                identifier: descriptor.identifier,
+                primaryLanguages: [descriptor.language],
+                supportedLanguages: [descriptor.language]
+            )
+        }
     }
 
     // MARK: - Render (exactly like eSpeak)
@@ -468,10 +482,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             var callHostBlock: CallHostBlock? { get { nil } set {} }
             func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
                 if message["initHost"] as? Bool == true {
+                    let voices = UkrainianSpeechSynthesizer.staticVoices + UkrainianSpeechSynthesizer.downloadedProviderVoices()
                     return [
-                        "voiceIds": UkrainianSpeechSynthesizer.staticVoices.map(\.identifier),
-                        "voiceNames": UkrainianSpeechSynthesizer.staticVoices.map(\.name),
-                        "primaryLanguages": UkrainianSpeechSynthesizer.staticVoices.map { $0.primaryLanguages.first ?? "uk-UA" }
+                        "voiceIds": voices.map(\.identifier),
+                        "voiceNames": voices.map(\.name),
+                        "primaryLanguages": voices.map { $0.primaryLanguages.first ?? "uk-UA" }
                     ]
                 }
                 return [:]

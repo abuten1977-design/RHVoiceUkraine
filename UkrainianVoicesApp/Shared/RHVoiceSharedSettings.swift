@@ -31,12 +31,20 @@ enum RHVoiceSharedSettings {
         Set(voiceCatalog.map(\.identifier))
     }
 
-    static let voiceCatalog: [RHVoiceVoiceDescriptor] = [
+    /// Вбудовані голоси (дані в бандлі). Завантажені голоси інших мов
+    /// додаються динамічно — див. voiceCatalog.
+    static let builtInVoiceCatalog: [RHVoiceVoiceDescriptor] = [
         .init(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol", language: "uk-UA", profileName: "Anatol", sampleText: "Привіт! Це тест голосу Анатол."),
         .init(name: "Marianna", identifier: "com.rhvoice.UkrainianVoices.marianna", language: "uk-UA", profileName: "Marianna", sampleText: "Привіт! Це тест голосу Маріанна."),
         .init(name: "Natalia", identifier: "com.rhvoice.UkrainianVoices.natalia", language: "uk-UA", profileName: "Natalia", sampleText: "Привіт! Це тест голосу Наталія."),
         .init(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr", language: "uk-UA", profileName: "Volodymyr", sampleText: "Привіт! Це тест голосу Володимир.")
     ]
+
+    /// Повний каталог: вбудовані + завантажені (через кеш, без файлового I/O
+    /// на гарячому шляху — кеш оновлюється асинхронно за Darwin-нотифікацією).
+    static var voiceCatalog: [RHVoiceVoiceDescriptor] {
+        builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoices()
+    }
 }
 
 enum RHVoiceDarwinNotifications {

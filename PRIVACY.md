@@ -15,8 +15,14 @@
 третім особам жодних персональних даних.
 
 ### Робота офлайн
-Синтез мовлення відбувається **повністю локально** на вашому пристрої. Застосунок **не
-використовує інтернет** і не надсилає текст, який озвучується, нікуди за межі пристрою.
+Синтез мовлення відбувається **повністю локально** на вашому пристрої. Застосунок не надсилає
+текст, який озвучується, нікуди за межі пристрою.
+
+### Завантаження додаткових голосів
+Інтернет використовується лише для одного: якщо ви самі натиснете «Завантажити» для голосу
+додаткової мови (наприклад, англійської), застосунок скачає файли цього голосу з нашого
+відкритого репозиторію на GitHub. При цьому передається звичайний запит на завантаження файлу —
+без жодних персональних даних. Без вашої дії застосунок до інтернету не звертається.
 
 ### Текст для озвучення
 Текст, який VoiceOver передає на озвучення, обробляється лише в пам'яті пристрою для синтезу
@@ -53,8 +59,14 @@ VoiceOver screen reader.
 developer or any third party.
 
 ### Offline operation
-Speech synthesis happens **entirely locally** on your device. The app **does not use the internet**
-and does not send the text it speaks anywhere off the device.
+Speech synthesis happens **entirely locally** on your device. The app does not send the text it
+speaks anywhere off the device.
+
+### Downloading additional voices
+The internet is used for one purpose only: if you explicitly tap "Download" for a voice of an
+additional language (e.g. English), the app downloads that voice's files from our public GitHub
+repository. This is a plain file download request carrying no personal data. Without your action
+the app never accesses the internet.
 
 ### Text to be spoken
 Text passed by VoiceOver for synthesis is processed only in device memory to produce audio and is

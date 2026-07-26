@@ -8,6 +8,11 @@ options:
 packages:
   RHVoiceCore:
     path: ../RHVoiceCore
+  # Розпакування zip-архівів завантажуваних голосів (MIT). Потрібен лише
+  # app-таргетам — extension нічого не завантажує.
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation
+    from: "0.9.19"
 
 targets:
   RHVoiceKit:
@@ -152,9 +157,10 @@ targets:
       - target: UkrainianVoicesExtension
       - package: RHVoiceCore
         product: RHVoiceBridge
+      - package: ZIPFoundation
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
-    
+
   UkrainianVoicesExtension:
     type: app-extension
     platform: iOS
@@ -251,6 +257,7 @@ targets:
         embed: true
       - package: RHVoiceCore
         product: RHVoiceBridge
+      - package: ZIPFoundation
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
 
@@ -314,12 +321,14 @@ targets:
       - path: Shared/RHVoiceApostropheNormalizer.swift
       - path: Shared/RHVoiceSilenceAnalyzer.swift
       - path: Shared/RHVoiceSharedSettings.swift
+      - path: Shared/RHVoiceDownloadableVoices.swift
       - path: Shared/PersonalUserDictionary.swift
       - path: Tests/RHVoicePipelineSplitterTests.swift
       - path: Tests/RHVoiceApostropheNormalizerTests.swift
       - path: Tests/RHVoiceSilenceAnalyzerTests.swift
       - path: Tests/RHVoiceSharedSettingsSnapshotCacheTests.swift
       - path: Tests/PersonalUserDictionaryTests.swift
+      - path: Tests/RHVoiceDownloadableVoicesTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoicePipelineSplitterTests

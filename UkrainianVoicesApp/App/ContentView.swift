@@ -892,6 +892,7 @@ private func fourCharString(_ code: OSType) -> String {
 
 struct ContentView: View {
     @StateObject private var model = ContentViewModel()
+    @StateObject private var voiceDownloadManager = VoiceDownloadManager()
 
     var body: some View {
         #if os(macOS)
@@ -919,6 +920,7 @@ struct ContentView: View {
 
                 Section {
                     personalDictionaryLink
+                    downloadableLanguagesLink
                 }
 
                 readingSection
@@ -1007,6 +1009,12 @@ struct ContentView: View {
                 Divider()
 
                 personalDictionaryLink
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                Divider()
+
+                downloadableLanguagesLink
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
 
@@ -1169,6 +1177,16 @@ struct ContentView: View {
         }
         .accessibilityLabel("Мій словник")
         .accessibilityHint("Відкрити особистий словник вимови.")
+    }
+
+    private var downloadableLanguagesLink: some View {
+        NavigationLink {
+            DownloadableLanguagesView(downloadManager: voiceDownloadManager)
+        } label: {
+            Label("Мови", systemImage: "globe")
+        }
+        .accessibilityLabel("Мови")
+        .accessibilityHint("Українська вбудована; голоси інших мов можна завантажити.")
     }
 
     private var howToLink: some View {
