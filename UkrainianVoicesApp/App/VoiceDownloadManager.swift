@@ -171,6 +171,14 @@ final class VoiceDownloadManager: ObservableObject {
         refreshInstalled()
         RHVoiceDownloadedVoicesCache.shared.refreshAsync()
         RHVoiceDarwinNotifications.post(RHVoiceDownloadableVoices.downloadedVoicesChangedNotificationName)
+        // Файл уже атомарно перенесено до App Group у performDownload().
+        // Лише після синхронного refreshInstalled() повідомляємо iOS, щоб
+        // speech provider не отримав запит до появи нового каталогу на диску.
+        NSLog(
+            "VOICE_CATALOG_DIAG app=update requested installed=%d ids=%@",
+            installedVoiceIds.count,
+            installedVoiceIds.sorted().joined(separator: ",")
+        )
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
         NotificationCenter.default.post(name: RHVoiceDownloadableVoices.inProcessListChangedNotification, object: nil)
         statusMessage = message

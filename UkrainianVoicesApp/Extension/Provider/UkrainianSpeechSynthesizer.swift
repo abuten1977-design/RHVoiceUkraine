@@ -132,7 +132,26 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     /// кеша (обмежено таймаутом) — система питає speechVoices одразу після
     /// запуску extension, і без цього отримувала порожній список (баг 191).
     private static func downloadedProviderVoices() -> [AVSpeechSynthesisProviderVoice] {
-        RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad().map { descriptor in
+        #if os(iOS)
+        // iOS може тримати extension живим ще з часу, коли голос не був
+        // завантажений. Для системного запиту потрібен актуальний каталог, а
+        // не старий process-local cache. Скан малий і виконується лише коли
+        // система оновлює список голосів, не на аудіо-рендер потоці.
+        let descriptors = RHVoiceDownloadableVoices.scanInstalledVoices()
+        let groupAvailable = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID
+        ) != nil
+        NSLog(
+            "VOICE_CATALOG_DIAG source=direct-ios group=%d count=%d ids=%@",
+            groupAvailable ? 1 : 0,
+            descriptors.count,
+            descriptors.map(\.identifier).joined(separator: ",")
+        )
+        #else
+        let descriptors = RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
+        #endif
+
+        return descriptors.map { descriptor in
             AVSpeechSynthesisProviderVoice(
                 name: descriptor.name,
                 identifier: descriptor.identifier,
