@@ -13,6 +13,9 @@ enum RHVoiceDownloadableVoices {
     /// Слухають: обидва мости RHVoiceEngine (переініціалізація движка)
     /// і кеш списку голосів у extension.
     static let downloadedVoicesChangedNotificationName = "com.rhvoice.UkrainianVoices.downloadedVoicesChanged"
+    /// Внутрішньопроцесна нотифікація для UI застосунку: оновити список голосів
+    /// на головному екрані одразу після download/delete (без перезапуску).
+    static let inProcessListChangedNotification = Notification.Name("RHVoiceDownloadedVoicesListChanged")
 
     /// name= із voice.info → BCP-47 код для AVSpeechSynthesisProviderVoice.
     static let engineLanguageToBCP47: [String: String] = [
@@ -117,6 +120,7 @@ final class RHVoiceDownloadedVoicesCache {
     private let lock = NSLock()
     private var cached: [RHVoiceVoiceDescriptor] = []
     private var started = false
+    private var hasLoadedOnce = false
 
     func start() {
         lock.lock()
@@ -148,12 +152,38 @@ final class RHVoiceDownloadedVoicesCache {
         return cached
     }
 
+    /// Перше звернення чекає на реальний скан (обмежено timeout), інакше система
+    /// встигає спитати speechVoices ДО завершення асинхронного завантаження кеша
+    /// і «не бачить» завантажені голоси (корінь бага build 191). Далі — без
+    /// блокувань: на зависшому контейнері (macOS 26) wait закінчується таймаутом
+    /// і повертається останнє відоме значення.
+    func currentVoicesEnsuringFirstLoad(timeout: TimeInterval = 0.3) -> [RHVoiceVoiceDescriptor] {
+        lock.lock()
+        let loaded = hasLoadedOnce
+        lock.unlock()
+        guard !loaded else { return currentVoices() }
+
+        let semaphore = DispatchSemaphore(value: 0)
+        queue.async { [weak self] in
+            guard let self else { semaphore.signal(); return }
+            let voices = RHVoiceDownloadableVoices.scanInstalledVoices()
+            self.lock.lock()
+            self.cached = voices
+            self.hasLoadedOnce = true
+            self.lock.unlock()
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + timeout)
+        return currentVoices()
+    }
+
     func refreshAsync() {
         queue.async { [weak self] in
             guard let self else { return }
             let voices = RHVoiceDownloadableVoices.scanInstalledVoices()
             self.lock.lock()
             self.cached = voices
+            self.hasLoadedOnce = true
             self.lock.unlock()
         }
     }

@@ -40,10 +40,11 @@ enum RHVoiceSharedSettings {
         .init(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr", language: "uk-UA", profileName: "Volodymyr", sampleText: "Привіт! Це тест голосу Володимир.")
     ]
 
-    /// Повний каталог: вбудовані + завантажені (через кеш, без файлового I/O
-    /// на гарячому шляху — кеш оновлюється асинхронно за Darwin-нотифікацією).
+    /// Повний каталог: вбудовані + завантажені. Перше звернення чекає перший
+    /// скан кеша (обмежено таймаутом — інакше система/extension отримує список
+    /// без завантажених голосів), далі — лише кешоване значення без I/O.
     static var voiceCatalog: [RHVoiceVoiceDescriptor] {
-        builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoices()
+        builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
     }
 }
 

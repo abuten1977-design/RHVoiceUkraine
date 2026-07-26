@@ -141,7 +141,9 @@ private let acceleratorPresets: [AcceleratorPreset] = [
     .init(title: "Дуже швидко", multiplier: 1.5)
 ]
 
-private let voiceCatalog: [VoiceDefinition] = RHVoiceSharedSettings.voiceCatalog.map(VoiceDefinition.init)
+// Каталог голосів живе в ContentViewModel.voiceCatalog: він динамічний —
+// завантажені голоси (напр. англійські) з'являються поруч з українськими
+// одразу після download, без перезапуску застосунку.
 
 @MainActor
 private final class PreviewPlaybackController {
@@ -240,6 +242,7 @@ private final class PreviewPlaybackController {
 
 @MainActor
 private final class ContentViewModel: ObservableObject {
+    @Published var voiceCatalog: [VoiceDefinition]
     @Published var rate: Double
     @Published var volume: Double
     @Published var speedMultiplier: Double
@@ -278,6 +281,8 @@ private final class ContentViewModel: ObservableObject {
 
     init() {
         let general = RHVoiceSpeechSettings.recommended
+        let initialCatalog = RHVoiceSharedSettings.builtInVoiceCatalog.map(VoiceDefinition.init)
+        self.voiceCatalog = initialCatalog
         self.rate = 0.5
         self.volume = Self.clampBaselineMultiplier(general.volume)
         self.speedMultiplier = Self.clampSpeedMultiplier(general.speedMultiplier)
@@ -298,7 +303,7 @@ private final class ContentViewModel: ObservableObject {
             dictionaryModifiedAt: nil,
             metadataModifiedAt: nil
         )
-        self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
+        self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: initialCatalog.map { voice in
             (voice.identifier, VoiceSettingsState(
                 useCustomSettings: true,
                 rate: 0.5,
@@ -311,6 +316,63 @@ private final class ContentViewModel: ObservableObject {
         })
 
         bootstrapFromDisk()
+        refreshVoiceCatalog()
+        NotificationCenter.default.addObserver(
+            forName: RHVoiceDownloadableVoices.inProcessListChangedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshVoiceCatalog()
+        }
+    }
+
+    /// Перечитує каталог (вбудовані + завантажені) у фоні: диск App Group не можна
+    /// чіпати на main (task-082). Нові завантажені голоси одразу вмикаються.
+    func refreshVoiceCatalog() {
+        Self.storageQueue.async { [weak self] in
+            let downloaded = RHVoiceDownloadableVoices.scanInstalledVoices()
+            let catalog = (RHVoiceSharedSettings.builtInVoiceCatalog + downloaded).map(VoiceDefinition.init)
+            DispatchQueue.main.async {
+                self?.applyRefreshedCatalog(catalog)
+            }
+        }
+    }
+
+    private func applyRefreshedCatalog(_ catalog: [VoiceDefinition]) {
+        let previousIds = Set(voiceCatalog.map(\.identifier))
+        let newIds = Set(catalog.map(\.identifier))
+        guard previousIds != newIds else { return }
+        voiceCatalog = catalog
+
+        var stateChanged = false
+        for voice in catalog where !previousIds.contains(voice.identifier) {
+            // Щойно завантажений голос одразу доступний, як і вбудовані.
+            if !enabledVoiceIdentifiers.contains(voice.identifier) {
+                enabledVoiceIdentifiers.insert(voice.identifier)
+                stateChanged = true
+            }
+            if voiceSettingsByIdentifier[voice.identifier] == nil {
+                voiceSettingsByIdentifier[voice.identifier] = Self.loadStoredSettings(
+                    for: voice.identifier,
+                    fallbackRate: rate,
+                    fallbackVolume: volume,
+                    fallbackSpeedMultiplier: speedMultiplier,
+                    fallbackSentencePause: sentencePause,
+                    fallbackWordGap: wordGap,
+                    fallbackPitch: pitch
+                )
+            }
+        }
+        let removedEnabled = enabledVoiceIdentifiers.filter { !newIds.contains($0) }
+        if !removedEnabled.isEmpty {
+            enabledVoiceIdentifiers.subtract(removedEnabled)
+            stateChanged = true
+        }
+        normalizeSelection()
+        if stateChanged, sharedStorageState == .ready {
+            persistVoiceState()
+            AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        }
     }
 
     private func bootstrapFromDisk() {
@@ -893,6 +955,8 @@ private func fourCharString(_ code: OSType) -> String {
 struct ContentView: View {
     @StateObject private var model = ContentViewModel()
     @StateObject private var voiceDownloadManager = VoiceDownloadManager()
+
+    private var voiceCatalog: [VoiceDefinition] { model.voiceCatalog }
 
     var body: some View {
         #if os(macOS)

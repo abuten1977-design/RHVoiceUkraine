@@ -2,6 +2,11 @@ import AVFAudio
 import CryptoKit
 import Foundation
 import ZIPFoundation
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 
 // MARK: - Манифест завантажуваних голосів
 
@@ -160,13 +165,35 @@ final class VoiceDownloadManager: ObservableObject {
     }
 
     /// Спільний фініш після download/delete: оновити кеші, повідомити движки
-    /// (обидва процеси — застосунок і extension) і систему.
+    /// (обидва процеси — застосунок і extension), систему, головний екран і
+    /// користувача screen reader'а.
     private func finishVoicesChange(message: String) {
         refreshInstalled()
         RHVoiceDownloadedVoicesCache.shared.refreshAsync()
         RHVoiceDarwinNotifications.post(RHVoiceDownloadableVoices.downloadedVoicesChangedNotificationName)
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        NotificationCenter.default.post(name: RHVoiceDownloadableVoices.inProcessListChangedNotification, object: nil)
         statusMessage = message
+        announceForScreenReader(message)
+    }
+
+    /// VoiceOver-анонс результату: без нього завершення завантаження чутно лише
+    /// якщо фокус стоїть на рядку статусу.
+    private func announceForScreenReader(_ message: String) {
+        #if os(iOS)
+        UIAccessibility.post(notification: .announcement, argument: message)
+        #else
+        if let app = NSApp {
+            NSAccessibility.post(
+                element: app,
+                notification: .announcementRequested,
+                userInfo: [
+                    .announcement: message,
+                    .priority: NSAccessibilityPriorityLevel.high.rawValue
+                ]
+            )
+        }
+        #endif
     }
 
     // MARK: Робота з файлами (поза MainActor)

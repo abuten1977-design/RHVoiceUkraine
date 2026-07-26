@@ -128,10 +128,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         set { }
     }
 
-    /// Завантажені голоси (напр. англійські) — з кешу, без файлового I/O
-    /// на цьому шляху (система може питати speechVoices часто).
+    /// Завантажені голоси (напр. англійські). Перший виклик чекає перший скан
+    /// кеша (обмежено таймаутом) — система питає speechVoices одразу після
+    /// запуску extension, і без цього отримувала порожній список (баг 191).
     private static func downloadedProviderVoices() -> [AVSpeechSynthesisProviderVoice] {
-        RHVoiceDownloadedVoicesCache.shared.currentVoices().map { descriptor in
+        RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad().map { descriptor in
             AVSpeechSynthesisProviderVoice(
                 name: descriptor.name,
                 identifier: descriptor.identifier,

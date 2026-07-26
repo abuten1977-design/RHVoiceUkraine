@@ -89,7 +89,7 @@ struct DownloadableLanguageVoicesView: View {
     var body: some View {
         List {
             Section {
-                Text("Завантажені голоси з'являться у VoiceOver так само, як українські. Після завантаження увімкніть голос у налаштуваннях VoiceOver.")
+                Text("Завантажений голос одразу з'являється на головному екрані поруч з українськими (там його можна вмикати, вимикати і слухати зразок) та у списку голосів VoiceOver.")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
@@ -123,6 +123,9 @@ struct DownloadableLanguageVoicesView: View {
         }
     }
 
+    // Кнопка — ОКРЕМИЙ accessibility-елемент (не .combine на весь рядок):
+    // комбінований рядок із кнопкою всередині у SwiftUI може не активувати дію
+    // подвійним тапом VoiceOver (ризик із чек-листа доступності build 191).
     @ViewBuilder
     private func voiceRow(_ voice: ManifestVoice) -> some View {
         HStack {
@@ -132,6 +135,8 @@ struct DownloadableLanguageVoicesView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(rowAccessibilityLabel(voice))
 
             Spacer()
 
@@ -146,15 +151,15 @@ struct DownloadableLanguageVoicesView: View {
                 }
                 .foregroundColor(.red)
                 .accessibilityLabel("Видалити голос \(voice.displayName)")
+                .accessibilityHint("Голос зникне з VoiceOver, його можна буде завантажити знову.")
             } else {
                 Button("Завантажити") {
                     downloadManager.download(voice, language: language)
                 }
                 .accessibilityLabel("Завантажити голос \(voice.displayName), \(voice.sizeMegabytesText)")
+                .accessibilityHint("Після завантаження голос з'явиться у списку голосів і у VoiceOver.")
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(rowAccessibilityLabel(voice))
     }
 
     private func rowAccessibilityLabel(_ voice: ManifestVoice) -> String {
