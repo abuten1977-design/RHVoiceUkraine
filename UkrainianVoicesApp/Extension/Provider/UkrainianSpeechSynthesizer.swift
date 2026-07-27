@@ -124,31 +124,19 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { Self.staticVoices + Self.downloadedProviderVoices() }
+        get { Self.publishedProviderVoices() }
         set { }
     }
 
-    /// Завантажені голоси (напр. англійські). Перший виклик чекає перший скан
-    /// кеша (обмежено таймаутом) — система питає speechVoices одразу після
-    /// запуску extension, і без цього отримувала порожній список (баг 191).
-    private static func downloadedProviderVoices() -> [AVSpeechSynthesisProviderVoice] {
+    /// System enumeration must use the catalog durably published by the app;
+    /// scanning the downloaded-voice tree here lost dynamic voices on iPhone.
+    private static func publishedProviderVoices() -> [AVSpeechSynthesisProviderVoice] {
         #if os(iOS)
-        // iOS може тримати extension живим ще з часу, коли голос не був
-        // завантажений. Для системного запиту потрібен актуальний каталог, а
-        // не старий process-local cache. Скан малий і виконується лише коли
-        // система оновлює список голосів, не на аудіо-рендер потоці.
-        let descriptors = RHVoiceDownloadableVoices.scanInstalledVoices()
-        let groupAvailable = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID
-        ) != nil
-        NSLog(
-            "VOICE_CATALOG_DIAG source=direct-ios group=%d count=%d ids=%@",
-            groupAvailable ? 1 : 0,
-            descriptors.count,
-            descriptors.map(\.identifier).joined(separator: ",")
-        )
+        let catalog = RHVoicePublishedVoiceCatalog.loadPublished()
+        let descriptors = catalog?.descriptors ?? RHVoiceSharedSettings.builtInVoiceCatalog
+        NSLog("VOICE_CATALOG_DIAG source=published-ios revision=%d count=%d ids=%@", catalog?.revision ?? 0, descriptors.count, descriptors.map(\.identifier).joined(separator: ","))
         #else
-        let descriptors = RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
+        let descriptors = RHVoiceSharedSettings.builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
         #endif
 
         return descriptors.map { descriptor in
@@ -502,7 +490,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             var callHostBlock: CallHostBlock? { get { nil } set {} }
             func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
                 if message["initHost"] as? Bool == true {
-                    let voices = UkrainianSpeechSynthesizer.staticVoices + UkrainianSpeechSynthesizer.downloadedProviderVoices()
+                    let voices = UkrainianSpeechSynthesizer.publishedProviderVoices()
                     return [
                         "voiceIds": voices.map(\.identifier),
                         "voiceNames": voices.map(\.name),

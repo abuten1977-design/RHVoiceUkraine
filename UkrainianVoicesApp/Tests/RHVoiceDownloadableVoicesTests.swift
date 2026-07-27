@@ -94,4 +94,26 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
         }
         XCTAssertEqual(Array(catalog.prefix(builtIn.count)), builtIn, "Вбудовані голоси мають іти першими")
     }
+
+    func testPublishedCatalogRoundTripIncludesEnglishVoice() throws {
+        let ben = RHVoiceVoiceDescriptor(
+            name: "Ben",
+            identifier: "com.rhvoice.UkrainianVoices.bdl",
+            language: "en-US",
+            profileName: "Bdl",
+            sampleText: "Hello"
+        )
+        let catalog = try RHVoicePublishedVoiceCatalog.make(downloaded: [ben], revision: 7)
+        let url = tempRoot.appendingPathComponent("PublishedVoiceCatalog.json")
+        try RHVoicePublishedVoiceCatalog.save(catalog, to: url)
+
+        XCTAssertEqual(RHVoicePublishedVoiceCatalog.load(from: url), catalog)
+        XCTAssertEqual(RHVoicePublishedVoiceCatalog.load(from: url)?.descriptors.last, ben)
+        XCTAssertTrue(catalog.identifiers.contains("com.rhvoice.UkrainianVoices.bdl"))
+    }
+
+    func testPublishedCatalogRejectsDuplicateIdentifier() {
+        let duplicate = RHVoiceSharedSettings.builtInVoiceCatalog[0]
+        XCTAssertThrowsError(try RHVoicePublishedVoiceCatalog.make(downloaded: [duplicate]))
+    }
 }

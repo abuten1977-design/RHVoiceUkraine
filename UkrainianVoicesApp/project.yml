@@ -322,6 +322,7 @@ targets:
       - path: Shared/RHVoiceSilenceAnalyzer.swift
       - path: Shared/RHVoiceSharedSettings.swift
       - path: Shared/RHVoiceDownloadableVoices.swift
+      - path: Shared/RHVoicePublishedVoiceCatalog.swift
       - path: Shared/PersonalUserDictionary.swift
       - path: Tests/RHVoicePipelineSplitterTests.swift
       - path: Tests/RHVoiceApostropheNormalizerTests.swift

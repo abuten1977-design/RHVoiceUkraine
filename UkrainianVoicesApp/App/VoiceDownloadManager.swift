@@ -171,15 +171,17 @@ final class VoiceDownloadManager: ObservableObject {
         refreshInstalled()
         RHVoiceDownloadedVoicesCache.shared.refreshAsync()
         RHVoiceDarwinNotifications.post(RHVoiceDownloadableVoices.downloadedVoicesChangedNotificationName)
-        // Файл уже атомарно перенесено до App Group у performDownload().
-        // Лише після синхронного refreshInstalled() повідомляємо iOS, щоб
-        // speech provider не отримав запит до появи нового каталогу на диску.
-        NSLog(
-            "VOICE_CATALOG_DIAG app=update requested installed=%d ids=%@",
-            installedVoiceIds.count,
-            installedVoiceIds.sorted().joined(separator: ",")
-        )
-        AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        // Publish a durable, read-back-verified catalog before iOS asks the
+        // extension for voices. The extension must not discover downloads on
+        // the system enumeration path.
+        do {
+            let catalog = try RHVoicePublishedVoiceCatalog.publishInstalledVoices()
+            NSLog("VOICE_CATALOG_DIAG app=published revision=%d count=%d ids=%@", catalog.revision, catalog.descriptors.count, catalog.identifiers.joined(separator: ","))
+            AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        } catch {
+            statusMessage = "Не вдалося опублікувати список голосів: \(error.localizedDescription)"
+            return
+        }
         NotificationCenter.default.post(name: RHVoiceDownloadableVoices.inProcessListChangedNotification, object: nil)
         statusMessage = message
         announceForScreenReader(message)

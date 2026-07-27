@@ -100,6 +100,14 @@ struct UkrainianVoicesApp: App {
         // Кеш завантажених голосів: щоб voiceCatalog бачив англійські голоси
         // і в процесі застосунку (головний список, preview).
         RHVoiceDownloadedVoicesCache.shared.start()
+        #if os(iOS)
+        // Repair catalogs created by older builds too: a user may already have
+        // Ben downloaded when this build is installed.
+        if let catalog = try? RHVoicePublishedVoiceCatalog.publishInstalledVoices() {
+            NSLog("VOICE_CATALOG_DIAG app=launch-published revision=%d count=%d", catalog.revision, catalog.descriptors.count)
+            AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        }
+        #endif
         RHVoiceVoiceRegistrationRefresher.refreshIfNeeded()
         #if os(iOS) && DEBUG
         let version = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
