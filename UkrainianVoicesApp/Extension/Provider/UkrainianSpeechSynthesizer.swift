@@ -26,6 +26,12 @@ private func rhDatesAsWordsEnabled() -> Bool {
     return defaults.bool(forKey: RHVoiceSharedSettings.datesAsWordsKey)
 }
 
+private func rhTimeAsWordsEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.timeAsWordsKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey)
+}
+
 private func rhLog(_ msg: @autoclosure () -> String) {
     #if DEBUG
     let text = msg()
@@ -594,7 +600,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
-        RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml, datesAsWords: rhDatesAsWordsEnabled())
+        RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml, datesAsWords: rhDatesAsWordsEnabled(), timeAsWords: rhTimeAsWordsEnabled())
     }
 
     private static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {

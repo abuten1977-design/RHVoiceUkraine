@@ -262,6 +262,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var debugLogShareURL: URL?
     @Published var extendedDiagnosticsEnabled: Bool = false
     @Published var datesAsWordsEnabled: Bool = true
+    @Published var timeAsWordsEnabled: Bool = true
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
     @Published var sharedStorageState: SharedStorageState = .loading
@@ -678,6 +679,8 @@ private final class ContentViewModel: ObservableObject {
                 self?.debugLogShareURL = shareURL
                 self?.extendedDiagnosticsEnabled = extendedEnabled
                 self?.datesAsWordsEnabled = datesAsWords
+                self?.timeAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.timeAsWordsKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey) ?? true)
             }
         }
     }
@@ -691,6 +694,16 @@ private final class ContentViewModel: ObservableObject {
                 self?.setStatus(enabled
                     ? "Дати читаються словами."
                     : "Дати читаються цифрами.")
+            }
+        }
+    }
+
+    func setTimeAsWords(_ enabled: Bool) {
+        timeAsWordsEnabled = enabled
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.timeAsWordsKey)
+            DispatchQueue.main.async {
+                self?.setStatus(enabled ? "Час читається словами." : "Час читається без розгортання у слова.")
             }
         }
     }
@@ -1166,6 +1179,11 @@ struct ContentView: View {
                 Label("Читати дати словами", systemImage: "calendar")
             }
             .accessibilityHint("Увімкнено: повні дати, як-от 10.07.2026, читаються словами — «десяте липня дві тисячі двадцять шостого року». Вимкнено: дати читаються цифрами.")
+
+            Toggle(isOn: Binding(get: { model.timeAsWordsEnabled }, set: { model.setTimeAsWords($0) })) {
+                Label("Читати час словами", systemImage: "clock")
+            }
+            .accessibilityHint("Увімкнено: 17:01 читається як час словами. Вимкнено: RHVoice не розгортає запис часу у години та хвилини.")
 
             Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
                 .font(.footnote)

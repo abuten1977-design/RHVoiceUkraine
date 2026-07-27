@@ -23,6 +23,7 @@ enum RHVoiceSharedSettings {
     // «Читати дати словами»: увімкнено за замовчуванням; вимкнено — повні дати
     // лишаються цифрами (запит тестерів, build 189). Відсутність ключа = true.
     static let datesAsWordsKey = "datesAsWords"
+    static let timeAsWordsKey = "timeAsWords"
     static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
     static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
 

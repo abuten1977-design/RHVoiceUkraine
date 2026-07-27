@@ -10,7 +10,7 @@ enum RHVoiceApostropheNormalizer {
         return spokenStandaloneApostropheName(for: text)
     }
 
-    static func normalizeInTextSegments(_ ssml: String, datesAsWords: Bool = true) -> String {
+    static func normalizeInTextSegments(_ ssml: String, datesAsWords: Bool = true, timeAsWords: Bool = true) -> String {
         let withDates = datesAsWords ? normalizeSplitDateSayAsBlocks(in: ssml) : ssml
         let ssml = normalizeTelephoneSayAsBlocks(in: withDates, datesAsWords: datesAsWords)
         var output = ""
@@ -22,7 +22,7 @@ enum RHVoiceApostropheNormalizer {
             if insideTag {
                 tagSegment.append(character)
                 if character == ">" {
-                    output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords)
+                    output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords)
                     textSegment.removeAll(keepingCapacity: true)
                     output += tagSegment
                     tagSegment.removeAll(keepingCapacity: true)
@@ -37,9 +37,9 @@ enum RHVoiceApostropheNormalizer {
         }
 
         if insideTag {
-            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords) + tagSegment
+            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords) + tagSegment
         } else {
-            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords)
+            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords)
         }
         return output
     }
@@ -64,12 +64,12 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: "\u{0060}", with: engineApostrophe)
     }
 
-    private static func normalizeTextSegment(_ text: String, datesAsWords: Bool = true) -> String {
+    private static func normalizeTextSegment(_ text: String, datesAsWords: Bool = true, timeAsWords: Bool = true) -> String {
         let withDates = datesAsWords ? normalizeDates(in: normalizeText(text)) : normalizeText(text)
         // Час має бути розібраний ДО normalizeNumbers, інакше «17» і «01»
         // з «17:01» будуть з'їдені як окремі числа ще до того, як ми
         // побачимо двокрапку між ними.
-        let withTime = normalizeTime(in: withDates)
+        let withTime = timeAsWords ? normalizeTime(in: withDates) : withDates
         let withNumbers = normalizeNumbers(in: normalizePhones(in: withTime))
         return normalizeLatinAbbreviations(in: withNumbers)
     }
