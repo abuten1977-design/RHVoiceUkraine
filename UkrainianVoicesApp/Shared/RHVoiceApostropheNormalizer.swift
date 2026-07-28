@@ -298,12 +298,14 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func normalizePhones(in text: String) -> String {
-        // Телефон у звичайному тексті: «+» і 7+ цифр (з пробілами/дефісами/дужками).
+        // Телефон у звичайному тексті: один або більше явних «+» і 7+ цифр
+        // (з пробілами/дефісами/дужками). `telephoneDigitsToWords` зводить
+        // кілька реальних плюсів до одного, не лишаючи сирий символ рушію.
         // Без цього правила суцільний «+380671232323» потрапляв у правило великих
         // чисел і читався мільйонами (баг Даші, build 187).
         let withPlusPrefixed = replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}])\+[0-9][0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
+            pattern: #"(?<![\p{L}\p{N}])\++[0-9][0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
             options: []
         ) { match, source in
             guard let range = Range(match.range, in: source) else { return nil }
@@ -312,8 +314,9 @@ enum RHVoiceApostropheNormalizer {
             return telephoneDigitsToWords(content)
         }
 
-        // На iOS 26 VoiceOver подеколи віддає номер з кодом 380 БЕЗ «+» (тестер
-        // Даниїл). Той самий номер має звучати з «плюс» на початку, як і явний «+380…».
+        // Якщо iOS передала номер з кодом 380 без знака, не вигадуємо «плюс»:
+        // він міг бути озвучений системою окремо. Але сам номер лишається
+        // телефоном, тож читаємо його цифрами, а не великим числом.
         return replacingMatches(
             in: withPlusPrefixed,
             pattern: #"(?<![\p{L}\p{N}+])380[0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
@@ -322,7 +325,7 @@ enum RHVoiceApostropheNormalizer {
             guard let range = Range(match.range, in: source) else { return nil }
             let content = String(source[range])
             guard content.filter(\.isNumber).count >= 10 else { return nil }
-            return telephoneDigitsToWords("+" + content)
+            return telephoneDigitsToWords(content)
         }
     }
 

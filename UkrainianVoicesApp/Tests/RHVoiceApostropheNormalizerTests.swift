@@ -481,16 +481,21 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
-    // MARK: - build 190, фікс 4: «плюс» для номерів з 380 без явного «+»
+    // MARK: - build 197: never invent a missing phone prefix
 
-    func testBarePhoneNumbersStartingWith380GetImplicitPlus() {
+    func testPhoneNumbersStartingWith380KeepOnlyExplicitPlus() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон 380671234567."),
-            "Телефон плюс три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
+            "Телефон три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
         )
-        // Явний «+» і далі працює так само, як раніше (build 187).
+        // Явний плюс вимовляється рівно один раз.
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380671234567."),
+            "Телефон плюс три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
+        )
+        // Навіть некоректно подвоєний знак не створює два «плюс» у вимові.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон ++380671234567."),
             "Телефон плюс три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
         )
     }
