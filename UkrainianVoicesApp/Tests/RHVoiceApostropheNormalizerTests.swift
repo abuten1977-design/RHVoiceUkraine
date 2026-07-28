@@ -443,6 +443,17 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testUkrainianTimeUnitAbbreviationsExpandWithGrammar() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Залишилася 1 хв. Ще 2 год і 30 сек."),
+            "Залишилася одна хвилина. Ще дві години і тридцять секунд."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("5 хв", abbreviationsAsWords: false),
+            "5 хв"
+        )
+    }
+
     // MARK: - build 190, фікс 3: латинські абревіатури по буквах
 
     func testLatinAllCapsAbbreviationsWrapInCharacterSayAs() {

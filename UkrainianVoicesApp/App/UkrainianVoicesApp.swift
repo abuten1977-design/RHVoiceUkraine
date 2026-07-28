@@ -80,6 +80,29 @@ private enum RHVoiceVoiceRegistrationRefresher {
         defaults?.synchronize()
         #endif
     }
+
+    /// TestFlight replaces the extension before VoiceOver necessarily asks it
+    /// for voices. Re-publish once after this app version becomes active, so
+    /// the documented system refresh happens after the extension is ready.
+    static func refreshAfterActivationIfNeeded() {
+        #if os(iOS)
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+        let activeKey = "lastActiveSpeechVoiceRegistrationBuild"
+        guard defaults?.string(forKey: activeKey) != build else { return }
+        defaults?.set(build, forKey: activeKey)
+        defaults?.synchronize()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            guard let catalog = try? RHVoicePublishedVoiceCatalog.publishInstalledVoices() else {
+                NSLog("VOICE_CATALOG_DIAG app=activation-publish-failed")
+                return
+            }
+            NSLog("VOICE_CATALOG_DIAG app=activation-published revision=%d count=%d", catalog.revision, catalog.descriptors.count)
+            AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        }
+        #endif
+    }
 }
 
 // NOTE: Sentry SDK will be added after Distribution certificate is available.
@@ -87,6 +110,7 @@ private enum RHVoiceVoiceRegistrationRefresher {
 
 @main
 struct UkrainianVoicesApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     #if DEBUG
     private let isSelfTestMode = CommandLine.arguments.contains("--self-test")
     #else
@@ -138,5 +162,12 @@ struct UkrainianVoicesApp: App {
             ContentView()
             #endif
         }
+        #if os(iOS)
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                RHVoiceVoiceRegistrationRefresher.refreshAfterActivationIfNeeded()
+            }
+        }
+        #endif
     }
 }

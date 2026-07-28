@@ -24,6 +24,9 @@ enum RHVoiceSharedSettings {
     // лишаються цифрами (запит тестерів, build 189). Відсутність ключа = true.
     static let datesAsWordsKey = "datesAsWords"
     static let timeAsWordsKey = "timeAsWords"
+    // «Розгортати скорочення»: відсутність ключа = увімкнено. Це окрема
+    // зручність, не пов'язана з записом часу через двокрапку.
+    static let abbreviationsAsWordsKey = "abbreviationsAsWords"
     static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
     static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
 

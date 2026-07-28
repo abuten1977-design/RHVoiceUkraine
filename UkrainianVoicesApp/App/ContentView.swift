@@ -263,6 +263,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var extendedDiagnosticsEnabled: Bool = false
     @Published var datesAsWordsEnabled: Bool = true
     @Published var timeAsWordsEnabled: Bool = true
+    @Published var abbreviationsAsWordsEnabled: Bool = true
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
     @Published var sharedStorageState: SharedStorageState = .loading
@@ -681,6 +682,8 @@ private final class ContentViewModel: ObservableObject {
                 self?.datesAsWordsEnabled = datesAsWords
                 self?.timeAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.timeAsWordsKey) == nil
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey) ?? true)
+                self?.abbreviationsAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) ?? true)
             }
         }
     }
@@ -704,6 +707,16 @@ private final class ContentViewModel: ObservableObject {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.timeAsWordsKey)
             DispatchQueue.main.async {
                 self?.setStatus(enabled ? "Час читається словами." : "Час читається без розгортання у слова.")
+            }
+        }
+    }
+
+    func setAbbreviationsAsWords(_ enabled: Bool) {
+        abbreviationsAsWordsEnabled = enabled
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
+            DispatchQueue.main.async {
+                self?.setStatus(enabled ? "Скорочення читаються повними словами." : "Скорочення читаються без розгортання.")
             }
         }
     }
@@ -1184,6 +1197,11 @@ struct ContentView: View {
                 Label("Читати час словами", systemImage: "clock")
             }
             .accessibilityHint("Увімкнено: 17:01 читається як час словами. Вимкнено: RHVoice не розгортає запис часу у години та хвилини.")
+
+            Toggle(isOn: Binding(get: { model.abbreviationsAsWordsEnabled }, set: { model.setAbbreviationsAsWords($0) })) {
+                Label("Розгортати скорочення", systemImage: "textformat.abc")
+            }
+            .accessibilityHint("Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
 
             Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
                 .font(.footnote)

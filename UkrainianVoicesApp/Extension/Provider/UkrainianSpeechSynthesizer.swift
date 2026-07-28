@@ -32,6 +32,12 @@ private func rhTimeAsWordsEnabled() -> Bool {
     return defaults.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey)
 }
 
+private func rhAbbreviationsAsWordsEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
+}
+
 private func rhLog(_ msg: @autoclosure () -> String) {
     #if DEBUG
     let text = msg()
@@ -137,15 +143,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     /// System enumeration must use the catalog durably published by the app;
     /// scanning the downloaded-voice tree here lost dynamic voices on iPhone.
     private static func publishedProviderVoices() -> [AVSpeechSynthesisProviderVoice] {
-        #if os(iOS)
-        let catalog = RHVoicePublishedVoiceCatalog.loadPublished()
-        let descriptors = catalog?.descriptors ?? RHVoiceSharedSettings.builtInVoiceCatalog
-        NSLog("VOICE_CATALOG_DIAG source=published-ios revision=%d count=%d ids=%@", catalog?.revision ?? 0, descriptors.count, descriptors.map(\.identifier).joined(separator: ","))
-        #else
-        let descriptors = RHVoiceSharedSettings.builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
-        #endif
-
-        return descriptors.map { descriptor in
+        publishedVoiceDescriptors(logSource: true).map { descriptor in
             AVSpeechSynthesisProviderVoice(
                 name: descriptor.name,
                 identifier: descriptor.identifier,
@@ -153,6 +151,23 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 supportedLanguages: [descriptor.language]
             )
         }
+    }
+
+    /// The descriptor used for system enumeration must also resolve the
+    /// profile during rendering. Otherwise a just-downloaded English voice can
+    /// be visible in VoiceOver while the extension's directory cache is still
+    /// empty and silently falls back to Anatol.
+    private static func publishedVoiceDescriptors(logSource: Bool = false) -> [RHVoiceVoiceDescriptor] {
+        #if os(iOS)
+        let catalog = RHVoicePublishedVoiceCatalog.loadPublished()
+        let descriptors = catalog?.descriptors ?? RHVoiceSharedSettings.builtInVoiceCatalog
+        if logSource {
+            NSLog("VOICE_CATALOG_DIAG source=published-ios revision=%d count=%d ids=%@", catalog?.revision ?? 0, descriptors.count, descriptors.map(\.identifier).joined(separator: ","))
+        }
+        #else
+        let descriptors = RHVoiceSharedSettings.builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
+        #endif
+        return descriptors
     }
 
     // MARK: - Render (exactly like eSpeak)
@@ -332,10 +347,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         // Resolve voice profile name
         let profileName: String
-        if let descriptor = RHVoiceSharedSettings.voiceCatalog.first(where: { $0.identifier == voiceId }) {
+        if let descriptor = Self.publishedVoiceDescriptors().first(where: { $0.identifier == voiceId }) {
             profileName = descriptor.profileName
         } else {
-            profileName = RHVoiceSharedSettings.voiceCatalog.first!.profileName
+            profileName = RHVoiceSharedSettings.builtInVoiceCatalog.first!.profileName
+            NSLog("VOICE_CATALOG_DIAG resolve=fallback requested=%@ profile=%@", voiceId, profileName)
         }
 
         // Extract rate/volume from SSML
@@ -600,7 +616,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
-        RHVoiceApostropheNormalizer.normalizeInTextSegments(ssml, datesAsWords: rhDatesAsWordsEnabled(), timeAsWords: rhTimeAsWordsEnabled())
+        RHVoiceApostropheNormalizer.normalizeInTextSegments(
+            ssml,
+            datesAsWords: rhDatesAsWordsEnabled(),
+            timeAsWords: rhTimeAsWordsEnabled(),
+            abbreviationsAsWords: rhAbbreviationsAsWordsEnabled()
+        )
     }
 
     private static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {

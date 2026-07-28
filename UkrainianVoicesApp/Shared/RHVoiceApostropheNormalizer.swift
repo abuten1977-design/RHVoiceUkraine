@@ -10,7 +10,12 @@ enum RHVoiceApostropheNormalizer {
         return spokenStandaloneApostropheName(for: text)
     }
 
-    static func normalizeInTextSegments(_ ssml: String, datesAsWords: Bool = true, timeAsWords: Bool = true) -> String {
+    static func normalizeInTextSegments(
+        _ ssml: String,
+        datesAsWords: Bool = true,
+        timeAsWords: Bool = true,
+        abbreviationsAsWords: Bool = true
+    ) -> String {
         let withDates = datesAsWords ? normalizeSplitDateSayAsBlocks(in: ssml) : ssml
         let ssml = normalizeTelephoneSayAsBlocks(in: withDates, datesAsWords: datesAsWords)
         var output = ""
@@ -22,7 +27,7 @@ enum RHVoiceApostropheNormalizer {
             if insideTag {
                 tagSegment.append(character)
                 if character == ">" {
-                    output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords)
+                    output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords)
                     textSegment.removeAll(keepingCapacity: true)
                     output += tagSegment
                     tagSegment.removeAll(keepingCapacity: true)
@@ -37,9 +42,9 @@ enum RHVoiceApostropheNormalizer {
         }
 
         if insideTag {
-            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords) + tagSegment
+            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords) + tagSegment
         } else {
-            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords)
+            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords)
         }
         return output
     }
@@ -64,13 +69,19 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: "\u{0060}", with: engineApostrophe)
     }
 
-    private static func normalizeTextSegment(_ text: String, datesAsWords: Bool = true, timeAsWords: Bool = true) -> String {
+    private static func normalizeTextSegment(
+        _ text: String,
+        datesAsWords: Bool = true,
+        timeAsWords: Bool = true,
+        abbreviationsAsWords: Bool = true
+    ) -> String {
         let withDates = datesAsWords ? normalizeDates(in: normalizeText(text)) : normalizeText(text)
         // Час має бути розібраний ДО normalizeNumbers, інакше «17» і «01»
         // з «17:01» будуть з'їдені як окремі числа ще до того, як ми
         // побачимо двокрапку між ними.
         let withTime = timeAsWords ? normalizeTime(in: withDates) : withDates
-        let withNumbers = normalizeNumbers(in: normalizePhones(in: withTime))
+        let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withTime) : withTime
+        let withNumbers = normalizeNumbers(in: normalizePhones(in: withAbbreviations))
         return normalizeLatinAbbreviations(in: withNumbers)
     }
 
@@ -584,6 +595,41 @@ enum RHVoiceApostropheNormalizer {
             let minuteWords = integerToWords(minute, feminineLastGroup: true)
             let minuteNoun = nounForm(for: minute, one: "хвилина", few: "хвилини", many: "хвилин")
             return "\(hourWords) година \(minuteWords) \(minuteNoun)"
+        }
+    }
+
+    /// iOS frequently supplies compact duration labels such as `12 хв` and
+    /// `45 сек` (charging state, media controls). Expand only an explicit
+    /// number + Ukrainian unit so unrelated short words stay untouched.
+    private static func normalizeTimeUnitAbbreviations(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,4})[[:space:]]+(хв|год|сек)(\.)?([^\p{L}\p{N}]|$)"#,
+            options: [.caseInsensitive]
+        ) { match, source in
+            guard
+                let valueRange = Range(match.range(at: 1), in: source),
+                let unitRange = Range(match.range(at: 2), in: source),
+                let suffixRange = Range(match.range(at: 4), in: source),
+                let value = Int(String(source[valueRange]))
+            else { return nil }
+
+            let unit = String(source[unitRange]).lowercased()
+            let numberWords = integerToWords(value, feminineLastGroup: true)
+            let noun: String
+            switch unit {
+            case "хв":
+                noun = nounForm(for: value, one: "хвилина", few: "хвилини", many: "хвилин")
+            case "год":
+                noun = nounForm(for: value, one: "година", few: "години", many: "годин")
+            case "сек":
+                noun = nounForm(for: value, one: "секунда", few: "секунди", many: "секунд")
+            default:
+                return nil
+            }
+
+            let punctuation = match.range(at: 3).location == NSNotFound ? "" : "."
+            return "\(numberWords) \(noun)\(punctuation)\(source[suffixRange])"
         }
     }
 
