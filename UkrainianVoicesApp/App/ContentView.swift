@@ -264,6 +264,8 @@ private final class ContentViewModel: ObservableObject {
     @Published var datesAsWordsEnabled: Bool = true
     @Published var timeAsWordsEnabled: Bool = true
     @Published var abbreviationsAsWordsEnabled: Bool = true
+    @Published var phoneNumberProcessingEnabled: Bool = true
+    @Published var phoneNumberReadingMode: RHVoicePhoneNumberReadingMode = .groups
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
     @Published var sharedStorageState: SharedStorageState = .loading
@@ -684,6 +686,10 @@ private final class ContentViewModel: ObservableObject {
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey) ?? true)
                 self?.abbreviationsAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) == nil
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) ?? true)
+                self?.phoneNumberProcessingEnabled = defaults?.object(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) ?? true)
+                self?.phoneNumberReadingMode = defaults?.string(forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey)
+                    .flatMap(RHVoicePhoneNumberReadingMode.init(rawValue:)) ?? .groups
             }
         }
     }
@@ -717,6 +723,26 @@ private final class ContentViewModel: ObservableObject {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
             DispatchQueue.main.async {
                 self?.setStatus(enabled ? "Скорочення читаються повними словами." : "Скорочення читаються без розгортання.")
+            }
+        }
+    }
+
+    func setPhoneNumberProcessing(_ enabled: Bool) {
+        phoneNumberProcessingEnabled = enabled
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.phoneNumberProcessingKey)
+            DispatchQueue.main.async {
+                self?.setStatus(enabled ? "Обробку телефонних номерів увімкнено." : "Обробку телефонних номерів вимкнено.")
+            }
+        }
+    }
+
+    func setPhoneNumberReadingMode(_ mode: RHVoicePhoneNumberReadingMode) {
+        phoneNumberReadingMode = mode
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(mode.rawValue, forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey)
+            DispatchQueue.main.async {
+                self?.setStatus(mode == .groups ? "Номери читаються групами." : "Номери читаються по цифрах.")
             }
         }
     }
@@ -1202,6 +1228,19 @@ struct ContentView: View {
                 Label("Розгортати скорочення", systemImage: "textformat.abc")
             }
             .accessibilityHint("Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
+
+            Toggle(isOn: Binding(get: { model.phoneNumberProcessingEnabled }, set: { model.setPhoneNumberProcessing($0) })) {
+                Label("Обробляти телефонні номери", systemImage: "phone")
+            }
+            .accessibilityHint("Увімкнено: RHVoice розпізнає номери та читає їх обраним способом. Вимкнено: номер читає система без обробки RHVoice.")
+
+            Picker("Читати номер", selection: Binding(get: { model.phoneNumberReadingMode }, set: { model.setPhoneNumberReadingMode($0) })) {
+                Text("групами").tag(RHVoicePhoneNumberReadingMode.groups)
+                Text("по цифрах").tag(RHVoicePhoneNumberReadingMode.digits)
+            }
+            .pickerStyle(.segmented)
+            .disabled(!model.phoneNumberProcessingEnabled)
+            .accessibilityHint("Групами: кожна частина номера читається як число. По цифрах: стара поведінка для запису номера на слух.")
 
             Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
                 .font(.footnote)

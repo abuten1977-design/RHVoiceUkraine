@@ -14,22 +14,36 @@ enum RHVoiceApostropheNormalizer {
         _ ssml: String,
         datesAsWords: Bool = true,
         timeAsWords: Bool = true,
-        abbreviationsAsWords: Bool = true
+        abbreviationsAsWords: Bool = true,
+        phoneProcessing: Bool = true,
+        phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups
     ) -> String {
         let withDates = datesAsWords ? normalizeSplitDateSayAsBlocks(in: ssml) : ssml
-        let ssml = normalizeTelephoneSayAsBlocks(in: withDates, datesAsWords: datesAsWords)
+        let ssml = phoneProcessing
+            ? normalizeTelephoneSayAsBlocks(in: withDates, datesAsWords: datesAsWords, phoneReadingMode: phoneReadingMode)
+            : withDates
         var output = ""
         var textSegment = ""
         var tagSegment = ""
         var insideTag = false
+        var preserveTelephoneSayAsText = false
 
         for character in ssml {
             if insideTag {
                 tagSegment.append(character)
                 if character == ">" {
-                    output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords)
+                    output += preserveTelephoneSayAsText
+                        ? textSegment
+                        : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
                     textSegment.removeAll(keepingCapacity: true)
                     output += tagSegment
+                    if !phoneProcessing {
+                        if isClosingTelephoneSayAsTag(tagSegment) {
+                            preserveTelephoneSayAsText = false
+                        } else if isOpeningTelephoneSayAsTag(tagSegment) {
+                            preserveTelephoneSayAsText = true
+                        }
+                    }
                     tagSegment.removeAll(keepingCapacity: true)
                     insideTag = false
                 }
@@ -42,11 +56,24 @@ enum RHVoiceApostropheNormalizer {
         }
 
         if insideTag {
-            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords) + tagSegment
+            output += (preserveTelephoneSayAsText
+                ? textSegment
+                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)) + tagSegment
         } else {
-            output += normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords)
+            output += preserveTelephoneSayAsText
+                ? textSegment
+                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
         }
         return output
+    }
+
+    private static func isOpeningTelephoneSayAsTag(_ tag: String) -> Bool {
+        guard let regex = try? NSRegularExpression(pattern: #"^<say-as\b(?=[^>]*\binterpret-as\s*=\s*["']telephone["'])[^>]*>$"#, options: [.caseInsensitive]) else { return false }
+        return regex.firstMatch(in: tag, range: NSRange(tag.startIndex..<tag.endIndex, in: tag)) != nil
+    }
+
+    private static func isClosingTelephoneSayAsTag(_ tag: String) -> Bool {
+        tag.range(of: #"^</say-as\s*>$"#, options: [.regularExpression, .caseInsensitive]) != nil
     }
 
     static func normalizeText(_ text: String) -> String {
@@ -73,7 +100,9 @@ enum RHVoiceApostropheNormalizer {
         _ text: String,
         datesAsWords: Bool = true,
         timeAsWords: Bool = true,
-        abbreviationsAsWords: Bool = true
+        abbreviationsAsWords: Bool = true,
+        phoneProcessing: Bool = true,
+        phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups
     ) -> String {
         let withDates = datesAsWords ? normalizeDates(in: normalizeText(text)) : normalizeText(text)
         // Час має бути розібраний ДО normalizeNumbers, інакше «17» і «01»
@@ -81,7 +110,8 @@ enum RHVoiceApostropheNormalizer {
         // побачимо двокрапку між ними.
         let withTime = timeAsWords ? normalizeTime(in: withDates) : withDates
         let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withTime) : withTime
-        let withNumbers = normalizeNumbers(in: normalizePhones(in: withAbbreviations))
+        let withPhones = phoneProcessing ? normalizePhones(in: withAbbreviations, readingMode: phoneReadingMode) : withAbbreviations
+        let withNumbers = normalizeNumbers(in: withPhones)
         return normalizeLatinAbbreviations(in: withNumbers)
     }
 
@@ -297,7 +327,7 @@ enum RHVoiceApostropheNormalizer {
         return result
     }
 
-    private static func normalizePhones(in text: String) -> String {
+    private static func normalizePhones(in text: String, readingMode: RHVoicePhoneNumberReadingMode) -> String {
         // Телефон у звичайному тексті: один або більше явних «+» і 7+ цифр
         // (з пробілами/дефісами/дужками). `telephoneDigitsToWords` зводить
         // кілька реальних плюсів до одного, не лишаючи сирий символ рушію.
@@ -311,7 +341,7 @@ enum RHVoiceApostropheNormalizer {
             guard let range = Range(match.range, in: source) else { return nil }
             let content = String(source[range])
             guard content.filter(\.isNumber).count >= 7 else { return nil }
-            return telephoneDigitsToWords(content)
+            return telephoneToWords(content, readingMode: readingMode)
         }
 
         // Якщо iOS передала номер з кодом 380 без знака, не вигадуємо «плюс»:
@@ -325,7 +355,7 @@ enum RHVoiceApostropheNormalizer {
             guard let range = Range(match.range, in: source) else { return nil }
             let content = String(source[range])
             guard content.filter(\.isNumber).count >= 10 else { return nil }
-            return telephoneDigitsToWords(content)
+            return telephoneToWords(content, readingMode: readingMode)
         }
     }
 
@@ -366,7 +396,11 @@ enum RHVoiceApostropheNormalizer {
         return Int(digits)
     }
 
-    private static func normalizeTelephoneSayAsBlocks(in ssml: String, datesAsWords: Bool = true) -> String {
+    private static func normalizeTelephoneSayAsBlocks(
+        in ssml: String,
+        datesAsWords: Bool = true,
+        phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups
+    ) -> String {
         let withSplitDecimals = replacingMatches(
             in: ssml,
             pattern: #"([0-9]+),\s*<say-as\b(?=[^>]*\binterpret-as\s*=\s*["']telephone["'])[^>]*>\s*([0-9]+)\s*</say-as>"#,
@@ -395,14 +429,102 @@ enum RHVoiceApostropheNormalizer {
             let digits = content.filter(\.isNumber)
             guard !digits.isEmpty else { return normalizeText(content) }
 
-            let isTelephone = content.contains("+") || hasDigitSeparator(in: content) || digits.count >= 10
-            if isTelephone {
-                return telephoneDigitsToWords(content)
+            switch classifyTelephoneSayAsContent(content) {
+            case .phone:
+                return telephoneToWords(content, readingMode: phoneReadingMode)
+            case .money:
+                return groupedMoneyToWords(content)
+            case .ordinary:
+                // Keep an arithmetic plus literal; otherwise retain the old
+                // behavior for a short standalone number in a telephone tag.
+                if content.contains("+") { return normalizeText(content) }
             }
 
             guard let value = Int(digits) else { return nil }
             return integerToWords(value)
         }
+    }
+
+    private enum TelephoneSayAsKind {
+        case phone
+        case money
+        case ordinary
+    }
+
+    /// iOS occasionally labels bank amounts as `telephone`. Apply the explicit
+    /// ordering agreed for task-198 before accepting that label as a phone.
+    private static func classifyTelephoneSayAsContent(_ content: String) -> TelephoneSayAsKind {
+        let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let groups = digitGroups(in: trimmed)
+        guard !groups.isEmpty else { return .ordinary }
+
+        if hasPlusImmediatelyBeforeDigit(in: trimmed) { return .phone }
+        // An arithmetic plus (for example `10+ 453449161`) is not a phone sign.
+        if trimmed.contains("+") { return .ordinary }
+        if groups.first?.first == "0" { return .phone }
+        // A two-digit first group is common in a grouped amount (`30 018`).
+        // Telephone evidence is a two-digit group after the first one; the
+        // final `,00` cents group is not telephone evidence.
+        let hasFinalCents = hasCents(in: trimmed)
+        let groupsWithoutCents = hasFinalCents ? Array(groups.dropLast()) : groups
+        if groupsWithoutCents.dropFirst().contains(where: { $0.count == 2 }) { return .phone }
+        if hasFinalCents { return .money }
+
+        if groups.count > 1,
+           (1...3).contains(groups[0].count),
+           groups.dropFirst().allSatisfy({ $0.count == 3 }) {
+            let totalDigits = groups.joined().count
+            return totalDigits <= 8 ? .money : .phone
+        }
+
+        if groups.count == 1 {
+            return groups[0].count >= 10 ? .phone : .ordinary
+        }
+
+        // Cards and non-money digit groups must stay separated, never become
+        // one huge number.
+        return .phone
+    }
+
+    private static func digitGroups(in text: String) -> [String] {
+        guard let regex = try? NSRegularExpression(pattern: #"[0-9]+"#) else { return [] }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.matches(in: text, range: range).compactMap { match in
+            Range(match.range, in: text).map { String(text[$0]) }
+        }
+    }
+
+    private static func hasPlusImmediatelyBeforeDigit(in text: String) -> Bool {
+        guard let regex = try? NSRegularExpression(pattern: #"\+[0-9]"#) else { return false }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.firstMatch(in: text, range: range) != nil
+    }
+
+    private static func hasCents(in text: String) -> Bool {
+        guard let regex = try? NSRegularExpression(pattern: #"[,.][0-9]{2}\s*$"#) else { return false }
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.firstMatch(in: text, range: range) != nil
+    }
+
+    private static func groupedMoneyToWords(_ text: String) -> String? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let centsPattern = #"^(.+?)[,.]([0-9]{2})$"#
+        if let regex = try? NSRegularExpression(pattern: centsPattern),
+           let match = regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..<trimmed.endIndex, in: trimmed)),
+           let integerRange = Range(match.range(at: 1), in: trimmed),
+           let centsRange = Range(match.range(at: 2), in: trimmed) {
+            let integerDigits = String(trimmed[integerRange]).filter(\.isNumber)
+            guard let integer = Int(integerDigits), let cents = Int(String(trimmed[centsRange])) else { return nil }
+            let hryvnias = integerToWords(integer, feminineLastGroup: true)
+            let hryvniaName = nounForm(for: integer, one: "гривня", few: "гривні", many: "гривень")
+            let kopecks = integerToWords(cents, feminineLastGroup: true)
+            let kopeckName = nounForm(for: cents, one: "копійка", few: "копійки", many: "копійок")
+            return "\(hryvnias) \(hryvniaName) \(kopecks) \(kopeckName)"
+        }
+
+        let digits = trimmed.filter(\.isNumber)
+        guard let value = Int(digits) else { return nil }
+        return integerToWords(value, feminineLastGroup: true)
     }
 
     private static func dateMatchToWords(_ match: NSTextCheckingResult, in text: String) -> String? {
@@ -679,6 +801,49 @@ enum RHVoiceApostropheNormalizer {
                 let nsRange = NSRange(text.startIndex..<text.endIndex, in: text)
                 return regex.firstMatch(in: text, range: nsRange) != nil
             } ?? false
+    }
+
+    private static func telephoneToWords(_ text: String, readingMode: RHVoicePhoneNumberReadingMode) -> String {
+        switch readingMode {
+        case .groups:
+            return telephoneGroupsToWords(text)
+        case .digits:
+            return telephoneDigitsToWords(text)
+        }
+    }
+
+    private static func telephoneGroupsToWords(_ text: String) -> String {
+        var groups: [[Character]] = []
+        var current: [Character] = []
+        var hasPlus = false
+        for character in text {
+            if character == "+" {
+                hasPlus = true
+            } else if character.isNumber {
+                current.append(character)
+            } else if !current.isEmpty {
+                groups.append(current)
+                current.removeAll()
+            }
+        }
+        if !current.isEmpty { groups.append(current) }
+        if groups.count == 1, let solid = groups.first, solid.count >= 9 {
+            groups = regroupSolidPhoneDigits(solid)
+        }
+
+        let spokenGroups = groups.compactMap { phoneGroupToWords(String($0)) }
+        let body = spokenGroups.joined(separator: ", ")
+        return hasPlus ? (body.isEmpty ? "плюс" : "плюс " + body) : body
+    }
+
+    private static func phoneGroupToWords(_ group: String) -> String? {
+        guard !group.isEmpty else { return nil }
+        let leadingZeroCount = group.prefix { $0 == "0" }.count
+        let remainder = String(group.dropFirst(leadingZeroCount))
+        let zeroPrefix = Array(repeating: "нуль", count: leadingZeroCount)
+        guard !remainder.isEmpty else { return zeroPrefix.joined(separator: " ") }
+        guard let value = Int(remainder) else { return nil }
+        return (zeroPrefix + [integerToWords(value)]).joined(separator: " ")
     }
 
     private static func telephoneDigitsToWords(_ text: String) -> String {

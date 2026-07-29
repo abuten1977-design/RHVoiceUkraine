@@ -38,6 +38,19 @@ private func rhAbbreviationsAsWordsEnabled() -> Bool {
     return defaults.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
 }
 
+private func rhPhoneNumberProcessingEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey)
+}
+
+private func rhPhoneNumberReadingMode() -> RHVoicePhoneNumberReadingMode {
+    guard let defaults = rhDiagDefaults,
+          let raw = defaults.string(forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey),
+          let mode = RHVoicePhoneNumberReadingMode(rawValue: raw) else { return .groups }
+    return mode
+}
+
 private func rhLog(_ msg: @autoclosure () -> String) {
     #if DEBUG
     let text = msg()
@@ -620,7 +633,9 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             ssml,
             datesAsWords: rhDatesAsWordsEnabled(),
             timeAsWords: rhTimeAsWordsEnabled(),
-            abbreviationsAsWords: rhAbbreviationsAsWordsEnabled()
+            abbreviationsAsWords: rhAbbreviationsAsWordsEnabled(),
+            phoneProcessing: rhPhoneNumberProcessingEnabled(),
+            phoneReadingMode: rhPhoneNumberReadingMode()
         )
     }
 

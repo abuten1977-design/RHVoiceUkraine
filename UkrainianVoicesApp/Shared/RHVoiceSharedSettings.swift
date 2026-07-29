@@ -27,6 +27,10 @@ enum RHVoiceSharedSettings {
     // «Розгортати скорочення»: відсутність ключа = увімкнено. Це окрема
     // зручність, не пов'язана з записом часу через двокрапку.
     static let abbreviationsAsWordsKey = "abbreviationsAsWords"
+    // Обробка телефонів увімкнена за замовчуванням. Режим `groups` читає
+    // кожну групу як число, `digits` зберігає старе читання по цифрах.
+    static let phoneNumberProcessingKey = "phoneNumberProcessing"
+    static let phoneNumberReadingModeKey = "phoneNumberReadingMode"
     static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
     static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
 
@@ -50,6 +54,11 @@ enum RHVoiceSharedSettings {
     static var voiceCatalog: [RHVoiceVoiceDescriptor] {
         builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
     }
+}
+
+enum RHVoicePhoneNumberReadingMode: String, CaseIterable {
+    case groups
+    case digits
 }
 
 enum RHVoiceDarwinNotifications {

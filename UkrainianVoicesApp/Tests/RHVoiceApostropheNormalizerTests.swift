@@ -270,11 +270,11 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // Баг Даші (build 187): суцільний +380… читався мільйонами.
         // Групування суцільного номера — за форматом Андрія: +38 067 344 91 61.
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380673449161."),
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380673449161.", phoneReadingMode: .digits),
             "Телефон плюс три вісім, нуль шість сім, три чотири чотири, дев'ять один, шість один."
         )
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +38 067 344 91 61."),
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +38 067 344 91 61.", phoneReadingMode: .digits),
             "Телефон плюс три вісім, нуль шість сім, три чотири чотири, дев'ять один, шість один."
         )
     }
@@ -295,7 +295,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
         // Телефони працюють НЕЗАЛЕЖНО від перемикача дат.
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +38 067 344 91 61.", datesAsWords: false),
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +38 067 344 91 61.", datesAsWords: false, phoneReadingMode: .digits),
             "Телефон плюс три вісім, нуль шість сім, три чотири чотири, дев'ять один, шість один."
         )
     }
@@ -343,12 +343,73 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
 
     func testTelephoneSayAsPhoneNumbersNormalizeDigitByDigit() {
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380501234567</say-as>"#),
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380501234567</say-as>"#, phoneReadingMode: .digits),
             "плюс три вісім, нуль п'ять нуль, один два три, чотири п'ять, шість сім"
         )
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380 50 123 45 67</say-as>"#),
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380 50 123 45 67</say-as>"#, phoneReadingMode: .digits),
             "плюс три вісім нуль, п'ять нуль, один два три, чотири п'ять, шість сім"
+        )
+    }
+
+    func testTelephoneSayAsDistinguishesGroupedMoneyFromPhones() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">30 018</say-as>"#),
+            "тридцять тисяч вісімнадцять"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">10 000</say-as>"#),
+            "десять тисяч"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">3 050</say-as>"#),
+            "три тисячі п'ятдесят"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">30 018,00</say-as>"#),
+            "тридцять тисяч вісімнадцять гривень нуль копійок"
+        )
+    }
+
+    func testTelephoneSayAsUsesGroupsByDefaultAndDigitsOnRequest() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">067 344 91 61</say-as>"#),
+            "нуль шістдесят сім, триста сорок чотири, дев'яносто один, шістдесят один"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">0 800 500 500</say-as>"#),
+            "нуль, вісімсот, п'ятсот, п'ятсот"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380 97 148 98 92</say-as>"#),
+            "плюс триста вісімдесят, дев'яносто сім, сто сорок вісім, дев'яносто вісім, дев'яносто два"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">1234 5678 9012 3456</say-as>"#),
+            "одна тисяча двісті тридцять чотири, п'ять тисяч шістсот сімдесят вісім, дев'ять тисяч дванадцять, три тисячі чотириста п'ятдесят шість"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">453449161</say-as>"#),
+            "чотириста п'ятдесят три мільйони чотириста сорок дев'ять тисяч сто шістдесят один"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">+380 97 148 98 92</say-as>"#, phoneReadingMode: .digits),
+            "плюс три вісім нуль, дев'ять сім, один чотири вісім, дев'ять вісім, дев'ять два"
+        )
+    }
+
+    func testTelephoneSayAsDoesNotTreatArithmeticPlusAsPhonePrefix() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">10+ 453449161</say-as>"#),
+            "10+ чотириста п'ятдесят три мільйони чотириста сорок дев'ять тисяч сто шістдесят один"
+        )
+    }
+
+    func testPhoneProcessingToggleLeavesTelephoneSayAsToSystem() {
+        let input = #"<say-as interpret-as="telephone">+380 97 148 98 92</say-as>"#
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(input, phoneProcessing: false),
+            input
         )
     }
 
@@ -486,17 +547,17 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     func testPhoneNumbersStartingWith380KeepOnlyExplicitPlus() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон 380671234567."),
-            "Телефон три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
+            "Телефон тридцять вісім, нуль шістдесят сім, сто двадцять три, сорок п'ять, шістдесят сім."
         )
         // Явний плюс вимовляється рівно один раз.
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380671234567."),
-            "Телефон плюс три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
+            "Телефон плюс тридцять вісім, нуль шістдесят сім, сто двадцять три, сорок п'ять, шістдесят сім."
         )
         // Навіть некоректно подвоєний знак не створює два «плюс» у вимові.
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон ++380671234567."),
-            "Телефон плюс три вісім, нуль шість сім, один два три, чотири п'ять, шість сім."
+            "Телефон плюс тридцять вісім, нуль шістдесят сім, сто двадцять три, сорок п'ять, шістдесят сім."
         )
     }
 }
