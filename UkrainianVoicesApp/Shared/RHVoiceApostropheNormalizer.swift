@@ -514,12 +514,13 @@ enum RHVoiceApostropheNormalizer {
            let integerRange = Range(match.range(at: 1), in: trimmed),
            let centsRange = Range(match.range(at: 2), in: trimmed) {
             let integerDigits = String(trimmed[integerRange]).filter(\.isNumber)
-            guard let integer = Int(integerDigits), let cents = Int(String(trimmed[centsRange])) else { return nil }
-            let hryvnias = integerToWords(integer, feminineLastGroup: true)
-            let hryvniaName = nounForm(for: integer, one: "гривня", few: "гривні", many: "гривень")
-            let kopecks = integerToWords(cents, feminineLastGroup: true)
-            let kopeckName = nounForm(for: cents, one: "копійка", few: "копійки", many: "копійок")
-            return "\(hryvnias) \(hryvniaName) \(kopecks) \(kopeckName)"
+            let fractionDigits = String(trimmed[centsRange])
+            guard let integer = Int(integerDigits) else { return nil }
+            // The input does not identify a currency. Treat a separator and two
+            // digits as a regular decimal number instead of inventing hryvnias
+            // and kopecks; a zero fraction is simply an integer.
+            return decimalNumberToWords(integerPart: integerDigits, fractionPart: fractionDigits)
+                ?? integerToWords(integer, feminineLastGroup: true)
         }
 
         let digits = trimmed.filter(\.isNumber)
@@ -829,6 +830,12 @@ enum RHVoiceApostropheNormalizer {
         if !current.isEmpty { groups.append(current) }
         if groups.count == 1, let solid = groups.first, solid.count >= 9 {
             groups = regroupSolidPhoneDigits(solid)
+        }
+
+        // A standard bank card is recorded digit by digit, unlike a telephone
+        // number whose existing groups are useful as whole numbers.
+        if groups.count == 4, groups.allSatisfy({ $0.count == 4 }) {
+            return telephoneDigitsToWords(text)
         }
 
         let spokenGroups = groups.compactMap { phoneGroupToWords(String($0)) }

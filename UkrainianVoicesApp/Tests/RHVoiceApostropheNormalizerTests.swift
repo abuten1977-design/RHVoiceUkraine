@@ -367,7 +367,15 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">30 018,00</say-as>"#),
-            "тридцять тисяч вісімнадцять гривень нуль копійок"
+            "тридцять тисяч вісімнадцять"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">30 018,50</say-as>"#),
+            "тридцять тисяч вісімнадцять цілих п'ятдесят сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">1 234,05</say-as>"#),
+            "одна тисяча двісті тридцять чотири цілих п'ять сотих"
         )
     }
 
@@ -386,7 +394,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">1234 5678 9012 3456</say-as>"#),
-            "одна тисяча двісті тридцять чотири, п'ять тисяч шістсот сімдесят вісім, дев'ять тисяч дванадцять, три тисячі чотириста п'ятдесят шість"
+            "один два три чотири, п'ять шість сім вісім, дев'ять нуль один два, три чотири п'ять шість"
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">453449161</say-as>"#),
