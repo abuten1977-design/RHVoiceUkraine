@@ -22,6 +22,20 @@ enum RHVoiceDownloadableVoices {
         "English": "en-US"
     ]
 
+    /// Internal CMU voice IDs are not useful when VoiceOver reads them aloud.
+    /// Keep engine `profileName` unchanged; this map is only for user-visible
+    /// labels and is also applied to previously downloaded meta.json files.
+    static let humanReadableNames: [String: String] = [
+        "bdl": "Бен",
+        "clb": "Клара",
+        "slt": "Сара",
+        "ksp": "Радж"
+    ]
+
+    static func userFacingName(id: String, fallback: String) -> String {
+        humanReadableNames[id.lowercased()] ?? fallback
+    }
+
     struct DownloadedVoiceMeta: Codable, Equatable {
         var id: String
         var engineName: String
@@ -75,7 +89,7 @@ enum RHVoiceDownloadableVoices {
         if let metaData = try? Data(contentsOf: directory.appendingPathComponent(metaFileName)),
            let meta = try? JSONDecoder().decode(DownloadedVoiceMeta.self, from: metaData) {
             return RHVoiceVoiceDescriptor(
-                name: meta.displayName,
+                name: userFacingName(id: dirId, fallback: meta.displayName),
                 identifier: identifier,
                 language: meta.language,
                 profileName: meta.engineName,
@@ -99,7 +113,7 @@ enum RHVoiceDownloadableVoices {
         guard let name = engineName, !name.isEmpty else { return nil }
         let bcp47 = engineLanguage.flatMap { engineLanguageToBCP47[$0] } ?? "en-US"
         return RHVoiceVoiceDescriptor(
-            name: name,
+            name: userFacingName(id: dirId, fallback: name),
             identifier: identifier,
             language: bcp47,
             profileName: name,

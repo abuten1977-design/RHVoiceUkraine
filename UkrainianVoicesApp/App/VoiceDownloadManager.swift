@@ -44,6 +44,10 @@ struct ManifestVoice: Codable, Equatable, Identifiable {
     var sizeMegabytesText: String {
         String(format: "%.1f МБ", Double(sizeBytes) / 1_048_576.0)
     }
+
+    var userFacingName: String {
+        RHVoiceDownloadableVoices.userFacingName(id: id, fallback: displayName)
+    }
 }
 
 // MARK: - Менеджер завантаження
@@ -75,10 +79,14 @@ final class VoiceDownloadManager: ObservableObject {
     }
 
     func refreshInstalled() {
-        let ids = RHVoiceDownloadableVoices.scanInstalledVoices().map { descriptor in
-            descriptor.identifier.components(separatedBy: ".").last ?? descriptor.identifier
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            let ids = RHVoiceDownloadableVoices.scanInstalledVoices().map { descriptor in
+                descriptor.identifier.components(separatedBy: ".").last ?? descriptor.identifier
+            }
+            DispatchQueue.main.async {
+                self?.installedVoiceIds = Set(ids)
+            }
         }
-        installedVoiceIds = Set(ids)
     }
 
     func isInstalled(_ voice: ManifestVoice) -> Bool {
@@ -132,7 +140,7 @@ final class VoiceDownloadManager: ObservableObject {
     func download(_ voice: ManifestVoice, language: ManifestLanguage) {
         guard !isDownloading(voice) else { return }
         downloadProgress[voice.id] = 0
-        statusMessage = "Завантаження голосу \(voice.displayName)…"
+        statusMessage = "Завантаження голосу \(voice.userFacingName)…"
 
         Task { [weak self] in
             do {
@@ -143,12 +151,12 @@ final class VoiceDownloadManager: ObservableObject {
                 }
                 await MainActor.run { [weak self] in
                     self?.downloadProgress[voice.id] = nil
-                    self?.finishVoicesChange(message: "Голос \(voice.displayName) завантажено. Тепер його можна увімкнути у VoiceOver.")
+                    self?.finishVoicesChange(message: "Голос \(voice.userFacingName) завантажено. Тепер його можна увімкнути у VoiceOver.")
                 }
             } catch {
                 await MainActor.run { [weak self] in
                     self?.downloadProgress[voice.id] = nil
-                    self?.statusMessage = "Не вдалося завантажити голос \(voice.displayName): \(error.localizedDescription)"
+                    self?.statusMessage = "Не вдалося завантажити голос \(voice.userFacingName): \(error.localizedDescription)"
                 }
             }
         }
@@ -156,11 +164,18 @@ final class VoiceDownloadManager: ObservableObject {
 
     func delete(_ voice: ManifestVoice) {
         guard let dir = RHVoiceDownloadableVoices.voiceDirectoryURL(id: voice.id) else { return }
-        do {
-            try FileManager.default.removeItem(at: dir)
-            finishVoicesChange(message: "Голос \(voice.displayName) видалено.")
-        } catch {
-            statusMessage = "Не вдалося видалити голос \(voice.displayName): \(error.localizedDescription)"
+        let name = voice.userFacingName
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            do {
+                try FileManager.default.removeItem(at: dir)
+                DispatchQueue.main.async {
+                    self?.finishVoicesChange(message: "Голос \(name) видалено.")
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.statusMessage = "Не вдалося видалити голос \(name): \(error.localizedDescription)"
+                }
+            }
         }
     }
 
@@ -168,23 +183,52 @@ final class VoiceDownloadManager: ObservableObject {
     /// (обидва процеси — застосунок і extension), систему, головний екран і
     /// користувача screen reader'а.
     private func finishVoicesChange(message: String) {
-        refreshInstalled()
         RHVoiceDownloadedVoicesCache.shared.refreshAsync()
         RHVoiceDarwinNotifications.post(RHVoiceDownloadableVoices.downloadedVoicesChangedNotificationName)
         // Publish a durable, read-back-verified catalog before iOS asks the
         // extension for voices. The extension must not discover downloads on
         // the system enumeration path.
-        do {
-            let catalog = try RHVoicePublishedVoiceCatalog.publishInstalledVoices()
-            NSLog("VOICE_CATALOG_DIAG app=published revision=%d count=%d ids=%@", catalog.revision, catalog.descriptors.count, catalog.identifiers.joined(separator: ","))
-            AVSpeechSynthesisProviderVoice.updateSpeechVoices()
-        } catch {
-            statusMessage = "Не вдалося опублікувати список голосів: \(error.localizedDescription)"
-            return
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            do {
+                let catalog = try RHVoicePublishedVoiceCatalog.publishInstalledVoices()
+                DispatchQueue.main.async {
+                    guard let self else { return }
+                    self.refreshInstalled()
+                    NSLog("VOICE_CATALOG_DIAG app=published revision=%d count=%d ids=%@", catalog.revision, catalog.descriptors.count, catalog.identifiers.joined(separator: ","))
+                    AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+                    NotificationCenter.default.post(name: RHVoiceDownloadableVoices.inProcessListChangedNotification, object: nil)
+                    self.statusMessage = message
+                    self.announceForScreenReader(message)
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self?.statusMessage = "Не вдалося опублікувати список голосів: \(error.localizedDescription)"
+                }
+            }
         }
-        NotificationCenter.default.post(name: RHVoiceDownloadableVoices.inProcessListChangedNotification, object: nil)
-        statusMessage = message
-        announceForScreenReader(message)
+    }
+
+    /// Rebuild the durable catalog before refreshing the system's provider
+    /// list. Disk I/O stays off the main actor; the second refresh helps iOS
+    /// recover from a stale Audio Unit enumeration without a device reboot.
+    func repairVoices() {
+        statusMessage = "Полагодження голосів: переопубліковуємо список."
+        Task { [weak self] in
+            do {
+                let catalog = try await Task.detached(priority: .utility) {
+                    try RHVoicePublishedVoiceCatalog.publishInstalledVoices()
+                }.value
+                RHVoiceDownloadedVoicesCache.shared.refreshAsync()
+                RHVoiceDarwinNotifications.post(RHVoiceDownloadableVoices.downloadedVoicesChangedNotificationName)
+                AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+                try await Task.sleep(for: .milliseconds(700))
+                AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+                self?.refreshInstalled()
+                self?.statusMessage = "Голоси переопубліковано: \(catalog.descriptors.count). Перевірте самоперевірку."
+            } catch {
+                self?.statusMessage = "Не вдалося полагодити голоси: \(error.localizedDescription)"
+            }
+        }
     }
 
     /// VoiceOver-анонс результату: без нього завершення завантаження чутно лише
@@ -259,11 +303,11 @@ final class VoiceDownloadManager: ObservableObject {
         let meta = RHVoiceDownloadableVoices.DownloadedVoiceMeta(
             id: voice.id,
             engineName: voice.engineName,
-            displayName: voice.displayName,
+            displayName: voice.userFacingName,
             language: language.bcp47,
             gender: voice.gender,
             version: voice.version,
-            sampleText: voice.sampleText ?? "Hello! This is the \(voice.displayName) voice."
+            sampleText: voice.sampleText ?? "Hello! This is the \(voice.userFacingName) voice."
         )
         let metaData = try JSONEncoder().encode(meta)
         try metaData.write(to: tmpUnzip.appendingPathComponent(RHVoiceDownloadableVoices.metaFileName), options: [.atomic])

@@ -1,9 +1,63 @@
 import SwiftUI
+import AVFAudio
+
+private struct VoiceSelfCheckReport {
+    let stored: String
+    let published: String
+    let system: String
+
+    static let initial = Self(
+        stored: "На пристрої збережено: перевірка ще не виконувалась.",
+        published: "Опублікований список: перевірка ще не виконувалась.",
+        system: "Система бачить голоси: перевірка ще не виконувалась."
+    )
+
+    static func collect() -> Self {
+        let voices = RHVoiceDownloadableVoices.scanInstalledVoices()
+        let storedNames = voices.map { descriptor -> String in
+            let id = descriptor.identifier.components(separatedBy: ".").last ?? descriptor.identifier
+            let size = directorySize(RHVoiceDownloadableVoices.voiceDirectoryURL(id: id))
+            return "\(descriptor.name) — \(String(format: "%.1f", Double(size) / 1_048_576.0)) МБ"
+        }
+        let stored = storedNames.isEmpty
+            ? "На пристрої збережено: завантажених голосів немає."
+            : "На пристрої збережено: \(storedNames.joined(separator: ", "))."
+
+        guard let catalog = RHVoicePublishedVoiceCatalog.loadPublished() else {
+            return Self(
+                stored: stored,
+                published: "Опублікований список голосів відсутній.",
+                system: "Система бачить голоси: список ще не опубліковано."
+            )
+        }
+        let published = "Опубліковано голосів: \(catalog.descriptors.count), версія списку \(catalog.revision)."
+        let prefix = "com.rhvoice.UkrainianVoices"
+        let systemNames = AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.identifier.hasPrefix(prefix) }
+            .map(\.name)
+        let system = systemNames.isEmpty
+            ? "Система поки не бачить голосів RHVoice UA."
+            : "Система бачить голоси: \(systemNames.joined(separator: ", "))."
+        return Self(stored: stored, published: published, system: system)
+    }
+
+    private static func directorySize(_ url: URL?) -> Int64 {
+        guard let url,
+              let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey])
+        else { return 0 }
+        return enumerator.reduce(into: Int64(0)) { total, item in
+            guard let item = item as? URL else { return }
+            total += Int64((try? item.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
+        }
+    }
+}
 
 /// Екран «Мови»: вбудована українська + додаткові мови, голоси яких
 /// завантажуються за потреби (v1 — англійська).
 struct DownloadableLanguagesView: View {
     @ObservedObject var downloadManager: VoiceDownloadManager
+    @State private var selfCheckReport = VoiceSelfCheckReport.initial
+    @State private var isRefreshingSelfCheck = false
 
     var body: some View {
         List {
@@ -66,9 +120,46 @@ struct DownloadableLanguagesView: View {
                         .accessibilityLabel("Стан: \(downloadManager.statusMessage)")
                 }
             }
+
+            selfCheckSection
         }
         .navigationTitle("Мови")
-        .onAppear { downloadManager.refresh() }
+        .onAppear {
+            downloadManager.refresh()
+            refreshSelfCheck()
+        }
+    }
+
+    private var selfCheckSection: some View {
+        Section("Самоперевірка") {
+            Text(selfCheckReport.stored)
+                .accessibilityLabel(selfCheckReport.stored)
+            Text(selfCheckReport.published)
+                .accessibilityLabel(selfCheckReport.published)
+            Text(selfCheckReport.system)
+                .accessibilityLabel(selfCheckReport.system)
+            Button("Оновити самоперевірку") { refreshSelfCheck() }
+                .disabled(isRefreshingSelfCheck)
+                .accessibilityLabel("Оновити самоперевірку")
+                .accessibilityHint("Перевірити збережені, опубліковані та системні голоси.")
+            Button("Полагодити голоси") {
+                downloadManager.repairVoices()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { refreshSelfCheck() }
+            }
+            .accessibilityLabel("Полагодити голоси")
+            .accessibilityHint("Переопублікувати список голосів і попросити систему оновити його без перезавантаження iPhone.")
+        }
+    }
+
+    private func refreshSelfCheck() {
+        isRefreshingSelfCheck = true
+        Task.detached(priority: .utility) {
+            let report = VoiceSelfCheckReport.collect()
+            await MainActor.run {
+                selfCheckReport = report
+                isRefreshingSelfCheck = false
+            }
+        }
     }
 
     private func installedCountText(_ language: ManifestLanguage) -> String {
@@ -113,7 +204,7 @@ struct DownloadableLanguageVoicesView: View {
         .onAppear { downloadManager.refreshInstalled() }
         .alert(item: $voicePendingDelete) { voice in
             Alert(
-                title: Text("Видалити голос \(voice.displayName)?"),
+                title: Text("Видалити голос \(voice.userFacingName)?"),
                 message: Text("Голос зникне з VoiceOver. Його можна буде завантажити знову."),
                 primaryButton: .destructive(Text("Видалити")) {
                     downloadManager.delete(voice)
@@ -130,7 +221,7 @@ struct DownloadableLanguageVoicesView: View {
     private func voiceRow(_ voice: ManifestVoice) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(voice.displayName)
+                Text(voice.userFacingName)
                 Text("\(voice.genderUk), \(voice.sizeMegabytesText)")
                     .font(.footnote)
                     .foregroundColor(.secondary)
@@ -143,27 +234,27 @@ struct DownloadableLanguageVoicesView: View {
             if let progress = downloadManager.downloadProgress[voice.id] {
                 ProgressView(value: progress)
                     .frame(width: 80)
-                    .accessibilityLabel("Завантаження \(voice.displayName)")
+                    .accessibilityLabel("Завантаження \(voice.userFacingName)")
                     .accessibilityValue("\(Int(progress * 100)) відсотків")
             } else if downloadManager.isInstalled(voice) {
                 Button("Видалити") {
                     voicePendingDelete = voice
                 }
                 .foregroundColor(.red)
-                .accessibilityLabel("Видалити голос \(voice.displayName)")
+                .accessibilityLabel("Видалити голос \(voice.userFacingName)")
                 .accessibilityHint("Голос зникне з VoiceOver, його можна буде завантажити знову.")
             } else {
                 Button("Завантажити") {
                     downloadManager.download(voice, language: language)
                 }
-                .accessibilityLabel("Завантажити голос \(voice.displayName), \(voice.sizeMegabytesText)")
+                .accessibilityLabel("Завантажити голос \(voice.userFacingName), \(voice.sizeMegabytesText)")
                 .accessibilityHint("Після завантаження голос з'явиться у списку голосів і у VoiceOver.")
             }
         }
     }
 
     private func rowAccessibilityLabel(_ voice: ManifestVoice) -> String {
-        var label = "\(voice.displayName), \(voice.genderUk), \(voice.sizeMegabytesText)"
+        var label = "\(voice.userFacingName), \(voice.genderUk), \(voice.sizeMegabytesText)"
         if let progress = downloadManager.downloadProgress[voice.id] {
             label += ", завантаження \(Int(progress * 100)) відсотків"
         } else if downloadManager.isInstalled(voice) {

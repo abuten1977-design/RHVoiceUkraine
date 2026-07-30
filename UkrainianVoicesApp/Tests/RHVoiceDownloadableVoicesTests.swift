@@ -40,7 +40,7 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
 
         let voices = RHVoiceDownloadableVoices.scanInstalledVoices(rootOverride: tempRoot)
         XCTAssertEqual(voices.count, 1)
-        XCTAssertEqual(voices[0].name, "BDL")
+        XCTAssertEqual(voices[0].name, "Бен")
         XCTAssertEqual(voices[0].identifier, "com.rhvoice.UkrainianVoices.bdl")
         XCTAssertEqual(voices[0].language, "en-US")
         XCTAssertEqual(voices[0].profileName, "Bdl")
@@ -52,7 +52,7 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
 
         let voices = RHVoiceDownloadableVoices.scanInstalledVoices(rootOverride: tempRoot)
         XCTAssertEqual(voices.count, 1)
-        XCTAssertEqual(voices[0].name, "Slt")
+        XCTAssertEqual(voices[0].name, "Сара")
         XCTAssertEqual(voices[0].profileName, "Slt")
         XCTAssertEqual(voices[0].language, "en-US")
     }
@@ -110,6 +110,32 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
         XCTAssertEqual(RHVoicePublishedVoiceCatalog.load(from: url), catalog)
         XCTAssertEqual(RHVoicePublishedVoiceCatalog.load(from: url)?.descriptors.last, ben)
         XCTAssertTrue(catalog.identifiers.contains("com.rhvoice.UkrainianVoices.bdl"))
+    }
+
+    func testHumanNamesOverrideMetaAndVoiceInfoWithoutChangingProfileOrIdentifier() throws {
+        let meta = RHVoiceDownloadableVoices.DownloadedVoiceMeta(
+            id: "clb",
+            engineName: "Clb",
+            displayName: "Clb",
+            language: "en-US",
+            gender: "female",
+            version: 1,
+            sampleText: "Hello"
+        )
+        _ = try makeVoiceDir("clb", info: "name=Clb\nlanguage=English\n", meta: meta)
+        _ = try makeVoiceDir("ksp", info: "name=Ksp\nlanguage=English\n")
+
+        let voices = RHVoiceDownloadableVoices.scanInstalledVoices(rootOverride: tempRoot)
+        XCTAssertEqual(voices.map(\.name), ["Клара", "Радж"])
+        XCTAssertEqual(voices.map(\.profileName), ["Clb", "Ksp"])
+        XCTAssertEqual(voices.map(\.identifier), [
+            "com.rhvoice.UkrainianVoices.clb",
+            "com.rhvoice.UkrainianVoices.ksp"
+        ])
+
+        let catalog = try RHVoicePublishedVoiceCatalog.make(downloaded: voices, revision: 8)
+        XCTAssertEqual(catalog.descriptors.map(\.name).suffix(2), ["Клара", "Радж"])
+        XCTAssertTrue(catalog.identifiers.contains("com.rhvoice.UkrainianVoices.clb"))
     }
 
     func testPublishedCatalogRejectsDuplicateIdentifier() {

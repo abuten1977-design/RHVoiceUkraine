@@ -28,11 +28,11 @@
 			<array>
 				<dict>
 					<key>description</key>
-					<string>RHVoice Ukrainian Speech Synthesizer</string>
+					<string>Голоси RHVoice UA для VoiceOver</string>
 					<key>manufacturer</key>
 					<string>RHVo</string>
 					<key>name</key>
-					<string>RHVoiceUA: Ukrainian Speech Synthesizer</string>
+					<string>RHVoice UA: Голоси</string>
 					<key>resourceBundleID</key>
 					<string>com.rhvoice.UkrainianVoices.mac.Extension</string>
 					<key>sandboxSafe</key>
