@@ -413,6 +413,45 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testPlainTextGroupedAmountsAndPhonesUseSharedClassification() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("На рахунку 30 118,90"),
+            "На рахунку тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("На рахунку 30 118.90"),
+            "На рахунку тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зараховано +9 000.00"),
+            "Зараховано плюс дев'ять тисяч"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зняття -17 000"),
+            "Зняття мінус сімнадцять тисяч"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("40 000, 3 050, 1 234 567"),
+            "сорок тисяч, три тисячі п'ятдесят, один мільйон двісті тридцять чотири тисячі п'ятсот шістдесят сім"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("40\u{00A0}000"),
+            "сорок тисяч"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380 97 148 98 92"),
+            "Телефон плюс триста вісімдесят, дев'яносто сім, сто сорок вісім, дев'яносто вісім, дев'яносто два"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("067 344 91 61"),
+            "нуль шістдесят сім, триста сорок чотири, дев'яносто один, шістдесят один"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("17.07.2026"),
+            "сімнадцяте липня дві тисячі двадцять шостого року"
+        )
+    }
+
     func testPhoneProcessingToggleLeavesTelephoneSayAsToSystem() {
         let input = #"<say-as interpret-as="telephone">+380 97 148 98 92</say-as>"#
         XCTAssertEqual(

@@ -110,8 +110,13 @@ enum RHVoiceApostropheNormalizer {
         // побачимо двокрапку між ними.
         let withTime = timeAsWords ? normalizeTime(in: withDates) : withDates
         let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withTime) : withTime
+        // First replace genuine phones. The phone pass uses the shared
+        // classifier, so `+9 000.00` remains available for the money pass.
         let withPhones = phoneProcessing ? normalizePhones(in: withAbbreviations, readingMode: phoneReadingMode) : withAbbreviations
-        let withNumbers = normalizeNumbers(in: withPhones)
+        // Bank apps frequently provide balances as ordinary text rather than
+        // a telephone say-as block.
+        let withGroupedAmounts = normalizeGroupedAmounts(in: withPhones)
+        let withNumbers = normalizeNumbers(in: withGroupedAmounts)
         return normalizeLatinAbbreviations(in: withNumbers)
     }
 
@@ -340,14 +345,16 @@ enum RHVoiceApostropheNormalizer {
         ) { match, source in
             guard let range = Range(match.range, in: source) else { return nil }
             let content = String(source[range])
-            guard content.filter(\.isNumber).count >= 7 else { return nil }
+            guard content.filter(\.isNumber).count >= 7,
+                  classifyTelephoneSayAsContent(content) == .phone
+            else { return nil }
             return telephoneToWords(content, readingMode: readingMode)
         }
 
         // Якщо iOS передала номер з кодом 380 без знака, не вигадуємо «плюс»:
         // він міг бути озвучений системою окремо. Але сам номер лишається
         // телефоном, тож читаємо його цифрами, а не великим числом.
-        return replacingMatches(
+        let withBare380 = replacingMatches(
             in: withPlusPrefixed,
             pattern: #"(?<![\p{L}\p{N}+])380[0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
             options: []
@@ -357,6 +364,69 @@ enum RHVoiceApostropheNormalizer {
             guard content.filter(\.isNumber).count >= 10 else { return nil }
             return telephoneToWords(content, readingMode: readingMode)
         }
+
+        // Other grouped phones with a leading zero (notably `067 344 91 61`)
+        // arrive as ordinary text too. Keep this pattern deliberately narrow:
+        // a broad whitespace matcher also captures decimal/fraction formatting.
+        return replacingMatches(
+            in: withBare380,
+            pattern: "(?<![\\p{L}\\p{N}])0[0-9]{0,2}(?:[   \\-()]+[0-9]{1,3}){2,}(?![\\p{L}\\p{N}])",
+            options: []
+        ) { match, source in
+            guard let range = Range(match.range, in: source) else { return nil }
+            let content = String(source[range])
+            guard classifyTelephoneSayAsContent(content) == .phone else { return nil }
+            return telephoneToWords(content, readingMode: readingMode)
+        }
+    }
+
+    /// Normalize only values with a thousands separator in ordinary text.
+    /// The broad candidate match deliberately lets the common classifier see a
+    /// whole phone number first, so fragments such as `97 148 98 92` are never
+    /// mistaken for a monetary value.
+    private static func normalizeGroupedAmounts(in text: String) -> String {
+        let separator = "[   ]"
+        let groupedInteger = "[0-9]{1,3}(?:\(separator)[0-9]{3})+"
+        let pattern = "(?<![\\p{L}\\p{N}])[+-]?\(groupedInteger)(?:[,.][0-9]{2})?(?![\\p{L}\\p{N}])"
+        return replacingMatches(in: text, pattern: pattern) { match in
+            guard let range = Range(match.range, in: text) else { return nil }
+            let candidate = String(text[range])
+            guard !isEmbeddedInNumberToken(text, range: range) else { return nil }
+
+            let sign: String
+            let value: String
+            if candidate.first == "+" {
+                sign = "плюс "
+                value = String(candidate.dropFirst())
+            } else if candidate.first == "-" {
+                sign = "мінус "
+                value = String(candidate.dropFirst())
+            } else {
+                sign = ""
+                value = candidate
+            }
+
+            guard classifyTelephoneSayAsContent(value) == .money,
+                  let words = groupedMoneyToWords(value)
+            else { return nil }
+            return sign + words
+        }
+    }
+
+    /// A candidate pattern must not begin halfway through a phone token with
+    /// parentheses or spaces (for example `+380 (63) 389 34 65`).
+    private static func isEmbeddedInNumberToken(_ source: String, range: Range<String.Index>) -> Bool {
+        var index = range.lowerBound
+        while index > source.startIndex {
+            let previous = source.index(before: index)
+            let character = source[previous]
+            if character == " " || character == "\u{00A0}" || character == "\u{202F}" {
+                index = previous
+                continue
+            }
+            return character.isNumber || character == "+" || character == "-" || character == "(" || character == ")"
+        }
+        return false
     }
 
     private static func normalizeSplitDateSayAsBlocks(in ssml: String) -> String {
