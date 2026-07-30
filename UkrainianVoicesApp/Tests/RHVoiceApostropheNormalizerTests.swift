@@ -632,6 +632,51 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         })
     }
 
+    func testAbbreviationDictionaryExportAndImportDoNotDuplicateEntries() throws {
+        let original = [
+            AbbreviationDictionaryEntry(abbreviation: "БПЛА", replacement: "безпілотний літальний апарат"),
+            AbbreviationDictionaryEntry(abbreviation: "ОСББ", replacement: "об'єднання співвласників")
+        ]
+        let url = try AbbreviationDictionary.makeExportFile(entries: original, now: Date(timeIntervalSince1970: 0))
+        defer { try? FileManager.default.removeItem(at: url) }
+        let preview = try AbbreviationDictionary.importPreview(from: Data(contentsOf: url)).get()
+        let result = AbbreviationDictionary.applyImport(preview, to: original, mode: .add)
+        XCTAssertEqual(result.entries, original)
+        XCTAssertEqual(result.summary.added, 0)
+        XCTAssertEqual(result.summary.updated, 2)
+    }
+
+    func testAbbreviationDictionaryImportAddUpdatesAndReplaceRemovesOldEntries() {
+        let existing = [
+            AbbreviationDictionaryEntry(abbreviation: "БПЛА", replacement: "старе"),
+            AbbreviationDictionaryEntry(abbreviation: "ОСББ", replacement: "старе ОСББ")
+        ]
+        let preview = AbbreviationDictionaryImportPreview(entries: [
+            AbbreviationDictionaryEntry(abbreviation: "БПЛА", replacement: "нове"),
+            AbbreviationDictionaryEntry(abbreviation: "ЄС", replacement: "Європейський Союз")
+        ], skippedLines: 0)
+        let added = AbbreviationDictionary.applyImport(preview, to: existing, mode: .add)
+        XCTAssertEqual(added.entries.count, 3)
+        XCTAssertEqual(added.summary, AbbreviationDictionaryImportSummary(added: 1, updated: 1, skipped: 0))
+        XCTAssertTrue(added.entries.contains { $0.abbreviation == "ОСББ" })
+
+        let replaced = AbbreviationDictionary.applyImport(preview, to: existing, mode: .replace)
+        XCTAssertEqual(replaced.entries, preview.entries)
+        XCTAssertEqual(replaced.summary, AbbreviationDictionaryImportSummary(added: 2, updated: 0, skipped: 0))
+    }
+
+    func testAbbreviationDictionaryImportCountsBadLinesAndRejectsEmptyFile() {
+        let data = Data("БПЛА = безпілотний\nнекоректний\n= порожній ключ\nЄС = \nЄС => Європейський Союз\n".utf8)
+        let preview = try? AbbreviationDictionary.importPreview(from: data).get()
+        XCTAssertEqual(preview?.entries.count, 2)
+        XCTAssertEqual(preview?.skippedLines, 3)
+        if case let .failure(error) = AbbreviationDictionary.importPreview(from: Data()) {
+            XCTAssertEqual(error, .emptyImport)
+        } else {
+            XCTFail("Порожній файл має бути відхилений")
+        }
+    }
+
     // MARK: - build 197: never invent a missing phone prefix
 
     func testPhoneNumbersStartingWith380KeepOnlyExplicitPlus() {

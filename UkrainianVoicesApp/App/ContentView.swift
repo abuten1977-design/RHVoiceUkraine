@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AVFoundation
+import UniformTypeIdentifiers
 #if os(iOS)
 import RHVoiceBridge
 #else
@@ -270,6 +271,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
     @Published var abbreviationDictionaryEntries: [AbbreviationDictionaryEntry] = []
+    @Published var abbreviationDictionaryShareURL: URL?
     @Published var sharedStorageState: SharedStorageState = .loading
 
     enum SharedStorageState: Equatable {
@@ -556,6 +558,44 @@ private final class ContentViewModel: ObservableObject {
         }
     }
 
+    func prepareAbbreviationDictionaryExport() {
+        guard sharedStorageState == .ready else { return }
+        Self.storageQueue.async { [weak self] in
+            do {
+                let entries = try AbbreviationDictionary.loadEntries().get()
+                let url = try AbbreviationDictionary.makeExportFile(entries: entries)
+                DispatchQueue.main.async { self?.abbreviationDictionaryShareURL = url }
+            } catch {
+                DispatchQueue.main.async { self?.setStatus("Не вдалося підготувати файл словника: \(error.localizedDescription)") }
+            }
+        }
+    }
+
+    func importAbbreviationDictionary(_ preview: AbbreviationDictionaryImportPreview, mode: AbbreviationDictionaryImportMode) {
+        guard sharedStorageState == .ready else {
+            setStatus(AbbreviationDictionaryError.appGroupUnavailable.localizedDescription)
+            return
+        }
+        Self.storageQueue.async { [weak self] in
+            do {
+                let existing = try AbbreviationDictionary.loadEntries().get()
+                let result = AbbreviationDictionary.applyImport(preview, to: existing, mode: mode)
+                try AbbreviationDictionary.save(entries: result.entries)
+                DispatchQueue.main.async {
+                    self?.abbreviationDictionaryEntries = result.entries
+                    self?.prepareAbbreviationDictionaryExport()
+                    self?.setStatus(result.summary.spokenDescription)
+                }
+            } catch {
+                DispatchQueue.main.async { self?.setStatus("Не вдалося завантажити словник: \(error.localizedDescription)") }
+            }
+        }
+    }
+
+    func reportAbbreviationDictionaryMessage(_ message: String) {
+        setStatus(message)
+    }
+
     func saveAbbreviationDictionaryEntry(oldAbbreviation: String?, abbreviation: String, replacement: String) -> Bool {
         guard sharedStorageState == .ready else {
             setStatus(AbbreviationDictionaryError.appGroupUnavailable.localizedDescription)
@@ -570,6 +610,7 @@ private final class ContentViewModel: ObservableObject {
                 setStatus("Запис додано до словника скорочень.")
             }
             reloadAbbreviationDictionary()
+            prepareAbbreviationDictionaryExport()
             return true
         } catch {
             setStatus(error.localizedDescription)
@@ -585,6 +626,7 @@ private final class ContentViewModel: ObservableObject {
         do {
             try AbbreviationDictionary.removeEntry(abbreviation: entry.abbreviation)
             reloadAbbreviationDictionary()
+            prepareAbbreviationDictionaryExport()
             setStatus("Запис «\(entry.abbreviation)» видалено зі словника скорочень.")
         } catch {
             setStatus(error.localizedDescription)
@@ -1391,10 +1433,14 @@ struct ContentView: View {
                 entries: model.abbreviationDictionaryEntries,
                 enabled: Binding(get: { model.abbreviationDictionaryEnabled }, set: { model.setAbbreviationDictionaryEnabled($0) }),
                 reload: { model.reloadAbbreviationDictionary() },
+                prepareExport: { model.prepareAbbreviationDictionaryExport() },
+                shareURL: model.abbreviationDictionaryShareURL,
                 save: { old, abbreviation, replacement in
                     model.saveAbbreviationDictionaryEntry(oldAbbreviation: old, abbreviation: abbreviation, replacement: replacement)
                 },
-                delete: { model.removeAbbreviationDictionaryEntry($0) }
+                delete: { model.removeAbbreviationDictionaryEntry($0) },
+                importDictionary: { preview, mode in model.importAbbreviationDictionary(preview, mode: mode) },
+                reportMessage: { model.reportAbbreviationDictionaryMessage($0) }
             )
         } label: {
             Label("Словник скорочень", systemImage: "text.book.closed")
@@ -1614,12 +1660,18 @@ private struct AbbreviationDictionaryView: View {
     let entries: [AbbreviationDictionaryEntry]
     @Binding var enabled: Bool
     let reload: () -> Void
+    let prepareExport: () -> Void
+    let shareURL: URL?
     let save: (String?, String, String) -> Bool
     let delete: (AbbreviationDictionaryEntry) -> Void
+    let importDictionary: (AbbreviationDictionaryImportPreview, AbbreviationDictionaryImportMode) -> Void
+    let reportMessage: (String) -> Void
 
     @State private var editingEntry: AbbreviationDictionaryEntry?
     @State private var isAddingEntry = false
     @State private var pendingDeletion: AbbreviationDictionaryEntry?
+    @State private var isImporting = false
+    @State private var pendingImport: AbbreviationDictionaryImportPreview?
 
     var body: some View {
         List {
@@ -1634,6 +1686,27 @@ private struct AbbreviationDictionaryView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
                     .accessibilityLabel("Базовий словник містить дні тижня, місяці, LTE, VPN, USB, Wi-Fi, GPS, SMS, PDF, USB-C та поширені скорочення. Власний запис має пріоритет.")
+            }
+
+            Section("Обмін") {
+                if let shareURL {
+                    ShareLink(item: shareURL) {
+                        Label("Поділитися словником", systemImage: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Поділитися словником")
+                    .accessibilityHint("Відкриває системне меню, щоб надіслати файл власних скорочень.")
+                } else {
+                    ProgressView("Підготовка файлу словника")
+                        .accessibilityLabel("Підготовка файлу словника")
+                }
+
+                Button {
+                    isImporting = true
+                } label: {
+                    Label("Завантажити словник із файлу", systemImage: "square.and.arrow.down")
+                }
+                .accessibilityLabel("Завантажити словник із файлу")
+                .accessibilityHint("Відкрити системний вибір текстового файлу словника.")
             }
 
             if entries.isEmpty {
@@ -1680,7 +1753,17 @@ private struct AbbreviationDictionaryView: View {
         .sheet(item: $editingEntry) { entry in
             AbbreviationDictionaryEditorView(entry: entry, save: save)
         }
-        .onAppear(perform: reload)
+        .onAppear {
+            reload()
+            prepareExport()
+        }
+        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.plainText], allowsMultipleSelection: false) { result in
+            guard case let .success(urls) = result, let url = urls.first else {
+                if case let .failure(error) = result { reportMessage("Не вдалося відкрити файл словника: \(error.localizedDescription)") }
+                return
+            }
+            readImportFile(url)
+        }
         .confirmationDialog(
             pendingDeletion.map { "Видалити запис «\($0.abbreviation)»?" } ?? "Видалити запис?",
             isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
@@ -1689,6 +1772,44 @@ private struct AbbreviationDictionaryView: View {
                 Button("Видалити", role: .destructive) { delete(entry); pendingDeletion = nil }
             }
             Button("Скасувати", role: .cancel) { pendingDeletion = nil }
+        }
+        .confirmationDialog(
+            "Як завантажити словник?",
+            isPresented: Binding(get: { pendingImport != nil }, set: { if !$0 { pendingImport = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Додати до наявних") {
+                if let preview = pendingImport { importDictionary(preview, .add) }
+                pendingImport = nil
+            }
+            Button("Замінити мої записи", role: .destructive) {
+                if let preview = pendingImport { importDictionary(preview, .replace) }
+                pendingImport = nil
+            }
+            Button("Скасувати", role: .cancel) { pendingImport = nil }
+        } message: {
+            if let preview = pendingImport {
+                Text("Знайдено записів: \(preview.entries.count). Некоректних рядків буде пропущено: \(preview.skippedLines).")
+            }
+        }
+    }
+
+    private func readImportFile(_ url: URL) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            let result: Result<AbbreviationDictionaryImportPreview, AbbreviationDictionaryError>
+            do {
+                result = AbbreviationDictionary.importPreview(from: try Data(contentsOf: url))
+            } catch {
+                result = .failure(.unreadableFile)
+            }
+            DispatchQueue.main.async {
+                switch result {
+                case let .success(preview): self.pendingImport = preview
+                case let .failure(error): self.reportMessage(error.localizedDescription)
+                }
+            }
         }
     }
 }

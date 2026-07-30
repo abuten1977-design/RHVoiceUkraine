@@ -16,6 +16,8 @@ enum AbbreviationDictionaryError: LocalizedError, Equatable {
     case emptyReplacement
     case appGroupUnavailable
     case unreadableFile
+    case fileTooLarge
+    case emptyImport
 
     var errorDescription: String? {
         switch self {
@@ -27,12 +29,38 @@ enum AbbreviationDictionaryError: LocalizedError, Equatable {
             return "Не вдалося відкрити спільне сховище App Group."
         case .unreadableFile:
             return "Файл словника не вдалося прочитати. Працює базовий словник."
+        case .fileTooLarge:
+            return "Файл словника завеликий. Максимальний розмір — 1 МБ."
+        case .emptyImport:
+            return "У файлі немає коректних записів. Мій словник не змінено."
         }
+    }
+}
+
+enum AbbreviationDictionaryImportMode {
+    case add
+    case replace
+}
+
+struct AbbreviationDictionaryImportPreview {
+    let entries: [AbbreviationDictionaryEntry]
+    let skippedLines: Int
+}
+
+struct AbbreviationDictionaryImportSummary: Equatable {
+    let added: Int
+    let updated: Int
+    let skipped: Int
+
+    var spokenDescription: String {
+        "Словник завантажено: додано \(added), оновлено \(updated), пропущено \(skipped)."
     }
 }
 
 enum AbbreviationDictionary {
     static let dictionaryFileName = "abbreviation_dictionary.txt"
+    static let maximumImportBytes = 1_024 * 1_024
+    static let maximumImportedEntries = 5_000
     static let changeNotificationName = RHVoiceSharedSettings.abbreviationDictionaryChangedNotificationName
 
     /// The resource is also included in both app bundles for people who want a
@@ -107,6 +135,66 @@ enum AbbreviationDictionary {
     static func entries(from data: Data) -> Result<[AbbreviationDictionaryEntry], AbbreviationDictionaryError> {
         guard let text = String(data: data, encoding: .utf8) else { return .failure(.unreadableFile) }
         return .success(parse(text: text))
+    }
+
+    static func importPreview(from data: Data) -> Result<AbbreviationDictionaryImportPreview, AbbreviationDictionaryError> {
+        guard data.count <= maximumImportBytes else { return .failure(.fileTooLarge) }
+        guard let text = String(data: data, encoding: .utf8) else { return .failure(.unreadableFile) }
+        var entries = [AbbreviationDictionaryEntry]()
+        var skipped = 0
+        for rawLine in text.components(separatedBy: .newlines) {
+            let line = rawLine.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !line.isEmpty, !line.hasPrefix("#") else { continue }
+            guard let split = separatorRange(in: line) else { skipped += 1; continue }
+            let left = String(line[..<split.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            let right = String(line[split.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !left.isEmpty, !right.isEmpty else { skipped += 1; continue }
+            if entries.contains(where: { sameKey($0.abbreviation, left) }) { skipped += 1 }
+            entries.removeAll { sameKey($0.abbreviation, left) }
+            entries.append(entry(left, right))
+            if entries.count > maximumImportedEntries { return .failure(.fileTooLarge) }
+        }
+        guard !entries.isEmpty else { return .failure(.emptyImport) }
+        return .success(AbbreviationDictionaryImportPreview(entries: entries, skippedLines: skipped))
+    }
+
+    static func applyImport(
+        _ preview: AbbreviationDictionaryImportPreview,
+        to existing: [AbbreviationDictionaryEntry],
+        mode: AbbreviationDictionaryImportMode
+    ) -> (entries: [AbbreviationDictionaryEntry], summary: AbbreviationDictionaryImportSummary) {
+        guard case .add = mode else {
+            return (preview.entries, AbbreviationDictionaryImportSummary(added: preview.entries.count, updated: 0, skipped: preview.skippedLines))
+        }
+        var result = normalizedEntries(existing)
+        var added = 0
+        var updated = 0
+        for entry in preview.entries {
+            if result.contains(where: { sameKey($0.abbreviation, entry.abbreviation) }) { updated += 1 } else { added += 1 }
+            result.removeAll { sameKey($0.abbreviation, entry.abbreviation) }
+            result.append(entry)
+        }
+        return (result, AbbreviationDictionaryImportSummary(added: added, updated: updated, skipped: preview.skippedLines))
+    }
+
+    static func makeExportFile(entries: [AbbreviationDictionaryEntry], now: Date = Date()) throws -> URL {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let date = formatter.string(from: now)
+        let fileName = "rhvoice-скорочення-\(date).txt"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        let normalized = normalizedEntries(entries)
+        let header = [
+            "# RHVoice Ukrainian — словник скорочень",
+            "# Експортовано: \(date)",
+            "# Власних записів: \(normalized.count)",
+            "# Формат: скорочення = заміна",
+            ""
+        ]
+        let body = header.joined(separator: "\n") + normalized.map { "\($0.abbreviation) = \($0.replacement)" }.joined(separator: "\n") + "\n"
+        try Data(body.utf8).write(to: url, options: [.atomic])
+        return url
     }
 
     static func mergedEntries(userEntries: [AbbreviationDictionaryEntry]) -> [AbbreviationDictionaryEntry] {
