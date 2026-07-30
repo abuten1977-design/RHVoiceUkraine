@@ -567,11 +567,11 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     func testLatinAllCapsAbbreviationsWrapInCharacterSayAs() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Увімкни VPN."),
-            #"Увімкни <say-as interpret-as="characters">VPN</say-as>."#
+            "Увімкни ве пе ен."
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Мережа LTE недоступна."),
-            #"Мережа <say-as interpret-as="characters">LTE</say-as> недоступна."#
+            "Мережа ел те е недоступна."
         )
     }
 
@@ -587,6 +587,49 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Стандарт 4G і iOS26 тут."),
             "Стандарт 4G і iOS26 тут."
         )
+    }
+
+    // MARK: - build 205: abbreviation replacement dictionary
+
+    func testAbbreviationDictionaryExpandsWholeWordsAfterStructuredValues() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("ср. вт, LTE VPN"),
+            "середа. вівторок, ел те е ве пе ен"
+        )
+        // This textual date was already consumed by the date pass before the
+        // dictionary sees the short month token.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("23 лип."),
+            "двадцять третє липня"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("vpnclient LTE"),
+            "vpnclient ел те е"
+        )
+    }
+
+    func testAbbreviationDictionaryUserEntryOverridesBundledEntry() {
+        let entries = AbbreviationDictionary.mergedEntries(userEntries: [
+            AbbreviationDictionaryEntry(abbreviation: "ср", replacement: "середа користувача")
+        ])
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("ср", abbreviationDictionaryEntries: entries),
+            "середа користувача"
+        )
+    }
+
+    func testAbbreviationDictionaryCanBeDisabled() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("ср LTE", abbreviationDictionaryEnabled: false),
+            #"ср <say-as interpret-as="characters">LTE</say-as>"#
+        )
+    }
+
+    func testUnreadableAbbreviationDictionaryFallsBackToBundledEntries() {
+        XCTAssertEqual(AbbreviationDictionary.entries(from: Data([0xFF])), .failure(.unreadableFile))
+        XCTAssertTrue(AbbreviationDictionary.mergedEntries(userEntries: []).contains {
+            $0.abbreviation == "ср" && $0.replacement == "середа"
+        })
     }
 
     // MARK: - build 197: never invent a missing phone prefix

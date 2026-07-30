@@ -264,10 +264,12 @@ private final class ContentViewModel: ObservableObject {
     @Published var datesAsWordsEnabled: Bool = true
     @Published var timeAsWordsEnabled: Bool = true
     @Published var abbreviationsAsWordsEnabled: Bool = true
+    @Published var abbreviationDictionaryEnabled: Bool = true
     @Published var phoneNumberProcessingEnabled: Bool = true
     @Published var phoneNumberReadingMode: RHVoicePhoneNumberReadingMode = .groups
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
+    @Published var abbreviationDictionaryEntries: [AbbreviationDictionaryEntry] = []
     @Published var sharedStorageState: SharedStorageState = .loading
 
     enum SharedStorageState: Equatable {
@@ -386,11 +388,12 @@ private final class ContentViewModel: ObservableObject {
             }
             let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
             let entries = PersonalUserDictionary.loadEntries()
+            let abbreviationEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
             let status = PersonalUserDictionary.fileStatus()
             let logSize = DebugLogShareHelper.logSize()
             let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
             DispatchQueue.main.async {
-                self?.applyLoadedState(snapshot: snapshot, entries: entries, status: status, logSize: logSize, shareURL: shareURL)
+                self?.applyLoadedState(snapshot: snapshot, entries: entries, abbreviationEntries: abbreviationEntries, status: status, logSize: logSize, shareURL: shareURL)
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
@@ -403,6 +406,7 @@ private final class ContentViewModel: ObservableObject {
     private func applyLoadedState(
         snapshot: RHVoiceSharedSettingsSnapshot,
         entries: [PersonalDictionaryEntry],
+        abbreviationEntries: [AbbreviationDictionaryEntry],
         status: PersonalDictionaryFileStatus,
         logSize: Int,
         shareURL: URL?
@@ -422,6 +426,7 @@ private final class ContentViewModel: ObservableObject {
         wordGap = initialWordGap
         pitch = snapshot.generalSettings.pitch
         personalDictionaryEntries = entries
+        abbreviationDictionaryEntries = abbreviationEntries
         personalDictionaryStatus = status
         debugLogSize = logSize
         debugLogShareURL = shareURL
@@ -540,6 +545,49 @@ private final class ContentViewModel: ObservableObject {
                 self?.personalDictionaryEntries = entries
                 self?.personalDictionaryStatus = status
             }
+        }
+    }
+
+    func reloadAbbreviationDictionary() {
+        guard sharedStorageState == .ready else { return }
+        Self.storageQueue.async { [weak self] in
+            let entries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
+            DispatchQueue.main.async { self?.abbreviationDictionaryEntries = entries }
+        }
+    }
+
+    func saveAbbreviationDictionaryEntry(oldAbbreviation: String?, abbreviation: String, replacement: String) -> Bool {
+        guard sharedStorageState == .ready else {
+            setStatus(AbbreviationDictionaryError.appGroupUnavailable.localizedDescription)
+            return false
+        }
+        do {
+            if let oldAbbreviation {
+                try AbbreviationDictionary.updateEntry(oldAbbreviation: oldAbbreviation, abbreviation: abbreviation, replacement: replacement)
+                setStatus("Запис словника скорочень оновлено.")
+            } else {
+                try AbbreviationDictionary.addEntry(abbreviation: abbreviation, replacement: replacement)
+                setStatus("Запис додано до словника скорочень.")
+            }
+            reloadAbbreviationDictionary()
+            return true
+        } catch {
+            setStatus(error.localizedDescription)
+            return false
+        }
+    }
+
+    func removeAbbreviationDictionaryEntry(_ entry: AbbreviationDictionaryEntry) {
+        guard sharedStorageState == .ready else {
+            setStatus(AbbreviationDictionaryError.appGroupUnavailable.localizedDescription)
+            return
+        }
+        do {
+            try AbbreviationDictionary.removeEntry(abbreviation: entry.abbreviation)
+            reloadAbbreviationDictionary()
+            setStatus("Запис «\(entry.abbreviation)» видалено зі словника скорочень.")
+        } catch {
+            setStatus(error.localizedDescription)
         }
     }
 
@@ -686,6 +734,8 @@ private final class ContentViewModel: ObservableObject {
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey) ?? true)
                 self?.abbreviationsAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) == nil
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) ?? true)
+                self?.abbreviationDictionaryEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) ?? true)
                 self?.phoneNumberProcessingEnabled = defaults?.object(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) == nil
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) ?? true)
                 self?.phoneNumberReadingMode = defaults?.string(forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey)
@@ -723,6 +773,16 @@ private final class ContentViewModel: ObservableObject {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
             DispatchQueue.main.async {
                 self?.setStatus(enabled ? "Скорочення читаються повними словами." : "Скорочення читаються без розгортання.")
+            }
+        }
+    }
+
+    func setAbbreviationDictionaryEnabled(_ enabled: Bool) {
+        abbreviationDictionaryEnabled = enabled
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey)
+            DispatchQueue.main.async {
+                self?.setStatus(enabled ? "Словник скорочень увімкнено." : "Словник скорочень вимкнено.")
             }
         }
     }
@@ -1036,6 +1096,7 @@ struct ContentView: View {
 
                 Section {
                     personalDictionaryLink
+                    abbreviationDictionaryLink
                     downloadableLanguagesLink
                 }
 
@@ -1125,6 +1186,12 @@ struct ContentView: View {
                 Divider()
 
                 personalDictionaryLink
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                Divider()
+
+                abbreviationDictionaryLink
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
 
@@ -1316,6 +1383,24 @@ struct ContentView: View {
         }
         .accessibilityLabel("Мій словник")
         .accessibilityHint("Відкрити особистий словник вимови.")
+    }
+
+    private var abbreviationDictionaryLink: some View {
+        NavigationLink {
+            AbbreviationDictionaryView(
+                entries: model.abbreviationDictionaryEntries,
+                enabled: Binding(get: { model.abbreviationDictionaryEnabled }, set: { model.setAbbreviationDictionaryEnabled($0) }),
+                reload: { model.reloadAbbreviationDictionary() },
+                save: { old, abbreviation, replacement in
+                    model.saveAbbreviationDictionaryEntry(oldAbbreviation: old, abbreviation: abbreviation, replacement: replacement)
+                },
+                delete: { model.removeAbbreviationDictionaryEntry($0) }
+            )
+        } label: {
+            Label("Словник скорочень", systemImage: "text.book.closed")
+        }
+        .accessibilityLabel("Словник скорочень")
+        .accessibilityHint("Відкрити словник замін для скорочень та абревіатур.")
     }
 
     private var downloadableLanguagesLink: some View {
@@ -1522,6 +1607,131 @@ private struct PersonalDictionaryView: View {
 #if os(macOS)
         .frame(minWidth: 460, minHeight: 520)
 #endif
+    }
+}
+
+private struct AbbreviationDictionaryView: View {
+    let entries: [AbbreviationDictionaryEntry]
+    @Binding var enabled: Bool
+    let reload: () -> Void
+    let save: (String?, String, String) -> Bool
+    let delete: (AbbreviationDictionaryEntry) -> Void
+
+    @State private var editingEntry: AbbreviationDictionaryEntry?
+    @State private var isAddingEntry = false
+    @State private var pendingDeletion: AbbreviationDictionaryEntry?
+
+    var body: some View {
+        List {
+            Section {
+                Toggle("Розгортати скорочення зі словника", isOn: $enabled)
+                    .accessibilityLabel("Розгортати скорочення зі словника")
+                    .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
+            }
+
+            Section("Базовий словник") {
+                Text("Дні тижня, місяці, LTE, VPN, USB, Wi-Fi, GPS, SMS, PDF, USB-C та поширені скорочення вже доступні. Власний запис із таким самим ключем має пріоритет.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .accessibilityLabel("Базовий словник містить дні тижня, місяці, LTE, VPN, USB, Wi-Fi, GPS, SMS, PDF, USB-C та поширені скорочення. Власний запис має пріоритет.")
+            }
+
+            if entries.isEmpty {
+                Section("Власні записи") {
+                    Text("Власних записів ще немає.")
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Власний словник скорочень порожній")
+                }
+            } else {
+                Section("Власні записи") {
+                    ForEach(entries) { entry in
+                        Button {
+                            editingEntry = entry
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.abbreviation).font(.headline)
+                                Text(entry.replacement).foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(entry.abbreviation), читати як \(entry.replacement)")
+                        .accessibilityHint("Відкрити редагування запису")
+                        .swipeActions {
+                            Button(role: .destructive) { pendingDeletion = entry } label: {
+                                Label("Видалити", systemImage: "trash")
+                            }
+                        }
+                    }
+                    .onDelete { offsets in pendingDeletion = offsets.map { entries[$0] }.first }
+                }
+            }
+        }
+        .navigationTitle("Словник скорочень")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button { isAddingEntry = true } label: { Label("Додати", systemImage: "plus") }
+                    .accessibilityLabel("Додати запис до словника скорочень")
+                    .accessibilityHint("Відкрити форму нового скорочення.")
+            }
+        }
+        .sheet(isPresented: $isAddingEntry) {
+            AbbreviationDictionaryEditorView(entry: nil, save: save)
+        }
+        .sheet(item: $editingEntry) { entry in
+            AbbreviationDictionaryEditorView(entry: entry, save: save)
+        }
+        .onAppear(perform: reload)
+        .confirmationDialog(
+            pendingDeletion.map { "Видалити запис «\($0.abbreviation)»?" } ?? "Видалити запис?",
+            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
+        ) {
+            if let entry = pendingDeletion {
+                Button("Видалити", role: .destructive) { delete(entry); pendingDeletion = nil }
+            }
+            Button("Скасувати", role: .cancel) { pendingDeletion = nil }
+        }
+    }
+}
+
+private struct AbbreviationDictionaryEditorView: View {
+    let entry: AbbreviationDictionaryEntry?
+    let save: (String?, String, String) -> Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var abbreviation: String
+    @State private var replacement: String
+
+    init(entry: AbbreviationDictionaryEntry?, save: @escaping (String?, String, String) -> Bool) {
+        self.entry = entry
+        self.save = save
+        _abbreviation = State(initialValue: entry?.abbreviation ?? "")
+        _replacement = State(initialValue: entry?.replacement ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Скорочення") {
+                    TextField("наприклад: БПЛА", text: $abbreviation)
+                        .accessibilityLabel("Скорочення")
+                        .accessibilityHint("Точний запис, який треба замінити.")
+                }
+                Section("Як читати") {
+                    TextField("наприклад: безпілотний літальний апарат", text: $replacement)
+                        .accessibilityLabel("Як читати")
+                        .accessibilityHint("Слова, якими треба замінити скорочення.")
+                }
+            }
+            .navigationTitle(entry == nil ? "Новий запис" : "Редагувати запис")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Скасувати") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Зберегти") {
+                        if save(entry?.abbreviation, abbreviation, replacement) { dismiss() }
+                    }
+                    .accessibilityHint("Зберегти запис і застосувати його без перезапуску VoiceOver.")
+                }
+            }
+        }
     }
 }
 

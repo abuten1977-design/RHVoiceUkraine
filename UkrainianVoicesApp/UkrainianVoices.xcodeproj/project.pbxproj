@@ -12,6 +12,7 @@
 		072668F837F98ED34904ACC8 /* HTS_hidden.h in Headers */ = {isa = PBXBuildFile; fileRef = 99A8DE14275FFFCED7F0DE99 /* HTS_hidden.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0B7397098AAA444015ABD91D /* playback_stream_impl.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F3FCB18C32F1BE8010CF2EAE /* playback_stream_impl.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		0B78FF9B5075CFAB47404FE9 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DE393252B774F70C2EC2186 /* AVFoundation.framework */; };
+		0B7AB3D94FE5D8744BBEC599 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		0CE8E17BA1E5F8596DCAF304 /* RHVoiceApostropheNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */; };
 		0FAEEA4A4DAFFF2B63542C73 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3723A616A1AA1721FE374137 /* PrivacyInfo.xcprivacy */; };
 		1096D3488E16F60DA3DD16AA /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
@@ -20,9 +21,11 @@
 		184BB8C61E94E9F02C83CFC5 /* RHVoiceEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = DA4BEFD7AB65DCD7844523D6 /* RHVoiceEngine.mm */; };
 		191D98EAB3DDE2046D482541 /* RHVoiceDownloadableVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */; };
 		1954FBD0952E35C71B2D02F4 /* language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4F093732EB8EC9C92C7B1BF /* language.cpp */; };
+		19E703750191B1162AAFC7E7 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		1EBAB05E1E7F3AB28E7FCF69 /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
 		1F0D9C19CB055D0748CEAD87 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AFF0C0258740E95FC3100BF /* Assets.xcassets */; };
 		1F200EBD9621AD8B9A944143 /* RHVoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 80832B21A94FE2AB793DA2C6 /* RHVoice.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		203B01D23EE13B283E6CA3A7 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		21EB49301DCED629335E1FD4 /* UkrainianVoicesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 594274F7B6015E8B24736D5A /* UkrainianVoicesApp.swift */; };
 		24637D10E0999D107E577466 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9435D1BF5C88934351ABD065 /* AudioToolbox.framework */; };
 		25242C8263697EE99E70F59E /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
@@ -122,6 +125,7 @@
 		8D9DB560169CF416BA886CF5 /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
 		8DEBB67F90F1B1BA4E20B9AD /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = E135D3DEF710767D79216462 /* utils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8E8BB496F5F02186BFB9A0D4 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
+		9096605455395705699F8E65 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		91EA7B669C7AD13DE4D388D3 /* data_only_language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CEE81E11B972201DDAAE7C24 /* data_only_language.cpp */; };
 		92C923B0C0C370489F9AE5CF /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DE393252B774F70C2EC2186 /* AVFoundation.framework */; };
 		931CEA15DDE361ECA551D7A0 /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
@@ -151,6 +155,7 @@
 		B10CC1C7AE90D8071DD049BA /* RHVoiceSelfTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */; };
 		B314219133998B7FA4BCFD41 /* sonic.install in Resources */ = {isa = PBXBuildFile; fileRef = 7DE7BD3D387C9F5E2BE79CA4 /* sonic.install */; };
 		B3A8C33EF5F18FD484EEA426 /* RHVoiceDownloadableVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */; };
+		B4259750FC715C4C61F649FB /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		B503097BF435BA449F101C4E /* RHVoicePipelineSplitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222E6C35B476BE184E65F68B /* RHVoicePipelineSplitterTests.swift */; };
 		B5DF81C847C2AEADF530BBDA /* ini_parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B5099789658D17BC33F4046D /* ini_parser.cpp */; };
 		B831B2FF80B25BEA038889A3 /* fst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D1937082EB11DB021314C6 /* fst.cpp */; };
@@ -288,6 +293,7 @@
 /* Begin PBXFileReference section */
 		06A9E11FCA9BC2991F48D26C /* tts_api.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = tts_api.cpp; sourceTree = "<group>"; };
 		077CF5A8496B9045EB9EEEAA /* path.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = path.cpp; sourceTree = "<group>"; };
+		0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbbreviationDictionary.swift; sourceTree = "<group>"; };
 		0CC4DAD0268908920F9C1C4E /* AudioUnitFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUnitFactory.swift; sourceTree = "<group>"; };
 		13EF9B67E2D253DEFA3ACD4E /* README */ = {isa = PBXFileReference; path = README; sourceTree = "<group>"; };
 		151B2E257CD5E6CFBE177952 /* emoji.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emoji.cpp; sourceTree = "<group>"; };
@@ -805,6 +811,7 @@
 		FFD49389CF3603FFA416C0EA /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */,
 				6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */,
 				3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */,
 				1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */,
@@ -1223,6 +1230,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0B7AB3D94FE5D8744BBEC599 /* AbbreviationDictionary.swift in Sources */,
 				33ADB0603331A14B49E553C7 /* ContentView.swift in Sources */,
 				00F2E3FFD429372C3907BE62 /* DebugLogShareHelper.swift in Sources */,
 				3B376AA1621F6A2B1145A255 /* DownloadableLanguagesView.swift in Sources */,
@@ -1244,6 +1252,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				19E703750191B1162AAFC7E7 /* AbbreviationDictionary.swift in Sources */,
 				BBFD5EC0A87665EAC722501F /* ContentView.swift in Sources */,
 				47BCBF0D3DB72930007CD48D /* DebugLogShareHelper.swift in Sources */,
 				2B9FDFF2C0322AAB8A81D238 /* DownloadableLanguagesView.swift in Sources */,
@@ -1265,6 +1274,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9096605455395705699F8E65 /* AbbreviationDictionary.swift in Sources */,
 				A4CA3CBF3C1C6B56AB5D51F7 /* AudioUnitFactory.swift in Sources */,
 				3C1C2C72D59FFA8C1D1FB51B /* PersonalUserDictionary.swift in Sources */,
 				89C31E2FE218B3E725B0F423 /* RHVoiceApostropheNormalizer.swift in Sources */,
@@ -1290,6 +1300,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B4259750FC715C4C61F649FB /* AbbreviationDictionary.swift in Sources */,
 				85E622A8948437D510BE7EDF /* AudioUnitFactory.swift in Sources */,
 				8AFF0F507BBDAF702C6A23B6 /* PersonalUserDictionary.swift in Sources */,
 				8A67E734E8D664687B1CF4CC /* RHVoiceApostropheNormalizer.swift in Sources */,
@@ -1375,6 +1386,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				203B01D23EE13B283E6CA3A7 /* AbbreviationDictionary.swift in Sources */,
 				A1410A6EB0B2C9F4C0F64A4E /* PersonalUserDictionary.swift in Sources */,
 				772AC52F9A7285EB5801D5FB /* PersonalUserDictionaryTests.swift in Sources */,
 				81FE427F8C112F0D81D069F2 /* RHVoiceApostropheNormalizer.swift in Sources */,

@@ -15,6 +15,8 @@ enum RHVoiceApostropheNormalizer {
         datesAsWords: Bool = true,
         timeAsWords: Bool = true,
         abbreviationsAsWords: Bool = true,
+        abbreviationDictionaryEnabled: Bool = true,
+        abbreviationDictionaryEntries: [AbbreviationDictionaryEntry]? = nil,
         phoneProcessing: Bool = true,
         phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups
     ) -> String {
@@ -34,7 +36,7 @@ enum RHVoiceApostropheNormalizer {
                 if character == ">" {
                     output += preserveTelephoneSayAsText
                         ? textSegment
-                        : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
+                        : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
                     textSegment.removeAll(keepingCapacity: true)
                     output += tagSegment
                     if !phoneProcessing {
@@ -58,11 +60,11 @@ enum RHVoiceApostropheNormalizer {
         if insideTag {
             output += (preserveTelephoneSayAsText
                 ? textSegment
-                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)) + tagSegment
+                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)) + tagSegment
         } else {
             output += preserveTelephoneSayAsText
                 ? textSegment
-                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
+                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
         }
         return output
     }
@@ -101,6 +103,8 @@ enum RHVoiceApostropheNormalizer {
         datesAsWords: Bool = true,
         timeAsWords: Bool = true,
         abbreviationsAsWords: Bool = true,
+        abbreviationDictionaryEnabled: Bool = true,
+        abbreviationDictionaryEntries: [AbbreviationDictionaryEntry]? = nil,
         phoneProcessing: Bool = true,
         phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups
     ) -> String {
@@ -117,7 +121,51 @@ enum RHVoiceApostropheNormalizer {
         // a telephone say-as block.
         let withGroupedAmounts = normalizeGroupedAmounts(in: withPhones)
         let withNumbers = normalizeNumbers(in: withGroupedAmounts)
-        return normalizeLatinAbbreviations(in: withNumbers)
+        let withDictionary = abbreviationDictionaryEnabled
+            ? normalizeAbbreviationDictionary(in: withNumbers, entries: abbreviationDictionaryEntries ?? AbbreviationDictionaryCache.shared.entries())
+            : withNumbers
+        return normalizeLatinAbbreviations(in: withDictionary)
+    }
+
+    /// Dictionary substitutions are deliberately last among structured values:
+    /// dates, time, phones and amounts have already consumed their tokens.
+    private static func normalizeAbbreviationDictionary(in text: String, entries: [AbbreviationDictionaryEntry]) -> String {
+        entries
+            .sorted { $0.abbreviation.count > $1.abbreviation.count }
+            .reduce(text) { result, entry in
+                let escaped = NSRegularExpression.escapedPattern(for: entry.abbreviation)
+                let options: NSRegularExpression.Options = containsLatin(entry.abbreviation) ? [] : [.caseInsensitive]
+                let pattern = "(?<![\\p{L}\\p{N}])" + escaped + "(?![\\p{L}\\p{N}])"
+                return replacingMatches(in: result, pattern: pattern, options: options) { match, source in
+                    guard let range = Range(match.range, in: source),
+                          !isProtectedTextualDateToken(entry.abbreviation, source: source, range: range)
+                    else { return nil }
+                    return entry.replacement
+                }
+            }
+    }
+
+    /// When date reading is deliberately disabled, retain the original date
+    /// tokens rather than letting the independent dictionary partially rewrite
+    /// an invalid or short textual date (for example `чт 23 лип.`).
+    private static func isProtectedTextualDateToken(_ key: String, source: String, range: Range<String.Index>) -> Bool {
+        let normalized = key.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "."))
+        let before = String(source[..<range.lowerBound])
+        let after = String(source[range.upperBound...])
+        let weekdays: Set<String> = ["пн", "вт", "ср", "чт", "пт", "сб", "нд"]
+        let months: Set<String> = ["січ", "лют", "бер", "квіт", "трав", "черв", "лип", "серп", "вер", "жовт", "лист", "груд"]
+        if weekdays.contains(normalized) {
+            return after.range(of: #"^\.?,?\s*[0-9]{1,2}(?:[.\s]|$)"#, options: .regularExpression) != nil
+        }
+        if months.contains(normalized) {
+            return before.range(of: #"[0-9]{1,2}\s*$"#, options: .regularExpression) != nil
+                || after.range(of: #"^\s*[0-9]{4}\b"#, options: .regularExpression) != nil
+        }
+        return false
+    }
+
+    private static func containsLatin(_ value: String) -> Bool {
+        value.unicodeScalars.contains { (65...90).contains($0.value) || (97...122).contains($0.value) }
     }
 
     private static func spokenStandaloneApostropheName(for text: String) -> String? {

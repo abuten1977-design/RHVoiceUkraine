@@ -31,8 +31,10 @@ enum RHVoiceSharedSettings {
     // кожну групу як число, `digits` зберігає старе читання по цифрах.
     static let phoneNumberProcessingKey = "phoneNumberProcessing"
     static let phoneNumberReadingModeKey = "phoneNumberReadingMode"
+    static let abbreviationDictionaryEnabledKey = "abbreviationDictionaryEnabled"
     static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
     static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
+    static let abbreviationDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.abbreviationDictionaryChanged"
 
     static let defaultVoiceIdentifier = "com.rhvoice.UkrainianVoices.anatol"
     static var defaultEnabledVoiceIdentifiers: Set<String> {
@@ -79,6 +81,10 @@ enum RHVoiceDarwinNotifications {
     static func notifyPersonalDictionaryChanged() {
         post(RHVoiceSharedSettings.personalDictionaryChangedNotificationName)
     }
+
+    static func notifyAbbreviationDictionaryChanged() {
+        post(RHVoiceSharedSettings.abbreviationDictionaryChangedNotificationName)
+    }
 }
 
 enum RHVoiceMacAppGroupMigration {
@@ -105,6 +111,7 @@ enum RHVoiceMacAppGroupMigration {
             (RHVoiceSharedSettings.snapshotFileName, false),
             ("user_dictionary.txt", false),
             ("user_dictionary_meta.json", false),
+            ("abbreviation_dictionary.txt", false),
             ("RHVoiceConfig", true)
         ]
 
