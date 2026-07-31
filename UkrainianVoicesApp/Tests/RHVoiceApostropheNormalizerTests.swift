@@ -677,6 +677,29 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         }
     }
 
+    func testAbbreviationDictionaryMatcherKeepsTypingPathFastWithHundredEntries() {
+        let entries = (0..<100).map {
+            AbbreviationDictionaryEntry(abbreviation: "ТЕСТ\($0)", replacement: "заміна \($0)")
+        }
+        let matcher = AbbreviationDictionaryMatcher(entries: entries)
+        let start = Date()
+        for _ in 0..<1_000 {
+            XCTAssertEqual(matcher.replace(in: "а") { _, _, _ in true }, "а")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(start), 0.25, "Один символ не повинен будувати регулярні вирази словника")
+    }
+
+    func testAbbreviationDictionaryLongerKeyWinsOverShorterKey() {
+        let entries = [
+            AbbreviationDictionaryEntry(abbreviation: "USB", replacement: "коротке"),
+            AbbreviationDictionaryEntry(abbreviation: "USB-C", replacement: "довге")
+        ]
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("USB-C", abbreviationDictionaryEntries: entries),
+            "довге"
+        )
+    }
+
     // MARK: - build 197: never invent a missing phone prefix
 
     func testPhoneNumbersStartingWith380KeepOnlyExplicitPlus() {

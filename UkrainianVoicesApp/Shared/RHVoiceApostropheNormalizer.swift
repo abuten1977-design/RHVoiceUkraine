@@ -122,27 +122,24 @@ enum RHVoiceApostropheNormalizer {
         let withGroupedAmounts = normalizeGroupedAmounts(in: withPhones)
         let withNumbers = normalizeNumbers(in: withGroupedAmounts)
         let withDictionary = abbreviationDictionaryEnabled
-            ? normalizeAbbreviationDictionary(in: withNumbers, entries: abbreviationDictionaryEntries ?? AbbreviationDictionaryCache.shared.entries())
+            ? normalizeAbbreviationDictionary(in: withNumbers, entries: abbreviationDictionaryEntries)
             : withNumbers
         return normalizeLatinAbbreviations(in: withDictionary)
     }
 
     /// Dictionary substitutions are deliberately last among structured values:
     /// dates, time, phones and amounts have already consumed their tokens.
-    private static func normalizeAbbreviationDictionary(in text: String, entries: [AbbreviationDictionaryEntry]) -> String {
-        entries
-            .sorted { $0.abbreviation.count > $1.abbreviation.count }
-            .reduce(text) { result, entry in
-                let escaped = NSRegularExpression.escapedPattern(for: entry.abbreviation)
-                let options: NSRegularExpression.Options = containsLatin(entry.abbreviation) ? [] : [.caseInsensitive]
-                let pattern = "(?<![\\p{L}\\p{N}])" + escaped + "(?![\\p{L}\\p{N}])"
-                return replacingMatches(in: result, pattern: pattern, options: options) { match, source in
-                    guard let range = Range(match.range, in: source),
-                          !isProtectedTextualDateToken(entry.abbreviation, source: source, range: range)
-                    else { return nil }
-                    return entry.replacement
-                }
-            }
+    private static func normalizeAbbreviationDictionary(in text: String, entries: [AbbreviationDictionaryEntry]?) -> String {
+        let replace: (String, (String, Range<String.Index>, String) -> Bool) -> String
+        if let entries {
+            let matcher = AbbreviationDictionaryMatcher(entries: entries)
+            replace = { value, guardReplacement in matcher.replace(in: value, shouldReplace: guardReplacement) }
+        } else {
+            replace = { value, guardReplacement in AbbreviationDictionaryCache.shared.replace(in: value, shouldReplace: guardReplacement) }
+        }
+        return replace(text) { key, range, source in
+            !isProtectedTextualDateToken(key, source: source, range: range)
+        }
     }
 
     /// When date reading is deliberately disabled, retain the original date
@@ -162,10 +159,6 @@ enum RHVoiceApostropheNormalizer {
                 || after.range(of: #"^\s*[0-9]{4}\b"#, options: .regularExpression) != nil
         }
         return false
-    }
-
-    private static func containsLatin(_ value: String) -> Bool {
-        value.unicodeScalars.contains { (65...90).contains($0.value) || (97...122).contains($0.value) }
     }
 
     private static func spokenStandaloneApostropheName(for text: String) -> String? {

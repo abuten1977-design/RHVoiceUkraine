@@ -5,11 +5,13 @@ private struct VoiceSelfCheckReport {
     let stored: String
     let published: String
     let system: String
+    let abbreviationDictionary: String
 
     static let initial = Self(
         stored: "На пристрої збережено: перевірка ще не виконувалась.",
         published: "Опублікований список: перевірка ще не виконувалась.",
-        system: "Система бачить голоси: перевірка ще не виконувалась."
+        system: "Система бачить голоси: перевірка ще не виконувалась.",
+        abbreviationDictionary: "Словник скорочень: перевірка ще не виконувалась."
     )
 
     static func collect() -> Self {
@@ -27,7 +29,8 @@ private struct VoiceSelfCheckReport {
             return Self(
                 stored: stored,
                 published: "Опублікований список голосів відсутній.",
-                system: "Система бачить голоси: список ще не опубліковано."
+                system: "Система бачить голоси: список ще не опубліковано.",
+                abbreviationDictionary: abbreviationDictionaryStatus()
             )
         }
         let published = "Опубліковано голосів: \(catalog.descriptors.count), версія списку \(catalog.revision)."
@@ -38,7 +41,16 @@ private struct VoiceSelfCheckReport {
         let system = systemNames.isEmpty
             ? "Система поки не бачить голосів RHVoice UA."
             : "Система бачить голоси: \(systemNames.joined(separator: ", "))."
-        return Self(stored: stored, published: published, system: system)
+        return Self(stored: stored, published: published, system: system, abbreviationDictionary: abbreviationDictionaryStatus())
+    }
+
+    private static func abbreviationDictionaryStatus() -> String {
+        let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+        let enabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) == nil
+            ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) ?? true)
+        guard enabled else { return "Словник скорочень: вимкнено." }
+        let user = (try? AbbreviationDictionary.loadEntries().get())?.count ?? 0
+        return "Словник скорочень: базових \(AbbreviationDictionary.bundledEntries.count), власних \(user)."
     }
 
     private static func directorySize(_ url: URL?) -> Int64 {
@@ -138,6 +150,8 @@ struct DownloadableLanguagesView: View {
                 .accessibilityLabel(selfCheckReport.published)
             Text(selfCheckReport.system)
                 .accessibilityLabel(selfCheckReport.system)
+            Text(selfCheckReport.abbreviationDictionary)
+                .accessibilityLabel(selfCheckReport.abbreviationDictionary)
             Button("Оновити самоперевірку") { refreshSelfCheck() }
                 .disabled(isRefreshingSelfCheck)
                 .accessibilityLabel("Оновити самоперевірку")

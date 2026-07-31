@@ -93,6 +93,7 @@ enum AbbreviationDictionary {
         let body = text.isEmpty ? "" : text + "\n"
         try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data(body.utf8).write(to: url, options: [.atomic])
+        try (url as NSURL).setResourceValue(FileProtectionType.none, forKey: .fileProtectionKey)
         RHVoiceDarwinNotifications.notifyAbbreviationDictionaryChanged()
     }
 
@@ -252,6 +253,60 @@ enum AbbreviationDictionary {
     }
 }
 
+/// Precompiled two-regex matcher. Building it is intentionally off the speech
+/// path; per utterance it executes at most two regex scans after cheap exits.
+struct AbbreviationDictionaryMatcher {
+    private let cyrillicRegex: NSRegularExpression?
+    private let latinRegex: NSRegularExpression?
+    private let cyrillicReplacements: [String: String]
+    private let latinReplacements: [String: String]
+    private let firstCharacters: Set<Character>
+    private let minimumKeyLength: Int
+
+    init(entries: [AbbreviationDictionaryEntry]) {
+        let ordered = entries.sorted { $0.abbreviation.count > $1.abbreviation.count }
+        let cyrillic = ordered.filter { !Self.containsLatin($0.abbreviation) }
+        let latin = ordered.filter { Self.containsLatin($0.abbreviation) }
+        cyrillicReplacements = Dictionary(uniqueKeysWithValues: cyrillic.map { ($0.abbreviation.lowercased(), $0.replacement) })
+        latinReplacements = Dictionary(uniqueKeysWithValues: latin.map { ($0.abbreviation, $0.replacement) })
+        firstCharacters = Set(ordered.compactMap { $0.abbreviation.first }.map { String($0).lowercased().first ?? $0 })
+        minimumKeyLength = ordered.map(\.abbreviation.count).min() ?? .max
+        cyrillicRegex = Self.makeRegex(keys: cyrillic.map(\.abbreviation), options: [.caseInsensitive])
+        latinRegex = Self.makeRegex(keys: latin.map(\.abbreviation), options: [])
+    }
+
+    var isEmpty: Bool { minimumKeyLength == .max }
+
+    func replace(in text: String, shouldReplace: (String, Range<String.Index>, String) -> Bool) -> String {
+        guard !isEmpty, text.count >= minimumKeyLength,
+              text.lowercased().contains(where: { firstCharacters.contains($0) }) else { return text }
+        var result = replace(in: text, regex: cyrillicRegex, replacements: cyrillicReplacements, normalizeKey: { $0.lowercased() }, shouldReplace: shouldReplace)
+        result = replace(in: result, regex: latinRegex, replacements: latinReplacements, normalizeKey: { $0 }, shouldReplace: shouldReplace)
+        return result
+    }
+
+    private func replace(in text: String, regex: NSRegularExpression?, replacements: [String: String], normalizeKey: (String) -> String, shouldReplace: (String, Range<String.Index>, String) -> Bool) -> String {
+        guard let regex, !replacements.isEmpty else { return text }
+        let matches = regex.matches(in: text, range: NSRange(text.startIndex..<text.endIndex, in: text))
+        return matches.reversed().reduce(into: text) { source, match in
+            guard let range = Range(match.range, in: source) else { return }
+            let key = String(source[range])
+            guard let replacement = replacements[normalizeKey(key)], shouldReplace(key, range, source) else { return }
+            source.replaceSubrange(range, with: replacement)
+        }
+    }
+
+    private static func makeRegex(keys: [String], options: NSRegularExpression.Options) -> NSRegularExpression? {
+        guard !keys.isEmpty else { return nil }
+        let alternatives = keys.map(NSRegularExpression.escapedPattern).joined(separator: "|")
+        return try? NSRegularExpression(pattern: "(?<![\\p{L}\\p{N}])(?:\(alternatives))(?![\\p{L}\\p{N}])", options: options)
+    }
+
+    private static func containsLatin(_ value: String) -> Bool {
+        value.unicodeScalars.contains { (65...90).contains($0.value) || (97...122).contains($0.value) }
+    }
+}
+
 /// The provider only reads an in-memory snapshot on the speech path. A Darwin
 /// notification schedules App Group I/O in the background, so a bad container
 /// cannot freeze VoiceOver and an updated dictionary applies without restart.
@@ -261,14 +316,21 @@ final class AbbreviationDictionaryCache {
     private let queue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.abbreviation-dictionary", qos: .utility)
     private let lock = NSLock()
     private var cachedEntries = AbbreviationDictionary.bundledEntries
+    private var matcher = AbbreviationDictionaryMatcher(entries: AbbreviationDictionary.bundledEntries)
     private var observing = false
 
     private init() {}
 
     func entries() -> [AbbreviationDictionaryEntry] {
-        start()
+        startAndLoadFirstIfNeeded()
         lock.lock(); defer { lock.unlock() }
         return cachedEntries
+    }
+
+    func replace(in text: String, shouldReplace: (String, Range<String.Index>, String) -> Bool) -> String {
+        startAndLoadFirstIfNeeded()
+        lock.lock(); let matcher = matcher; lock.unlock()
+        return matcher.replace(in: text, shouldReplace: shouldReplace)
     }
 
     func refreshAsync() {
@@ -278,11 +340,13 @@ final class AbbreviationDictionaryCache {
             let merged = AbbreviationDictionary.mergedEntries(userEntries: userEntries)
             self.lock.lock()
             self.cachedEntries = merged
+            self.matcher = AbbreviationDictionaryMatcher(entries: merged)
             self.lock.unlock()
+            NSLog("ABBREV_DICT_DIAG source=refresh bundled=%d user=%d total=%d", AbbreviationDictionary.bundledEntries.count, userEntries.count, merged.count)
         }
     }
 
-    private func start() {
+    private func startAndLoadFirstIfNeeded() {
         guard !observing else { return }
         observing = true
         CFNotificationCenterAddObserver(
@@ -293,7 +357,16 @@ final class AbbreviationDictionaryCache {
             nil,
             .deliverImmediately
         )
-        refreshAsync()
+        let ready = DispatchSemaphore(value: 0)
+        queue.async { [weak self] in
+            guard let self else { ready.signal(); return }
+            let userEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
+            let merged = AbbreviationDictionary.mergedEntries(userEntries: userEntries)
+            self.lock.lock(); self.cachedEntries = merged; self.matcher = AbbreviationDictionaryMatcher(entries: merged); self.lock.unlock()
+            NSLog("ABBREV_DICT_DIAG source=first-load bundled=%d user=%d total=%d", AbbreviationDictionary.bundledEntries.count, userEntries.count, merged.count)
+            ready.signal()
+        }
+        _ = ready.wait(timeout: .now() + 0.3)
     }
 
     private static let notificationCallback: CFNotificationCallback = { _, observer, _, _, _ in
