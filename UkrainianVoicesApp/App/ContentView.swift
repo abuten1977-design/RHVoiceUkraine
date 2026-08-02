@@ -1366,9 +1366,9 @@ struct ContentView: View {
             )) {
                 Label("Розширена діагностика", systemImage: "stethoscope")
             }
-            .accessibilityHint("Коли увімкнено, рушій записує прочитаний текст у лог-файл на цьому пристрої. Лог нікуди не надсилається автоматично — лише коли ви самі поділитесь ним.")
+            .accessibilityHint("Коли увімкнено, застосунок записує діагностику у файл. Діагностика синтезатора на iPhone доступна через кабель у системному журналі: iOS не дозволяє speech-extension записувати спільний файл.")
 
-            Text("Щоб надіслати діагностику розробникам:\n1. Увімкни «Розширена діагностика».\n2. Тап «Очистити лог».\n3. Прочитай потрібні фрази через VoiceOver у будь-якій програмі.\n4. Повернись сюди і тап «Поділитись логом».\n5. У шторці обери Mail, Telegram або AirDrop і надішли лог.")
+            Text("Цей файл містить діагностику застосунку. На iPhone журнал синтезатора VoiceOver доступний лише по кабелю в системному журналі: iOS забороняє extension записувати його у спільний файл.")
                 .font(.footnote)
                 .foregroundColor(.secondary)
                 .accessibilityLabel("Підказка щодо діагностики")
@@ -1379,19 +1379,19 @@ struct ContentView: View {
                 Label("Очистити лог", systemImage: "trash")
             }
             .accessibilityLabel("Очистити лог")
-            .accessibilityHint("Стирає поточний лог-файл для нового вимірювання.")
+                .accessibilityHint("Стирає журнал застосунку. Не впливає на журнал синтезатора VoiceOver.")
 
             // Кеш із моделі, а не прямий виклик до контейнера: тіло view виконується
             // на main під час обходу VoiceOver, а containerURL/stat на macOS 26
             // може заблокуватись (task-082).
             if let url = model.debugLogShareURL {
                 ShareLink(item: url) {
-                    Label("Поділитись логом", systemImage: "square.and.arrow.up")
+                    Label("Поділитись журналом застосунку", systemImage: "square.and.arrow.up")
                 }
-                .accessibilityLabel("Поділитись логом")
-                .accessibilityHint("Відкриває системне меню обміну для надсилання лог-файлу.")
+                .accessibilityLabel("Поділитись журналом застосунку")
+                .accessibilityHint("Відкриває системне меню для надсилання діагностики застосунку. Журнал VoiceOver доступний по кабелю.")
             } else {
-                Text("Лог ще порожній — спочатку прочитай щось через VoiceOver.")
+                Text("Журнал застосунку ще порожній.")
                     .foregroundColor(.secondary)
             }
 
@@ -1676,16 +1676,25 @@ private struct AbbreviationDictionaryView: View {
     var body: some View {
         List {
             Section {
-                Toggle("Розгортати скорочення зі словника", isOn: $enabled)
-                    .accessibilityLabel("Розгортати скорочення зі словника")
+                Toggle("Застосовувати словник замін", isOn: $enabled)
+                    .accessibilityLabel("Застосовувати словник замін")
                     .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
             }
 
-            Section("Базовий словник") {
-                Text("Дні тижня, місяці, LTE, VPN, USB, Wi-Fi, GPS, SMS, PDF, USB-C та поширені скорочення вже доступні. Власний запис із таким самим ключем має пріоритет.")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .accessibilityLabel("Базовий словник містить дні тижня, місяці, LTE, VPN, USB, Wi-Fi, GPS, SMS, PDF, USB-C та поширені скорочення. Власний запис має пріоритет.")
+            Section("Базові заміни") {
+                Text("Торкніться правила, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет.")
+                    .font(.footnote).foregroundColor(.secondary)
+                ForEach(AbbreviationDictionary.bundledEntries) { entry in
+                    Button { editingEntry = entry } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(entry.abbreviation).font(.headline)
+                            Text("читати як \(entry.replacement)").foregroundColor(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Базова заміна: \(entry.abbreviation), читати як \(entry.replacement)")
+                    .accessibilityHint("Створити власне перевизначення цього правила")
+                }
             }
 
             Section("Обмін") {
@@ -1713,7 +1722,7 @@ private struct AbbreviationDictionaryView: View {
                 Section("Власні записи") {
                     Text("Власних записів ще немає.")
                         .foregroundColor(.secondary)
-                        .accessibilityLabel("Власний словник скорочень порожній")
+                        .accessibilityLabel("Власний словник замін порожній")
                 }
             } else {
                 Section("Власні записи") {
@@ -1739,12 +1748,12 @@ private struct AbbreviationDictionaryView: View {
                 }
             }
         }
-        .navigationTitle("Словник скорочень")
+        .navigationTitle("Словник замін")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { isAddingEntry = true } label: { Label("Додати", systemImage: "plus") }
-                    .accessibilityLabel("Додати запис до словника скорочень")
-                    .accessibilityHint("Відкрити форму нового скорочення.")
+                    .accessibilityLabel("Додати запис до словника замін")
+                    .accessibilityHint("Відкрити форму нового слова або заміни.")
             }
         }
         .sheet(isPresented: $isAddingEntry) {
@@ -1831,9 +1840,9 @@ private struct AbbreviationDictionaryEditorView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Скорочення") {
+                Section("Слово або скорочення") {
                     TextField("наприклад: БПЛА", text: $abbreviation)
-                        .accessibilityLabel("Скорочення")
+                        .accessibilityLabel("Слово або скорочення")
                         .accessibilityHint("Точний запис, який треба замінити.")
                 }
                 Section("Як читати") {

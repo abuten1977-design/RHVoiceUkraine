@@ -134,6 +134,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         rhLog("EXT_DIAG synthesizer init")
         self.sharedSettingsCache.start()
         RHVoiceDownloadedVoicesCache.shared.start()
+        AbbreviationDictionaryCache.shared.start()
         self.startEngineWarmup()
     }
 

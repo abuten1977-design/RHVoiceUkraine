@@ -11,6 +11,12 @@ struct AbbreviationDictionaryEntry: Codable, Identifiable, Equatable {
     var id: String { abbreviation }
 }
 
+struct AbbreviationDictionaryFileSignature: Equatable {
+    let exists: Bool
+    let modificationDate: Date?
+    let size: Int64
+}
+
 enum AbbreviationDictionaryError: LocalizedError, Equatable {
     case emptyAbbreviation
     case emptyReplacement
@@ -84,6 +90,14 @@ enum AbbreviationDictionary {
         guard FileManager.default.fileExists(atPath: url.path) else { return .success([]) }
         guard let data = try? Data(contentsOf: url) else { return .failure(.unreadableFile) }
         return entries(from: data)
+    }
+
+    static func fileSignature() -> AbbreviationDictionaryFileSignature {
+        guard let url = dictionaryURL(), FileManager.default.fileExists(atPath: url.path) else {
+            return AbbreviationDictionaryFileSignature(exists: false, modificationDate: nil, size: 0)
+        }
+        let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+        return AbbreviationDictionaryFileSignature(exists: true, modificationDate: values?.contentModificationDate, size: Int64(values?.fileSize ?? 0))
     }
 
     static func save(entries: [AbbreviationDictionaryEntry]) throws {
@@ -318,37 +332,16 @@ final class AbbreviationDictionaryCache {
     private var cachedEntries = AbbreviationDictionary.bundledEntries
     private var matcher = AbbreviationDictionaryMatcher(entries: AbbreviationDictionary.bundledEntries)
     private var observing = false
+    private var cachedSignature = AbbreviationDictionaryFileSignature(exists: false, modificationDate: nil, size: 0)
 
     private init() {}
 
-    func entries() -> [AbbreviationDictionaryEntry] {
-        startAndLoadFirstIfNeeded()
-        lock.lock(); defer { lock.unlock() }
-        return cachedEntries
-    }
-
-    func replace(in text: String, shouldReplace: (String, Range<String.Index>, String) -> Bool) -> String {
-        startAndLoadFirstIfNeeded()
-        lock.lock(); let matcher = matcher; lock.unlock()
-        return matcher.replace(in: text, shouldReplace: shouldReplace)
-    }
-
-    func refreshAsync() {
-        queue.async { [weak self] in
-            guard let self else { return }
-            let userEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
-            let merged = AbbreviationDictionary.mergedEntries(userEntries: userEntries)
-            self.lock.lock()
-            self.cachedEntries = merged
-            self.matcher = AbbreviationDictionaryMatcher(entries: merged)
-            self.lock.unlock()
-            NSLog("ABBREV_DICT_DIAG source=refresh bundled=%d user=%d total=%d", AbbreviationDictionary.bundledEntries.count, userEntries.count, merged.count)
-        }
-    }
-
-    private func startAndLoadFirstIfNeeded() {
-        guard !observing else { return }
+    func start() {
+        lock.lock()
+        let shouldStart = !observing
         observing = true
+        lock.unlock()
+        guard shouldStart else { return }
         CFNotificationCenterAddObserver(
             CFNotificationCenterGetDarwinNotifyCenter(),
             Unmanaged.passUnretained(self).toOpaque(),
@@ -357,16 +350,52 @@ final class AbbreviationDictionaryCache {
             nil,
             .deliverImmediately
         )
+        reloadSynchronously(source: "extension-start")
+    }
+
+    func entries() -> [AbbreviationDictionaryEntry] {
+        start()
+        reloadIfFileChanged()
+        lock.lock(); defer { lock.unlock() }
+        return cachedEntries
+    }
+
+    func replace(in text: String, shouldReplace: (String, Range<String.Index>, String) -> Bool) -> String {
+        start()
+        reloadIfFileChanged()
+        lock.lock(); let matcher = matcher; lock.unlock()
+        return matcher.replace(in: text, shouldReplace: shouldReplace)
+    }
+
+    func refreshAsync() {
+        queue.async { [weak self] in
+            guard let self else { return }
+            self.reloadNow(source: "darwin-notification")
+        }
+    }
+
+    private func reloadIfFileChanged() {
+        let signature = AbbreviationDictionary.fileSignature()
+        lock.lock(); let changed = signature != cachedSignature; lock.unlock()
+        guard changed else { return }
+        reloadSynchronously(source: "signature-change")
+    }
+
+    private func reloadSynchronously(source: String) {
         let ready = DispatchSemaphore(value: 0)
         queue.async { [weak self] in
-            guard let self else { ready.signal(); return }
-            let userEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
-            let merged = AbbreviationDictionary.mergedEntries(userEntries: userEntries)
-            self.lock.lock(); self.cachedEntries = merged; self.matcher = AbbreviationDictionaryMatcher(entries: merged); self.lock.unlock()
-            NSLog("ABBREV_DICT_DIAG source=first-load bundled=%d user=%d total=%d", AbbreviationDictionary.bundledEntries.count, userEntries.count, merged.count)
+            self?.reloadNow(source: source)
             ready.signal()
         }
         _ = ready.wait(timeout: .now() + 0.3)
+    }
+
+    private func reloadNow(source: String) {
+        let userEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
+        let merged = AbbreviationDictionary.mergedEntries(userEntries: userEntries)
+        let signature = AbbreviationDictionary.fileSignature()
+        lock.lock(); cachedEntries = merged; matcher = AbbreviationDictionaryMatcher(entries: merged); cachedSignature = signature; lock.unlock()
+        NSLog("ABBREV_DICT_DIAG source=%@ bundled=%d user=%d total=%d", source, AbbreviationDictionary.bundledEntries.count, userEntries.count, merged.count)
     }
 
     private static let notificationCallback: CFNotificationCallback = { _, observer, _, _, _ in

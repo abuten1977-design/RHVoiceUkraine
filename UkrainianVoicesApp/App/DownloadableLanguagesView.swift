@@ -4,13 +4,11 @@ import AVFAudio
 private struct VoiceSelfCheckReport {
     let stored: String
     let published: String
-    let system: String
     let abbreviationDictionary: String
 
     static let initial = Self(
         stored: "На пристрої збережено: перевірка ще не виконувалась.",
         published: "Опублікований список: перевірка ще не виконувалась.",
-        system: "Система бачить голоси: перевірка ще не виконувалась.",
         abbreviationDictionary: "Словник скорочень: перевірка ще не виконувалась."
     )
 
@@ -29,28 +27,20 @@ private struct VoiceSelfCheckReport {
             return Self(
                 stored: stored,
                 published: "Опублікований список голосів відсутній.",
-                system: "Система бачить голоси: список ще не опубліковано.",
                 abbreviationDictionary: abbreviationDictionaryStatus()
             )
         }
         let published = "Опубліковано голосів: \(catalog.descriptors.count), версія списку \(catalog.revision)."
-        let prefix = "com.rhvoice.UkrainianVoices"
-        let systemNames = AVSpeechSynthesisVoice.speechVoices()
-            .filter { $0.identifier.hasPrefix(prefix) }
-            .map(\.name)
-        let system = systemNames.isEmpty
-            ? "Система поки не бачить голосів RHVoice UA."
-            : "Система бачить голоси: \(systemNames.joined(separator: ", "))."
-        return Self(stored: stored, published: published, system: system, abbreviationDictionary: abbreviationDictionaryStatus())
+        return Self(stored: stored, published: published, abbreviationDictionary: abbreviationDictionaryStatus())
     }
 
     private static func abbreviationDictionaryStatus() -> String {
         let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
         let enabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) == nil
             ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) ?? true)
-        guard enabled else { return "Словник скорочень: вимкнено." }
+        guard enabled else { return "Словник замін: вимкнено." }
         let user = (try? AbbreviationDictionary.loadEntries().get())?.count ?? 0
-        return "Словник скорочень: базових \(AbbreviationDictionary.bundledEntries.count), власних \(user)."
+        return "Словник замін у застосунку: базових \(AbbreviationDictionary.bundledEntries.count), власних \(user). Стан extension доступний у журналі по кабелю."
     }
 
     private static func directorySize(_ url: URL?) -> Int64 {
@@ -148,8 +138,6 @@ struct DownloadableLanguagesView: View {
                 .accessibilityLabel(selfCheckReport.stored)
             Text(selfCheckReport.published)
                 .accessibilityLabel(selfCheckReport.published)
-            Text(selfCheckReport.system)
-                .accessibilityLabel(selfCheckReport.system)
             Text(selfCheckReport.abbreviationDictionary)
                 .accessibilityLabel(selfCheckReport.abbreviationDictionary)
             Button("Оновити самоперевірку") { refreshSelfCheck() }
