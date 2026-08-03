@@ -9,7 +9,7 @@ private struct VoiceSelfCheckReport {
     static let initial = Self(
         stored: "На пристрої збережено: перевірка ще не виконувалась.",
         published: "Опублікований список: перевірка ще не виконувалась.",
-        abbreviationDictionary: "Словник скорочень: перевірка ще не виконувалась."
+        abbreviationDictionary: "Словник замін: перевірка ще не виконувалась."
     )
 
     static func collect() -> Self {

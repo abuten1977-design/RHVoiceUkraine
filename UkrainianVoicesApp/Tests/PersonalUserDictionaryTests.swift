@@ -22,4 +22,15 @@ final class PersonalUserDictionaryTests: XCTestCase {
 
         XCTAssertEqual(PersonalUserDictionary.dictionaryLine(for: entry), "кіт=собака")
     }
+
+    func testDictionaryLineKeepsStressMarkerForTask209Scenario() {
+        let entry = PersonalDictionaryEntry(
+            id: UUID(),
+            displayWord: "листопад",
+            stressedWord: "листоп+ад",
+            createdAt: Date(timeIntervalSince1970: 3)
+        )
+
+        XCTAssertEqual(PersonalUserDictionary.dictionaryLine(for: entry), "листопад=листоп+ад")
+    }
 }

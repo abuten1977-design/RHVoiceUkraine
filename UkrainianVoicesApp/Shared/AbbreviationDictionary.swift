@@ -80,7 +80,7 @@ enum AbbreviationDictionary {
         entry("лип.", "липня"), entry("серп.", "серпня"), entry("вер.", "вересня"),
         entry("жовт.", "жовтня"), entry("лист.", "листопада"), entry("груд.", "грудня"),
         entry("LTE", "ел те е"), entry("VPN", "ве пе ен"), entry("USB", "ю ес бе"),
-        entry("Wi-Fi", "вай фай"), entry("GPS", "джі пі ес"), entry("SMS", "ес ем ес"),
+        entry("Wi-Fi", "вай-фай"), entry("GPS", "джі пі ес"), entry("SMS", "ес ем ес"),
         entry("PDF", "пе де еф"), entry("USB-C", "ю ес бе сі"),
         entry("грн", "гривні"), entry("вул.", "вулиця"), entry("буд.", "будинок"), entry("кв.", "квартира")
     ]
@@ -201,7 +201,7 @@ enum AbbreviationDictionary {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         let normalized = normalizedEntries(entries)
         let header = [
-            "# RHVoice Ukrainian — словник скорочень",
+            "# RHVoice Ukrainian — словник замін",
             "# Експортовано: \(date)",
             "# Власних записів: \(normalized.count)",
             "# Формат: скорочення = заміна",

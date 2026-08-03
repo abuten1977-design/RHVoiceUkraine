@@ -618,6 +618,13 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testAbbreviationDictionaryUsesNaturalUkrainianWiFiPronunciation() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Підключено Wi-Fi"),
+            "Підключено вай-фай"
+        )
+    }
+
     func testAbbreviationDictionaryCanBeDisabled() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("ср LTE", abbreviationDictionaryEnabled: false),

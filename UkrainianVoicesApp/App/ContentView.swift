@@ -604,10 +604,10 @@ private final class ContentViewModel: ObservableObject {
         do {
             if let oldAbbreviation {
                 try AbbreviationDictionary.updateEntry(oldAbbreviation: oldAbbreviation, abbreviation: abbreviation, replacement: replacement)
-                setStatus("Запис словника скорочень оновлено.")
+                setStatus("Запис словника замін оновлено.")
             } else {
                 try AbbreviationDictionary.addEntry(abbreviation: abbreviation, replacement: replacement)
-                setStatus("Запис додано до словника скорочень.")
+                setStatus("Запис додано до словника замін.")
             }
             reloadAbbreviationDictionary()
             prepareAbbreviationDictionaryExport()
@@ -627,7 +627,7 @@ private final class ContentViewModel: ObservableObject {
             try AbbreviationDictionary.removeEntry(abbreviation: entry.abbreviation)
             reloadAbbreviationDictionary()
             prepareAbbreviationDictionaryExport()
-            setStatus("Запис «\(entry.abbreviation)» видалено зі словника скорочень.")
+            setStatus("Запис «\(entry.abbreviation)» видалено зі словника замін.")
         } catch {
             setStatus(error.localizedDescription)
         }
@@ -824,7 +824,7 @@ private final class ContentViewModel: ObservableObject {
         Self.storageQueue.async { [weak self] in
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey)
             DispatchQueue.main.async {
-                self?.setStatus(enabled ? "Словник скорочень увімкнено." : "Словник скорочень вимкнено.")
+                self?.setStatus(enabled ? "Словник замін увімкнено." : "Словник замін вимкнено.")
             }
         }
     }
@@ -1443,10 +1443,10 @@ struct ContentView: View {
                 reportMessage: { model.reportAbbreviationDictionaryMessage($0) }
             )
         } label: {
-            Label("Словник скорочень", systemImage: "text.book.closed")
+            Label("Словник замін", systemImage: "text.book.closed")
         }
-        .accessibilityLabel("Словник скорочень")
-        .accessibilityHint("Відкрити словник замін для скорочень та абревіатур.")
+        .accessibilityLabel("Словник замін")
+        .accessibilityHint("Тут можна задати, як читати будь-яке слово: скорочення, абревіатуру, ім'я чи назву.")
     }
 
     private var downloadableLanguagesLink: some View {
@@ -1681,6 +1681,44 @@ private struct AbbreviationDictionaryView: View {
                     .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
             }
 
+            Section("Власні записи") {
+                Text("Тут можна задати, як читати будь-яке слово: скорочення, абревіатуру, ім'я чи назву.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+
+                Button { isAddingEntry = true } label: {
+                    Label("Додати", systemImage: "plus")
+                }
+                .accessibilityLabel("Додати запис до словника замін")
+                .accessibilityHint("Відкрити форму нового слова або заміни.")
+
+                if entries.isEmpty {
+                    Text("Власних записів ще немає.")
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Власний словник замін порожній")
+                } else {
+                    ForEach(entries) { entry in
+                        Button {
+                            editingEntry = entry
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.abbreviation).font(.headline)
+                                Text(entry.replacement).foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(entry.abbreviation), читати як \(entry.replacement)")
+                        .accessibilityHint("Відкрити редагування запису")
+                        .swipeActions {
+                            Button(role: .destructive) { pendingDeletion = entry } label: {
+                                Label("Видалити", systemImage: "trash")
+                            }
+                        }
+                    }
+                    .onDelete { offsets in pendingDeletion = offsets.map { entries[$0] }.first }
+                }
+            }
+
             Section("Базові заміни") {
                 Text("Торкніться правила, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет.")
                     .font(.footnote).foregroundColor(.secondary)
@@ -1718,44 +1756,8 @@ private struct AbbreviationDictionaryView: View {
                 .accessibilityHint("Відкрити системний вибір текстового файлу словника.")
             }
 
-            if entries.isEmpty {
-                Section("Власні записи") {
-                    Text("Власних записів ще немає.")
-                        .foregroundColor(.secondary)
-                        .accessibilityLabel("Власний словник замін порожній")
-                }
-            } else {
-                Section("Власні записи") {
-                    ForEach(entries) { entry in
-                        Button {
-                            editingEntry = entry
-                        } label: {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(entry.abbreviation).font(.headline)
-                                Text(entry.replacement).foregroundColor(.secondary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(entry.abbreviation), читати як \(entry.replacement)")
-                        .accessibilityHint("Відкрити редагування запису")
-                        .swipeActions {
-                            Button(role: .destructive) { pendingDeletion = entry } label: {
-                                Label("Видалити", systemImage: "trash")
-                            }
-                        }
-                    }
-                    .onDelete { offsets in pendingDeletion = offsets.map { entries[$0] }.first }
-                }
-            }
         }
         .navigationTitle("Словник замін")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button { isAddingEntry = true } label: { Label("Додати", systemImage: "plus") }
-                    .accessibilityLabel("Додати запис до словника замін")
-                    .accessibilityHint("Відкрити форму нового слова або заміни.")
-            }
-        }
         .sheet(isPresented: $isAddingEntry) {
             AbbreviationDictionaryEditorView(entry: nil, save: save)
         }
@@ -2120,12 +2122,12 @@ private struct PersonalDictionaryEditorView: View {
 
                 Section {
                     Button(isPreviewPlaying ? "Зупинити" : "Прослухати") {
-                        isPreviewPlaying ? stopPreview() : preview(displayWord)
+                        isPreviewPlaying ? stopPreview() : preview(stressedWord)
                     }
-                    .disabled(displayWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityAddTraits(.startsMediaSession)
                     .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Перевірити слово")
-                    .accessibilityHint("Промовляє звичайне слово. Після збереження воно має звучати за словником.")
+                    .accessibilityHint("Промовляє введену вимову. Після збереження так само має звучати слово за словником.")
                 }
 
 #if os(macOS)
