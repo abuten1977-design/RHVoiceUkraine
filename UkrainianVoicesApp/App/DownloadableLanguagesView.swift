@@ -230,6 +230,16 @@ struct DownloadableLanguageVoicesView: View {
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(rowAccessibilityLabel(voice))
+            .accessibilityHint(downloadManager.isInstalled(voice)
+                ? "Доступна дія: Видалити голос."
+                : "Доступна дія: Завантажити голос.")
+            .accessibilityAction(named: downloadManager.isInstalled(voice) ? "Видалити голос" : "Завантажити голос") {
+                if downloadManager.isInstalled(voice) {
+                    voicePendingDelete = voice
+                } else {
+                    downloadManager.download(voice, language: language)
+                }
+            }
 
             Spacer()
 

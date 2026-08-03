@@ -504,7 +504,7 @@ private final class ContentViewModel: ObservableObject {
         }
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
-        setStatus(enabled ? "Голос \(voice.name) доступний у системі." : "Голос \(voice.name) вимкнено.")
+        setStatus("Зробити голос \(voice.name) доступним: \(enabled ? "Увімкнено" : "Вимкнено").")
     }
 
     func selectVoiceForPreview(_ voice: VoiceDefinition) {
@@ -788,54 +788,42 @@ private final class ContentViewModel: ObservableObject {
 
     func setDatesAsWords(_ enabled: Bool) {
         datesAsWordsEnabled = enabled
-        Self.storageQueue.async { [weak self] in
+        announceToggleState("Читати дати словами", enabled: enabled)
+        Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
                 .set(enabled, forKey: RHVoiceSharedSettings.datesAsWordsKey)
-            DispatchQueue.main.async {
-                self?.setStatus(enabled
-                    ? "Дати читаються словами."
-                    : "Дати читаються цифрами.")
-            }
         }
     }
 
     func setTimeAsWords(_ enabled: Bool) {
         timeAsWordsEnabled = enabled
-        Self.storageQueue.async { [weak self] in
+        announceToggleState("Читати час словами", enabled: enabled)
+        Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.timeAsWordsKey)
-            DispatchQueue.main.async {
-                self?.setStatus(enabled ? "Час читається словами." : "Час читається без розгортання у слова.")
-            }
         }
     }
 
     func setAbbreviationsAsWords(_ enabled: Bool) {
         abbreviationsAsWordsEnabled = enabled
-        Self.storageQueue.async { [weak self] in
+        announceToggleState("Розгортати скорочення", enabled: enabled)
+        Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
-            DispatchQueue.main.async {
-                self?.setStatus(enabled ? "Скорочення читаються повними словами." : "Скорочення читаються без розгортання.")
-            }
         }
     }
 
     func setAbbreviationDictionaryEnabled(_ enabled: Bool) {
         abbreviationDictionaryEnabled = enabled
-        Self.storageQueue.async { [weak self] in
+        announceToggleState("Застосовувати словник замін", enabled: enabled)
+        Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey)
-            DispatchQueue.main.async {
-                self?.setStatus(enabled ? "Словник замін увімкнено." : "Словник замін вимкнено.")
-            }
         }
     }
 
     func setPhoneNumberProcessing(_ enabled: Bool) {
         phoneNumberProcessingEnabled = enabled
-        Self.storageQueue.async { [weak self] in
+        announceToggleState("Обробляти телефонні номери", enabled: enabled)
+        Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.phoneNumberProcessingKey)
-            DispatchQueue.main.async {
-                self?.setStatus(enabled ? "Обробку телефонних номерів увімкнено." : "Обробку телефонних номерів вимкнено.")
-            }
         }
     }
 
@@ -851,14 +839,10 @@ private final class ContentViewModel: ObservableObject {
 
     func setExtendedDiagnostics(_ enabled: Bool) {
         extendedDiagnosticsEnabled = enabled
-        Self.storageQueue.async { [weak self] in
+        announceToggleState("Розширена діагностика", enabled: enabled)
+        Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
                 .set(enabled, forKey: RHVoiceSharedSettings.extendedDiagnosticsKey)
-            DispatchQueue.main.async {
-                self?.setStatus(enabled
-                    ? "Розширену діагностику увімкнено: прочитаний текст записується в лог на цьому пристрої."
-                    : "Розширену діагностику вимкнено.")
-            }
         }
     }
 
@@ -973,6 +957,16 @@ private final class ContentViewModel: ObservableObject {
         statusMessage = message
         LogCollector.shared.log(message)
         announce(message)
+    }
+
+    /// Toggle values must be spoken while VoiceOver still has focus on that
+    /// toggle. Persisting to the App Group happens independently and must not
+    /// delay this user feedback.
+    private func announceToggleState(_ title: String, enabled: Bool) {
+        let message = "\(title): \(enabled ? "Увімкнено" : "Вимкнено")."
+        statusMessage = message
+        LogCollector.shared.log(message)
+        DispatchQueue.main.async { announce(message) }
     }
 
     private func finishSpeechComponentDiagnostics(summary: String, details: [String]) {
@@ -1326,21 +1320,29 @@ struct ContentView: View {
             )) {
                 Label("Читати дати словами", systemImage: "calendar")
             }
+            .accessibilityValue(model.datesAsWordsEnabled ? "Увімкнено" : "Вимкнено")
             .accessibilityHint("Увімкнено: повні дати, як-от 10.07.2026, читаються словами — «десяте липня дві тисячі двадцять шостого року». Вимкнено: дати читаються цифрами.")
+
+            Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
 
             Toggle(isOn: Binding(get: { model.timeAsWordsEnabled }, set: { model.setTimeAsWords($0) })) {
                 Label("Читати час словами", systemImage: "clock")
             }
+            .accessibilityValue(model.timeAsWordsEnabled ? "Увімкнено" : "Вимкнено")
             .accessibilityHint("Увімкнено: 17:01 читається як час словами. Вимкнено: RHVoice не розгортає запис часу у години та хвилини.")
 
             Toggle(isOn: Binding(get: { model.abbreviationsAsWordsEnabled }, set: { model.setAbbreviationsAsWords($0) })) {
                 Label("Розгортати скорочення", systemImage: "textformat.abc")
             }
+            .accessibilityValue(model.abbreviationsAsWordsEnabled ? "Увімкнено" : "Вимкнено")
             .accessibilityHint("Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
 
             Toggle(isOn: Binding(get: { model.phoneNumberProcessingEnabled }, set: { model.setPhoneNumberProcessing($0) })) {
                 Label("Обробляти телефонні номери", systemImage: "phone")
             }
+            .accessibilityValue(model.phoneNumberProcessingEnabled ? "Увімкнено" : "Вимкнено")
             .accessibilityHint("Увімкнено: RHVoice розпізнає номери та читає їх обраним способом. Вимкнено: номер читає система без обробки RHVoice.")
 
             Picker("Читати номер", selection: Binding(get: { model.phoneNumberReadingMode }, set: { model.setPhoneNumberReadingMode($0) })) {
@@ -1351,9 +1353,6 @@ struct ContentView: View {
             .disabled(!model.phoneNumberProcessingEnabled)
             .accessibilityHint("Групами: кожна частина номера читається як число. По цифрах: стара поведінка для запису номера на слух.")
 
-            Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
-                .font(.footnote)
-                .foregroundColor(.secondary)
         }
     }
 
@@ -1366,6 +1365,7 @@ struct ContentView: View {
             )) {
                 Label("Розширена діагностика", systemImage: "stethoscope")
             }
+            .accessibilityValue(model.extendedDiagnosticsEnabled ? "Увімкнено" : "Вимкнено")
             .accessibilityHint("Коли увімкнено, застосунок записує діагностику у файл. Діагностика синтезатора на iPhone доступна через кабель у системному журналі: iOS не дозволяє speech-extension записувати спільний файл.")
 
             Text("Цей файл містить діагностику застосунку. На iPhone журнал синтезатора VoiceOver доступний лише по кабелю в системному журналі: iOS забороняє extension записувати його у спільний файл.")
@@ -1530,7 +1530,11 @@ private struct PersonalDictionaryView: View {
                     .accessibilityElement(children: .combine)
                 }
                 .accessibilityLabel("Технічна інформація")
+                .accessibilityValue(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто")
                 .accessibilityHint("Показує стан файлів особистого словника.")
+                .onChange(of: showsTechnicalInfo) { isExpanded in
+                    announce("Технічна інформація: \(isExpanded ? "Розгорнуто" : "Згорнуто").")
+                }
             }
 
             if entries.isEmpty {
@@ -1555,7 +1559,10 @@ private struct PersonalDictionaryView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("\(entry.displayWord), вимова \(entry.stressedWord)")
-                            .accessibilityHint("Відкрити редагування запису")
+                            .accessibilityHint("Відкрити редагування запису. Доступна дія: Видалити.")
+                            .accessibilityAction(named: "Видалити") {
+                                entryPendingDeletion = entry
+                            }
 
                             HStack {
                                 Button {
@@ -1678,6 +1685,7 @@ private struct AbbreviationDictionaryView: View {
             Section {
                 Toggle("Застосовувати словник замін", isOn: $enabled)
                     .accessibilityLabel("Застосовувати словник замін")
+                    .accessibilityValue(enabled ? "Увімкнено" : "Вимкнено")
                     .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
             }
 
@@ -1708,7 +1716,10 @@ private struct AbbreviationDictionaryView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("\(entry.abbreviation), читати як \(entry.replacement)")
-                        .accessibilityHint("Відкрити редагування запису")
+                        .accessibilityHint("Відкрити редагування запису. Доступна дія: Видалити.")
+                        .accessibilityAction(named: "Видалити") {
+                            pendingDeletion = entry
+                        }
                         .swipeActions {
                             Button(role: .destructive) { pendingDeletion = entry } label: {
                                 Label("Видалити", systemImage: "trash")
@@ -1831,6 +1842,13 @@ private struct AbbreviationDictionaryEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var abbreviation: String
     @State private var replacement: String
+    @FocusState private var focusedField: Field?
+    @AccessibilityFocusState private var accessibilityFocusedField: Field?
+
+    private enum Field {
+        case abbreviation
+        case replacement
+    }
 
     init(entry: AbbreviationDictionaryEntry?, save: @escaping (String?, String, String) -> Bool) {
         self.entry = entry
@@ -1844,25 +1862,32 @@ private struct AbbreviationDictionaryEditorView: View {
             Form {
                 Section("Слово або скорочення") {
                     TextField("наприклад: БПЛА", text: $abbreviation)
+                        .focused($focusedField, equals: .abbreviation)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .abbreviation)
                         .accessibilityLabel("Слово або скорочення")
                         .accessibilityHint("Точний запис, який треба замінити.")
                 }
                 Section("Як читати") {
                     TextField("наприклад: безпілотний літальний апарат", text: $replacement)
+                        .focused($focusedField, equals: .replacement)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .replacement)
                         .accessibilityLabel("Як читати")
                         .accessibilityHint("Слова, якими треба замінити скорочення.")
                 }
-            }
-            .navigationTitle(entry == nil ? "Новий запис" : "Редагувати запис")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Скасувати") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) {
+                Section("Дії") {
                     Button("Зберегти") {
                         if save(entry?.abbreviation, abbreviation, replacement) { dismiss() }
                     }
                     .accessibilityHint("Зберегти запис і застосувати його без перезапуску VoiceOver.")
+
+                    Button("Скасувати") { dismiss() }
                 }
             }
+            .navigationTitle(entry == nil ? "Новий запис" : "Редагувати запис")
+        }
+        .onAppear {
+            focusedField = .abbreviation
+            DispatchQueue.main.async { accessibilityFocusedField = .abbreviation }
         }
     }
 }
@@ -2078,6 +2103,7 @@ private struct PersonalDictionaryEditorView: View {
     @State private var displayWord: String
     @State private var stressedWord: String
     @FocusState private var focusedField: Field?
+    @AccessibilityFocusState private var accessibilityFocusedField: Field?
 
     private enum Field {
         case displayWord
@@ -2106,11 +2132,13 @@ private struct PersonalDictionaryEditorView: View {
                 Section("Слово") {
                     TextField("", text: $displayWord, prompt: Text("наприклад: листопад"))
                         .focused($focusedField, equals: .displayWord)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .displayWord)
                         .personalDictionaryTextInputSettings()
                         .accessibilityLabel("Слово як воно пишеться")
                         .accessibilityHint("Слово як пишеться.")
                     TextField("", text: $stressedWord, prompt: Text("наприклад: листоп+ад"))
                         .focused($focusedField, equals: .stressedWord)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .stressedWord)
                         .personalDictionaryTextInputSettings()
                         .accessibilityLabel("Вимова")
                         .accessibilityHint("Те саме слово зі знаком плюс перед наголошеною голосною, або інше слово чи фраза, як це читати.")
@@ -2130,7 +2158,6 @@ private struct PersonalDictionaryEditorView: View {
                     .accessibilityHint("Промовляє введену вимову. Після збереження так само має звучати слово за словником.")
                 }
 
-#if os(macOS)
                 Section("Дії") {
                     Button("Зберегти") {
                         saveAndDismiss()
@@ -2141,29 +2168,17 @@ private struct PersonalDictionaryEditorView: View {
                     Button("Скасувати") {
                         dismiss()
                     }
+#if os(macOS)
                     .keyboardShortcut(.cancelAction)
+#endif
                     .accessibilityLabel("Скасувати")
                 }
-#endif
             }
             .navigationTitle(entry == nil ? "Нове слово" : "Редагування")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Скасувати") {
-                        dismiss()
-                    }
-                    .accessibilityLabel("Скасувати")
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Зберегти") {
-                        saveAndDismiss()
-                    }
-                    .accessibilityLabel("Зберегти запис")
-                }
-            }
         }
         .onAppear {
             focusedField = .displayWord
+            DispatchQueue.main.async { accessibilityFocusedField = .displayWord }
         }
 #if os(macOS)
         .frame(minWidth: 420, minHeight: 300)
