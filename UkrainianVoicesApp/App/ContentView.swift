@@ -1508,7 +1508,22 @@ private struct PersonalDictionaryView: View {
     var body: some View {
         List {
             Section {
-                DisclosureGroup("Технічна інформація", isExpanded: $showsTechnicalInfo) {
+                Button {
+                    showsTechnicalInfo.toggle()
+                    announce("Технічна інформація: \(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто").")
+                } label: {
+                    HStack {
+                        Text("Технічна інформація")
+                        Spacer()
+                        Image(systemName: showsTechnicalInfo ? "chevron.up" : "chevron.down")
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .accessibilityLabel("Технічна інформація")
+                .accessibilityValue(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто")
+                .accessibilityHint("Подвійний дотик розгортає або згортає стан файлів особистого словника.")
+
+                if showsTechnicalInfo {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(fileStatus.dictionaryExists ? "user_dictionary.txt: \(fileStatus.dictionarySize) байт" : "user_dictionary.txt: не створено")
                         Text(fileStatus.metadataExists ? "user_dictionary_meta.json: \(fileStatus.metadataSize) байт" : "user_dictionary_meta.json: не створено")
@@ -1528,12 +1543,6 @@ private struct PersonalDictionaryView: View {
                     }
                     .font(.footnote)
                     .accessibilityElement(children: .combine)
-                }
-                .accessibilityLabel("Технічна інформація")
-                .accessibilityValue(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто")
-                .accessibilityHint("Показує стан файлів особистого словника.")
-                .onChange(of: showsTechnicalInfo) { isExpanded in
-                    announce("Технічна інформація: \(isExpanded ? "Розгорнуто" : "Згорнуто").")
                 }
             }
 
@@ -2374,9 +2383,15 @@ private func announce(_ message: String) {
         notification: .announcementRequested,
         userInfo: userInfo
     )
-    #elseif os(iOS)
-    UIAccessibility.post(notification: .announcement, argument: message)
-    #endif
+#elseif os(iOS)
+    // SwiftUI applies a Toggle/Navigation update after its action.  Posting in
+    // that same run-loop turn is regularly swallowed by VoiceOver, especially
+    // in a List.  Let the focused control publish its new value first, then
+    // speak the result while that focus is still meaningful.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        UIAccessibility.post(notification: .announcement, argument: message)
+    }
+#endif
 }
 
 #Preview {
