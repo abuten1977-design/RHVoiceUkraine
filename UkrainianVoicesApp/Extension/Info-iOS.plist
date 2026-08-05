@@ -28,11 +28,11 @@
             <array>
                 <dict>
                     <key>description</key>
-                    <string>RHVoice Ukrainian Speech Synthesizer</string>
+                    <string>Голоси RHVoice UA для VoiceOver</string>
                     <key>manufacturer</key>
                     <string>RHVo</string>
                     <key>name</key>
-                    <string>RHVo: RHVoice Ukrainian Speech Synthesizer</string>
+                    <string>RHVoice UA: Голоси</string>
                     <key>sandboxSafe</key>
                     <true/>
                     <key>subtype</key>
@@ -44,7 +44,7 @@
                     <key>type</key>
                     <string>ausp</string>
                     <key>version</key>
-                    <integer>67072</integer>
+                    <integer>67073</integer>
                 </dict>
             </array>
         </dict>
@@ -53,5 +53,7 @@
         <key>NSExtensionPrincipalClass</key>
         <string>$(PRODUCT_MODULE_NAME).AudioUnitFactory</string>
     </dict>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 ГО «Право вибору». Ліцензія GNU GPL версії 3 або пізнішої.</string>
 </dict>
 </plist>

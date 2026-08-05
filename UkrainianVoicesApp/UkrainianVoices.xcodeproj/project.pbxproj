@@ -12,42 +12,58 @@
 		072668F837F98ED34904ACC8 /* HTS_hidden.h in Headers */ = {isa = PBXBuildFile; fileRef = 99A8DE14275FFFCED7F0DE99 /* HTS_hidden.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		0B7397098AAA444015ABD91D /* playback_stream_impl.hpp in Headers */ = {isa = PBXBuildFile; fileRef = F3FCB18C32F1BE8010CF2EAE /* playback_stream_impl.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		0B78FF9B5075CFAB47404FE9 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DE393252B774F70C2EC2186 /* AVFoundation.framework */; };
+		0B7AB3D94FE5D8744BBEC599 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
+		0CE8E17BA1E5F8596DCAF304 /* RHVoiceApostropheNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */; };
+		0FAEEA4A4DAFFF2B63542C73 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3723A616A1AA1721FE374137 /* PrivacyInfo.xcprivacy */; };
+		1096D3488E16F60DA3DD16AA /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		12BFD7FE487C1F3376D29048 /* english_id.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B64AB9E2C5C542AB3C6CA16A /* english_id.cpp */; };
+		169AB627DDA229BB9F3671F7 /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		184BB8C61E94E9F02C83CFC5 /* RHVoiceEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = DA4BEFD7AB65DCD7844523D6 /* RHVoiceEngine.mm */; };
+		191D98EAB3DDE2046D482541 /* RHVoiceDownloadableVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */; };
 		1954FBD0952E35C71B2D02F4 /* language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F4F093732EB8EC9C92C7B1BF /* language.cpp */; };
+		19E703750191B1162AAFC7E7 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		1EBAB05E1E7F3AB28E7FCF69 /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
 		1F0D9C19CB055D0748CEAD87 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AFF0C0258740E95FC3100BF /* Assets.xcassets */; };
 		1F200EBD9621AD8B9A944143 /* RHVoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 80832B21A94FE2AB793DA2C6 /* RHVoice.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		203B01D23EE13B283E6CA3A7 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		21EB49301DCED629335E1FD4 /* UkrainianVoicesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 594274F7B6015E8B24736D5A /* UkrainianVoicesApp.swift */; };
 		24637D10E0999D107E577466 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9435D1BF5C88934351ABD065 /* AudioToolbox.framework */; };
 		25242C8263697EE99E70F59E /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
 		264861D37B12DDB14E99249F /* talking.wav in Resources */ = {isa = PBXBuildFile; fileRef = E4E4C5DE6ADB4F20045D6B20 /* talking.wav */; };
 		27D4F70A68769B847FC6FF63 /* RHVoiceBridge in Frameworks */ = {isa = PBXBuildFile; productRef = 632514FFD006497A3CCF7840 /* RHVoiceBridge */; };
 		2940F1F3A3B009F6AE501C72 /* RHVoice.h in Headers */ = {isa = PBXBuildFile; fileRef = 80832B21A94FE2AB793DA2C6 /* RHVoice.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		2ACE70E8A45833642018757F /* RHVoiceSilenceAnalyzerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9237E58693FC24E1BFB2956 /* RHVoiceSilenceAnalyzerTests.swift */; };
+		2B9FDFF2C0322AAB8A81D238 /* DownloadableLanguagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F37DD59FB5DEE84DCC2211B3 /* DownloadableLanguagesView.swift */; };
 		2BF768D36BC34DDBA3C8B5E0 /* HTS_pstream.c in Sources */ = {isa = PBXBuildFile; fileRef = CF7C8FFB74AC79C3DFF3FC43 /* HTS_pstream.c */; };
 		2C4B5D7431A1CFDEA47EEEED /* lib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 174B5BD6981063CFB8C0912E /* lib.cpp */; };
 		2CC67F2FF85E657450AB79D7 /* sonic.odt in Resources */ = {isa = PBXBuildFile; fileRef = 2CD13DAC554046376382398C /* sonic.odt */; };
+		2D3684CBADAA24FE19F98059 /* RHVoiceDownloadableVoicesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B185ECEE55F52A0EEFA840 /* RHVoiceDownloadableVoicesTests.swift */; };
 		2DEE6B104AD4F30A237402CC /* UkrainianSpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F339A4B56DB55C2CE79DBDC /* UkrainianSpeechSynthesizer.swift */; };
 		2E0812F6F010C7A91877936F /* emoji.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 151B2E257CD5E6CFBE177952 /* emoji.cpp */; };
+		2E90738C727B192427213B7E /* RHVoicePublishedVoiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE20E2B95CBA616DBE2F927 /* RHVoicePublishedVoiceCatalog.swift */; };
 		2EDB658DF3175D23E6D52EC9 /* question_matcher.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 632C9B5C1999A4F73B5640D1 /* question_matcher.cpp */; };
 		318CF975335D55F6E4924ABA /* HTS_engine.h in Headers */ = {isa = PBXBuildFile; fileRef = 866D810969D7303EAE103495 /* HTS_engine.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		323484B2232F81720B995732 /* russian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3C1C00AE1EF020E3191A7F41 /* russian.cpp */; };
 		3249FA74BA507A5F89F85814 /* esperanto.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7F306290ED7EE770E0FF3102 /* esperanto.cpp */; };
 		331BAC59836F92AA90A5346B /* limiter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B01AC93DE830D9FB966678C1 /* limiter.cpp */; };
+		339B7E0F7CC6D8BC4D786063 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = F7DF0EEF0FAE34F91F92D6FD /* ZIPFoundation */; };
 		33ADB0603331A14B49E553C7 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3DD68D3AB8E680055D89C0 /* ContentView.swift */; };
 		34AC0645EBE9F67C1CAA4CF5 /* libsonic0.install in Resources */ = {isa = PBXBuildFile; fileRef = EA484F9EF2F9049B32C6F14B /* libsonic0.install */; };
 		35535D34C5FC22005977B225 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 762C6514C6D8831B93D033F1 /* CoreAudio.framework */; };
 		37C491758C88C8C9FD86191B /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 548A298F87E8575620046947 /* AVFAudio.framework */; };
+		3B376AA1621F6A2B1145A255 /* DownloadableLanguagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F37DD59FB5DEE84DCC2211B3 /* DownloadableLanguagesView.swift */; };
 		3C1C2C72D59FFA8C1D1FB51B /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
 		3E301661DA450E79DA9A1D50 /* Sonic.java in Resources */ = {isa = PBXBuildFile; fileRef = 2DCCDE88EED1E768E6F29F28 /* Sonic.java */; };
 		3FBDC50346E0008511463B4F /* twosineperiods.wav in Resources */ = {isa = PBXBuildFile; fileRef = 3A746335DDD3CD6F630C24EC /* twosineperiods.wav */; };
 		406B177A72A200287312998E /* RHVoiceEngine.mm in Sources */ = {isa = PBXBuildFile; fileRef = DA4BEFD7AB65DCD7844523D6 /* RHVoiceEngine.mm */; };
 		40DC5684B8C0CF2B4E8F2043 /* HTS_misc.c in Sources */ = {isa = PBXBuildFile; fileRef = 575791983833FC4A15F7ED7C /* HTS_misc.c */; };
 		4211579C50EB14668CD9C402 /* RHVoiceKitMac.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F5C7259148889146602EF0F2 /* RHVoiceKitMac.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		44ADCC9AC5FD1C8F98F8AB16 /* RHVoiceApostropheNormalizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B12F510FA5E09E697DE2F15C /* RHVoiceApostropheNormalizerTests.swift */; };
 		47BCBF0D3DB72930007CD48D /* DebugLogShareHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC00C76BDA57C36FCE597D7 /* DebugLogShareHelper.swift */; };
 		482A33BBC23DB5AA5895E538 /* config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = ED08F7F49911AC2D9B4F82DC /* config.cpp */; };
 		48FC1E69279B8B16544F9081 /* HTS_gstream.c in Sources */ = {isa = PBXBuildFile; fileRef = 2C3A96B02349D3A36360075B /* HTS_gstream.c */; };
 		4E03B70A054DD91EC1D7E423 /* userdict_parser.g in Resources */ = {isa = PBXBuildFile; fileRef = 65AE52399251746E336A156E /* userdict_parser.g */; };
+		4EEBBD0026CA0DD445709364 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
 		506745DB112D1532C9C2AD8D /* HTS_audio.c in Sources */ = {isa = PBXBuildFile; fileRef = 5C706F38FB146185F548F3E0 /* HTS_audio.c */; };
 		50EFCC5F520C0A693191EFDC /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
 		528AD249739E87451E97CB8A /* test1.txt in Resources */ = {isa = PBXBuildFile; fileRef = 38CD5A7254D0DBADFF9D55B6 /* test1.txt */; };
@@ -56,6 +72,7 @@
 		55BCB58D8FE2879B5D774927 /* HTS_model.c in Sources */ = {isa = PBXBuildFile; fileRef = D9B1B6E0153C29DDB84C39D7 /* HTS_model.c */; };
 		57F36CDA85F309EA50A78B64 /* sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = 972E54B65169F1EEB09D9645 /* sonic.wav */; };
 		596D90DFE36FEF695B3D6181 /* speech_processor.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8EA50BC82A343E987BC1AEFC /* speech_processor.cpp */; };
+		5A1F99705759FEAF4D0C611F /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		5B08D5306F5DDC699B728542 /* Main.java in Resources */ = {isa = PBXBuildFile; fileRef = A221799EFC8865EDA8E3A5EA /* Main.java */; };
 		5B70FB1FBFC261C5597956D9 /* kyrgyz.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 245C395B6261E25D96F53AF4 /* kyrgyz.cpp */; };
 		5B9EAC1223192F335D2C11B0 /* RHVoiceKitMac.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = F5C7259148889146602EF0F2 /* RHVoiceKitMac.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -63,22 +80,28 @@
 		5BF03E478CA771F2626D32C7 /* HTS_vocoder.c in Sources */ = {isa = PBXBuildFile; fileRef = 7EFAB197B689169DB60B62D2 /* HTS_vocoder.c */; };
 		5C696A6CCF202EAD970D433D /* path.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 077CF5A8496B9045EB9EEEAA /* path.cpp */; };
 		5D02821EFC8361D89B8896F3 /* bpf.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BC545CD5B323543982D25A88 /* bpf.cpp */; };
+		5D4B8574683481E326BFE66C /* RHVoiceDownloadableVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */; };
 		5DDBDB8F1A2A38EBEE73F5DE /* RHVoiceEngine.h in Headers */ = {isa = PBXBuildFile; fileRef = E54153AD541703234B228072 /* RHVoiceEngine.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		5EED74DB1FA584925A7BDA48 /* RHVoiceBridge in Frameworks */ = {isa = PBXBuildFile; productRef = E58C6475B00FB7E6B46111B9 /* RHVoiceBridge */; };
 		63AA90528CE10BB0E10B1B9E /* LogCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0F2F4E3D8D190EFCE06439F /* LogCollector.swift */; };
 		654604B567DEB0519C925820 /* sonic.c in Sources */ = {isa = PBXBuildFile; fileRef = CDCB7806B0857EAE8DDDF1DE /* sonic.c */; };
 		65E83ABCFC9224E4B64235B6 /* file_playback_stream_impl.hpp in Headers */ = {isa = PBXBuildFile; fileRef = DD5D18C426012296F4AAE4AA /* file_playback_stream_impl.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		66DF2F4B0C67C03907A5177E /* talking_2x.wav in Resources */ = {isa = PBXBuildFile; fileRef = B97939715AC87B468AB65EF4 /* talking_2x.wav */; };
+		67E66EF2D4C3F64BC571D37D /* VoiceDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E93CEA75B1C581DD576E85 /* VoiceDownloadManager.swift */; };
 		68046B4DCA60D004A3C6C9F0 /* userdict_parser.h in Headers */ = {isa = PBXBuildFile; fileRef = B547480B11C0C06964299A03 /* userdict_parser.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		683E381520860F908B564DF7 /* RHVoiceDebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */; };
+		697AD36CCBB41ADAF1F266FF /* RHVoiceDownloadableVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */; };
 		69CFD1576CC03A0FD18C4A04 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
+		6A18E42BEF7254DD427DF169 /* VoiceDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36E93CEA75B1C581DD576E85 /* VoiceDownloadManager.swift */; };
 		6B281419A96C86424E7D7C78 /* tts_api.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 06A9E11FCA9BC2991F48D26C /* tts_api.cpp */; };
 		6C64251246F751F94A5357A7 /* libsonic0.symbols in Resources */ = {isa = PBXBuildFile; fileRef = FB6528FFD6007398E0C9C7BD /* libsonic0.symbols */; };
+		6E4A49EB16AD9A076233FD5A /* RHVoicePublishedVoiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE20E2B95CBA616DBE2F927 /* RHVoicePublishedVoiceCatalog.swift */; };
 		6FE678EC7A6F8785AE8B7D29 /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
 		7094CDD3018176EDFCE5176E /* hts_labeller.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 86F595B3180811887E87D567 /* hts_labeller.cpp */; };
 		7365FF12B2EC1F943AEDDB67 /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 548A298F87E8575620046947 /* AVFAudio.framework */; };
 		73698DB84895C254F51CB9F6 /* UkrainianVoicesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 594274F7B6015E8B24736D5A /* UkrainianVoicesApp.swift */; };
 		76185AF695FF6667B700292B /* relation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D370C26713573856391B707C /* relation.cpp */; };
+		772AC52F9A7285EB5801D5FB /* PersonalUserDictionaryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F04D4B860779901978947768 /* PersonalUserDictionaryTests.swift */; };
 		7777CD83817D6EFDD8BCE85B /* phoneme_set.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53A8D756ABC076A34D7CBA02 /* phoneme_set.cpp */; };
 		77F19AC525E4B3AB41652308 /* item.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D45415F798875EBAD772A9D8 /* item.cpp */; };
 		788DDA99D1F0563A7345518D /* playback_stream.cpp in Sources */ = {isa = PBXBuildFile; fileRef = AD4A7F8E301506474EEA5261 /* playback_stream.cpp */; };
@@ -90,15 +113,19 @@
 		7CD26A4C0A529FEB0C537708 /* RHVoice_common.h in Headers */ = {isa = PBXBuildFile; fileRef = BCF2A00B910754AE0FFEF88D /* RHVoice_common.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7D6A4D3DEE0E1858C7E5C319 /* RHVoiceKit.h in Headers */ = {isa = PBXBuildFile; fileRef = DF41380D161F58D288E66E46 /* RHVoiceKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		7D8C3512DA19DCD21111E6E7 /* RHVoiceBridge in Frameworks */ = {isa = PBXBuildFile; productRef = D84F74E87A59C104B9DC549D /* RHVoiceBridge */; };
+		81FE427F8C112F0D81D069F2 /* RHVoiceApostropheNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */; };
 		849280A82CEB04B6CB260F8B /* lts.cpp in Sources */ = {isa = PBXBuildFile; fileRef = D793177FFBA9248834095E39 /* lts.cpp */; };
 		85E622A8948437D510BE7EDF /* AudioUnitFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CC4DAD0268908920F9C1C4E /* AudioUnitFactory.swift */; };
 		87E06907937D4AB5E50F1E82 /* UkrainianSpeechSynthesizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F339A4B56DB55C2CE79DBDC /* UkrainianSpeechSynthesizer.swift */; };
+		89C31E2FE218B3E725B0F423 /* RHVoiceApostropheNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */; };
+		8A67E734E8D664687B1CF4CC /* RHVoiceApostropheNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */; };
 		8AFF0F507BBDAF702C6A23B6 /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
 		8C4B3A1C1A2069883F12A894 /* RHVoiceDebugLog.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */; };
 		8D61794AF26BAD75C29E7EF0 /* engine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 619859F40F0EF60E2D0033FF /* engine.cpp */; };
 		8D9DB560169CF416BA886CF5 /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
 		8DEBB67F90F1B1BA4E20B9AD /* utils.h in Headers */ = {isa = PBXBuildFile; fileRef = E135D3DEF710767D79216462 /* utils.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		8E8BB496F5F02186BFB9A0D4 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
+		9096605455395705699F8E65 /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		91EA7B669C7AD13DE4D388D3 /* data_only_language.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CEE81E11B972201DDAAE7C24 /* data_only_language.cpp */; };
 		92C923B0C0C370489F9AE5CF /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DE393252B774F70C2EC2186 /* AVFoundation.framework */; };
 		931CEA15DDE361ECA551D7A0 /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
@@ -111,34 +138,44 @@
 		9BC2808B4A1A87594B13876D /* audio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 252B19F4754278C78AD3864E /* audio.cpp */; };
 		9FC9D09F1651443C1DC2CE6B /* unit_db.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 795E93F5AA89736794D438F5 /* unit_db.cpp */; };
 		A03AAB36BFFC79BD093525D3 /* RHVoiceSharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */; };
+		A1410A6EB0B2C9F4C0F64A4E /* PersonalUserDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */; };
 		A3218209F749ECAD3D662D2D /* model_answer_cache.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 319A46139369C11035B125E3 /* model_answer_cache.cpp */; };
 		A4221CAD67A474E040D3088C /* RHVoiceKit.h in Headers */ = {isa = PBXBuildFile; fileRef = DF41380D161F58D288E66E46 /* RHVoiceKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A4CA3CBF3C1C6B56AB5D51F7 /* AudioUnitFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CC4DAD0268908920F9C1C4E /* AudioUnitFactory.swift */; };
 		A6768833DB1136E0A4C1BD90 /* stereo_test.wav in Resources */ = {isa = PBXBuildFile; fileRef = 52A6FA8233FE41C30B5E3A9D /* stereo_test.wav */; };
+		A6984C931A47AFA4B18615C9 /* RHVoicePublishedVoiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE20E2B95CBA616DBE2F927 /* RHVoicePublishedVoiceCatalog.swift */; };
 		A7245F4F0940699EB68B2B14 /* RHVoiceDebugLog.h in Headers */ = {isa = PBXBuildFile; fileRef = CF590FCC455E291882CD25AF /* RHVoiceDebugLog.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		A7DB5A18B34F793284C1D7C6 /* index.md in Resources */ = {isa = PBXBuildFile; fileRef = 5857D122CD97ED9ACCC4EA3A /* index.md */; };
 		A7E87F9ACBC7BB68B8CEBED9 /* HTS_engine.c in Sources */ = {isa = PBXBuildFile; fileRef = 2F2B38FFF37C6926470366CF /* HTS_engine.c */; };
 		A7EA436630848CDFF2C5F662 /* sonic.manpages in Resources */ = {isa = PBXBuildFile; fileRef = 5ECDD711F591446DFC2EBA93 /* sonic.manpages */; };
 		A86A4F676E28D638AF012B1D /* RHVoiceBridge in Frameworks */ = {isa = PBXBuildFile; productRef = 411FE67F39B572C7A482B89D /* RHVoiceBridge */; };
 		AB20B859310241C37220B708 /* vietnamese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 49741CCCD439C31CD3A0921D /* vietnamese.cpp */; };
+		ABB2E51CAD70A3229B16B516 /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
 		ADE06875A990016BA61CD2D1 /* espeak_sonic.wav in Resources */ = {isa = PBXBuildFile; fileRef = 8B4C976B11D933F2608AB2E1 /* espeak_sonic.wav */; };
 		B10CC1C7AE90D8071DD049BA /* RHVoiceSelfTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */; };
 		B314219133998B7FA4BCFD41 /* sonic.install in Resources */ = {isa = PBXBuildFile; fileRef = 7DE7BD3D387C9F5E2BE79CA4 /* sonic.install */; };
+		B3A8C33EF5F18FD484EEA426 /* RHVoiceDownloadableVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */; };
+		B4259750FC715C4C61F649FB /* AbbreviationDictionary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */; };
 		B503097BF435BA449F101C4E /* RHVoicePipelineSplitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 222E6C35B476BE184E65F68B /* RHVoicePipelineSplitterTests.swift */; };
 		B5DF81C847C2AEADF530BBDA /* ini_parser.cpp in Sources */ = {isa = PBXBuildFile; fileRef = B5099789658D17BC33F4046D /* ini_parser.cpp */; };
 		B831B2FF80B25BEA038889A3 /* fst.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 95D1937082EB11DB021314C6 /* fst.cpp */; };
 		B865D4B056AEFB61420D3A8C /* RHVoiceBridge in Frameworks */ = {isa = PBXBuildFile; productRef = 4130133FD26B669EC9ADBD21 /* RHVoiceBridge */; };
 		B96FC273528682658CDE5B43 /* unicode.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 62AD7B6BF31A789E1E008199 /* unicode.cpp */; };
+		BA0BF0F21F61469FB79BE6F6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 25D817492A54B550023E79DD /* PrivacyInfo.xcprivacy */; };
 		BB88614F5FDFB2564827E172 /* brazilian_portuguese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9F8283EE1B43A4D36C178161 /* brazilian_portuguese.cpp */; };
 		BBFD5EC0A87665EAC722501F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3DD68D3AB8E680055D89C0 /* ContentView.swift */; };
 		BF892D809EDB453B3FBA2F20 /* voice.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5DF5993E3398006C1ED4470B /* voice.cpp */; };
+		C09F8D49A834CD5EF4237B55 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3723A616A1AA1721FE374137 /* PrivacyInfo.xcprivacy */; };
 		C0AE845367CCAF2F333B20C5 /* RHVoiceKitMac.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5C7259148889146602EF0F2 /* RHVoiceKitMac.framework */; };
+		C0D8696ACDFB4031ED73C10B /* RHVoiceSharedSettingsSnapshotCacheTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99E70FB91F35F463AD3C901 /* RHVoiceSharedSettingsSnapshotCacheTests.swift */; };
 		C10E4861C2A4A4B557E33602 /* tts_api.h in Headers */ = {isa = PBXBuildFile; fileRef = 6CA2096CE4E6D02EFFEF0A6F /* tts_api.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C25CBEAA8FF204E1F22231BC /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9435D1BF5C88934351ABD065 /* AudioToolbox.framework */; };
 		C2E31DC22A29ABFE06EFD7A0 /* config.h in Headers */ = {isa = PBXBuildFile; fileRef = D00217A3EB0AA03BFA65831B /* config.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		C437CE1EF92F5B17C23679CA /* LogCollector.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0F2F4E3D8D190EFCE06439F /* LogCollector.swift */; };
 		C882A896CB53F6B42EB8B468 /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 548A298F87E8575620046947 /* AVFAudio.framework */; };
+		CA74A19E82FA9FA314AEBAF5 /* RHVoicePublishedVoiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE20E2B95CBA616DBE2F927 /* RHVoicePublishedVoiceCatalog.swift */; };
 		CB45B587A6FEA34899E144BB /* document.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2357098F937D409C1D527900 /* document.cpp */; };
+		CC8AD72BD661BD6E389B462E /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = EC57F4949626B84C7C6B21F0 /* ZIPFoundation */; };
 		CE5CA574D0615B711843C0FB /* UkrainianVoicesExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B206886AA51866CD397D47B9 /* UkrainianVoicesExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CEA449BF8C7AF24279D0EB4B /* english.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C3F4558FFE88BFBCCDCF1226 /* english.cpp */; };
 		D10301D3DAE4BDE5D7A04E33 /* RHVoicePipelineSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */; };
@@ -152,9 +189,13 @@
 		DFC13B55367F1819E97E684B /* HTS_label.c in Sources */ = {isa = PBXBuildFile; fileRef = 25422ADB53D384C2D288A452 /* HTS_label.c */; };
 		E01EAA9F78FD30BC1C16B789 /* ukrainian.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9193078BFCEBCED05282DC4F /* ukrainian.cpp */; };
 		E0F026C7FA83F2139F6015BD /* libsonic-dev.install in Resources */ = {isa = PBXBuildFile; fileRef = 666DF51C622BB6F769AD29D3 /* libsonic-dev.install */; };
+		E5061B602CC97D5453A30973 /* RHVoiceDownloadableVoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */; };
+		E53AFC1433C8060758492431 /* RHVoicePublishedVoiceCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CE20E2B95CBA616DBE2F927 /* RHVoicePublishedVoiceCatalog.swift */; };
 		E544FB5B4FC87EECD82E82C4 /* library.hpp in Headers */ = {isa = PBXBuildFile; fileRef = 17C0CFF865C09DB88D17DE39 /* library.hpp */; settings = {ATTRIBUTES = (Public, ); }; };
 		E5870359B3397973DE6FB416 /* equalizer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7455425D67DFC54E76F517F5 /* equalizer.cpp */; };
 		E630DD7CCA70A1E9B2341155 /* utterance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C6DF28141F970584D9065C42 /* utterance.cpp */; };
+		E63E7D123E49EE485813BEB6 /* RHVoiceSilenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */; };
+		EA5C1B8B241F90273DEF0AFC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 25D817492A54B550023E79DD /* PrivacyInfo.xcprivacy */; };
 		EAAA37DB75618A2C3DF67A78 /* changelog.vinux in Resources */ = {isa = PBXBuildFile; fileRef = 381DE1F4A1240BEFD94775BE /* changelog.vinux */; };
 		EB3A156B3A8D12D28D0C5E1A /* pitch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7E706B30D374EEE869A647D8 /* pitch.cpp */; };
 		EB544DDBB54AF459DEFD550A /* dtree.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 508BBC3135BBF9A8A106A9E6 /* dtree.cpp */; };
@@ -163,6 +204,7 @@
 		F13FFE52BBD82BF6CD116666 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DE393252B774F70C2EC2186 /* AVFoundation.framework */; };
 		F22EB3B93EAF28CDDC006093 /* hts_engine_call.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5E2BC67D51CA40856F0504E /* hts_engine_call.cpp */; };
 		F33DD86F4BD07536F62CDBD5 /* AVFAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 548A298F87E8575620046947 /* AVFAudio.framework */; };
+		F4F4BD1B1288971A51D7A29C /* RHVoiceApostropheNormalizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */; };
 		F719E5BE4635F5F6ABF0AB8D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AFF0C0258740E95FC3100BF /* Assets.xcassets */; };
 		F836E22B4C1993AF1B33C57C /* HTS_sstream.c in Sources */ = {isa = PBXBuildFile; fileRef = ECAD57EB0001B185E13B7159 /* HTS_sstream.c */; };
 		FC8DF4E383EA1F2401E3C384 /* UkrainianVoicesExtensionMac.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 4E27232100E742850D71D852 /* UkrainianVoicesExtensionMac.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -251,6 +293,7 @@
 /* Begin PBXFileReference section */
 		06A9E11FCA9BC2991F48D26C /* tts_api.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = tts_api.cpp; sourceTree = "<group>"; };
 		077CF5A8496B9045EB9EEEAA /* path.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = path.cpp; sourceTree = "<group>"; };
+		0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AbbreviationDictionary.swift; sourceTree = "<group>"; };
 		0CC4DAD0268908920F9C1C4E /* AudioUnitFactory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUnitFactory.swift; sourceTree = "<group>"; };
 		13EF9B67E2D253DEFA3ACD4E /* README */ = {isa = PBXFileReference; path = README; sourceTree = "<group>"; };
 		151B2E257CD5E6CFBE177952 /* emoji.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emoji.cpp; sourceTree = "<group>"; };
@@ -259,11 +302,13 @@
 		17C0CFF865C09DB88D17DE39 /* library.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = library.hpp; sourceTree = "<group>"; };
 		1B63D01AD7EB72FBD25F33F7 /* UkrainianVoicesMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UkrainianVoicesMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1D8930DE2DE3C52722C0B229 /* CoreAudioKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudioKit.framework; path = System/Library/Frameworks/CoreAudioKit.framework; sourceTree = SDKROOT; };
+		1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceDownloadableVoices.swift; sourceTree = "<group>"; };
 		222E6C35B476BE184E65F68B /* RHVoicePipelineSplitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoicePipelineSplitterTests.swift; sourceTree = "<group>"; };
 		2357098F937D409C1D527900 /* document.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = document.cpp; sourceTree = "<group>"; };
 		245C395B6261E25D96F53AF4 /* kyrgyz.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = kyrgyz.cpp; sourceTree = "<group>"; };
 		252B19F4754278C78AD3864E /* audio.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = audio.cpp; sourceTree = "<group>"; };
 		25422ADB53D384C2D288A452 /* HTS_label.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_label.c; sourceTree = "<group>"; };
+		25D817492A54B550023E79DD /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		268BF56A1633B623814B10D4 /* COPYING */ = {isa = PBXFileReference; path = COPYING; sourceTree = "<group>"; };
 		27AAEFFB7795A1A1803B81C2 /* UkrainianVoicesMac.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UkrainianVoicesMac.entitlements; sourceTree = "<group>"; };
 		2A5A88BB06E0055B6EFEDCCF /* io.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = io.cpp; sourceTree = "<group>"; };
@@ -276,17 +321,22 @@
 		2EC63F14A01F136EE58D64D6 /* UkrainianVoices.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UkrainianVoices.entitlements; sourceTree = "<group>"; };
 		2F2B38FFF37C6926470366CF /* HTS_engine.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_engine.c; sourceTree = "<group>"; };
 		319A46139369C11035B125E3 /* model_answer_cache.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = model_answer_cache.cpp; sourceTree = "<group>"; };
+		36E93CEA75B1C581DD576E85 /* VoiceDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceDownloadManager.swift; sourceTree = "<group>"; };
+		3723A616A1AA1721FE374137 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		381DE1F4A1240BEFD94775BE /* changelog.vinux */ = {isa = PBXFileReference; path = changelog.vinux; sourceTree = "<group>"; };
 		38CD5A7254D0DBADFF9D55B6 /* test1.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = test1.txt; sourceTree = "<group>"; };
 		3A6162BCF96CA4AABBD52476 /* control */ = {isa = PBXFileReference; path = control; sourceTree = "<group>"; };
 		3A746335DDD3CD6F630C24EC /* twosineperiods.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = twosineperiods.wav; sourceTree = "<group>"; };
+		3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceApostropheNormalizer.swift; sourceTree = "<group>"; };
 		3C1C00AE1EF020E3191A7F41 /* russian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = russian.cpp; sourceTree = "<group>"; };
+		3CE20E2B95CBA616DBE2F927 /* RHVoicePublishedVoiceCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoicePublishedVoiceCatalog.swift; sourceTree = "<group>"; };
 		49741CCCD439C31CD3A0921D /* vietnamese.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vietnamese.cpp; sourceTree = "<group>"; };
 		4A7B5AC164DFC4A8AFB8D4F1 /* macedonian.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = macedonian.cpp; sourceTree = "<group>"; };
 		4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoicePipelineSplitter.swift; sourceTree = "<group>"; };
 		4E27232100E742850D71D852 /* UkrainianVoicesExtensionMac.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UkrainianVoicesExtensionMac.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F339A4B56DB55C2CE79DBDC /* UkrainianSpeechSynthesizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UkrainianSpeechSynthesizer.swift; sourceTree = "<group>"; };
 		4FB1FA5FCD63ECC58D9C9649 /* RHVoicePipelineSplitterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RHVoicePipelineSplitterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSilenceAnalyzer.swift; sourceTree = "<group>"; };
 		508BBC3135BBF9A8A106A9E6 /* dtree.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = dtree.cpp; sourceTree = "<group>"; };
 		52A6FA8233FE41C30B5E3A9D /* stereo_test.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = stereo_test.wav; sourceTree = "<group>"; };
 		53A8D756ABC076A34D7CBA02 /* phoneme_set.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = phoneme_set.cpp; sourceTree = "<group>"; };
@@ -312,6 +362,7 @@
 		6CA2096CE4E6D02EFFEF0A6F /* tts_api.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = tts_api.h; sourceTree = "<group>"; };
 		7455425D67DFC54E76F517F5 /* equalizer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = equalizer.cpp; sourceTree = "<group>"; };
 		762C6514C6D8831B93D033F1 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
+		77B185ECEE55F52A0EEFA840 /* RHVoiceDownloadableVoicesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceDownloadableVoicesTests.swift; sourceTree = "<group>"; };
 		795E93F5AA89736794D438F5 /* unit_db.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = unit_db.cpp; sourceTree = "<group>"; };
 		7A36CDC1902CB28A7AC19A08 /* hts_engine_impl.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_engine_impl.cpp; sourceTree = "<group>"; };
 		7DE393252B774F70C2EC2186 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
@@ -342,9 +393,11 @@
 		A2B6C5E187D3F4E8019C4E81 /* RHVoiceDebugLog.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RHVoiceDebugLog.m; sourceTree = "<group>"; };
 		A3C3AF4B8B9151C3159D3D12 /* soundstretch.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = soundstretch.wav; sourceTree = "<group>"; };
 		A98A3D0A7D9319EE30E040C2 /* rules */ = {isa = PBXFileReference; path = rules; sourceTree = "<group>"; };
+		A99E70FB91F35F463AD3C901 /* RHVoiceSharedSettingsSnapshotCacheTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSharedSettingsSnapshotCacheTests.swift; sourceTree = "<group>"; };
 		AD4A7F8E301506474EEA5261 /* playback_stream.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = playback_stream.cpp; sourceTree = "<group>"; };
 		ADC00C76BDA57C36FCE597D7 /* DebugLogShareHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogShareHelper.swift; sourceTree = "<group>"; };
 		B01AC93DE830D9FB966678C1 /* limiter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = limiter.cpp; sourceTree = "<group>"; };
+		B12F510FA5E09E697DE2F15C /* RHVoiceApostropheNormalizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceApostropheNormalizerTests.swift; sourceTree = "<group>"; };
 		B206886AA51866CD397D47B9 /* UkrainianVoicesExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = UkrainianVoicesExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B5099789658D17BC33F4046D /* ini_parser.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ini_parser.cpp; sourceTree = "<group>"; };
 		B547480B11C0C06964299A03 /* userdict_parser.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = userdict_parser.h; sourceTree = "<group>"; };
@@ -357,6 +410,7 @@
 		C3F4558FFE88BFBCCDCF1226 /* english.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = english.cpp; sourceTree = "<group>"; };
 		C554D588C953BB9F5EE4B9FA /* .gitignore */ = {isa = PBXFileReference; path = .gitignore; sourceTree = "<group>"; };
 		C6DF28141F970584D9065C42 /* utterance.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utterance.cpp; sourceTree = "<group>"; };
+		C9237E58693FC24E1BFB2956 /* RHVoiceSilenceAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSilenceAnalyzerTests.swift; sourceTree = "<group>"; };
 		CA6DB78C17B744FA161358CE /* UkrainianVoices.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = UkrainianVoices.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RHVoiceSelfTestRunner.swift; sourceTree = "<group>"; };
 		CDCB7806B0857EAE8DDDF1DE /* sonic.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = sonic.c; sourceTree = "<group>"; };
@@ -381,8 +435,10 @@
 		ECAD57EB0001B185E13B7159 /* HTS_sstream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = HTS_sstream.c; sourceTree = "<group>"; };
 		ED08F7F49911AC2D9B4F82DC /* config.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = config.cpp; sourceTree = "<group>"; };
 		F0182E88CDE69139BDBB0911 /* .gitignore */ = {isa = PBXFileReference; path = .gitignore; sourceTree = "<group>"; };
+		F04D4B860779901978947768 /* PersonalUserDictionaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonalUserDictionaryTests.swift; sourceTree = "<group>"; };
 		F1A9EAD1A0E7D2285A81C098 /* hts_vocoder_wrapper.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = hts_vocoder_wrapper.cpp; sourceTree = "<group>"; };
 		F2CDDD4E7650C8A84960912E /* format */ = {isa = PBXFileReference; path = format; sourceTree = "<group>"; };
+		F37DD59FB5DEE84DCC2211B3 /* DownloadableLanguagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadableLanguagesView.swift; sourceTree = "<group>"; };
 		F3FCB18C32F1BE8010CF2EAE /* playback_stream_impl.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = playback_stream_impl.hpp; sourceTree = "<group>"; };
 		F4F093732EB8EC9C92C7B1BF /* language.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = language.cpp; sourceTree = "<group>"; };
 		F5C7259148889146602EF0F2 /* RHVoiceKitMac.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = RHVoiceKitMac.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -442,6 +498,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5EED74DB1FA584925A7BDA48 /* RHVoiceBridge in Frameworks */,
+				339B7E0F7CC6D8BC4D786063 /* ZIPFoundation in Frameworks */,
 				0B78FF9B5075CFAB47404FE9 /* AVFoundation.framework in Frameworks */,
 				7A367D98FE5BAB0B5DEA5E8A /* AVFAudio.framework in Frameworks */,
 			);
@@ -453,6 +510,7 @@
 			files = (
 				C0AE845367CCAF2F333B20C5 /* RHVoiceKitMac.framework in Frameworks */,
 				A86A4F676E28D638AF012B1D /* RHVoiceBridge in Frameworks */,
+				CC8AD72BD661BD6E389B462E /* ZIPFoundation in Frameworks */,
 				06187F9E26ED8273B49792D3 /* AVFoundation.framework in Frameworks */,
 				94E450187AD26C4C8A30E512 /* AVFAudio.framework in Frameworks */,
 			);
@@ -497,7 +555,7 @@
 				E135D3DEF710767D79216462 /* utils.h */,
 			);
 			name = hts_engine;
-			path = ../RHVoice/src/hts_engine;
+			path = ../RHVoiceCore/RHVoice/src/hts_engine;
 			sourceTree = "<group>";
 		};
 		35DB041430E546E462B37A78 /* Sources */ = {
@@ -558,7 +616,7 @@
 				174B5BD6981063CFB8C0912E /* lib.cpp */,
 			);
 			name = lib;
-			path = ../RHVoice/src/lib;
+			path = ../RHVoiceCore/RHVoice/src/lib;
 			sourceTree = "<group>";
 		};
 		80588C453191FFE2BD670D6B /* Packages */ = {
@@ -612,7 +670,7 @@
 				363F518B88AE67C4666C9517 /* samples */,
 			);
 			name = sonic;
-			path = ../RHVoice/external/libs/sonic;
+			path = ../RHVoiceCore/RHVoice/external/libs/sonic;
 			sourceTree = "<group>";
 		};
 		A89B1CB528455BE3B220D476 /* doc */ = {
@@ -629,6 +687,7 @@
 			isa = PBXGroup;
 			children = (
 				0CC4DAD0268908920F9C1C4E /* AudioUnitFactory.swift */,
+				3723A616A1AA1721FE374137 /* PrivacyInfo.xcprivacy */,
 				4F339A4B56DB55C2CE79DBDC /* UkrainianSpeechSynthesizer.swift */,
 			);
 			name = Provider;
@@ -649,13 +708,16 @@
 				2AFF0C0258740E95FC3100BF /* Assets.xcassets */,
 				CE3DD68D3AB8E680055D89C0 /* ContentView.swift */,
 				ADC00C76BDA57C36FCE597D7 /* DebugLogShareHelper.swift */,
+				F37DD59FB5DEE84DCC2211B3 /* DownloadableLanguagesView.swift */,
 				86292E26D646DE361370A614 /* Info-iOS.plist */,
 				C3085BFE3E74452BA4B9BD86 /* Info.plist */,
 				E0F2F4E3D8D190EFCE06439F /* LogCollector.swift */,
+				25D817492A54B550023E79DD /* PrivacyInfo.xcprivacy */,
 				CCC3D5E25D9CA46D6EF56C66 /* RHVoiceSelfTestRunner.swift */,
 				2EC63F14A01F136EE58D64D6 /* UkrainianVoices.entitlements */,
 				594274F7B6015E8B24736D5A /* UkrainianVoicesApp.swift */,
 				27AAEFFB7795A1A1803B81C2 /* UkrainianVoicesMac.entitlements */,
+				36E93CEA75B1C581DD576E85 /* VoiceDownloadManager.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -671,13 +733,18 @@
 				AD4A7F8E301506474EEA5261 /* playback_stream.cpp */,
 			);
 			name = audio;
-			path = ../RHVoice/src/audio;
+			path = ../RHVoiceCore/RHVoice/src/audio;
 			sourceTree = "<group>";
 		};
 		E2D3F51540C339143A2B0B90 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				F04D4B860779901978947768 /* PersonalUserDictionaryTests.swift */,
+				B12F510FA5E09E697DE2F15C /* RHVoiceApostropheNormalizerTests.swift */,
+				77B185ECEE55F52A0EEFA840 /* RHVoiceDownloadableVoicesTests.swift */,
 				222E6C35B476BE184E65F68B /* RHVoicePipelineSplitterTests.swift */,
+				A99E70FB91F35F463AD3C901 /* RHVoiceSharedSettingsSnapshotCacheTests.swift */,
+				C9237E58693FC24E1BFB2956 /* RHVoiceSilenceAnalyzerTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -738,15 +805,20 @@
 				5DF5993E3398006C1ED4470B /* voice.cpp */,
 			);
 			name = core;
-			path = ../RHVoice/src/core;
+			path = ../RHVoiceCore/RHVoice/src/core;
 			sourceTree = "<group>";
 		};
 		FFD49389CF3603FFA416C0EA /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				0B35AFEE6D46CFBE6160BEB8 /* AbbreviationDictionary.swift */,
 				6896F715BA9AA0D4F887F482 /* PersonalUserDictionary.swift */,
+				3B623408095CC74F92EF0E2E /* RHVoiceApostropheNormalizer.swift */,
+				1EED3EFC74CFF92AE252A96C /* RHVoiceDownloadableVoices.swift */,
 				4B8FB1806AC222C7CAE93EE1 /* RHVoicePipelineSplitter.swift */,
+				3CE20E2B95CBA616DBE2F927 /* RHVoicePublishedVoiceCatalog.swift */,
 				985C50D5542C25C19E20E794 /* RHVoiceSharedSettings.swift */,
+				50474140FBD264E459431588 /* RHVoiceSilenceAnalyzer.swift */,
 			);
 			path = Shared;
 			sourceTree = "<group>";
@@ -795,6 +867,7 @@
 			buildConfigurationList = 7D56CDA049E8EBF597421F6F /* Build configuration list for PBXNativeTarget "UkrainianVoicesExtension" */;
 			buildPhases = (
 				8FF10A0EA0713C42FCD6B788 /* Sources */,
+				F3017479FD7D24536AD64653 /* Resources */,
 				598BD4A283E1C569D0930B4B /* Frameworks */,
 				6F85D53FFFA931268CBBB2B5 /* Copy Voices to Extension */,
 			);
@@ -830,6 +903,7 @@
 			name = UkrainianVoicesMac;
 			packageProductDependencies = (
 				411FE67F39B572C7A482B89D /* RHVoiceBridge */,
+				EC57F4949626B84C7C6B21F0 /* ZIPFoundation */,
 			);
 			productName = UkrainianVoicesMac;
 			productReference = 1B63D01AD7EB72FBD25F33F7 /* UkrainianVoicesMac.app */;
@@ -853,6 +927,7 @@
 			name = UkrainianVoices;
 			packageProductDependencies = (
 				E58C6475B00FB7E6B46111B9 /* RHVoiceBridge */,
+				F7DF0EEF0FAE34F91F92D6FD /* ZIPFoundation */,
 			);
 			productName = UkrainianVoices;
 			productReference = CA6DB78C17B744FA161358CE /* UkrainianVoices.app */;
@@ -903,6 +978,7 @@
 			buildConfigurationList = 0118D083362CF1605D1475D9 /* Build configuration list for PBXNativeTarget "UkrainianVoicesExtensionMac" */;
 			buildPhases = (
 				4591C3B8696A058C9B3E7386 /* Sources */,
+				8E82A7935C72067CE2EAEFCD /* Resources */,
 				895C42840078C07D35D4905C /* Frameworks */,
 				320729849E1EF911BEDD86F3 /* Embed Frameworks */,
 				AF34711DABD641616AFCE8C4 /* Copy RHVoiceData to Extension */,
@@ -986,6 +1062,7 @@
 			mainGroup = 17CDDA87F7D852407ECD79B1;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				80F6BF761B5CDA7B2FB39A3B /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				D5FCC20B0494A82B1D1AC9CF /* XCLocalSwiftPackageReference "../RHVoiceCore" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -1010,6 +1087,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1F0D9C19CB055D0748CEAD87 /* Assets.xcassets in Resources */,
+				EA5C1B8B241F90273DEF0AFC /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1046,6 +1124,23 @@
 			buildActionMask = 2147483647;
 			files = (
 				F719E5BE4635F5F6ABF0AB8D /* Assets.xcassets in Resources */,
+				BA0BF0F21F61469FB79BE6F6 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8E82A7935C72067CE2EAEFCD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FAEEA4A4DAFFF2B63542C73 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F3017479FD7D24536AD64653 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C09F8D49A834CD5EF4237B55 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1135,14 +1230,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0B7AB3D94FE5D8744BBEC599 /* AbbreviationDictionary.swift in Sources */,
 				33ADB0603331A14B49E553C7 /* ContentView.swift in Sources */,
 				00F2E3FFD429372C3907BE62 /* DebugLogShareHelper.swift in Sources */,
+				3B376AA1621F6A2B1145A255 /* DownloadableLanguagesView.swift in Sources */,
 				63AA90528CE10BB0E10B1B9E /* LogCollector.swift in Sources */,
 				1EBAB05E1E7F3AB28E7FCF69 /* PersonalUserDictionary.swift in Sources */,
+				F4F4BD1B1288971A51D7A29C /* RHVoiceApostropheNormalizer.swift in Sources */,
+				E5061B602CC97D5453A30973 /* RHVoiceDownloadableVoices.swift in Sources */,
 				D10301D3DAE4BDE5D7A04E33 /* RHVoicePipelineSplitter.swift in Sources */,
+				2E90738C727B192427213B7E /* RHVoicePublishedVoiceCatalog.swift in Sources */,
 				B10CC1C7AE90D8071DD049BA /* RHVoiceSelfTestRunner.swift in Sources */,
 				69CFD1576CC03A0FD18C4A04 /* RHVoiceSharedSettings.swift in Sources */,
+				1096D3488E16F60DA3DD16AA /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				73698DB84895C254F51CB9F6 /* UkrainianVoicesApp.swift in Sources */,
+				67E66EF2D4C3F64BC571D37D /* VoiceDownloadManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1150,14 +1252,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				19E703750191B1162AAFC7E7 /* AbbreviationDictionary.swift in Sources */,
 				BBFD5EC0A87665EAC722501F /* ContentView.swift in Sources */,
 				47BCBF0D3DB72930007CD48D /* DebugLogShareHelper.swift in Sources */,
+				2B9FDFF2C0322AAB8A81D238 /* DownloadableLanguagesView.swift in Sources */,
 				C437CE1EF92F5B17C23679CA /* LogCollector.swift in Sources */,
 				50EFCC5F520C0A693191EFDC /* PersonalUserDictionary.swift in Sources */,
+				0CE8E17BA1E5F8596DCAF304 /* RHVoiceApostropheNormalizer.swift in Sources */,
+				697AD36CCBB41ADAF1F266FF /* RHVoiceDownloadableVoices.swift in Sources */,
 				8D9DB560169CF416BA886CF5 /* RHVoicePipelineSplitter.swift in Sources */,
+				E53AFC1433C8060758492431 /* RHVoicePublishedVoiceCatalog.swift in Sources */,
 				5361E5B92C79BCBFCA644B77 /* RHVoiceSelfTestRunner.swift in Sources */,
 				A03AAB36BFFC79BD093525D3 /* RHVoiceSharedSettings.swift in Sources */,
+				E63E7D123E49EE485813BEB6 /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				21EB49301DCED629335E1FD4 /* UkrainianVoicesApp.swift in Sources */,
+				6A18E42BEF7254DD427DF169 /* VoiceDownloadManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1165,10 +1274,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9096605455395705699F8E65 /* AbbreviationDictionary.swift in Sources */,
 				A4CA3CBF3C1C6B56AB5D51F7 /* AudioUnitFactory.swift in Sources */,
 				3C1C2C72D59FFA8C1D1FB51B /* PersonalUserDictionary.swift in Sources */,
+				89C31E2FE218B3E725B0F423 /* RHVoiceApostropheNormalizer.swift in Sources */,
+				5D4B8574683481E326BFE66C /* RHVoiceDownloadableVoices.swift in Sources */,
 				6FE678EC7A6F8785AE8B7D29 /* RHVoicePipelineSplitter.swift in Sources */,
+				CA74A19E82FA9FA314AEBAF5 /* RHVoicePublishedVoiceCatalog.swift in Sources */,
 				8E8BB496F5F02186BFB9A0D4 /* RHVoiceSharedSettings.swift in Sources */,
+				ABB2E51CAD70A3229B16B516 /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				87E06907937D4AB5E50F1E82 /* UkrainianSpeechSynthesizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1186,10 +1300,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B4259750FC715C4C61F649FB /* AbbreviationDictionary.swift in Sources */,
 				85E622A8948437D510BE7EDF /* AudioUnitFactory.swift in Sources */,
 				8AFF0F507BBDAF702C6A23B6 /* PersonalUserDictionary.swift in Sources */,
+				8A67E734E8D664687B1CF4CC /* RHVoiceApostropheNormalizer.swift in Sources */,
+				191D98EAB3DDE2046D482541 /* RHVoiceDownloadableVoices.swift in Sources */,
 				931CEA15DDE361ECA551D7A0 /* RHVoicePipelineSplitter.swift in Sources */,
+				A6984C931A47AFA4B18615C9 /* RHVoicePublishedVoiceCatalog.swift in Sources */,
 				78FD62E43BA23F4AF77E9EB8 /* RHVoiceSharedSettings.swift in Sources */,
+				5A1F99705759FEAF4D0C611F /* RHVoiceSilenceAnalyzer.swift in Sources */,
 				2DEE6B104AD4F30A237402CC /* UkrainianSpeechSynthesizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1267,8 +1386,20 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				203B01D23EE13B283E6CA3A7 /* AbbreviationDictionary.swift in Sources */,
+				A1410A6EB0B2C9F4C0F64A4E /* PersonalUserDictionary.swift in Sources */,
+				772AC52F9A7285EB5801D5FB /* PersonalUserDictionaryTests.swift in Sources */,
+				81FE427F8C112F0D81D069F2 /* RHVoiceApostropheNormalizer.swift in Sources */,
+				44ADCC9AC5FD1C8F98F8AB16 /* RHVoiceApostropheNormalizerTests.swift in Sources */,
+				B3A8C33EF5F18FD484EEA426 /* RHVoiceDownloadableVoices.swift in Sources */,
+				2D3684CBADAA24FE19F98059 /* RHVoiceDownloadableVoicesTests.swift in Sources */,
 				25242C8263697EE99E70F59E /* RHVoicePipelineSplitter.swift in Sources */,
 				B503097BF435BA449F101C4E /* RHVoicePipelineSplitterTests.swift in Sources */,
+				6E4A49EB16AD9A076233FD5A /* RHVoicePublishedVoiceCatalog.swift in Sources */,
+				4EEBBD0026CA0DD445709364 /* RHVoiceSharedSettings.swift in Sources */,
+				C0D8696ACDFB4031ED73C10B /* RHVoiceSharedSettingsSnapshotCacheTests.swift in Sources */,
+				169AB627DDA229BB9F3671F7 /* RHVoiceSilenceAnalyzer.swift in Sources */,
+				2ACE70E8A45833642018757F /* RHVoiceSilenceAnalyzerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1390,7 +1521,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GCC_PREPROCESSOR_DEFINITIONS = "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20";
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/audio $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1556,7 +1687,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1588,7 +1719,7 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				GCC_PREPROCESSOR_DEFINITIONS = "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20";
 				GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS = NO;
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/audio $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1746,7 +1877,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
-				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include";
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include";
 				INFOPLIST_FILE = ../RHVoiceKit/Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -1847,6 +1978,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		80F6BF761B5CDA7B2FB39A3B /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		411FE67F39B572C7A482B89D /* RHVoiceBridge */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1867,6 +2009,16 @@
 		E58C6475B00FB7E6B46111B9 /* RHVoiceBridge */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RHVoiceBridge;
+		};
+		EC57F4949626B84C7C6B21F0 /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 80F6BF761B5CDA7B2FB39A3B /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
+		};
+		F7DF0EEF0FAE34F91F92D6FD /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 80F6BF761B5CDA7B2FB39A3B /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

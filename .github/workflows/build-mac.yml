@@ -22,7 +22,7 @@ jobs:
 
       - name: Create Boost unified include
         run: |
-          BOOST_ROOT="RHVoice/external/libs/boost"
+          BOOST_ROOT="RHVoiceCore/RHVoice/external/libs/boost"
           UNIFIED="$BOOST_ROOT/unified_include"
           rm -rf "$UNIFIED"
           mkdir -p "$UNIFIED/boost"

@@ -8,6 +8,11 @@ options:
 packages:
   RHVoiceCore:
     path: ../RHVoiceCore
+  # Розпакування zip-архівів завантажуваних голосів (MIT). Потрібен лише
+  # app-таргетам — extension нічого не завантажує.
+  ZIPFoundation:
+    url: https://github.com/weichsel/ZIPFoundation
+    from: "0.9.19"
 
 targets:
   RHVoiceKit:
@@ -35,14 +40,14 @@ targets:
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
         IPHONEOS_DEPLOYMENT_TARGET: "16.0"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include"
 
   RHVoiceKitMac:
     type: framework
     platform: macOS
     sources:
       - path: ../RHVoiceKit/Sources
-      - path: ../RHVoice/src/core
+      - path: ../RHVoiceCore/RHVoice/src/core
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
@@ -50,16 +55,16 @@ targets:
           - "emoji_data.cpp"
           - "unidata.cpp"
           - "userdict_parser.c"
-      - path: ../RHVoice/src/lib
+      - path: ../RHVoiceCore/RHVoice/src/lib
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
           - "lib.def"
-      - path: ../RHVoice/src/hts_engine
+      - path: ../RHVoiceCore/RHVoice/src/hts_engine
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
-      - path: ../RHVoice/src/audio
+      - path: ../RHVoiceCore/RHVoice/src/audio
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
@@ -69,7 +74,7 @@ targets:
           - "portaudio.hpp"
           - "pulse.cpp"
           - "pulse.hpp"
-      - path: ../RHVoice/external/libs/sonic
+      - path: ../RHVoiceCore/RHVoice/external/libs/sonic
         excludes:
           - "CMakeLists.txt*"
           - "SConscript"
@@ -97,7 +102,7 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
-        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoice/src/include $(SRCROOT)/../RHVoice/src/include/core $(SRCROOT)/../RHVoice/src/hts_engine $(SRCROOT)/../RHVoice/src/core $(SRCROOT)/../RHVoice/src/audio $(SRCROOT)/../RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoice/external/libs/sonic $(SRCROOT)/../RHVoice/external/libs/boost/unified_include"
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include"
         GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20"
         OTHER_CPLUSPLUSFLAGS: "-D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION -Wno-deprecated-declarations"
         GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: NO
@@ -136,6 +141,19 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
+      - name: Copy licence texts
+        script: |
+          LIC_SRC="${SRCROOT}/../LICENSES"
+          LIC_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/LICENSES"
+          if [ -d "$LIC_SRC" ]; then
+            rm -rf "$LIC_DST"
+            cp -r "$LIC_SRC" "$LIC_DST"
+            echo "✅ LICENSES copied: $(ls "$LIC_DST" | wc -l) files"
+          else
+            echo "❌ LICENSES not found: $LIC_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR
@@ -152,9 +170,10 @@ targets:
       - target: UkrainianVoicesExtension
       - package: RHVoiceCore
         product: RHVoiceBridge
+      - package: ZIPFoundation
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
-    
+
   UkrainianVoicesExtension:
     type: app-extension
     platform: iOS
@@ -228,10 +247,25 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
+      - name: Copy licence texts
+        script: |
+          LIC_SRC="${SRCROOT}/../LICENSES"
+          LIC_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/LICENSES"
+          if [ -d "$LIC_SRC" ]; then
+            mkdir -p "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
+            rm -rf "$LIC_DST"
+            cp -r "$LIC_SRC" "$LIC_DST"
+            echo "✅ LICENSES copied: $(ls "$LIC_DST" | wc -l) files"
+          else
+            echo "❌ LICENSES not found: $LIC_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
         INFOPLIST_FILE: App/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: App/UkrainianVoicesMac.entitlements
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
@@ -250,6 +284,7 @@ targets:
         embed: true
       - package: RHVoiceCore
         product: RHVoiceBridge
+      - package: ZIPFoundation
       - sdk: AVFoundation.framework
       - sdk: AVFAudio.framework
 
@@ -310,7 +345,19 @@ targets:
     platform: macOS
     sources:
       - path: Shared/RHVoicePipelineSplitter.swift
+      - path: Shared/RHVoiceApostropheNormalizer.swift
+      - path: Shared/RHVoiceSilenceAnalyzer.swift
+      - path: Shared/RHVoiceSharedSettings.swift
+      - path: Shared/RHVoiceDownloadableVoices.swift
+      - path: Shared/RHVoicePublishedVoiceCatalog.swift
+      - path: Shared/PersonalUserDictionary.swift
+      - path: Shared/AbbreviationDictionary.swift
       - path: Tests/RHVoicePipelineSplitterTests.swift
+      - path: Tests/RHVoiceApostropheNormalizerTests.swift
+      - path: Tests/RHVoiceSilenceAnalyzerTests.swift
+      - path: Tests/RHVoiceSharedSettingsSnapshotCacheTests.swift
+      - path: Tests/PersonalUserDictionaryTests.swift
+      - path: Tests/RHVoiceDownloadableVoicesTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoicePipelineSplitterTests

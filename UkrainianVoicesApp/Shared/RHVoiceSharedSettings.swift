@@ -1,7 +1,12 @@
 import Foundation
 
 enum RHVoiceSharedSettings {
+    static let legacyAppGroupID = "group.rhvoice.UkrainianVoices.shared"
+    #if os(macOS)
+    static let appGroupID = "5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared"
+    #else
     static let appGroupID = "group.rhvoice.UkrainianVoices.shared"
+    #endif
     static let snapshotFileName = "SharedSettingsSnapshot.json"
 
     static let enabledVoiceIdentifiersKey = "enabledVoiceIdentifiers"
@@ -12,18 +17,132 @@ enum RHVoiceSharedSettings {
     static let sentencePauseKey = "sentencePause"
     static let wordGapKey = "wordGap"
     static let pitchKey = "pitch"
+    // Opt-in запис прочитаного тексту в RHVoiceDebug.log у Release-збірках
+    // (діагностика дат/чисел у тестерів без кабеля). За замовчуванням вимкнено.
+    static let extendedDiagnosticsKey = "extendedDiagnostics"
+    // «Читати дати словами»: увімкнено за замовчуванням; вимкнено — повні дати
+    // лишаються цифрами (запит тестерів, build 189). Відсутність ключа = true.
+    static let datesAsWordsKey = "datesAsWords"
+    static let timeAsWordsKey = "timeAsWords"
+    // «Розгортати скорочення»: відсутність ключа = увімкнено. Це окрема
+    // зручність, не пов'язана з записом часу через двокрапку.
+    static let abbreviationsAsWordsKey = "abbreviationsAsWords"
+    // Обробка телефонів увімкнена за замовчуванням. Режим `groups` читає
+    // кожну групу як число, `digits` зберігає старе читання по цифрах.
+    static let phoneNumberProcessingKey = "phoneNumberProcessing"
+    static let phoneNumberReadingModeKey = "phoneNumberReadingMode"
+    static let abbreviationDictionaryEnabledKey = "abbreviationDictionaryEnabled"
+    static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
+    static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
+    static let abbreviationDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.abbreviationDictionaryChanged"
 
     static let defaultVoiceIdentifier = "com.rhvoice.UkrainianVoices.anatol"
     static var defaultEnabledVoiceIdentifiers: Set<String> {
         Set(voiceCatalog.map(\.identifier))
     }
 
-    static let voiceCatalog: [RHVoiceVoiceDescriptor] = [
+    /// Вбудовані голоси (дані в бандлі). Завантажені голоси інших мов
+    /// додаються динамічно — див. voiceCatalog.
+    static let builtInVoiceCatalog: [RHVoiceVoiceDescriptor] = [
         .init(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol", language: "uk-UA", profileName: "Anatol", sampleText: "Привіт! Це тест голосу Анатол."),
         .init(name: "Marianna", identifier: "com.rhvoice.UkrainianVoices.marianna", language: "uk-UA", profileName: "Marianna", sampleText: "Привіт! Це тест голосу Маріанна."),
         .init(name: "Natalia", identifier: "com.rhvoice.UkrainianVoices.natalia", language: "uk-UA", profileName: "Natalia", sampleText: "Привіт! Це тест голосу Наталія."),
         .init(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr", language: "uk-UA", profileName: "Volodymyr", sampleText: "Привіт! Це тест голосу Володимир.")
     ]
+
+    /// Повний каталог: вбудовані + завантажені. Перше звернення чекає перший
+    /// скан кеша (обмежено таймаутом — інакше система/extension отримує список
+    /// без завантажених голосів), далі — лише кешоване значення без I/O.
+    static var voiceCatalog: [RHVoiceVoiceDescriptor] {
+        builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
+    }
+}
+
+enum RHVoicePhoneNumberReadingMode: String, CaseIterable {
+    case groups
+    case digits
+}
+
+enum RHVoiceDarwinNotifications {
+    static func post(_ name: String) {
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            CFNotificationName(name as CFString),
+            nil,
+            nil,
+            true
+        )
+    }
+
+    static func notifySharedSettingsChanged() {
+        post(RHVoiceSharedSettings.settingsChangedNotificationName)
+    }
+
+    static func notifyPersonalDictionaryChanged() {
+        post(RHVoiceSharedSettings.personalDictionaryChangedNotificationName)
+    }
+
+    static func notifyAbbreviationDictionaryChanged() {
+        post(RHVoiceSharedSettings.abbreviationDictionaryChangedNotificationName)
+    }
+}
+
+enum RHVoiceMacAppGroupMigration {
+    static func migrateIfNeeded(log: (String) -> Void = { NSLog("%@", $0) }) {
+        #if os(macOS)
+        guard RHVoiceSharedSettings.appGroupID != RHVoiceSharedSettings.legacyAppGroupID else { return }
+
+        let fileManager = FileManager.default
+        guard let newContainer = fileManager.containerURL(
+            forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID
+        ) else {
+            log("APPGROUP_MIGRATION skipped: new container unavailable")
+            return
+        }
+
+        guard let oldContainer = fileManager.containerURL(
+            forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.legacyAppGroupID
+        ) else {
+            log("APPGROUP_MIGRATION skipped: legacy container unavailable")
+            return
+        }
+
+        let entries: [(String, Bool)] = [
+            (RHVoiceSharedSettings.snapshotFileName, false),
+            ("user_dictionary.txt", false),
+            ("user_dictionary_meta.json", false),
+            ("abbreviation_dictionary.txt", false),
+            ("RHVoiceConfig", true)
+        ]
+
+        do {
+            try fileManager.createDirectory(at: newContainer, withIntermediateDirectories: true)
+        } catch {
+            log("APPGROUP_MIGRATION failed: cannot create new container directory: \(error.localizedDescription)")
+            return
+        }
+
+        var copied = [String]()
+        for entry in entries {
+            let source = oldContainer.appendingPathComponent(entry.0, isDirectory: entry.1)
+            let target = newContainer.appendingPathComponent(entry.0, isDirectory: entry.1)
+            guard fileManager.fileExists(atPath: source.path) else { continue }
+            guard !fileManager.fileExists(atPath: target.path) else { continue }
+            do {
+                try fileManager.copyItem(at: source, to: target)
+                copied.append(entry.0)
+            } catch {
+                log("APPGROUP_MIGRATION copy failed item=\(entry.0): \(error.localizedDescription)")
+            }
+        }
+
+        if copied.isEmpty {
+            log("APPGROUP_MIGRATION finished: no legacy files found")
+        } else {
+            log("APPGROUP_MIGRATION finished: copied \(copied.joined(separator: ","))")
+        }
+        #endif
+    }
 }
 
 struct RHVoiceVoiceDescriptor: Codable, Hashable, Identifiable {
@@ -160,6 +279,8 @@ enum RHVoiceSharedSettingsStore {
                 defaults.set(perVoice.settings.pitch, forKey: "\(prefix).pitch")
             }
         }
+
+        RHVoiceDarwinNotifications.notifySharedSettingsChanged()
     }
 
     private static func loadSnapshotFromFile() -> RHVoiceSharedSettingsSnapshot? {
@@ -218,8 +339,130 @@ enum RHVoiceSharedSettingsStore {
     private static func snapshotFileURL() -> URL? {
         let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID)
         let url = containerURL?.appendingPathComponent(RHVoiceSharedSettings.snapshotFileName)
-        NSLog("ðŸ“ SNAPSHOT URL: \(url?.path ?? "nil") (Group: \(RHVoiceSharedSettings.appGroupID))")
+        #if DEBUG
+        NSLog("SNAPSHOT URL: \(url?.path ?? "nil") (Group: \(RHVoiceSharedSettings.appGroupID))")
+        #endif
         return url
+    }
+}
+
+final class RHVoiceSharedSettingsSnapshotCache {
+    typealias SnapshotLoader = () -> RHVoiceSharedSettingsSnapshot
+
+    private let queue: DispatchQueue
+    private let lock = NSLock()
+    private let loader: SnapshotLoader
+    private let notificationNames: [String]
+    private var cachedSnapshot: RHVoiceSharedSettingsSnapshot
+    private var observingDarwinNotifications = false
+
+    init(
+        queue: DispatchQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.shared-settings-cache", qos: .utility),
+        notificationNames: [String] = [
+            RHVoiceSharedSettings.settingsChangedNotificationName,
+            RHVoiceSharedSettings.personalDictionaryChangedNotificationName
+        ],
+        initialSnapshot: RHVoiceSharedSettingsSnapshot = .initial(),
+        loader: @escaping SnapshotLoader = RHVoiceSharedSettingsStore.loadSnapshot
+    ) {
+        self.queue = queue
+        self.notificationNames = notificationNames
+        self.cachedSnapshot = initialSnapshot
+        self.loader = loader
+    }
+
+    convenience init(
+        queue: DispatchQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.shared-settings-cache", qos: .utility),
+        notificationName: String,
+        initialSnapshot: RHVoiceSharedSettingsSnapshot = .initial(),
+        loader: @escaping SnapshotLoader = RHVoiceSharedSettingsStore.loadSnapshot
+    ) {
+        self.init(
+            queue: queue,
+            notificationNames: [notificationName],
+            initialSnapshot: initialSnapshot,
+            loader: loader
+        )
+    }
+
+    deinit {
+        if observingDarwinNotifications {
+            CFNotificationCenterRemoveObserver(
+                CFNotificationCenterGetDarwinNotifyCenter(),
+                Unmanaged.passUnretained(self).toOpaque(),
+                nil,
+                nil
+            )
+        }
+    }
+
+    func start() {
+        startObservingDarwinNotifications()
+        refreshAsync(reason: "startup")
+    }
+
+    func snapshot() -> RHVoiceSharedSettingsSnapshot {
+        lock.lock()
+        let snapshot = cachedSnapshot
+        lock.unlock()
+        return snapshot
+    }
+
+    /// Returns the freshest snapshot it can read without blocking the caller for
+    /// longer than `timeout`. On a healthy App Group the disk read finishes in well
+    /// under a millisecond, so a changed accelerator/speed applies on the very next
+    /// utterance — the behaviour builds up to 157 had. On a wedged container (the
+    /// macOS 26 unauthorised-group hang) the read is abandoned after `timeout` and
+    /// the last cached value is used, so the voice never freezes (task-086's goal).
+    func snapshotRefreshingNow(timeout: TimeInterval = 0.2) -> RHVoiceSharedSettingsSnapshot {
+        let semaphore = DispatchSemaphore(value: 0)
+        queue.async { [weak self] in
+            guard let self else { semaphore.signal(); return }
+            let snapshot = self.loader()
+            self.lock.lock()
+            self.cachedSnapshot = snapshot
+            self.lock.unlock()
+            semaphore.signal()
+        }
+        _ = semaphore.wait(timeout: .now() + timeout)
+        // Fresh value if the load finished in time; last-known value if it timed out.
+        return snapshot()
+    }
+
+    func refreshAsync(reason: String) {
+        queue.async { [weak self] in
+            guard let self else { return }
+            let snapshot = self.loader()
+            self.lock.lock()
+            self.cachedSnapshot = snapshot
+            self.lock.unlock()
+            #if DEBUG
+            NSLog("RHVoiceSharedSettingsSnapshotCache refreshed reason=\(reason) revision=\(snapshot.revision)")
+            #endif
+        }
+    }
+
+    private func startObservingDarwinNotifications() {
+        guard !observingDarwinNotifications else { return }
+        observingDarwinNotifications = true
+        for notificationName in notificationNames {
+            CFNotificationCenterAddObserver(
+                CFNotificationCenterGetDarwinNotifyCenter(),
+                Unmanaged.passUnretained(self).toOpaque(),
+                Self.darwinNotificationCallback,
+                notificationName as CFString,
+                nil,
+                .deliverImmediately
+            )
+        }
+    }
+
+    private static let darwinNotificationCallback: CFNotificationCallback = { _, observer, _, _, _ in
+        guard let observer else { return }
+        let cache = Unmanaged<RHVoiceSharedSettingsSnapshotCache>
+            .fromOpaque(observer)
+            .takeUnretainedValue()
+        cache.refreshAsync(reason: "darwin")
     }
 }
 

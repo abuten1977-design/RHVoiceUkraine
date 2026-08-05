@@ -39,7 +39,7 @@ enum PersonalUserDictionaryError: LocalizedError {
 enum PersonalUserDictionary {
     static let dictionaryFileName = "user_dictionary.txt"
     static let metadataFileName = "user_dictionary_meta.json"
-    static let changeNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
+    static let changeNotificationName = RHVoiceSharedSettings.personalDictionaryChangedNotificationName
 
     static func loadEntries() -> [PersonalDictionaryEntry] {
         guard let url = metadataURL(),
@@ -114,7 +114,7 @@ enum PersonalUserDictionary {
         try atomicWrite(metaData, to: metaURL)
 
         let text = sortedEntries
-            .map(\.stressedWord)
+            .map(dictionaryLine)
             .filter { !$0.isEmpty }
             .joined(separator: "\n")
         let body = text.isEmpty ? "" : text + "\n"
@@ -134,6 +134,14 @@ enum PersonalUserDictionary {
         return trimmed
     }
 
+    static func dictionaryLine(for entry: PersonalDictionaryEntry) -> String {
+        let display = entry.displayWord.trimmingCharacters(in: .whitespacesAndNewlines)
+        let stressed = entry.stressedWord.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !stressed.isEmpty else { return "" }
+        guard !display.isEmpty else { return stressed }
+        return "\(display)=\(stressed)"
+    }
+
     private static func atomicWrite(_ data: Data, to url: URL) throws {
         let tempURL = url.deletingLastPathComponent()
             .appendingPathComponent(".\(url.lastPathComponent).tmp-\(UUID().uuidString)")
@@ -146,13 +154,7 @@ enum PersonalUserDictionary {
     }
 
     private static func notifyDictionaryChanged() {
-        CFNotificationCenterPostNotification(
-            CFNotificationCenterGetDarwinNotifyCenter(),
-            CFNotificationName(changeNotificationName as CFString),
-            nil,
-            nil,
-            true
-        )
+        RHVoiceDarwinNotifications.notifyPersonalDictionaryChanged()
     }
 
     private static func dictionaryURL() -> URL? {

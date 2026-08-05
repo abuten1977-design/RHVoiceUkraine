@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>uk</string>
     <key>CFBundleDisplayName</key>
-    <string>Українські голоси</string>
+    <string>RHVoice UA</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -44,5 +44,11 @@
         <string>UIInterfaceOrientationLandscapeLeft</string>
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 ГО «Право вибору». Ліцензія GNU GPL версії 3 або пізнішої.</string>
 </dict>
 </plist>

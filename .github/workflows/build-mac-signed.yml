@@ -70,48 +70,10 @@ jobs:
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
           echo "MACOS_CODE_SIGN_IDENTITY=$MACOS_CODE_SIGN_IDENTITY" >> "$GITHUB_ENV"
 
-      - name: Install provisioning profiles
-        env:
-          APP_PROFILE_BASE64: ${{ secrets.MACOS_APP_PROFILE_BASE64 }}
-          EXT_PROFILE_BASE64: ${{ secrets.MACOS_EXT_PROFILE_BASE64 }}
-          TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-
-          echo "$APP_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/uv_mac_app.mobileprovision"
-          echo "$EXT_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/uv_mac_ext.mobileprovision"
-
-          if /usr/bin/security cms -D -i "$RUNNER_TEMP/uv_mac_app.mobileprovision" > "$RUNNER_TEMP/uv_mac_app.plist" 2>/dev/null &&
-             /usr/bin/security cms -D -i "$RUNNER_TEMP/uv_mac_ext.mobileprovision" > "$RUNNER_TEMP/uv_mac_ext.plist" 2>/dev/null; then
-            APP_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/uv_mac_app.plist")
-            EXT_UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$RUNNER_TEMP/uv_mac_ext.plist")
-            APP_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$RUNNER_TEMP/uv_mac_app.plist" 2>/dev/null || true)
-            EXT_ID=$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.application-identifier' "$RUNNER_TEMP/uv_mac_ext.plist" 2>/dev/null || true)
-
-            if [[ "$APP_ID" != "${TEAM_ID}.com.rhvoice.UkrainianVoices.mac" ||
-                  "$EXT_ID" != "${TEAM_ID}.com.rhvoice.UkrainianVoices.mac.Extension" ]]; then
-              echo "Provisioning profile secrets do not match current macOS bundle IDs/team; continuing without explicit profile UUIDs."
-              echo "UV_MAC_APP_PROFILE_UUID=" >> "$GITHUB_ENV"
-              echo "UV_MAC_EXT_PROFILE_UUID=" >> "$GITHUB_ENV"
-              exit 0
-            fi
-
-            cp "$RUNNER_TEMP/uv_mac_app.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$APP_UUID.mobileprovision"
-            cp "$RUNNER_TEMP/uv_mac_ext.mobileprovision" "$HOME/Library/MobileDevice/Provisioning Profiles/$EXT_UUID.mobileprovision"
-
-            echo "UV_MAC_APP_PROFILE_UUID=$APP_UUID" >> "$GITHUB_ENV"
-            echo "UV_MAC_EXT_PROFILE_UUID=$EXT_UUID" >> "$GITHUB_ENV"
-          else
-            echo "Provisioning profile secrets are not parseable; continuing without explicit profile UUIDs."
-            echo "UV_MAC_APP_PROFILE_UUID=" >> "$GITHUB_ENV"
-            echo "UV_MAC_EXT_PROFILE_UUID=" >> "$GITHUB_ENV"
-          fi
-
       - name: Create Boost unified include
         run: |
           set -euxo pipefail
-          BOOST_ROOT="RHVoice/external/libs/boost"
+          BOOST_ROOT="RHVoiceCore/RHVoice/external/libs/boost"
           UNIFIED="$BOOST_ROOT/unified_include"
           rm -rf "$UNIFIED"
           mkdir -p "$UNIFIED/boost"
@@ -162,14 +124,14 @@ jobs:
           test -d "$EXT_PATH"
 
           while IFS= read -r item; do
-            codesign --force --timestamp --options runtime --sign "$MACOS_CODE_SIGN_IDENTITY" "$item"
+            codesign --force --timestamp --options runtime --generate-entitlement-der --sign "$MACOS_CODE_SIGN_IDENTITY" "$item"
           done < <(find "$APP_PATH" \( -name "*.framework" -o -name "*.dylib" \) -print | sort -r)
 
-          codesign --force --timestamp --options runtime \
+          codesign --force --timestamp --options runtime --generate-entitlement-der \
             --entitlements Extension/UkrainianVoicesExtensionMac.entitlements \
             --sign "$MACOS_CODE_SIGN_IDENTITY" "$EXT_PATH"
 
-          codesign --force --timestamp --options runtime \
+          codesign --force --timestamp --options runtime --generate-entitlement-der \
             --entitlements App/UkrainianVoicesMac.entitlements \
             --sign "$MACOS_CODE_SIGN_IDENTITY" "$APP_PATH"
 
@@ -181,6 +143,7 @@ jobs:
           test -d "$APP_PATH"
 
           EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+          EXPECTED_GROUP_ID="5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared"
 
           bash ../scripts/validate_macos_artifact.sh "$APP_PATH"
 
@@ -194,14 +157,20 @@ jobs:
           codesign --verify --deep --strict --verbose=4 "$APP_PATH"
           codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
 
-          APP_ENT="$(codesign -d --entitlements :- "$APP_PATH" 2>/dev/null || true)"
-          EXT_ENT="$(codesign -d --entitlements :- "$EXT_PATH" 2>/dev/null || true)"
-          echo "$APP_ENT"
-          echo "$EXT_ENT"
-          echo "$APP_ENT" | grep -q "group.rhvoice.UkrainianVoices.shared"
-          echo "$EXT_ENT" | grep -q "group.rhvoice.UkrainianVoices.shared"
-          echo "$APP_ENT" | grep -q "com.apple.security.app-sandbox"
-          echo "$EXT_ENT" | grep -q "com.apple.security.app-sandbox"
+          APP_ENT="$RUNNER_TEMP/uv-mac-app-entitlements.txt"
+          EXT_ENT="$RUNNER_TEMP/uv-mac-ext-entitlements.txt"
+          codesign -d --entitlements - "$APP_PATH" > "$APP_ENT" 2>"$APP_ENT.stderr"
+          codesign -d --entitlements - "$EXT_PATH" > "$EXT_ENT" 2>"$EXT_ENT.stderr"
+          ! grep -qi "invalid entitlements" "$APP_ENT.stderr"
+          ! grep -qi "invalid entitlements" "$EXT_ENT.stderr"
+          cat "$APP_ENT"
+          cat "$EXT_ENT"
+          grep -q "$EXPECTED_GROUP_ID" "$APP_ENT"
+          grep -q "$EXPECTED_GROUP_ID" "$EXT_ENT"
+          grep -q "com.apple.security.app-sandbox" "$APP_ENT"
+          grep -q "com.apple.security.app-sandbox" "$EXT_ENT"
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
 
       - name: Package signed macOS app for notarization
         working-directory: UkrainianVoicesApp
@@ -350,6 +319,39 @@ jobs:
             sleep 30
           done
           xcrun stapler validate "$APP_PATH"
+          EXPECTED_GROUP_ID="5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared"
+          EXT_PATH="$APP_PATH/Contents/PlugIns/UkrainianVoicesExtensionMac.appex"
+          APP_ENT="$RUNNER_TEMP/uv-mac-app-entitlements-stapled.txt"
+          EXT_ENT="$RUNNER_TEMP/uv-mac-ext-entitlements-stapled.txt"
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
+          codesign -d --entitlements - "$APP_PATH" > "$APP_ENT" 2>"$APP_ENT.stderr"
+          codesign -d --entitlements - "$EXT_PATH" > "$EXT_ENT" 2>"$EXT_ENT.stderr"
+          ! grep -qi "invalid entitlements" "$APP_ENT.stderr"
+          ! grep -qi "invalid entitlements" "$EXT_ENT.stderr"
+          grep -q "$EXPECTED_GROUP_ID" "$APP_ENT"
+          grep -q "$EXPECTED_GROUP_ID" "$EXT_ENT"
+          grep -q "com.apple.security.app-sandbox" "$APP_ENT"
+          grep -q "com.apple.security.app-sandbox" "$EXT_ENT"
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
+          SPCTL_APP="$RUNNER_TEMP/UkrainianVoicesMac-spctl.app"
+          rm -rf "$SPCTL_APP"
+          ditto "$APP_PATH" "$SPCTL_APP"
+          spctl --assess --type execute --verbose=4 "$SPCTL_APP"
+          rm -rf "$SPCTL_APP"
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
+          codesign -d --entitlements - "$APP_PATH" > "$APP_ENT" 2>"$APP_ENT.stderr"
+          codesign -d --entitlements - "$EXT_PATH" > "$EXT_ENT" 2>"$EXT_ENT.stderr"
+          ! grep -qi "invalid entitlements" "$APP_ENT.stderr"
+          ! grep -qi "invalid entitlements" "$EXT_ENT.stderr"
+          grep -q "$EXPECTED_GROUP_ID" "$APP_ENT"
+          grep -q "$EXPECTED_GROUP_ID" "$EXT_ENT"
+          grep -q "com.apple.security.app-sandbox" "$APP_ENT"
+          grep -q "com.apple.security.app-sandbox" "$EXT_ENT"
+          codesign --verify --deep --strict --verbose=4 "$APP_PATH"
+          codesign --verify --deep --strict --verbose=4 "$EXT_PATH"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" ../mac_signed_build/UkrainianVoicesMac.app.zip
           ls -la ../mac_signed_build/UkrainianVoicesMac.app.zip
 

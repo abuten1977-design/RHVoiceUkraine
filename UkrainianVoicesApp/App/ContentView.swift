@@ -5,6 +5,7 @@
 
 import SwiftUI
 import AVFoundation
+import UniformTypeIdentifiers
 #if os(iOS)
 import RHVoiceBridge
 #else
@@ -20,6 +21,178 @@ private let enabledVoiceIdentifiersKey = RHVoiceSharedSettings.enabledVoiceIdent
 private let selectedVoiceIdentifierKey = RHVoiceSharedSettings.selectedVoiceIdentifierKey
 private let defaultEnabledVoiceIdentifiers = RHVoiceSharedSettings.defaultEnabledVoiceIdentifiers
 private let preferredLanguageOrder = ["Українська", "Англійська"]
+private let donorDisclaimerText = "Додаток RHVoice Ukrainian розробляється ГО «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу."
+private let donorLogosAccessibilityLabel = "Логотипи донорів: Європейський Союз — Прямуємо разом, Фонд Східна Європа, Фенікс — Сила спільнот, Act to Drive Change."
+
+private struct LicenseItem: Identifiable {
+    let title: String
+    let license: String
+    let attribution: String
+    let note: String
+    let url: URL?
+
+    var id: String { title }
+}
+
+private let sourceCodeURL = URL(string: "https://github.com/abuten1977-design/RHVoiceUkraine")!
+
+private let licenseItems: [LicenseItem] = [
+    .init(
+        title: "RHVoice UA (цей застосунок)",
+        license: "GPL-3.0 або пізніша, з дозволом для App Store",
+        attribution: "ГО «Право вибору»",
+        note: "Вихідний код відкритий. Ви маєте право отримати повний код саме цієї збірки, змінювати його і поширювати далі на умовах GPL-3.",
+        url: sourceCodeURL
+    ),
+    .init(
+        title: "Рушій RHVoice",
+        license: "GPL-3.0 або пізніша (частина файлів — LGPL-2.1)",
+        attribution: "Ольга Яковлева",
+        note: "Основний рушій синтезу. Розповсюдження через App Store дозволене окремим дозволом авторки від 3 серпня 2026 року.",
+        url: URL(string: "https://github.com/RHVoice/RHVoice")
+    ),
+    .init(
+        title: "hts_engine API",
+        license: "3-clause BSD",
+        attribution: "HTS Working Group, Nagoya Institute of Technology, Tokyo Institute of Technology",
+        note: "Copyright (c) 2001-2015 Nagoya Institute of Technology; 2001-2008 Tokyo Institute of Technology. All rights reserved. Файли у складі RHVoice змінені авторкою рушія.",
+        url: URL(string: "http://hts-engine.sourceforge.net/")
+    ),
+    .init(
+        title: "sonic",
+        license: "Apache-2.0",
+        attribution: "Bill Cox",
+        note: "Зміна темпу мовлення без спотворення голосу.",
+        url: URL(string: "https://www.apache.org/licenses/LICENSE-2.0")
+    ),
+    .init(
+        title: "Boost, rapidxml, utf8cpp",
+        license: "Boost Software License 1.0",
+        attribution: "Boost contributors, Marcin Kalicinski, Nemanja Trifunovic",
+        note: "Допоміжні бібліотеки у складі рушія.",
+        url: URL(string: "https://www.boost.org/LICENSE_1_0.txt")
+    ),
+    .init(
+        title: "ZIPFoundation",
+        license: "MIT",
+        attribution: "Thomas Zoechling",
+        note: "Розпакування завантажених голосів.",
+        url: URL(string: "https://github.com/weichsel/ZIPFoundation")
+    ),
+    .init(
+        title: "Anatol",
+        license: "LGPL-2.1",
+        attribution: "Диктор Анатолій Подорожко; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Sergey Parshakov, Zvonimir Stanecic",
+        note: "Український голос. Дані розповсюджуються без змін.",
+        url: URL(string: "https://facebook.com/syntezator")
+    ),
+    .init(
+        title: "Natalia",
+        license: "LGPL-2.1",
+        attribution: "Дикторка Наталія Чехаль; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Tomasz Bilecki, Zvonimir Stanecic",
+        note: "Український голос. Дані розповсюджуються без змін.",
+        url: URL(string: "https://facebook.com/syntezator")
+    ),
+    .init(
+        title: "Marianna",
+        license: "CC BY-ND 4.0",
+        attribution: "Дикторка Marianna Firtka; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Maryna Herelyuk, Sergey Parshakov, Beka Gozalishvili",
+        note: "Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).",
+        url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
+    ),
+    .init(
+        title: "Volodymyr",
+        license: "CC BY-ND 4.0",
+        attribution: "Диктор Володимир Беглов; команда «Синтезатор української мови»",
+        note: "Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).",
+        url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
+    ),
+    .init(
+        title: "Англійські голоси: Бен, Клара, Сара, Радж",
+        license: "CMU / Festvox",
+        attribution: "Carnegie Mellon University, корпус CMU ARCTIC",
+        note: "Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних.",
+        url: URL(string: "http://www.festvox.org/cmu_arctic/")
+    ),
+    .init(
+        title: "Англійські мовні дані (cmulex)",
+        license: "CMU Pronouncing Dictionary",
+        attribution: "Carnegie Mellon University",
+        note: "Потрібні для читання латиниці українським голосом.",
+        url: URL(string: "https://github.com/cmusphinx/cmudict")
+    )
+]
+
+private let legalNoticeText = """
+RHVoice UA. Copyright © 2026 ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору».
+
+Ця програма розповсюджується за GNU General Public License версії 3 або, на ваш вибір, будь-якої пізнішої версії, разом із додатковим дозволом на розповсюдження через Apple App Store.
+
+Програма постачається БЕЗ ЖОДНИХ ГАРАНТІЙ, у тому числі без гарантій придатності для продажу чи для конкретної мети.
+
+Ви маєте право поширювати копії цієї програми та змінювати її на умовах GPL-3. Ви також маєте право отримати повний вихідний код саме цієї збірки.
+"""
+
+private var buildIdentityText: String {
+    let info = Bundle.main.infoDictionary ?? [:]
+    let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
+    let build = info["CFBundleVersion"] as? String ?? "?"
+    return "Версія \(version), збірка \(build). Вихідний код цієї збірки позначено тегом build-\(build) у репозиторії проєкту."
+}
+
+/// Повні тексти ліцензій, що постачаються ВСЕРЕДИНІ застосунку (вимога GPL-3 §4:
+/// копія ліцензії має супроводжувати програму, а не лежати лише в репозиторії).
+private struct LicenseTextsView: View {
+    /// Тексти можуть лежати або текою `LICENSES/`, або файлами в корені бандла —
+    /// залежно від того, як їх скопіювала збірка. Шукаємо обидва варіанти,
+    /// щоб екран ніколи не був порожнім (баг збірки 212).
+    private var files: [URL] {
+        let fm = FileManager.default
+        if let dir = Bundle.main.url(forResource: "LICENSES", withExtension: nil),
+           let items = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) {
+            let texts = items.filter { $0.pathExtension.lowercased() == "txt" }
+            if !texts.isEmpty { return texts.sorted { $0.lastPathComponent < $1.lastPathComponent } }
+        }
+        let names = ["GPL-3.0", "LGPL-2.1", "Apache-2.0-sonic", "BSL-1.0",
+                     "MIT-ZIPFoundation", "BSD-3-Clause-hts_engine",
+                     "CC-BY-ND-4.0", "CMU-Festvox", "CMU-cmudict"]
+        return names.compactMap { Bundle.main.url(forResource: $0, withExtension: "txt") }
+    }
+
+    var body: some View {
+        List {
+            if files.isEmpty {
+                Text("Тексти ліцензій не знайдено у цій збірці. Вони доступні у репозиторії проєкту, тека LICENSES.")
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(files, id: \.self) { file in
+                    NavigationLink {
+                        LicenseTextDetailView(file: file)
+                    } label: {
+                        Text(file.deletingPathExtension().lastPathComponent)
+                    }
+                    .accessibilityLabel("Ліцензія \(file.deletingPathExtension().lastPathComponent)")
+                }
+            }
+        }
+        .navigationTitle("Повні тексти")
+    }
+}
+
+private struct LicenseTextDetailView: View {
+    let file: URL
+
+    var body: some View {
+        ScrollView {
+            Text((try? String(contentsOf: file, encoding: .utf8)) ?? "Не вдалося прочитати текст ліцензії.")
+                .font(.footnote)
+                .textSelection(.enabled)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle(file.deletingPathExtension().lastPathComponent)
+    }
+}
 
 private struct SpeechComponentDiagnosticReport: Equatable {
     let summary: String
@@ -91,7 +264,9 @@ private let acceleratorPresets: [AcceleratorPreset] = [
     .init(title: "Дуже швидко", multiplier: 1.5)
 ]
 
-private let voiceCatalog: [VoiceDefinition] = RHVoiceSharedSettings.voiceCatalog.map(VoiceDefinition.init)
+// Каталог голосів живе в ContentViewModel.voiceCatalog: він динамічний —
+// завантажені голоси (напр. англійські) з'являються поруч з українськими
+// одразу після download, без перезапуску застосунку.
 
 @MainActor
 private final class PreviewPlaybackController {
@@ -106,7 +281,13 @@ private final class PreviewPlaybackController {
         }
     }
 
-    private let previewEngine = RHVoiceEngine()
+    // Двигун створюється ЛІНИВО і ТІЛЬКИ на цій черзі: RHVoiceEngine init пише в
+    // App-Group контейнер (RHVoiceConfig), що на macOS 26 може заблокуватись
+    // назавжди — блокуватись має фоновий потік, а не вікно (task-082, частина 2:
+    // раніше движок створювався в init моделі вікна і вішав застосунок, щойно
+    // VoiceOver заходив у вікно).
+    private let engineQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.preview-engine", qos: .userInitiated)
+    private var previewEngine: RHVoiceEngine?
     private let audioEngine = AVAudioEngine()
     private let playerNode = AVAudioPlayerNode()
     private var isPlayerAttached = false
@@ -117,47 +298,62 @@ private final class PreviewPlaybackController {
         rate: Double,
         volume: Double,
         pitch: Double = 1.0,
-        onFinish: @escaping @MainActor () -> Void
-    ) throws {
+        onFinish: @escaping @MainActor () -> Void,
+        onError: @escaping @MainActor (Error) -> Void
+    ) {
         let requestStart = CFAbsoluteTimeGetCurrent()
-        #if os(iOS)
-        // Audio session must be active before local preview playback on iOS.
-        try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-        try AVAudioSession.sharedInstance().setActive(true)
-        #endif
+        engineQueue.async { [weak self] in
+            guard let self else { return }
+            if self.previewEngine == nil {
+                self.previewEngine = RHVoiceEngine()
+            }
+            let synthStart = CFAbsoluteTimeGetCurrent()
+            guard let engine = self.previewEngine,
+                  let buffer = engine.synthesize(
+                      text,
+                      voice: voiceName,
+                      rate: rate,
+                      volume: volume,
+                      pitch: pitch
+                  ) else {
+                DispatchQueue.main.async { onError(PreviewError.synthesisFailed(voiceName)) }
+                return
+            }
+            let synthMs = Int(((CFAbsoluteTimeGetCurrent() - synthStart) * 1000).rounded())
 
-        let synthStart = CFAbsoluteTimeGetCurrent()
-        guard let buffer = previewEngine.synthesize(
-            text,
-            voice: voiceName,
-            rate: rate,
-            volume: volume,
-            pitch: pitch
-        ) else {
-            throw PreviewError.synthesisFailed(voiceName)
-        }
-        let synthMs = Int(((CFAbsoluteTimeGetCurrent() - synthStart) * 1000).rounded())
-
-        playerNode.stop()
-        audioEngine.stop()
-        audioEngine.reset()
-
-        if !isPlayerAttached {
-            audioEngine.attach(playerNode)
-            isPlayerAttached = true
-        }
-
-        audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: buffer.format)
-        try audioEngine.start()
-
-        playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts) {
             DispatchQueue.main.async {
-                onFinish()
+                do {
+                    #if os(iOS)
+                    // Audio session must be active before local preview playback on iOS.
+                    try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+                    try AVAudioSession.sharedInstance().setActive(true)
+                    #endif
+
+                    self.playerNode.stop()
+                    self.audioEngine.stop()
+                    self.audioEngine.reset()
+
+                    if !self.isPlayerAttached {
+                        self.audioEngine.attach(self.playerNode)
+                        self.isPlayerAttached = true
+                    }
+
+                    self.audioEngine.connect(self.playerNode, to: self.audioEngine.mainMixerNode, format: buffer.format)
+                    try self.audioEngine.start()
+
+                    self.playerNode.scheduleBuffer(buffer, at: nil, options: .interrupts) {
+                        DispatchQueue.main.async {
+                            onFinish()
+                        }
+                    }
+                    self.playerNode.play()
+                    let totalMs = Int(((CFAbsoluteTimeGetCurrent() - requestStart) * 1000).rounded())
+                    LogCollector.shared.log("Preview latency voice=\(voiceName) chars=\(text.count) synthMs=\(synthMs) totalToPlayMs=\(totalMs)")
+                } catch {
+                    onError(error)
+                }
             }
         }
-        playerNode.play()
-        let totalMs = Int(((CFAbsoluteTimeGetCurrent() - requestStart) * 1000).rounded())
-        LogCollector.shared.log("Preview latency voice=\(voiceName) chars=\(text.count) synthMs=\(synthMs) totalToPlayMs=\(totalMs)")
     }
 
     func stop() {
@@ -169,6 +365,7 @@ private final class PreviewPlaybackController {
 
 @MainActor
 private final class ContentViewModel: ObservableObject {
+    @Published var voiceCatalog: [VoiceDefinition]
     @Published var rate: Double
     @Published var volume: Double
     @Published var speedMultiplier: Double
@@ -184,36 +381,180 @@ private final class ContentViewModel: ObservableObject {
     @Published var statusMessage = ""
     @Published var isRunningSpeechComponentDiagnostics = false
     @Published var speechComponentDiagnosticReport: SpeechComponentDiagnosticReport?
-    @Published var debugLogSize = DebugLogShareHelper.logSize()
+    @Published var debugLogSize: Int = 0
+    @Published var debugLogShareURL: URL?
+    @Published var extendedDiagnosticsEnabled: Bool = false
+    @Published var datesAsWordsEnabled: Bool = true
+    @Published var timeAsWordsEnabled: Bool = true
+    @Published var abbreviationsAsWordsEnabled: Bool = true
+    @Published var abbreviationDictionaryEnabled: Bool = true
+    @Published var phoneNumberProcessingEnabled: Bool = true
+    @Published var phoneNumberReadingMode: RHVoicePhoneNumberReadingMode = .groups
     @Published var personalDictionaryEntries: [PersonalDictionaryEntry]
     @Published var personalDictionaryStatus: PersonalDictionaryFileStatus
+    @Published var abbreviationDictionaryEntries: [AbbreviationDictionaryEntry] = []
+    @Published var abbreviationDictionaryShareURL: URL?
+    @Published var sharedStorageState: SharedStorageState = .loading
+
+    enum SharedStorageState: Equatable {
+        case loading
+        case ready
+        case unavailable
+    }
+
+    // App-Group disk IO must never run on the main thread: on macOS 26 an
+    // unauthorized group container makes mkdirat/open block forever, freezing
+    // the whole window (new-Mac launch hang, task-082).
+    private static let storageQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.app-storage", qos: .userInitiated)
 
     private let playbackController = PreviewPlaybackController()
 
     init() {
-        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        let general = RHVoiceSpeechSettings.recommended
+        let initialCatalog = RHVoiceSharedSettings.builtInVoiceCatalog.map(VoiceDefinition.init)
+        self.voiceCatalog = initialCatalog
+        self.rate = 0.5
+        self.volume = Self.clampBaselineMultiplier(general.volume)
+        self.speedMultiplier = Self.clampSpeedMultiplier(general.speedMultiplier)
+        self.pitch = general.pitch
+        self.sentencePause = general.sentencePause
+        self.wordGap = Self.clampWordGap(general.wordGap)
+        self.testText = "Привіт! Це тест українського голосу."
+        self.enabledVoiceIdentifiers = Self.normalizedEnabledVoices([])
+        self.selectedVoiceIdentifier = RHVoiceSharedSettings.defaultVoiceIdentifier
+        self.personalDictionaryEntries = []
+        self.personalDictionaryStatus = PersonalDictionaryFileStatus(
+            dictionaryPath: nil,
+            metadataPath: nil,
+            dictionaryExists: false,
+            metadataExists: false,
+            dictionarySize: 0,
+            metadataSize: 0,
+            dictionaryModifiedAt: nil,
+            metadataModifiedAt: nil
+        )
+        self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: initialCatalog.map { voice in
+            (voice.identifier, VoiceSettingsState(
+                useCustomSettings: true,
+                rate: 0.5,
+                volume: 1.0,
+                speedMultiplier: Self.clampSpeedMultiplier(general.speedMultiplier),
+                sentencePause: general.sentencePause,
+                wordGap: Self.clampWordGap(general.wordGap),
+                pitch: 1.0
+            ))
+        })
+
+        bootstrapFromDisk()
+        refreshVoiceCatalog()
+        NotificationCenter.default.addObserver(
+            forName: RHVoiceDownloadableVoices.inProcessListChangedNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshVoiceCatalog()
+        }
+    }
+
+    /// Перечитує каталог (вбудовані + завантажені) у фоні: диск App Group не можна
+    /// чіпати на main (task-082). Нові завантажені голоси одразу вмикаються.
+    func refreshVoiceCatalog() {
+        Self.storageQueue.async { [weak self] in
+            let downloaded = RHVoiceDownloadableVoices.scanInstalledVoices()
+            let catalog = (RHVoiceSharedSettings.builtInVoiceCatalog + downloaded).map(VoiceDefinition.init)
+            DispatchQueue.main.async {
+                self?.applyRefreshedCatalog(catalog)
+            }
+        }
+    }
+
+    private func applyRefreshedCatalog(_ catalog: [VoiceDefinition]) {
+        let previousIds = Set(voiceCatalog.map(\.identifier))
+        let newIds = Set(catalog.map(\.identifier))
+        guard previousIds != newIds else { return }
+        voiceCatalog = catalog
+
+        var stateChanged = false
+        for voice in catalog where !previousIds.contains(voice.identifier) {
+            // Щойно завантажений голос одразу доступний, як і вбудовані.
+            if !enabledVoiceIdentifiers.contains(voice.identifier) {
+                enabledVoiceIdentifiers.insert(voice.identifier)
+                stateChanged = true
+            }
+            if voiceSettingsByIdentifier[voice.identifier] == nil {
+                voiceSettingsByIdentifier[voice.identifier] = Self.loadStoredSettings(
+                    for: voice.identifier,
+                    fallbackRate: rate,
+                    fallbackVolume: volume,
+                    fallbackSpeedMultiplier: speedMultiplier,
+                    fallbackSentencePause: sentencePause,
+                    fallbackWordGap: wordGap,
+                    fallbackPitch: pitch
+                )
+            }
+        }
+        let removedEnabled = enabledVoiceIdentifiers.filter { !newIds.contains($0) }
+        if !removedEnabled.isEmpty {
+            enabledVoiceIdentifiers.subtract(removedEnabled)
+            stateChanged = true
+        }
+        normalizeSelection()
+        if stateChanged, sharedStorageState == .ready {
+            persistVoiceState()
+            AVSpeechSynthesisProviderVoice.updateSpeechVoices()
+        }
+    }
+
+    private func bootstrapFromDisk() {
+        Self.storageQueue.async { [weak self] in
+            RHVoiceMacAppGroupMigration.migrateIfNeeded { message in
+                LogCollector.shared.log(message)
+            }
+            let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+            let entries = PersonalUserDictionary.loadEntries()
+            let abbreviationEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
+            let status = PersonalUserDictionary.fileStatus()
+            let logSize = DebugLogShareHelper.logSize()
+            let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
+            DispatchQueue.main.async {
+                self?.applyLoadedState(snapshot: snapshot, entries: entries, abbreviationEntries: abbreviationEntries, status: status, logSize: logSize, shareURL: shareURL)
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
+            guard let self, self.sharedStorageState == .loading else { return }
+            self.sharedStorageState = .unavailable
+            self.setStatus("Спільне сховище недоступне: налаштування і словник тимчасово не зберігаються. Голоси працюють.")
+        }
+    }
+
+    private func applyLoadedState(
+        snapshot: RHVoiceSharedSettingsSnapshot,
+        entries: [PersonalDictionaryEntry],
+        abbreviationEntries: [AbbreviationDictionaryEntry],
+        status: PersonalDictionaryFileStatus,
+        logSize: Int,
+        shareURL: URL?
+    ) {
         let storedEnabled = Set(snapshot.enabledVoiceIdentifiers)
-        let effectiveEnabled = Self.normalizedEnabledVoices(storedEnabled)
-        let storedSelected = snapshot.selectedVoiceIdentifier
         let initialRate = snapshot.generalSettings.rate
         let initialVolume = Self.clampBaselineMultiplier(snapshot.generalSettings.volume)
         let initialSpeedMultiplier = Self.clampSpeedMultiplier(snapshot.generalSettings.speedMultiplier)
         let initialSentencePause = snapshot.generalSettings.sentencePause
         let initialWordGap = Self.clampWordGap(snapshot.generalSettings.wordGap)
-        let initialPitch = snapshot.generalSettings.pitch
 
-        self.rate = 0.5
-        self.volume = initialVolume
-        self.speedMultiplier = initialSpeedMultiplier
-        self.pitch = initialPitch
-        self.sentencePause = initialSentencePause
-        self.wordGap = initialWordGap
-        self.testText = "Привіт! Це тест українського голосу."
-        self.enabledVoiceIdentifiers = effectiveEnabled
-        self.selectedVoiceIdentifier = storedSelected
-        self.personalDictionaryEntries = PersonalUserDictionary.loadEntries()
-        self.personalDictionaryStatus = PersonalUserDictionary.fileStatus()
-        self.voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
+        enabledVoiceIdentifiers = Self.normalizedEnabledVoices(storedEnabled)
+        selectedVoiceIdentifier = snapshot.selectedVoiceIdentifier
+        volume = initialVolume
+        speedMultiplier = initialSpeedMultiplier
+        sentencePause = initialSentencePause
+        wordGap = initialWordGap
+        pitch = snapshot.generalSettings.pitch
+        personalDictionaryEntries = entries
+        abbreviationDictionaryEntries = abbreviationEntries
+        personalDictionaryStatus = status
+        debugLogSize = logSize
+        debugLogShareURL = shareURL
+        voiceSettingsByIdentifier = Dictionary(uniqueKeysWithValues: voiceCatalog.map { voice in
             if let stored = snapshot.perVoiceSettings[voice.identifier] {
                 return (voice.identifier, VoiceSettingsState(
                     useCustomSettings: true,
@@ -225,10 +566,11 @@ private final class ContentViewModel: ObservableObject {
                     pitch: 1.0
                 ).neutralizedVoiceOverControlledSettings())
             }
-            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: initialPitch))
+            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: snapshot.generalSettings.pitch))
         })
 
         normalizeSelection()
+        sharedStorageState = .ready
         persistGeneralSettings()
         persistVoiceState()
     }
@@ -284,7 +626,7 @@ private final class ContentViewModel: ObservableObject {
         }
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
-        setStatus(enabled ? "Голос \(voice.name) доступний у системі." : "Голос \(voice.name) вимкнено.")
+        setStatus("Зробити голос \(voice.name) доступним: \(enabled ? "Увімкнено" : "Вимкнено").")
     }
 
     func selectVoiceForPreview(_ voice: VoiceDefinition) {
@@ -319,11 +661,105 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func reloadPersonalDictionary() {
-        personalDictionaryEntries = PersonalUserDictionary.loadEntries()
-        personalDictionaryStatus = PersonalUserDictionary.fileStatus()
+        guard sharedStorageState == .ready else { return }
+        Self.storageQueue.async { [weak self] in
+            let entries = PersonalUserDictionary.loadEntries()
+            let status = PersonalUserDictionary.fileStatus()
+            DispatchQueue.main.async {
+                self?.personalDictionaryEntries = entries
+                self?.personalDictionaryStatus = status
+            }
+        }
+    }
+
+    func reloadAbbreviationDictionary() {
+        guard sharedStorageState == .ready else { return }
+        Self.storageQueue.async { [weak self] in
+            let entries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
+            DispatchQueue.main.async { self?.abbreviationDictionaryEntries = entries }
+        }
+    }
+
+    func prepareAbbreviationDictionaryExport() {
+        guard sharedStorageState == .ready else { return }
+        Self.storageQueue.async { [weak self] in
+            do {
+                let entries = try AbbreviationDictionary.loadEntries().get()
+                let url = try AbbreviationDictionary.makeExportFile(entries: entries)
+                DispatchQueue.main.async { self?.abbreviationDictionaryShareURL = url }
+            } catch {
+                DispatchQueue.main.async { self?.setStatus("Не вдалося підготувати файл словника: \(error.localizedDescription)") }
+            }
+        }
+    }
+
+    func importAbbreviationDictionary(_ preview: AbbreviationDictionaryImportPreview, mode: AbbreviationDictionaryImportMode) {
+        guard sharedStorageState == .ready else {
+            setStatus(AbbreviationDictionaryError.appGroupUnavailable.localizedDescription)
+            return
+        }
+        Self.storageQueue.async { [weak self] in
+            do {
+                let existing = try AbbreviationDictionary.loadEntries().get()
+                let result = AbbreviationDictionary.applyImport(preview, to: existing, mode: mode)
+                try AbbreviationDictionary.save(entries: result.entries)
+                DispatchQueue.main.async {
+                    self?.abbreviationDictionaryEntries = result.entries
+                    self?.prepareAbbreviationDictionaryExport()
+                    self?.setStatus(result.summary.spokenDescription)
+                }
+            } catch {
+                DispatchQueue.main.async { self?.setStatus("Не вдалося завантажити словник: \(error.localizedDescription)") }
+            }
+        }
+    }
+
+    func reportAbbreviationDictionaryMessage(_ message: String) {
+        setStatus(message)
+    }
+
+    func saveAbbreviationDictionaryEntry(oldAbbreviation: String?, abbreviation: String, replacement: String) -> Bool {
+        guard sharedStorageState == .ready else {
+            setStatus(AbbreviationDictionaryError.appGroupUnavailable.localizedDescription)
+            return false
+        }
+        do {
+            if let oldAbbreviation {
+                try AbbreviationDictionary.updateEntry(oldAbbreviation: oldAbbreviation, abbreviation: abbreviation, replacement: replacement)
+                setStatus("Запис словника замін оновлено.")
+            } else {
+                try AbbreviationDictionary.addEntry(abbreviation: abbreviation, replacement: replacement)
+                setStatus("Запис додано до словника замін.")
+            }
+            reloadAbbreviationDictionary()
+            prepareAbbreviationDictionaryExport()
+            return true
+        } catch {
+            setStatus(error.localizedDescription)
+            return false
+        }
+    }
+
+    func removeAbbreviationDictionaryEntry(_ entry: AbbreviationDictionaryEntry) {
+        guard sharedStorageState == .ready else {
+            setStatus(AbbreviationDictionaryError.appGroupUnavailable.localizedDescription)
+            return
+        }
+        do {
+            try AbbreviationDictionary.removeEntry(abbreviation: entry.abbreviation)
+            reloadAbbreviationDictionary()
+            prepareAbbreviationDictionaryExport()
+            setStatus("Запис «\(entry.abbreviation)» видалено зі словника замін.")
+        } catch {
+            setStatus(error.localizedDescription)
+        }
     }
 
     func savePersonalDictionaryEntry(id: UUID?, displayWord: String, stressedWord: String) -> Bool {
+        guard sharedStorageState == .ready else {
+            setStatus(PersonalUserDictionaryError.appGroupUnavailable.localizedDescription)
+            return false
+        }
         do {
             if let id {
                 try PersonalUserDictionary.updateEntry(id: id, displayWord: displayWord, stressedWord: stressedWord)
@@ -341,6 +777,10 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func removePersonalDictionaryEntry(_ entry: PersonalDictionaryEntry) {
+        guard sharedStorageState == .ready else {
+            setStatus(PersonalUserDictionaryError.appGroupUnavailable.localizedDescription)
+            return
+        }
         do {
             try PersonalUserDictionary.removeEntry(id: entry.id)
             reloadPersonalDictionary()
@@ -440,13 +880,105 @@ private final class ContentViewModel: ObservableObject {
     }
 
     func refreshDebugLogState() {
-        debugLogSize = DebugLogShareHelper.logSize()
+        Self.storageQueue.async { [weak self] in
+            let size = DebugLogShareHelper.logSize()
+            let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
+            let extendedEnabled = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
+                .bool(forKey: RHVoiceSharedSettings.extendedDiagnosticsKey) ?? false
+            let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+            let datesAsWords = defaults?.object(forKey: RHVoiceSharedSettings.datesAsWordsKey) == nil
+                ? true
+                : (defaults?.bool(forKey: RHVoiceSharedSettings.datesAsWordsKey) ?? true)
+            DispatchQueue.main.async {
+                self?.debugLogSize = size
+                self?.debugLogShareURL = shareURL
+                self?.extendedDiagnosticsEnabled = extendedEnabled
+                self?.datesAsWordsEnabled = datesAsWords
+                self?.timeAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.timeAsWordsKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey) ?? true)
+                self?.abbreviationsAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) ?? true)
+                self?.abbreviationDictionaryEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) ?? true)
+                self?.phoneNumberProcessingEnabled = defaults?.object(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) ?? true)
+                self?.phoneNumberReadingMode = defaults?.string(forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey)
+                    .flatMap(RHVoicePhoneNumberReadingMode.init(rawValue:)) ?? .groups
+            }
+        }
+    }
+
+    func setDatesAsWords(_ enabled: Bool) {
+        datesAsWordsEnabled = enabled
+        announceToggleState("Читати дати словами", enabled: enabled)
+        Self.storageQueue.async {
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
+                .set(enabled, forKey: RHVoiceSharedSettings.datesAsWordsKey)
+        }
+    }
+
+    func setTimeAsWords(_ enabled: Bool) {
+        timeAsWordsEnabled = enabled
+        announceToggleState("Читати час словами", enabled: enabled)
+        Self.storageQueue.async {
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.timeAsWordsKey)
+        }
+    }
+
+    func setAbbreviationsAsWords(_ enabled: Bool) {
+        abbreviationsAsWordsEnabled = enabled
+        announceToggleState("Розгортати скорочення", enabled: enabled)
+        Self.storageQueue.async {
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
+        }
+    }
+
+    func setAbbreviationDictionaryEnabled(_ enabled: Bool) {
+        abbreviationDictionaryEnabled = enabled
+        announceToggleState("Застосовувати словник замін", enabled: enabled)
+        Self.storageQueue.async {
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey)
+        }
+    }
+
+    func setPhoneNumberProcessing(_ enabled: Bool) {
+        phoneNumberProcessingEnabled = enabled
+        announceToggleState("Обробляти телефонні номери", enabled: enabled)
+        Self.storageQueue.async {
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.phoneNumberProcessingKey)
+        }
+    }
+
+    func setPhoneNumberReadingMode(_ mode: RHVoicePhoneNumberReadingMode) {
+        phoneNumberReadingMode = mode
+        Self.storageQueue.async { [weak self] in
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(mode.rawValue, forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey)
+            DispatchQueue.main.async {
+                self?.setStatus(mode == .groups ? "Номери читаються групами." : "Номери читаються по цифрах.")
+            }
+        }
+    }
+
+    func setExtendedDiagnostics(_ enabled: Bool) {
+        extendedDiagnosticsEnabled = enabled
+        announceToggleState("Розширена діагностика", enabled: enabled)
+        Self.storageQueue.async {
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
+                .set(enabled, forKey: RHVoiceSharedSettings.extendedDiagnosticsKey)
+        }
     }
 
     func clearDebugLog() {
-        DebugLogShareHelper.clearLog()
-        refreshDebugLogState()
-        setStatus("Лог очищено.")
+        Self.storageQueue.async { [weak self] in
+            DebugLogShareHelper.clearLog()
+            let size = DebugLogShareHelper.logSize()
+            let shareURL = DebugLogShareHelper.logExists() ? DebugLogShareHelper.logURL : nil
+            DispatchQueue.main.async {
+                self?.debugLogSize = size
+                self?.debugLogShareURL = shareURL
+                self?.setStatus("Лог очищено.")
+            }
+        }
     }
 
     func updateGeneralRate(_ value: Double) {
@@ -500,24 +1032,25 @@ private final class ContentViewModel: ObservableObject {
 
         LogCollector.shared.log("Preview request voice=\(voice.name) profile=\(voiceName) textLength=\(text.count)")
 
-        do {
-            try playbackController.play(
-                text: text,
-                voiceName: voiceName,
-                rate: currentSettings.speedMultiplier,
-                volume: 1.0,
-                pitch: 1.0
-            ) { [weak self] in
+        isPreviewPlaying = true
+        setStatus("Готую голос \(voice.name)…")
+        playbackController.play(
+            text: text,
+            voiceName: voiceName,
+            rate: currentSettings.speedMultiplier,
+            volume: 1.0,
+            pitch: 1.0,
+            onFinish: { [weak self] in
                 guard let self else { return }
                 self.isPreviewPlaying = false
                 self.setStatus("Прослуховування завершено.")
+            },
+            onError: { [weak self] error in
+                guard let self else { return }
+                self.isPreviewPlaying = false
+                self.setStatus(error.localizedDescription)
             }
-            isPreviewPlaying = true
-            setStatus("Прослуховується голос \(voice.name).")
-        } catch {
-            isPreviewPlaying = false
-            setStatus(error.localizedDescription)
-        }
+        )
     }
 
     private func persistVoiceState() {
@@ -548,6 +1081,16 @@ private final class ContentViewModel: ObservableObject {
         announce(message)
     }
 
+    /// Toggle values must be spoken while VoiceOver still has focus on that
+    /// toggle. Persisting to the App Group happens independently and must not
+    /// delay this user feedback.
+    private func announceToggleState(_ title: String, enabled: Bool) {
+        let message = "\(title): \(enabled ? "Увімкнено" : "Вимкнено")."
+        statusMessage = message
+        LogCollector.shared.log(message)
+        DispatchQueue.main.async { announce(message) }
+    }
+
     private func finishSpeechComponentDiagnostics(summary: String, details: [String]) {
         isRunningSpeechComponentDiagnostics = false
         speechComponentDiagnosticReport = SpeechComponentDiagnosticReport(summary: summary, details: details)
@@ -556,6 +1099,9 @@ private final class ContentViewModel: ObservableObject {
     }
 
     private func persistSharedSnapshot() {
+        // Не писати, поки фонове завантаження не підтвердило доступність сховища:
+        // на несправному контейнері запис висне, а до .ready писати ще й нічого.
+        guard sharedStorageState == .ready else { return }
         let settings = RHVoiceSpeechSettings(
             rate: 0.5,
             volume: 1.0,
@@ -589,22 +1135,30 @@ private final class ContentViewModel: ObservableObject {
                 )
             )
         })
-        let previousRevision = RHVoiceSharedSettingsStore.loadSnapshot().revision
-        let snapshot = RHVoiceSharedSettingsSnapshot(
-            schemaVersion: 1,
-            revision: previousRevision + 1,
-            updatedAt: Date(),
-            voiceCatalog: RHVoiceSharedSettings.voiceCatalog,
-            enabledVoiceIdentifiers: Array(enabledVoiceIdentifiers).sorted(),
-            selectedVoiceIdentifier: selectedVoiceIdentifier,
-            generalSettings: settings,
-            perVoiceSettings: perVoice
-        )
+        let enabledSorted = Array(enabledVoiceIdentifiers).sorted()
+        let selected = selectedVoiceIdentifier
 
-        do {
-            try RHVoiceSharedSettingsStore.saveSnapshot(snapshot)
-        } catch {
-            setStatus("Не вдалося зберегти спільні налаштування: \(error.localizedDescription)")
+        // Дискова частина (читання revision + запис) — у фоновій черзі: див. коментар
+        // біля storageQueue. Значення зібрані на main вище.
+        Self.storageQueue.async { [weak self] in
+            let previousRevision = RHVoiceSharedSettingsStore.loadSnapshot().revision
+            let snapshot = RHVoiceSharedSettingsSnapshot(
+                schemaVersion: 1,
+                revision: previousRevision + 1,
+                updatedAt: Date(),
+                voiceCatalog: RHVoiceSharedSettings.voiceCatalog,
+                enabledVoiceIdentifiers: enabledSorted,
+                selectedVoiceIdentifier: selected,
+                generalSettings: settings,
+                perVoiceSettings: perVoice
+            )
+            do {
+                try RHVoiceSharedSettingsStore.saveSnapshot(snapshot)
+            } catch {
+                DispatchQueue.main.async {
+                    self?.setStatus("Не вдалося зберегти спільні налаштування: \(error.localizedDescription)")
+                }
+            }
         }
     }
 
@@ -670,6 +1224,9 @@ private func fourCharString(_ code: OSType) -> String {
 
 struct ContentView: View {
     @StateObject private var model = ContentViewModel()
+    @StateObject private var voiceDownloadManager = VoiceDownloadManager()
+
+    private var voiceCatalog: [VoiceDefinition] { model.voiceCatalog }
 
     var body: some View {
         #if os(macOS)
@@ -697,6 +1254,25 @@ struct ContentView: View {
 
                 Section {
                     personalDictionaryLink
+                    abbreviationDictionaryLink
+                    downloadableLanguagesLink
+                }
+
+                readingSection
+
+                Section("Довідка") {
+                    howToLink
+                    aboutLink
+                    licensesLink
+                }
+
+                if model.sharedStorageState == .unavailable {
+                    Section {
+                        Text("Спільне сховище недоступне — зміни налаштувань і словника не зберігаються.")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .accessibilityLabel("Увага: спільне сховище недоступне, зміни не зберігаються")
+                    }
                 }
 
                 if !model.statusMessage.isEmpty {
@@ -732,6 +1308,16 @@ struct ContentView: View {
     private var macBody: some View {
         NavigationStack {
             ScrollView {
+                if model.sharedStorageState == .unavailable {
+                    Text("Спільне сховище недоступне — зміни налаштувань і словника не зберігаються.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 8)
+                        .accessibilityLabel("Увага: спільне сховище недоступне, зміни не зберігаються")
+                }
+
                 VStack(spacing: 0) {
                     ForEach(voiceCatalog) { voice in
                         NavigationLink {
@@ -760,6 +1346,43 @@ struct ContentView: View {
                 personalDictionaryLink
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
+
+                Divider()
+
+                abbreviationDictionaryLink
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                Divider()
+
+                downloadableLanguagesLink
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                Divider()
+
+                VStack(spacing: 0) {
+                    howToLink
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+
+                    Divider()
+
+                    aboutLink
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+
+                    Divider()
+
+                    licensesLink
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                }
+
+                Divider()
+
+                readingSection
+                    .padding(.horizontal, 12)
 
                 Divider()
 
@@ -811,12 +1434,66 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private var diagnosticSection: some View {
-        Section("Діагностика") {
-            Text("Для перевірки затримки голосу:\n1. Тап «Очистити лог».\n2. Прочитай 3-4 фрази через VoiceOver у будь-якій програмі.\n3. Повернись сюди і тап «Поділитись логом».\n4. У шторці обери WhatsApp, Mail або AirDrop і надішли лог.")
+    private var readingSection: some View {
+        Section("Читання") {
+            Toggle(isOn: Binding(
+                get: { model.datesAsWordsEnabled },
+                set: { model.setDatesAsWords($0) }
+            )) {
+                Label("Читати дати словами", systemImage: "calendar")
+            }
+            .accessibilityValue(model.datesAsWordsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityHint("Увімкнено: повні дати, як-от 10.07.2026, читаються словами — «десяте липня дві тисячі двадцять шостого року». Вимкнено: дати читаються цифрами.")
+
+            Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
                 .font(.footnote)
                 .foregroundColor(.secondary)
-                .accessibilityLabel("Підказка щодо діагностики затримки голосу")
+
+            Toggle(isOn: Binding(get: { model.timeAsWordsEnabled }, set: { model.setTimeAsWords($0) })) {
+                Label("Читати час словами", systemImage: "clock")
+            }
+            .accessibilityValue(model.timeAsWordsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityHint("Увімкнено: 17:01 читається як час словами. Вимкнено: RHVoice не розгортає запис часу у години та хвилини.")
+
+            Toggle(isOn: Binding(get: { model.abbreviationsAsWordsEnabled }, set: { model.setAbbreviationsAsWords($0) })) {
+                Label("Розгортати скорочення", systemImage: "textformat.abc")
+            }
+            .accessibilityValue(model.abbreviationsAsWordsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityHint("Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
+
+            Toggle(isOn: Binding(get: { model.phoneNumberProcessingEnabled }, set: { model.setPhoneNumberProcessing($0) })) {
+                Label("Обробляти телефонні номери", systemImage: "phone")
+            }
+            .accessibilityValue(model.phoneNumberProcessingEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityHint("Увімкнено: RHVoice розпізнає номери та читає їх обраним способом. Вимкнено: номер читає система без обробки RHVoice.")
+
+            Picker("Читати номер", selection: Binding(get: { model.phoneNumberReadingMode }, set: { model.setPhoneNumberReadingMode($0) })) {
+                Text("групами").tag(RHVoicePhoneNumberReadingMode.groups)
+                Text("по цифрах").tag(RHVoicePhoneNumberReadingMode.digits)
+            }
+            .pickerStyle(.segmented)
+            .disabled(!model.phoneNumberProcessingEnabled)
+            .accessibilityHint("Групами: кожна частина номера читається як число. По цифрах: стара поведінка для запису номера на слух.")
+
+        }
+    }
+
+    @ViewBuilder
+    private var diagnosticSection: some View {
+        Section("Діагностика") {
+            Toggle(isOn: Binding(
+                get: { model.extendedDiagnosticsEnabled },
+                set: { model.setExtendedDiagnostics($0) }
+            )) {
+                Label("Розширена діагностика", systemImage: "stethoscope")
+            }
+            .accessibilityValue(model.extendedDiagnosticsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityHint("Коли увімкнено, застосунок записує діагностику у файл. Діагностика синтезатора на iPhone доступна через кабель у системному журналі: iOS не дозволяє speech-extension записувати спільний файл.")
+
+            Text("Цей файл містить діагностику застосунку. На iPhone журнал синтезатора VoiceOver доступний лише по кабелю в системному журналі: iOS забороняє extension записувати його у спільний файл.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+                .accessibilityLabel("Підказка щодо діагностики")
 
             Button {
                 model.clearDebugLog()
@@ -824,16 +1501,19 @@ struct ContentView: View {
                 Label("Очистити лог", systemImage: "trash")
             }
             .accessibilityLabel("Очистити лог")
-            .accessibilityHint("Стирає поточний лог-файл для нового вимірювання.")
+                .accessibilityHint("Стирає журнал застосунку. Не впливає на журнал синтезатора VoiceOver.")
 
-            if let url = DebugLogShareHelper.logURL, DebugLogShareHelper.logExists() {
+            // Кеш із моделі, а не прямий виклик до контейнера: тіло view виконується
+            // на main під час обходу VoiceOver, а containerURL/stat на macOS 26
+            // може заблокуватись (task-082).
+            if let url = model.debugLogShareURL {
                 ShareLink(item: url) {
-                    Label("Поділитись логом", systemImage: "square.and.arrow.up")
+                    Label("Поділитись журналом застосунку", systemImage: "square.and.arrow.up")
                 }
-                .accessibilityLabel("Поділитись логом")
-                .accessibilityHint("Відкриває системне меню обміну для надсилання лог-файлу.")
+                .accessibilityLabel("Поділитись журналом застосунку")
+                .accessibilityHint("Відкриває системне меню для надсилання діагностики застосунку. Журнал VoiceOver доступний по кабелю.")
             } else {
-                Text("Лог ще порожній — спочатку прочитай щось через VoiceOver.")
+                Text("Журнал застосунку ще порожній.")
                     .foregroundColor(.secondary)
             }
 
@@ -868,6 +1548,68 @@ struct ContentView: View {
         .accessibilityLabel("Мій словник")
         .accessibilityHint("Відкрити особистий словник вимови.")
     }
+
+    private var abbreviationDictionaryLink: some View {
+        NavigationLink {
+            AbbreviationDictionaryView(
+                entries: model.abbreviationDictionaryEntries,
+                enabled: Binding(get: { model.abbreviationDictionaryEnabled }, set: { model.setAbbreviationDictionaryEnabled($0) }),
+                reload: { model.reloadAbbreviationDictionary() },
+                prepareExport: { model.prepareAbbreviationDictionaryExport() },
+                shareURL: model.abbreviationDictionaryShareURL,
+                save: { old, abbreviation, replacement in
+                    model.saveAbbreviationDictionaryEntry(oldAbbreviation: old, abbreviation: abbreviation, replacement: replacement)
+                },
+                delete: { model.removeAbbreviationDictionaryEntry($0) },
+                importDictionary: { preview, mode in model.importAbbreviationDictionary(preview, mode: mode) },
+                reportMessage: { model.reportAbbreviationDictionaryMessage($0) }
+            )
+        } label: {
+            Label("Словник замін", systemImage: "text.book.closed")
+        }
+        .accessibilityLabel("Словник замін")
+        .accessibilityHint("Тут можна задати, як читати будь-яке слово: скорочення, абревіатуру, ім'я чи назву.")
+    }
+
+    private var downloadableLanguagesLink: some View {
+        NavigationLink {
+            DownloadableLanguagesView(downloadManager: voiceDownloadManager)
+        } label: {
+            Label("Мови", systemImage: "globe")
+        }
+        .accessibilityLabel("Мови")
+        .accessibilityHint("Українська вбудована; голоси інших мов можна завантажити.")
+    }
+
+    private var howToLink: some View {
+        NavigationLink {
+            VoiceOverHowToView()
+        } label: {
+            Label("Як увімкнути голос", systemImage: "checklist")
+        }
+        .accessibilityLabel("Як увімкнути голос")
+        .accessibilityHint("Відкрити інструкцію для увімкнення українського голосу у VoiceOver.")
+    }
+
+    private var aboutLink: some View {
+        NavigationLink {
+            AboutAcknowledgementView()
+        } label: {
+            Label("Про застосунок", systemImage: "info.circle")
+        }
+        .accessibilityLabel("Про застосунок")
+        .accessibilityHint("Відкрити інформацію про застосунок і підтримку проєкту.")
+    }
+
+    private var licensesLink: some View {
+        NavigationLink {
+            LicensesView()
+        } label: {
+            Label("Ліцензії", systemImage: "doc.text")
+        }
+        .accessibilityLabel("Ліцензії")
+        .accessibilityHint("Відкрити ліцензії і атрибуцію RHVoice та голосів.")
+    }
 }
 
 private struct PersonalDictionaryView: View {
@@ -888,7 +1630,22 @@ private struct PersonalDictionaryView: View {
     var body: some View {
         List {
             Section {
-                DisclosureGroup("Технічна інформація", isExpanded: $showsTechnicalInfo) {
+                Button {
+                    showsTechnicalInfo.toggle()
+                    announce("Технічна інформація: \(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто").")
+                } label: {
+                    HStack {
+                        Text("Технічна інформація")
+                        Spacer()
+                        Image(systemName: showsTechnicalInfo ? "chevron.up" : "chevron.down")
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .accessibilityLabel("Технічна інформація")
+                .accessibilityValue(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто")
+                .accessibilityHint("Подвійний дотик розгортає або згортає стан файлів особистого словника.")
+
+                if showsTechnicalInfo {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(fileStatus.dictionaryExists ? "user_dictionary.txt: \(fileStatus.dictionarySize) байт" : "user_dictionary.txt: не створено")
                         Text(fileStatus.metadataExists ? "user_dictionary_meta.json: \(fileStatus.metadataSize) байт" : "user_dictionary_meta.json: не створено")
@@ -909,8 +1666,6 @@ private struct PersonalDictionaryView: View {
                     .font(.footnote)
                     .accessibilityElement(children: .combine)
                 }
-                .accessibilityLabel("Технічна інформація")
-                .accessibilityHint("Показує стан файлів особистого словника.")
             }
 
             if entries.isEmpty {
@@ -935,7 +1690,10 @@ private struct PersonalDictionaryView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("\(entry.displayWord), вимова \(entry.stressedWord)")
-                            .accessibilityHint("Відкрити редагування запису")
+                            .accessibilityHint("Відкрити редагування запису. Доступна дія: Видалити.")
+                            .accessibilityAction(named: "Видалити") {
+                                entryPendingDeletion = entry
+                            }
 
                             HStack {
                                 Button {
@@ -1036,6 +1794,452 @@ private struct PersonalDictionaryView: View {
     }
 }
 
+private struct AbbreviationDictionaryView: View {
+    let entries: [AbbreviationDictionaryEntry]
+    @Binding var enabled: Bool
+    let reload: () -> Void
+    let prepareExport: () -> Void
+    let shareURL: URL?
+    let save: (String?, String, String) -> Bool
+    let delete: (AbbreviationDictionaryEntry) -> Void
+    let importDictionary: (AbbreviationDictionaryImportPreview, AbbreviationDictionaryImportMode) -> Void
+    let reportMessage: (String) -> Void
+
+    @State private var editingEntry: AbbreviationDictionaryEntry?
+    @State private var isAddingEntry = false
+    @State private var pendingDeletion: AbbreviationDictionaryEntry?
+    @State private var isImporting = false
+    @State private var pendingImport: AbbreviationDictionaryImportPreview?
+
+    var body: some View {
+        List {
+            Section {
+                Toggle("Застосовувати словник замін", isOn: $enabled)
+                    .accessibilityLabel("Застосовувати словник замін")
+                    .accessibilityValue(enabled ? "Увімкнено" : "Вимкнено")
+                    .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
+            }
+
+            Section("Власні записи") {
+                Text("Тут можна задати, як читати будь-яке слово: скорочення, абревіатуру, ім'я чи назву.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+
+                Button { isAddingEntry = true } label: {
+                    Label("Додати", systemImage: "plus")
+                }
+                .accessibilityLabel("Додати запис до словника замін")
+                .accessibilityHint("Відкрити форму нового слова або заміни.")
+
+                if entries.isEmpty {
+                    Text("Власних записів ще немає.")
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Власний словник замін порожній")
+                } else {
+                    ForEach(entries) { entry in
+                        Button {
+                            editingEntry = entry
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.abbreviation).font(.headline)
+                                Text(entry.replacement).foregroundColor(.secondary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(entry.abbreviation), читати як \(entry.replacement)")
+                        .accessibilityHint("Відкрити редагування запису. Доступна дія: Видалити.")
+                        .accessibilityAction(named: "Видалити") {
+                            pendingDeletion = entry
+                        }
+                        .swipeActions {
+                            Button(role: .destructive) { pendingDeletion = entry } label: {
+                                Label("Видалити", systemImage: "trash")
+                            }
+                        }
+                    }
+                    .onDelete { offsets in pendingDeletion = offsets.map { entries[$0] }.first }
+                }
+            }
+
+            Section("Базові заміни") {
+                Text("Торкніться правила, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет.")
+                    .font(.footnote).foregroundColor(.secondary)
+                ForEach(AbbreviationDictionary.bundledEntries) { entry in
+                    Button { editingEntry = entry } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(entry.abbreviation).font(.headline)
+                            Text("читати як \(entry.replacement)").foregroundColor(.secondary)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Базова заміна: \(entry.abbreviation), читати як \(entry.replacement)")
+                    .accessibilityHint("Створити власне перевизначення цього правила")
+                }
+            }
+
+            Section("Обмін") {
+                if let shareURL {
+                    ShareLink(item: shareURL) {
+                        Label("Поділитися словником", systemImage: "square.and.arrow.up")
+                    }
+                    .accessibilityLabel("Поділитися словником")
+                    .accessibilityHint("Відкриває системне меню, щоб надіслати файл власних скорочень.")
+                } else {
+                    ProgressView("Підготовка файлу словника")
+                        .accessibilityLabel("Підготовка файлу словника")
+                }
+
+                Button {
+                    isImporting = true
+                } label: {
+                    Label("Завантажити словник із файлу", systemImage: "square.and.arrow.down")
+                }
+                .accessibilityLabel("Завантажити словник із файлу")
+                .accessibilityHint("Відкрити системний вибір текстового файлу словника.")
+            }
+
+        }
+        .navigationTitle("Словник замін")
+        .sheet(isPresented: $isAddingEntry) {
+            AbbreviationDictionaryEditorView(entry: nil, save: save)
+        }
+        .sheet(item: $editingEntry) { entry in
+            AbbreviationDictionaryEditorView(entry: entry, save: save)
+        }
+        .onAppear {
+            reload()
+            prepareExport()
+        }
+        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.plainText], allowsMultipleSelection: false) { result in
+            guard case let .success(urls) = result, let url = urls.first else {
+                if case let .failure(error) = result { reportMessage("Не вдалося відкрити файл словника: \(error.localizedDescription)") }
+                return
+            }
+            readImportFile(url)
+        }
+        .confirmationDialog(
+            pendingDeletion.map { "Видалити запис «\($0.abbreviation)»?" } ?? "Видалити запис?",
+            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
+        ) {
+            if let entry = pendingDeletion {
+                Button("Видалити", role: .destructive) { delete(entry); pendingDeletion = nil }
+            }
+            Button("Скасувати", role: .cancel) { pendingDeletion = nil }
+        }
+        .confirmationDialog(
+            "Як завантажити словник?",
+            isPresented: Binding(get: { pendingImport != nil }, set: { if !$0 { pendingImport = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Додати до наявних") {
+                if let preview = pendingImport { importDictionary(preview, .add) }
+                pendingImport = nil
+            }
+            Button("Замінити мої записи", role: .destructive) {
+                if let preview = pendingImport { importDictionary(preview, .replace) }
+                pendingImport = nil
+            }
+            Button("Скасувати", role: .cancel) { pendingImport = nil }
+        } message: {
+            if let preview = pendingImport {
+                Text("Знайдено записів: \(preview.entries.count). Некоректних рядків буде пропущено: \(preview.skippedLines).")
+            }
+        }
+    }
+
+    private func readImportFile(_ url: URL) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let access = url.startAccessingSecurityScopedResource()
+            defer { if access { url.stopAccessingSecurityScopedResource() } }
+            let result: Result<AbbreviationDictionaryImportPreview, AbbreviationDictionaryError>
+            do {
+                result = AbbreviationDictionary.importPreview(from: try Data(contentsOf: url))
+            } catch {
+                result = .failure(.unreadableFile)
+            }
+            DispatchQueue.main.async {
+                switch result {
+                case let .success(preview): self.pendingImport = preview
+                case let .failure(error): self.reportMessage(error.localizedDescription)
+                }
+            }
+        }
+    }
+}
+
+private struct AbbreviationDictionaryEditorView: View {
+    let entry: AbbreviationDictionaryEntry?
+    let save: (String?, String, String) -> Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var abbreviation: String
+    @State private var replacement: String
+    @FocusState private var focusedField: Field?
+    @AccessibilityFocusState private var accessibilityFocusedField: Field?
+
+    private enum Field {
+        case abbreviation
+        case replacement
+    }
+
+    init(entry: AbbreviationDictionaryEntry?, save: @escaping (String?, String, String) -> Bool) {
+        self.entry = entry
+        self.save = save
+        _abbreviation = State(initialValue: entry?.abbreviation ?? "")
+        _replacement = State(initialValue: entry?.replacement ?? "")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Слово або скорочення") {
+                    TextField("наприклад: БПЛА", text: $abbreviation)
+                        .focused($focusedField, equals: .abbreviation)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .abbreviation)
+                        .accessibilityLabel("Слово або скорочення")
+                        .accessibilityHint("Точний запис, який треба замінити.")
+                }
+                Section("Як читати") {
+                    TextField("наприклад: безпілотний літальний апарат", text: $replacement)
+                        .focused($focusedField, equals: .replacement)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .replacement)
+                        .accessibilityLabel("Як читати")
+                        .accessibilityHint("Слова, якими треба замінити скорочення.")
+                }
+                Section("Дії") {
+                    Button("Зберегти") {
+                        if save(entry?.abbreviation, abbreviation, replacement) { dismiss() }
+                    }
+                    .accessibilityHint("Зберегти запис і застосувати його без перезапуску VoiceOver.")
+
+                    Button("Скасувати") { dismiss() }
+                }
+            }
+            .navigationTitle(entry == nil ? "Новий запис" : "Редагувати запис")
+        }
+        .onAppear {
+            focusedField = .abbreviation
+            DispatchQueue.main.async { accessibilityFocusedField = .abbreviation }
+        }
+    }
+}
+
+private struct AboutAcknowledgementView: View {
+    var body: some View {
+        List {
+            Section("Застосунок") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("RHVoice Ukrainian")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .accessibilityAddTraits(.isHeader)
+                    Text(appVersionText)
+                        .foregroundColor(.secondary)
+                }
+                .textSelection(.enabled)
+                .accessibilityElement(children: .combine)
+            }
+
+            Section("Підтримка проєкту") {
+                Text(donorDisclaimerText)
+                    .textSelection(.enabled)
+                    .accessibilityLabel(donorDisclaimerText)
+            }
+
+            Section("Логотипи партнерів") {
+                DonorLogosBarView()
+            }
+
+            Section {
+                NavigationLink {
+                    LicensesView()
+                } label: {
+                    Label("Ліцензії та атрибуція", systemImage: "doc.text")
+                }
+                .accessibilityLabel("Ліцензії та атрибуція")
+                .accessibilityHint("Відкрити список ліцензій і авторів голосів.")
+            }
+        }
+        .navigationTitle("Про застосунок")
+#if os(macOS)
+        .frame(minWidth: 520, minHeight: 520)
+#endif
+    }
+}
+
+private struct DonorLogosBarView: View {
+    var body: some View {
+        ZStack {
+            Color.white
+            Image("DonorLogosBar")
+                .resizable()
+                .scaledToFit()
+                .padding(12)
+                .accessibilityHidden(true)
+        }
+            .frame(maxWidth: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+#if os(macOS)
+            .overlay {
+                DonorLogosAccessibilityOverlay(label: donorLogosAccessibilityLabel)
+            }
+#else
+            .accessibilityElement()
+            .accessibilityLabel(donorLogosAccessibilityLabel)
+            .accessibilityAddTraits(.isImage)
+#endif
+    }
+}
+
+#if os(macOS)
+private struct DonorLogosAccessibilityOverlay: NSViewRepresentable {
+    let label: String
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        view.setAccessibilityElement(true)
+        view.setAccessibilityRole(.image)
+        view.setAccessibilityLabel(label)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        nsView.setAccessibilityLabel(label)
+    }
+}
+#endif
+
+private struct LicensesView: View {
+    var body: some View {
+        List {
+            Section("Компоненти") {
+                ForEach(licenseItems) { item in
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(item.title)
+                            .font(.headline)
+                            .accessibilityAddTraits(.isHeader)
+                        Text("Ліцензія: \(item.license)")
+                        Text("Атрибуція: \(item.attribution)")
+                        Text(item.note)
+                            .foregroundColor(.secondary)
+                        if let url = item.url {
+                            Link("Відкрити ліцензію або проєкт", destination: url)
+                                .accessibilityLabel("Відкрити ліцензію для \(item.title)")
+                                .accessibilityAddTraits(.isLink)
+                        }
+                    }
+                    .textSelection(.enabled)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityLabel("\(item.title). Ліцензія: \(item.license). Атрибуція: \(item.attribution). \(item.note)")
+                }
+            }
+
+            Section("Команда голосів") {
+                Text("Голоси створені в межах проєкту «Синтезатор української мови». Контакти: facebook.com/syntezator, vp88.mobile@gmail.com, rhvoice.su.")
+                    .textSelection(.enabled)
+            }
+
+            Section("Повні тексти ліцензій") {
+                NavigationLink {
+                    LicenseTextsView()
+                } label: {
+                    Label("Відкрити повні тексти", systemImage: "doc.text")
+                }
+                .accessibilityLabel("Відкрити повні тексти ліцензій")
+                .accessibilityHint("Тексти всіх ліцензій, що постачаються разом із застосунком.")
+            }
+
+            Section("Правова інформація") {
+                Text(legalNoticeText)
+                    .textSelection(.enabled)
+                    .accessibilityLabel(legalNoticeText)
+                Link("Вихідний код застосунку", destination: sourceCodeURL)
+                    .accessibilityLabel("Вихідний код застосунку на GitHub")
+                    .accessibilityHint("Відкриває репозиторій із повним вихідним кодом.")
+                Text(buildIdentityText)
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .textSelection(.enabled)
+                    .accessibilityLabel(buildIdentityText)
+            }
+        }
+        .navigationTitle("Ліцензії")
+#if os(macOS)
+        .frame(minWidth: 560, minHeight: 560)
+#endif
+    }
+}
+
+private struct VoiceOverHowToView: View {
+    var body: some View {
+        List {
+            Section("Перед початком") {
+                Text("У головному списку застосунку переконайтесь, що потрібні голоси RHVoice позначені як доступні. Кнопка «Прослухати» у налаштуваннях кожного голосу дає швидку перевірку звучання.")
+                    .textSelection(.enabled)
+            }
+
+            Section("iPhone або iPad") {
+                NumberedInstructionList(items: [
+                    "Відкрийте Налаштування.",
+                    "Перейдіть до Універсальний доступ.",
+                    "Відкрийте VoiceOver.",
+                    "Відкрийте Мовлення.",
+                    "Додайте або виберіть українську мову.",
+                    "У списку голосів виберіть Anatol, Marianna, Natalia або Volodymyr."
+                ])
+            }
+
+            Section("Mac") {
+                NumberedInstructionList(items: [
+                    "Відкрийте Системні параметри.",
+                    "Перейдіть до Універсальний доступ.",
+                    "Відкрийте VoiceOver.",
+                    "Відкрийте налаштування голосу або мовлення VoiceOver.",
+                    "Додайте українську мову або виберіть український голос.",
+                    "Виберіть Anatol, Marianna, Natalia або Volodymyr."
+                ])
+            }
+
+            Section("Якщо голос не з'явився") {
+                Text("Поверніться до цього застосунку, увімкніть потрібний голос у списку і знову відкрийте налаштування VoiceOver. Після оновлення застосунку може знадобитися повторно вибрати голос у системних налаштуваннях.")
+                    .textSelection(.enabled)
+            }
+        }
+        .navigationTitle("Як увімкнути голос")
+#if os(macOS)
+        .frame(minWidth: 560, minHeight: 560)
+#endif
+    }
+}
+
+private struct NumberedInstructionList: View {
+    let items: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                HStack(alignment: .top, spacing: 8) {
+                    Text("\(index + 1).")
+                        .fontWeight(.semibold)
+                        .frame(width: 26, alignment: .trailing)
+                        .accessibilityHidden(true)
+                    Text(item)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Крок \(index + 1): \(item)")
+            }
+        }
+        .textSelection(.enabled)
+    }
+}
+
+private var appVersionText: String {
+    let info = Bundle.main.infoDictionary ?? [:]
+    let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
+    let build = info["CFBundleVersion"] as? String ?? "1"
+    return "Версія \(version), збірка \(build)"
+}
+
 private struct PersonalDictionaryEditorView: View {
     let entry: PersonalDictionaryEntry?
     let isPreviewPlaying: Bool
@@ -1047,6 +2251,7 @@ private struct PersonalDictionaryEditorView: View {
     @State private var displayWord: String
     @State private var stressedWord: String
     @FocusState private var focusedField: Field?
+    @AccessibilityFocusState private var accessibilityFocusedField: Field?
 
     private enum Field {
         case displayWord
@@ -1075,31 +2280,32 @@ private struct PersonalDictionaryEditorView: View {
                 Section("Слово") {
                     TextField("", text: $displayWord, prompt: Text("наприклад: листопад"))
                         .focused($focusedField, equals: .displayWord)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .displayWord)
                         .personalDictionaryTextInputSettings()
                         .accessibilityLabel("Слово як воно пишеться")
-                        .accessibilityHint("Введіть слово без позначки наголосу.")
+                        .accessibilityHint("Слово як пишеться.")
                     TextField("", text: $stressedWord, prompt: Text("наприклад: листоп+ад"))
                         .focused($focusedField, equals: .stressedWord)
+                        .accessibilityFocused($accessibilityFocusedField, equals: .stressedWord)
                         .personalDictionaryTextInputSettings()
-                        .accessibilityLabel("Слово з позначкою наголосу")
-                        .accessibilityHint("Поставте плюс перед голосною, на яку хочете наголос.")
-                    Text("Поставте + перед голосною, на яку хочете наголос.")
+                        .accessibilityLabel("Вимова")
+                        .accessibilityHint("Те саме слово зі знаком плюс перед наголошеною голосною, або інше слово чи фраза, як це читати.")
+                    Text("Слово — як пишеться. Вимова — те саме слово зі знаком + перед наголошеною голосною, або інше слово чи фраза, як це читати.")
                         .font(.footnote)
                         .foregroundColor(.secondary)
-                        .accessibilityLabel("Підказка: поставте плюс перед голосною, на яку хочете наголос.")
+                        .accessibilityLabel("Підказка: слово — як пишеться. Вимова — те саме слово зі знаком плюс перед наголошеною голосною, або інше слово чи фраза, як це читати.")
                 }
 
                 Section {
                     Button(isPreviewPlaying ? "Зупинити" : "Прослухати") {
-                        isPreviewPlaying ? stopPreview() : preview(displayWord)
+                        isPreviewPlaying ? stopPreview() : preview(stressedWord)
                     }
-                    .disabled(displayWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityAddTraits(.startsMediaSession)
                     .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Перевірити слово")
-                    .accessibilityHint("Промовляє звичайне слово. Після збереження воно має звучати за словником.")
+                    .accessibilityHint("Промовляє введену вимову. Після збереження так само має звучати слово за словником.")
                 }
 
-#if os(macOS)
                 Section("Дії") {
                     Button("Зберегти") {
                         saveAndDismiss()
@@ -1110,29 +2316,17 @@ private struct PersonalDictionaryEditorView: View {
                     Button("Скасувати") {
                         dismiss()
                     }
+#if os(macOS)
                     .keyboardShortcut(.cancelAction)
+#endif
                     .accessibilityLabel("Скасувати")
                 }
-#endif
             }
             .navigationTitle(entry == nil ? "Нове слово" : "Редагування")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Скасувати") {
-                        dismiss()
-                    }
-                    .accessibilityLabel("Скасувати")
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Зберегти") {
-                        saveAndDismiss()
-                    }
-                    .accessibilityLabel("Зберегти запис")
-                }
-            }
         }
         .onAppear {
             focusedField = .displayWord
+            DispatchQueue.main.async { accessibilityFocusedField = .displayWord }
         }
 #if os(macOS)
         .frame(minWidth: 420, minHeight: 300)
@@ -1328,9 +2522,15 @@ private func announce(_ message: String) {
         notification: .announcementRequested,
         userInfo: userInfo
     )
-    #elseif os(iOS)
-    UIAccessibility.post(notification: .announcement, argument: message)
-    #endif
+#elseif os(iOS)
+    // SwiftUI applies a Toggle/Navigation update after its action.  Posting in
+    // that same run-loop turn is regularly swallowed by VoiceOver, especially
+    // in a List.  Let the focused control publish its new value first, then
+    // speak the result while that focus is still meaningful.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+        UIAccessibility.post(notification: .announcement, argument: message)
+    }
+#endif
 }
 
 #Preview {

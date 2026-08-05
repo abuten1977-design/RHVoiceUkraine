@@ -1,5 +1,6 @@
 #import <Foundation/Foundation.h>
 #import <os/log.h>
+#import <TargetConditionals.h>
 #include <stdarg.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -15,9 +16,35 @@ static void ensureLogQueue(void) {
     });
 }
 
+// Файл пишеться: у DEBUG — завжди; у Release — лише коли користувач увімкнув
+// «Розширену діагностику» в застосунку (App Store privacy: без згоди
+// прочитаний текст на диск не потрапляє).
+static BOOL rhFileLoggingEnabled(void) {
+#if DEBUG
+    return YES;
+#else
+    static NSUserDefaults* groupDefaults = nil;
+    static dispatch_once_t defaultsOnceToken;
+    dispatch_once(&defaultsOnceToken, ^{
+#if TARGET_OS_OSX
+        NSString* suite = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
+#else
+        NSString* suite = @"group.rhvoice.UkrainianVoices.shared";
+#endif
+        groupDefaults = [[NSUserDefaults alloc] initWithSuiteName:suite];
+    });
+    return [groupDefaults boolForKey:@"extendedDiagnostics"];
+#endif
+}
+
 static NSString* currentLogPath(void) {
+#if TARGET_OS_OSX
+    NSString* groupIdentifier = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
+#else
+    NSString* groupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
+#endif
     NSURL* groupURL = [[NSFileManager defaultManager]
-        containerURLForSecurityApplicationGroupIdentifier:@"group.rhvoice.UkrainianVoices.shared"];
+        containerURLForSecurityApplicationGroupIdentifier:groupIdentifier];
     if (!groupURL) {
         _logPath = nil;
         return nil;
@@ -76,11 +103,13 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
 
     if (important) {
         if (publicDiagnostic) {
-            os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "%{public}@", msg);
+            os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "%@", msg);
         } else {
             NSLog(@"%@", msg);
         }
     }
+
+    if (!rhFileLoggingEnabled()) return;
 
     ensureLogQueue();
     if (!_logQueue) {
@@ -104,11 +133,7 @@ void RHVoiceDebugLogWrite(const char* format, ...) {
                   _logQueue ? 1 : 0);
         }
     };
-    if (important) {
-        dispatch_sync(_logQueue, writeBlock);
-    } else {
-        dispatch_async(_logQueue, writeBlock);
-    }
+    dispatch_async(_logQueue, writeBlock);
 }
 
 void RHVoiceDebugLogString(const char* message) {
@@ -119,7 +144,7 @@ void RHVoiceDebugLogClear(void) {
     ensureLogQueue();
     if (!_logQueue) return;
 
-    dispatch_sync(_logQueue, ^{
+    dispatch_async(_logQueue, ^{
         NSString* path = currentLogPath();
         if (!path) return;
         int fd = open([path fileSystemRepresentation], O_WRONLY | O_CREAT | O_TRUNC, 0644);

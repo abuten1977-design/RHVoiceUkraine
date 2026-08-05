@@ -7,10 +7,13 @@
 #include "RHVoice.h"
 #import <AVFoundation/AVFoundation.h>
 #import <os/log.h>
+#import <TargetConditionals.h>
 #include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <string>
+#include <vector>
 #include "RHVoiceDebugLog.h"
 
 // MARK: - ThreadSafeRingBuffer
@@ -111,8 +114,14 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     return nil;
 }
 
+#if TARGET_OS_OSX
+static NSString* const RHVoiceAppGroupIdentifier = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
+#else
 static NSString* const RHVoiceAppGroupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
+#endif
 static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt";
+static NSString* const RHVoicePersonalDictionaryChangedNotification = @"com.rhvoice.UkrainianVoices.personalDictionaryChanged";
+static NSString* const RHVoiceDownloadedVoicesChangedNotification = @"com.rhvoice.UkrainianVoices.downloadedVoicesChanged";
 
 static NSURL* RHVoiceSharedContainerURL(void) {
     return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];
@@ -132,6 +141,36 @@ static NSString* RHVoicePersonalDictionarySignature(void) {
     return [NSString stringWithFormat:@"%lld:%llu",
             (long long)modified.timeIntervalSince1970,
             size.unsignedLongLongValue];
+}
+
+// Завантажені голоси в App Group: <container>/DownloadedVoices/voices/<id>/.
+// Кожна папка з voice.info передається движку через params.resource_paths.
+static NSArray<NSString*>* RHVoiceDownloadedVoiceDirectories(void) {
+    NSURL* containerURL = RHVoiceSharedContainerURL();
+    if (!containerURL) return @[];
+
+    NSURL* voicesURL = [[containerURL URLByAppendingPathComponent:@"DownloadedVoices" isDirectory:YES]
+        URLByAppendingPathComponent:@"voices" isDirectory:YES];
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSArray<NSURL*>* entries = [fm contentsOfDirectoryAtURL:voicesURL
+                                 includingPropertiesForKeys:@[NSURLIsDirectoryKey]
+                                                    options:NSDirectoryEnumerationSkipsHiddenFiles
+                                                      error:nil];
+    if (!entries) return @[];
+
+    NSMutableArray<NSString*>* result = [NSMutableArray array];
+    NSArray<NSURL*>* sorted = [entries sortedArrayUsingComparator:^NSComparisonResult(NSURL* a, NSURL* b) {
+        return [a.lastPathComponent compare:b.lastPathComponent];
+    }];
+    for (NSURL* entry in sorted) {
+        NSNumber* isDir = nil;
+        [entry getResourceValue:&isDir forKey:NSURLIsDirectoryKey error:nil];
+        if (![isDir boolValue]) continue;
+        if ([fm fileExistsAtPath:[[entry URLByAppendingPathComponent:@"voice.info"] path]]) {
+            [result addObject:[entry path]];
+        }
+    }
+    return result;
 }
 
 static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
@@ -223,7 +262,19 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @property (strong) NSCondition* activeStateCondition;
 @property (assign) EngineState* activeStreamingState;
 @property (copy) NSString* personalDictionarySignature;
+@property (assign) BOOL personalDictionaryRefreshRequested;
 @end
+
+static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
+                                                     void* observer,
+                                                     CFNotificationName,
+                                                     const void*,
+                                                     CFDictionaryRef) {
+    if (!observer) return;
+    RHVoiceEngine* engine = (__bridge RHVoiceEngine*)observer;
+    engine.personalDictionaryRefreshRequested = YES;
+    RHVoiceDebugLogWrite("USERDICT refresh requested by Darwin notification");
+}
 
 // MARK: - @implementation
 
@@ -237,7 +288,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
             @"anatol": @"Anatol",
             @"marianna": @"Marianna",
             @"natalia": @"Natalia",
-            @"volodymyr": @"Volodymyr"
+            @"volodymyr": @"Volodymyr",
+            // Завантажувані англійські голоси (CMU)
+            @"bdl": @"Bdl",
+            @"clb": @"Clb",
+            @"slt": @"Slt",
+            @"ksp": @"Ksp"
         };
     });
     return aliases;
@@ -250,6 +306,21 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         _engine = NULL;
         _activeStateCondition = [[NSCondition alloc] init];
         _personalDictionarySignature = @"";
+        _personalDictionaryRefreshRequested = NO;
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                        (__bridge const void*)self,
+                                        RHVoicePersonalDictionaryChangedCallback,
+                                        (__bridge CFStringRef)RHVoicePersonalDictionaryChangedNotification,
+                                        NULL,
+                                        CFNotificationSuspensionBehaviorDeliverImmediately);
+        // Той самий колбек: зміна складу завантажених голосів вимагає
+        // переініціалізації движка (resource_paths читаються лише на init).
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                        (__bridge const void*)self,
+                                        RHVoicePersonalDictionaryChangedCallback,
+                                        (__bridge CFStringRef)RHVoiceDownloadedVoicesChangedNotification,
+                                        NULL,
+                                        CFNotificationSuspensionBehaviorDeliverImmediately);
         [self initializeEngine];
     }
     return self;
@@ -257,9 +328,11 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (void)refreshPersonalDictionaryIfNeeded {
     NSString* signature = RHVoicePersonalDictionarySignature();
-    if (!self.initialized || [signature isEqualToString:self.personalDictionarySignature]) {
+    BOOL forced = self.personalDictionaryRefreshRequested;
+    if (!self.initialized || (!forced && [signature isEqualToString:self.personalDictionarySignature])) {
         return;
     }
+    self.personalDictionaryRefreshRequested = NO;
 
     RHVoiceDebugLogWrite("USERDICT personal changed old=%s new=%s",
                          self.personalDictionarySignature.UTF8String,
@@ -311,6 +384,25 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     params.data_path = [dataPath UTF8String];
     params.config_path = [configPath UTF8String];
     params.callbacks = callbacks;
+
+    // Завантажені голоси з App Group — офіційний механізм resource_paths
+    // (NULL-terminated список папок, кожна з voice.info). Рядки мають жити
+    // до завершення RHVoice_new_tts_engine — движок копіює їх на init.
+    NSArray<NSString*>* downloadedVoiceDirs = RHVoiceDownloadedVoiceDirectories();
+    std::vector<std::string> resourcePathStorage;
+    std::vector<const char*> resourcePathPtrs;
+    for (NSString* dir in downloadedVoiceDirs) {
+        resourcePathStorage.push_back(std::string([dir UTF8String]));
+    }
+    for (const auto& stored : resourcePathStorage) {
+        resourcePathPtrs.push_back(stored.c_str());
+    }
+    resourcePathPtrs.push_back(NULL);
+    if (!resourcePathStorage.empty()) {
+        params.resource_paths = resourcePathPtrs.data();
+    }
+    RHVoiceDebugLogWrite("DOWNLOADED_VOICES engine init extraVoiceDirs=%lu",
+                         (unsigned long)downloadedVoiceDirs.count);
 
     @try {
         self.engine = RHVoice_new_tts_engine(&params);
@@ -546,6 +638,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 }
 
 - (void)dealloc {
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                       (__bridge const void*)self,
+                                       (__bridge CFStringRef)RHVoicePersonalDictionaryChangedNotification,
+                                       NULL);
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                       (__bridge const void*)self,
+                                       (__bridge CFStringRef)RHVoiceDownloadedVoicesChangedNotification,
+                                       NULL);
     if (self.engine) {
         RHVoice_delete_tts_engine(self.engine);
     }

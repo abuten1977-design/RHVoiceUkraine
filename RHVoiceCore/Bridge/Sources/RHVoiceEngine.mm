@@ -7,10 +7,13 @@
 #include "RHVoice.h"
 #import <AVFoundation/AVFoundation.h>
 #import <os/log.h>
+#import <TargetConditionals.h>
 #include <atomic>
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <string>
+#include <vector>
 #include "RHVoiceDebugLog.h"
 
 // MARK: - ThreadSafeRingBuffer
@@ -111,8 +114,14 @@ static NSString* RHVoiceResolveDataPath(Class engineClass, NSBundle** resolvedBu
     return nil;
 }
 
+#if TARGET_OS_OSX
+static NSString* const RHVoiceAppGroupIdentifier = @"5NNZPP8CRR.group.rhvoice.UkrainianVoices.shared";
+#else
 static NSString* const RHVoiceAppGroupIdentifier = @"group.rhvoice.UkrainianVoices.shared";
+#endif
 static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt";
+static NSString* const RHVoicePersonalDictionaryChangedNotification = @"com.rhvoice.UkrainianVoices.personalDictionaryChanged";
+static NSString* const RHVoiceDownloadedVoicesChangedNotification = @"com.rhvoice.UkrainianVoices.downloadedVoicesChanged";
 
 static NSURL* RHVoiceSharedContainerURL(void) {
     return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];
@@ -132,6 +141,36 @@ static NSString* RHVoicePersonalDictionarySignature(void) {
     return [NSString stringWithFormat:@"%lld:%llu",
             (long long)modified.timeIntervalSince1970,
             size.unsignedLongLongValue];
+}
+
+// Завантажені голоси в App Group: <container>/DownloadedVoices/voices/<id>/.
+// Кожна папка з voice.info передається движку через params.resource_paths.
+static NSArray<NSString*>* RHVoiceDownloadedVoiceDirectories(void) {
+    NSURL* containerURL = RHVoiceSharedContainerURL();
+    if (!containerURL) return @[];
+
+    NSURL* voicesURL = [[containerURL URLByAppendingPathComponent:@"DownloadedVoices" isDirectory:YES]
+        URLByAppendingPathComponent:@"voices" isDirectory:YES];
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSArray<NSURL*>* entries = [fm contentsOfDirectoryAtURL:voicesURL
+                                 includingPropertiesForKeys:@[NSURLIsDirectoryKey]
+                                                    options:NSDirectoryEnumerationSkipsHiddenFiles
+                                                      error:nil];
+    if (!entries) return @[];
+
+    NSMutableArray<NSString*>* result = [NSMutableArray array];
+    NSArray<NSURL*>* sorted = [entries sortedArrayUsingComparator:^NSComparisonResult(NSURL* a, NSURL* b) {
+        return [a.lastPathComponent compare:b.lastPathComponent];
+    }];
+    for (NSURL* entry in sorted) {
+        NSNumber* isDir = nil;
+        [entry getResourceValue:&isDir forKey:NSURLIsDirectoryKey error:nil];
+        if (![isDir boolValue]) continue;
+        if ([fm fileExistsAtPath:[[entry URLByAppendingPathComponent:@"voice.info"] path]]) {
+            [result addObject:[entry path]];
+        }
+    }
+    return result;
 }
 
 static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
@@ -223,7 +262,19 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @property (strong) NSCondition* activeStateCondition;
 @property (assign) EngineState* activeStreamingState;
 @property (copy) NSString* personalDictionarySignature;
+@property (assign) BOOL personalDictionaryRefreshRequested;
 @end
+
+static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
+                                                     void* observer,
+                                                     CFNotificationName,
+                                                     const void*,
+                                                     CFDictionaryRef) {
+    if (!observer) return;
+    RHVoiceEngine* engine = (__bridge RHVoiceEngine*)observer;
+    engine.personalDictionaryRefreshRequested = YES;
+    RHVoiceDebugLogWrite("USERDICT refresh requested by Darwin notification");
+}
 
 // MARK: - @implementation
 
@@ -237,7 +288,12 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
             @"anatol": @"Anatol",
             @"marianna": @"Marianna",
             @"natalia": @"Natalia",
-            @"volodymyr": @"Volodymyr"
+            @"volodymyr": @"Volodymyr",
+            // Завантажувані англійські голоси (CMU)
+            @"bdl": @"Bdl",
+            @"clb": @"Clb",
+            @"slt": @"Slt",
+            @"ksp": @"Ksp"
         };
     });
     return aliases;
@@ -250,6 +306,21 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         _engine = NULL;
         _activeStateCondition = [[NSCondition alloc] init];
         _personalDictionarySignature = @"";
+        _personalDictionaryRefreshRequested = NO;
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                        (__bridge const void*)self,
+                                        RHVoicePersonalDictionaryChangedCallback,
+                                        (__bridge CFStringRef)RHVoicePersonalDictionaryChangedNotification,
+                                        NULL,
+                                        CFNotificationSuspensionBehaviorDeliverImmediately);
+        // Той самий колбек: зміна складу завантажених голосів вимагає
+        // переініціалізації движка (resource_paths читаються лише на init).
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                        (__bridge const void*)self,
+                                        RHVoicePersonalDictionaryChangedCallback,
+                                        (__bridge CFStringRef)RHVoiceDownloadedVoicesChangedNotification,
+                                        NULL,
+                                        CFNotificationSuspensionBehaviorDeliverImmediately);
         [self initializeEngine];
     }
     return self;
@@ -257,9 +328,11 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (void)refreshPersonalDictionaryIfNeeded {
     NSString* signature = RHVoicePersonalDictionarySignature();
-    if (!self.initialized || [signature isEqualToString:self.personalDictionarySignature]) {
+    BOOL forced = self.personalDictionaryRefreshRequested;
+    if (!self.initialized || (!forced && [signature isEqualToString:self.personalDictionarySignature])) {
         return;
     }
+    self.personalDictionaryRefreshRequested = NO;
 
     RHVoiceDebugLogWrite("USERDICT personal changed old=%s new=%s",
                          self.personalDictionarySignature.UTF8String,
@@ -281,14 +354,18 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     NSString* dataPath = RHVoiceResolveDataPath([self class], &resolvedBundle);
 
     if (!dataPath) {
+#if DEBUG
         NSLog(@"❌ RHVoiceData not found in app/framework bundles. main=%@ framework=%@",
               [NSBundle mainBundle].resourcePath,
               [NSBundle bundleForClass:[self class]].resourcePath);
+#endif
         return NO;
     }
 
+#if DEBUG
     NSLog(@"✅ RHVoice data path: %@ (bundle=%@)", dataPath, resolvedBundle.resourcePath);
     NSLog(@"✅ Contents: %@", [fm contentsOfDirectoryAtPath:dataPath error:nil]);
+#endif
 
     RHVoice_callbacks callbacks;
     memset(&callbacks, 0, sizeof(callbacks));
@@ -297,7 +374,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     NSString* configPath = RHVoicePrepareWritableConfigPath(dataPath);
     self.personalDictionarySignature = RHVoicePersonalDictionarySignature();
+#if DEBUG
     NSLog(@"✅ RHVoice config path: %@", configPath);
+#endif
     RHVoiceDebugLogWrite("USERDICT config path=%s signature=%s",
                          configPath.UTF8String,
                          self.personalDictionarySignature.UTF8String);
@@ -308,12 +387,34 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     params.config_path = [configPath UTF8String];
     params.callbacks = callbacks;
 
+    // Завантажені голоси з App Group — офіційний механізм resource_paths
+    // (NULL-terminated список папок, кожна з voice.info). Рядки мають жити
+    // до завершення RHVoice_new_tts_engine — движок копіює їх на init.
+    NSArray<NSString*>* downloadedVoiceDirs = RHVoiceDownloadedVoiceDirectories();
+    std::vector<std::string> resourcePathStorage;
+    std::vector<const char*> resourcePathPtrs;
+    for (NSString* dir in downloadedVoiceDirs) {
+        resourcePathStorage.push_back(std::string([dir UTF8String]));
+    }
+    for (const auto& stored : resourcePathStorage) {
+        resourcePathPtrs.push_back(stored.c_str());
+    }
+    resourcePathPtrs.push_back(NULL);
+    if (!resourcePathStorage.empty()) {
+        params.resource_paths = resourcePathPtrs.data();
+    }
+    RHVoiceDebugLogWrite("DOWNLOADED_VOICES engine init extraVoiceDirs=%lu",
+                         (unsigned long)downloadedVoiceDirs.count);
+
     @try {
         self.engine = RHVoice_new_tts_engine(&params);
     } @catch (NSException *exception) {
+#if DEBUG
         NSLog(@"❌ Engine threw NSException: %@ — %@", exception.name, exception.reason);
+#endif
     }
     if (!self.engine) {
+#if DEBUG
         NSLog(@"❌ Engine init failed for data_path: %@", dataPath);
         // Diagnostic: check subdirectories
         NSString* langPath = [dataPath stringByAppendingPathComponent:@"languages"];
@@ -332,12 +433,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         NSLog(@"❌ anatol/ exists: %d, contents: %@",
               [fm fileExistsAtPath:anatol],
               [fm contentsOfDirectoryAtPath:anatol error:nil]);
+#endif
         return NO;
     }
 
     // Verify voices loaded
     unsigned int nVoices = RHVoice_get_number_of_voices(self.engine);
     unsigned int nProfiles = RHVoice_get_number_of_voice_profiles(self.engine);
+#if DEBUG
     NSLog(@"✅ Engine ready: %u voices, %u profiles", nVoices, nProfiles);
     
     // Log available voice profiles.
@@ -354,6 +457,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
             }
         }
     }
+#endif
 
     self.initialized = YES;
     return YES;
@@ -392,8 +496,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     }
 
     const char* t = [text UTF8String];
+#if DEBUG
     NSString* textPreview = text.length > 300 ? [text substringToIndex:300] : text;
-    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] buildMessage textLength=%{public}lu", (unsigned long)text.length);
+    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] buildMessage textLength=%lu", (unsigned long)text.length);
     RHVoiceDebugLogWrite("buildMessage text: %s", [textPreview UTF8String]);
     NSLog(@"🎙️ buildMessage voice='%@' rate=%.2f→abs=%.2f/rel=%.2f pitch=%.2f→abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
           normalizedVoice, rate, p.absolute_rate, p.relative_rate,
@@ -401,6 +506,7 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     RHVoiceDebugLogWrite("buildMessage voice=%s rate=%.2f->abs=%.2f/rel=%.2f pitch=%.2f->abs=%.2f/rel=%.2f vol=%.2f isSSML=%d",
           [normalizedVoice UTF8String], rate, p.absolute_rate, p.relative_rate,
           pitch, p.absolute_pitch, p.relative_pitch, p.relative_volume, isSSML);
+#endif
 
     RHVoice_message_type msgType = isSSML ? RHVoice_message_ssml : RHVoice_message_text;
 
@@ -408,7 +514,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
                                msgType, &p,
                                (void*)state);  // Pass EngineState as user_data
     if (!msg) {
+#if DEBUG
         NSLog(@"❌ RHVoice_new_message returned NULL for voice='%@'", normalizedVoice);
+#endif
     }
     return msg;
 }
@@ -428,11 +536,15 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
 - (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
                                     rate:(double)rate volume:(double)volume pitch:(double)pitch {
+#if DEBUG
     NSLog(@"🔍 synthesize called: initialized=%d, text='%@', voice='%@'", self.initialized, text, voice);
+#endif
     [self refreshPersonalDictionaryIfNeeded];
     
     if (!self.initialized || !text.length) {
+#if DEBUG
         NSLog(@"❌ synthesize failed: initialized=%d, textLength=%lu", self.initialized, (unsigned long)text.length);
+#endif
         return nil;
     }
 
@@ -449,7 +561,9 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 
     RHVoice_message msg = [self buildMessage:text voice:voice rate:rate volume:volume pitch:pitch state:&state];
     if (!msg) {
+#if DEBUG
         NSLog(@"❌ buildMessage failed for voice '%@'", voice);
+#endif
         tls_engineState = nullptr;
         return nil;
     }
@@ -458,19 +572,27 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     RHVoice_delete_message(msg);
 
     if (speakResult == 0) {
+#if DEBUG
         NSLog(@"❌ RHVoice_speak returned 0 for voice '%@', retrying with default profile", voice);
+#endif
         RHVoice_message fallbackMsg = [self buildDefaultMessage:text state:&state];
         if (fallbackMsg) {
             speakResult = RHVoice_speak(fallbackMsg);
             RHVoice_delete_message(fallbackMsg);
+#if DEBUG
             NSLog(@"ℹ️ Fallback RHVoice_speak result=%d sampleRate=%d", speakResult,
                   state.sampleRate.load(std::memory_order_acquire));
+#endif
         } else {
+#if DEBUG
             NSLog(@"❌ Failed to create fallback RHVoice message");
+#endif
         }
     } else {
+#if DEBUG
         NSLog(@"ℹ️ RHVoice_speak result=%d sampleRate=%d", speakResult,
               state.sampleRate.load(std::memory_order_acquire));
+#endif
     }
 
     tls_engineState = nullptr;
@@ -486,14 +608,18 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     }
 
     if (!audioBuffer.length) {
+#if DEBUG
         NSLog(@"❌ No audio data synthesized");
+#endif
         return nil;
     }
 
     int sr = state.sampleRate.load(std::memory_order_acquire);
     if (sr <= 0) sr = 24000;
     
+#if DEBUG
     NSLog(@"✅ Synthesized %lu bytes at %d Hz", (unsigned long)audioBuffer.length, sr);
+#endif
     return [self pcmBufferFrom:audioBuffer sampleRate:sr];
 }
 
@@ -503,8 +629,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
     EngineState* state = self.activeStreamingState;
     if (!state) {
         [self.activeStateCondition unlock];
-        os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: no active state (%{public}.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#if DEBUG
+        os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
         RHVoiceDebugLogWrite("cancel: no active state (%.1f ms)", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#endif
         return;
     }
 
@@ -516,8 +644,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
         [state->dataCondition unlock];
     }
     [self.activeStateCondition unlock];
-    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: flagged in %{public}.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#if DEBUG
+    os_log_with_type(OS_LOG_DEFAULT, OS_LOG_TYPE_INFO, "[RHVOICE_TIMING] cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
     RHVoiceDebugLogWrite("cancel: flagged in %.1f ms", (CFAbsoluteTimeGetCurrent()-t0)*1000);
+#endif
 }
 
 // MARK: - Int16 → Float32
@@ -542,6 +672,14 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 }
 
 - (void)dealloc {
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                       (__bridge const void*)self,
+                                       (__bridge CFStringRef)RHVoicePersonalDictionaryChangedNotification,
+                                       NULL);
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenter(),
+                                       (__bridge const void*)self,
+                                       (__bridge CFStringRef)RHVoiceDownloadedVoicesChangedNotification,
+                                       NULL);
     if (self.engine) {
         RHVoice_delete_tts_engine(self.engine);
     }

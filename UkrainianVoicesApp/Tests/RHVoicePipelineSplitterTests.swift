@@ -78,6 +78,26 @@ final class RHVoicePipelineSplitterTests: XCTestCase {
         XCTAssertLessThan(RHVoicePipelineSplitter.textCharacterCount(in: fragments[0]), 80)
     }
 
+    func testPriorityFirstRemainderContinuesSentence() {
+        let fragments = RHVoicePipelineSplitter.pipelineFragments(
+            from: "<speak>Це довге повідомлення для перевірки швидкого старту, воно має продовження без завершення речення. Друге речення починається окремо.</speak>"
+        )
+
+        XCTAssertGreaterThanOrEqual(fragments.count, 3)
+        XCTAssertFalse(fragments[0].continuesSentence)
+        XCTAssertTrue(fragments[1].continuesSentence)
+        XCTAssertFalse(fragments.last!.continuesSentence)
+    }
+
+    func testSentenceFragmentsDoNotContinueSentence() {
+        let fragments = RHVoicePipelineSplitter.pipelineFragments(
+            from: "<speak>Перше речення має достатньо слів. Друге речення теж звучить окремо.</speak>"
+        )
+
+        XCTAssertEqual(fragments.count, 2)
+        XCTAssertTrue(fragments.allSatisfy { !$0.continuesSentence })
+    }
+
     func testDecimalNumbersAreNotSentenceBoundaries() {
         let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(
             from: "<speak>Версія 3.14 працює стабільно. Наступне речення звучить окремо.</speak>"

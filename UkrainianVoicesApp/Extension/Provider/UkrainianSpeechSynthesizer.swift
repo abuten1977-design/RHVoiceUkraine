@@ -7,13 +7,73 @@ import RHVoiceBridge
 import os.log
 
 private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
+private let apostropheLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "apostrophe")
+private let numberDiagLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "number-diag")
 
-private func rhLog(_ msg: String) {
-    msg.withCString { RHVoiceDebugLogString($0) }
+// «Розширена діагностика» вмикається перемикачем у застосунку (App Group defaults).
+// Читання UserDefaults не блокує аудіо-потік: значення кешує cfprefsd — на відміну
+// від containerURL/stat, які на macOS 26 можуть зависнути (task-082/086).
+private let rhDiagDefaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+
+private func rhExtendedDiagnosticsEnabled() -> Bool {
+    rhDiagDefaults?.bool(forKey: RHVoiceSharedSettings.extendedDiagnosticsKey) ?? false
 }
 
-private enum RHVoiceAUParameter: AUParameterAddress {
-    case rate, volume, pitch
+// «Читати дати словами»: відсутність ключа = увімкнено (типова поведінка).
+private func rhDatesAsWordsEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.datesAsWordsKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.datesAsWordsKey)
+}
+
+private func rhTimeAsWordsEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.timeAsWordsKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey)
+}
+
+private func rhAbbreviationsAsWordsEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
+}
+
+private func rhAbbreviationDictionaryEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey)
+}
+
+private func rhPhoneNumberProcessingEnabled() -> Bool {
+    guard let defaults = rhDiagDefaults,
+          defaults.object(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) != nil else { return true }
+    return defaults.bool(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey)
+}
+
+private func rhPhoneNumberReadingMode() -> RHVoicePhoneNumberReadingMode {
+    guard let defaults = rhDiagDefaults,
+          let raw = defaults.string(forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey),
+          let mode = RHVoicePhoneNumberReadingMode(rawValue: raw) else { return .groups }
+    return mode
+}
+
+private func rhLog(_ msg: @autoclosure () -> String) {
+    #if DEBUG
+    let text = msg()
+    text.withCString { RHVoiceDebugLogString($0) }
+    #else
+    guard rhExtendedDiagnosticsEnabled() else { return }
+    let text = msg()
+    text.withCString { RHVoiceDebugLogString($0) }
+    #endif
+}
+
+private func apostropheDiagLog(_ msg: @autoclosure () -> String) {
+    #if DEBUG
+    let text = msg()
+    rhLog(text)
+    os_log(.info, log: apostropheLog, "%@", text as NSString)
+    #endif
 }
 
 @available(iOS 16.0, macOS 13.0, *)
@@ -30,9 +90,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private var isSynthesizing = false
     private let synthesisQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.synthesis", qos: .userInitiated)
     private var synthesisGeneration: UInt64 = 0
-    private var rateValue: AUValue?
-    private var volumeValue: AUValue?
-    private var pitchValue: AUValue?
+    private let sharedSettingsCache = RHVoiceSharedSettingsSnapshotCache()
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -44,6 +102,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         AVSpeechSynthesisProviderVoice(name: "Volodymyr", identifier: "com.rhvoice.UkrainianVoices.volodymyr",
             primaryLanguages: ["uk-UA"], supportedLanguages: ["uk-UA"]),
     ]
+    private static var didLogNumberDiagActiveBuild = false
 
     @objc
     public override init(
@@ -67,12 +126,15 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         try super.init(componentDescription: componentDescription, options: options)
 
         self._outputBusses = AUAudioUnitBusArray(audioUnit: self, busType: .output, busses: [outputBus])
-        self.setupParameterTree()
+        // Do not restore AUParameterTree here. It regressed the macOS VoiceOver rotor
+        // into announcing numeric percentages instead of voices (fixed in 151a4aec,
+        // accidentally restored in ed59926a, removed again by task-087). VoiceOver
+        // rate/volume/pitch arrive through SSML prosody, and app settings arrive
+        // through the App Group snapshot cache.
         rhLog("EXT_DIAG synthesizer init")
-        let appGroupURL = FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: "group.rhvoice.UkrainianVoices.shared"
-        )
-        rhLog("EXT_DIAG appgroup container=\(appGroupURL?.path ?? "nil")")
+        self.sharedSettingsCache.start()
+        RHVoiceDownloadedVoicesCache.shared.start()
+        AbbreviationDictionaryCache.shared.start()
         self.startEngineWarmup()
     }
 
@@ -86,82 +148,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
     }
 
-    private func setupParameterTree() {
-        self.parameterTree = .createTree(withChildren: [
-            AUParameterTree.createGroup(
-                withIdentifier: "rhvoice",
-                name: "RHVoice Ukrainian",
-                children: [
-                    AUParameterTree.createParameter(
-                        withIdentifier: "rate",
-                        name: "Rate",
-                        address: RHVoiceAUParameter.rate.rawValue,
-                        min: 0.5,
-                        max: 4.5,
-                        unit: .rate,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "volume",
-                        name: "Volume",
-                        address: RHVoiceAUParameter.volume.rawValue,
-                        min: 0.0,
-                        max: 1.0,
-                        unit: .linearGain,
-                        unitName: nil,
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                    AUParameterTree.createParameter(
-                        withIdentifier: "pitch",
-                        name: "Pitch",
-                        address: RHVoiceAUParameter.pitch.rawValue,
-                        min: 0.5,
-                        max: 2.0,
-                        unit: .customUnit,
-                        unitName: "multiplier",
-                        valueStrings: nil,
-                        dependentParameters: nil
-                    ),
-                ]
-            )
-        ])
-
-        self.parameterTree?.implementorValueProvider = { [weak self] parameter in
-            guard let self else { return 0 }
-            switch parameter.address {
-            case RHVoiceAUParameter.rate.rawValue:
-                return self.rateValue ?? 1.0
-            case RHVoiceAUParameter.volume.rawValue:
-                return self.volumeValue ?? 1.0
-            case RHVoiceAUParameter.pitch.rawValue:
-                return self.pitchValue ?? 1.0
-            default:
-                return 0
-            }
-        }
-
-        for parameter in self.parameterTree?.allParameters ?? [] {
-            parameter.value = self.parameterTree?.implementorValueProvider(parameter) ?? 0
-        }
-
-        self.parameterTree?.implementorValueObserver = { [weak self] parameter, value in
-            guard let self else { return }
-            switch parameter.address {
-            case RHVoiceAUParameter.rate.rawValue:
-                self.rateValue = value
-            case RHVoiceAUParameter.volume.rawValue:
-                self.volumeValue = value
-            case RHVoiceAUParameter.pitch.rawValue:
-                self.pitchValue = value
-            default:
-                break
-            }
-        }
-    }
-
     public override var outputBusses: AUAudioUnitBusArray { _outputBusses }
 
     public override func allocateRenderResources() throws {
@@ -170,8 +156,38 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
-        get { Self.staticVoices }
+        get { Self.publishedProviderVoices() }
         set { }
+    }
+
+    /// System enumeration must use the catalog durably published by the app;
+    /// scanning the downloaded-voice tree here lost dynamic voices on iPhone.
+    private static func publishedProviderVoices() -> [AVSpeechSynthesisProviderVoice] {
+        publishedVoiceDescriptors(logSource: true).map { descriptor in
+            AVSpeechSynthesisProviderVoice(
+                name: descriptor.name,
+                identifier: descriptor.identifier,
+                primaryLanguages: [descriptor.language],
+                supportedLanguages: [descriptor.language]
+            )
+        }
+    }
+
+    /// The descriptor used for system enumeration must also resolve the
+    /// profile during rendering. Otherwise a just-downloaded English voice can
+    /// be visible in VoiceOver while the extension's directory cache is still
+    /// empty and silently falls back to Anatol.
+    private static func publishedVoiceDescriptors(logSource: Bool = false) -> [RHVoiceVoiceDescriptor] {
+        #if os(iOS)
+        let catalog = RHVoicePublishedVoiceCatalog.loadPublished()
+        let descriptors = catalog?.descriptors ?? RHVoiceSharedSettings.builtInVoiceCatalog
+        if logSource {
+            NSLog("VOICE_CATALOG_DIAG source=published-ios revision=%d count=%d ids=%@", catalog?.revision ?? 0, descriptors.count, descriptors.map(\.identifier).joined(separator: ","))
+        }
+        #else
+        let descriptors = RHVoiceSharedSettings.builtInVoiceCatalog + RHVoiceDownloadedVoicesCache.shared.currentVoicesEnsuringFirstLoad()
+        #endif
+        return descriptors
     }
 
     // MARK: - Render (exactly like eSpeak)
@@ -314,10 +330,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         let ssmlSnippet = String(text.prefix(200))
         rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")
-        let currentRateValue = self.rateValue
-        let currentVolumeValue = self.volumeValue
-        let currentPitchValue = self.pitchValue
-
         self.outputMutex.wait()
         self.isSynthesizing = true
         self.synthesisGeneration &+= 1
@@ -332,9 +344,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             self?.runSynthesisPipeline(
                 text: text,
                 voiceId: voiceId,
-                rateValue: currentRateValue,
-                volumeValue: currentVolumeValue,
-                pitchValue: currentPitchValue,
                 requestStart: requestStart,
                 generation: generation
             )
@@ -344,9 +353,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private func runSynthesisPipeline(
         text: String,
         voiceId: String,
-        rateValue: AUValue?,
-        volumeValue: AUValue?,
-        pitchValue: AUValue?,
         requestStart: CFAbsoluteTime,
         generation: UInt64
     ) {
@@ -355,14 +361,17 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             rhLog("LATENCY_DIAG pipeline cancelled beforePreprocessing")
             return
         }
+        let shouldLogNumberDiag = Self.shouldLogNumberDiagnostics(for: text)
+        Self.logNumberDiagnostics(label: "input-ssml", ssml: text, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "input-ssml", ssml: text)
 
         // Resolve voice profile name
         let profileName: String
-        if let descriptor = RHVoiceSharedSettings.voiceCatalog.first(where: { $0.identifier == voiceId }) {
+        if let descriptor = Self.publishedVoiceDescriptors().first(where: { $0.identifier == voiceId }) {
             profileName = descriptor.profileName
         } else {
-            profileName = RHVoiceSharedSettings.voiceCatalog.first!.profileName
+            profileName = RHVoiceSharedSettings.builtInVoiceCatalog.first!.profileName
+            NSLog("VOICE_CATALOG_DIAG resolve=fallback requested=%@ profile=%@", voiceId, profileName)
         }
 
         // Extract rate/volume from SSML
@@ -370,33 +379,37 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let ssmlVolume = Self.extractSSMLVolumeIfPresent(from: text)
         let ssmlPitch = Self.extractSSMLPitch(from: text)
 
-        // Read user settings from App Group
-        let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
+        // Read the accelerator/speed fresh at the moment of speaking (like builds
+        // ≤157), bounded so a wedged container can never freeze the voice (task-086).
+        let snapshot = self.sharedSettingsCache.snapshotRefreshingNow()
         let voiceSettings = snapshot.effectiveSettings(for: voiceId)
         let settingsMs = Self.elapsedMs(since: preprocessingStart)
 
         let effectiveRatePercent = ssmlRatePercent ?? 100.0
         let mappedRate = ssmlRatePercent.map(Self.mapSSMLRatePercentToEngineMultiplier)
-            ?? Double(rateValue ?? 1.0)
+            ?? 1.0
         let accelerator = Self.clampSpeedMultiplier(voiceSettings.speedMultiplier)
         let finalRate = Self.clampRate(mappedRate * accelerator)
-        let effectiveVolume = ssmlVolume ?? Self.clampVolume(Double(volumeValue ?? 1.0))
+        let effectiveVolume = ssmlVolume ?? 1.0
         let finalVolume = Self.clampVolume(effectiveVolume)
-        let effectivePitch = Self.clampPitch(ssmlPitch ?? Double(pitchValue ?? 1.0))
+        let effectivePitch = Self.clampPitch(ssmlPitch ?? 1.0)
         let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
-        let normalizedText = Self.normalizeApostrophesInTextSegments(text)
+        let normalizedText = Self.normalizeStandaloneApostropheRequest(text)
+            ?? Self.normalizeApostrophesInTextSegments(text)
+        Self.logNumberDiagnostics(label: "after-apostrophe-normalize", ssml: normalizedText, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "after-apostrophe-normalize", ssml: normalizedText)
         let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        Self.logNumberDiagnostics(label: "final-engine-input", ssml: synthesisText, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
-        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%{public}.1f mappedRate=%{public}.2f accelerator=%{public}.2f finalRate=%{public}.2f vol=%{public}.2f pitch=%{public}.2f pauseMs=%{public}d useCustom=%{public}d wordGapMs=%{public}d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
         #if DEBUG
-        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (rateValue != nil || volumeValue != nil || pitchValue != nil || accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
+        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
         #endif
 
-        let fragments = RHVoicePipelineSplitter.sentencePipelineFragments(from: synthesisText)
+        let fragments = RHVoicePipelineSplitter.pipelineFragments(from: synthesisText)
         let preprocessingMs = Self.elapsedMs(since: preprocessingStart)
         rhLog("LATENCY_DIAG prepare voice=\(profileName) chars=\(text.count) settingsMs=\(settingsMs) backgroundPreprocessingMs=\(preprocessingMs) beforeSynthesizeMs=\(Self.elapsedMs(since: requestStart))")
         rhLog("LATENCY_DIAG pipeline plan fragments=\(fragments.count) chars=\(synthesisText.count)")
@@ -406,11 +419,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         var firstFragmentSynthMs: Int?
         var fragmentSynthMsTotal = 0
 
-        for (index, fragment) in fragments.enumerated() {
+        for (index, pipelineFragment) in fragments.enumerated() {
             if !self.shouldContinueSynthesis(generation: generation) {
                 rhLog("LATENCY_DIAG pipeline cancelled beforeFragment=\(index + 1)")
                 break
             }
+            let fragment = pipelineFragment.ssml
 
             let fragmentStart = CFAbsoluteTimeGetCurrent()
             var pcmBuffer = rhvoiceEngine.synthesize(
@@ -450,12 +464,21 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
             let frameCount = Int(buffer.frameLength)
             let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
-            totalSamples += samples.count
+            let silence = RHVoiceSilenceAnalyzer.measure(samples: samples, sampleRate: buffer.format.sampleRate)
+            let trimLeading = pipelineFragment.continuesSentence
+            let trimTrailing = index + 1 < fragments.count && fragments[index + 1].continuesSentence
+            let outputSamples = RHVoiceSilenceAnalyzer.trimMidSentenceSilence(
+                samples: samples,
+                sampleRate: buffer.format.sampleRate,
+                trimLeading: trimLeading,
+                trimTrailing: trimTrailing
+            )
+            totalSamples += outputSamples.count
 
             self.outputMutex.wait()
             let appendAllowed = self.isSynthesizing && self.synthesisGeneration == generation
             if appendAllowed {
-                self.output.append(contentsOf: samples)
+                self.output.append(contentsOf: outputSamples)
             }
             self.outputMutex.signal()
 
@@ -464,8 +487,8 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
                 break
             }
 
-            rhLog("synth fragment output index=\(index + 1) samples=\(samples.count)")
-            rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) synthMs=\(fragmentSynthMs) samples=\(samples.count)")
+            rhLog("synth fragment output index=\(index + 1) samples=\(outputSamples.count)")
+            rhLog("LATENCY_DIAG fragment #\(index + 1) chars=\(fragment.count) leadingSilenceMs=\(silence.leadingSilenceMs) trailingSilenceMs=\(silence.trailingSilenceMs) trimLeading=\(trimLeading ? 1 : 0) trimTrailing=\(trimTrailing ? 1 : 0) synthMs=\(fragmentSynthMs) samples=\(outputSamples.count) rawSamples=\(samples.count)")
         }
 
         self.outputMutex.wait()
@@ -509,10 +532,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             var callHostBlock: CallHostBlock? { get { nil } set {} }
             func callAudioUnit(_ message: [AnyHashable : Any]) -> [AnyHashable : Any] {
                 if message["initHost"] as? Bool == true {
+                    let voices = UkrainianSpeechSynthesizer.publishedProviderVoices()
                     return [
-                        "voiceIds": UkrainianSpeechSynthesizer.staticVoices.map(\.identifier),
-                        "voiceNames": UkrainianSpeechSynthesizer.staticVoices.map(\.name),
-                        "primaryLanguages": UkrainianSpeechSynthesizer.staticVoices.map { $0.primaryLanguages.first ?? "uk-UA" }
+                        "voiceIds": voices.map(\.identifier),
+                        "voiceNames": voices.map(\.name),
+                        "primaryLanguages": voices.map { $0.primaryLanguages.first ?? "uk-UA" }
                     ]
                 }
                 return [:]
@@ -612,65 +636,146 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
-        var output = ""
-        var textSegment = ""
-        var tagSegment = ""
-        var insideTag = false
+        RHVoiceApostropheNormalizer.normalizeInTextSegments(
+            ssml,
+            datesAsWords: rhDatesAsWordsEnabled(),
+            timeAsWords: rhTimeAsWordsEnabled(),
+            abbreviationsAsWords: rhAbbreviationsAsWordsEnabled(),
+            abbreviationDictionaryEnabled: rhAbbreviationDictionaryEnabled(),
+            phoneProcessing: rhPhoneNumberProcessingEnabled(),
+            phoneReadingMode: rhPhoneNumberReadingMode()
+        )
+    }
 
-        for character in ssml {
-            if insideTag {
-                tagSegment.append(character)
-                if character == ">" {
-                    output += normalizeApostrophes(textSegment)
-                    textSegment.removeAll(keepingCapacity: true)
-                    output += tagSegment
-                    tagSegment.removeAll(keepingCapacity: true)
-                    insideTag = false
-                }
-            } else if character == "<" {
-                insideTag = true
-                tagSegment.append(character)
-            } else {
-                textSegment.append(character)
-            }
-        }
-
-        if insideTag {
-            output += normalizeApostrophes(textSegment) + tagSegment
-        } else {
-            output += normalizeApostrophes(textSegment)
-        }
-        return output
+    private static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {
+        RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest(ssml)
     }
 
     private static func normalizeApostrophes(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "&apos;", with: "`")
-            .replacingOccurrences(of: "&#39;", with: "`")
-            .replacingOccurrences(of: "&#x27;", with: "`")
-            .replacingOccurrences(of: "&#X27;", with: "`")
-            .replacingOccurrences(of: "\u{0027}", with: "`")
-            .replacingOccurrences(of: "\u{2019}", with: "`")
-            .replacingOccurrences(of: "\u{02BC}", with: "`")
-            .replacingOccurrences(of: "\u{2018}", with: "`")
-            .replacingOccurrences(of: "\u{2032}", with: "`")
-            .replacingOccurrences(of: "\u{00B4}", with: "`")
-            .replacingOccurrences(of: "\u{FF07}", with: "`")
-            .replacingOccurrences(of: "\u{0060}", with: "`")
+        RHVoiceApostropheNormalizer.normalizeText(text)
     }
 
     private static func logApostropheEncoding(label: String, ssml: String) {
+        #if DEBUG
         let textSegments = extractTextSegments(from: ssml)
         let matches = textSegments.flatMap { apostropheDiagnostics(in: $0) }
 
         guard !matches.isEmpty else {
-            rhLog("APOSTROPHE_DIAG \(label): no apostrophe-like scalars in text segments")
+            apostropheDiagLog("APOSTROPHE_DIAG \(label): no apostrophe-like scalars in text segments")
             return
         }
 
         for (index, match) in matches.enumerated() {
-            rhLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
+            apostropheDiagLog("APOSTROPHE_DIAG \(label)#\(index + 1): \(match)")
         }
+        #endif
+    }
+
+    private static func shouldLogNumberDiagnostics(for ssml: String) -> Bool {
+        ssml.unicodeScalars.contains { CharacterSet.decimalDigits.contains($0) }
+    }
+
+    private static func logNumberDiagnostics(label: String, ssml: String, force: Bool) {
+        if !didLogNumberDiagActiveBuild {
+            didLogNumberDiagActiveBuild = true
+            let info = Bundle.main.infoDictionary ?? [:]
+            let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
+            let version = info["CFBundleShortVersionString"] as? String ?? "unknown"
+            let build = info["CFBundleVersion"] as? String ?? "unknown"
+            numberDiag("active-build bundle=\(bundleId) version=\(version) build=\(build)")
+        }
+
+        let textSegments = extractTextSegments(from: ssml)
+        let windows = textSegments.flatMap { numberDiagnosticWindows(in: $0) }
+        guard force || !windows.isEmpty else { return }
+
+        let preview = diagnosticPreview(ssml)
+        let previewScalars = diagnosticScalars(for: preview)
+        numberDiag("\(label): chars=\(ssml.count) textPreview=\"\(preview)\" scalars=[\(previewScalars)]")
+
+        if windows.isEmpty {
+            numberDiag("\(label): no digit windows in text segments")
+            return
+        }
+
+        for (index, window) in windows.prefix(8).enumerated() {
+            numberDiag("\(label)#\(index + 1): token=\"\(window.token)\" window=\"\(window.window)\" scalars=[\(window.scalars)]")
+        }
+    }
+
+    private static func numberDiag(_ message: String) {
+        os_log(.info, log: numberDiagLog, "NUMBER_DIAG %{public}@", message as NSString)
+        fputs("NUMBER_DIAG \(message)\n", stderr)
+        if rhExtendedDiagnosticsEnabled() {
+            "NUMBER_DIAG \(message)".withCString { RHVoiceDebugLogString($0) }
+        }
+    }
+
+    private struct NumberDiagnosticWindow {
+        let token: String
+        let window: String
+        let scalars: String
+    }
+
+    private static func numberDiagnosticWindows(in text: String) -> [NumberDiagnosticWindow] {
+        let scalars = Array(text.unicodeScalars)
+        var results: [NumberDiagnosticWindow] = []
+        var index = scalars.startIndex
+
+        while index < scalars.endIndex {
+            guard CharacterSet.decimalDigits.contains(scalars[index]) else {
+                index += 1
+                continue
+            }
+
+            let tokenStart = index
+            var tokenEnd = index + 1
+            while tokenEnd < scalars.endIndex, isNumberDiagnosticTokenScalar(scalars[tokenEnd]) {
+                tokenEnd += 1
+            }
+
+            let windowStart = max(scalars.startIndex, tokenStart - 16)
+            let windowEnd = min(scalars.endIndex, tokenEnd + 16)
+            let token = diagnosticPreview(String(String.UnicodeScalarView(scalars[tokenStart..<tokenEnd])), limit: 64)
+            let window = diagnosticPreview(String(String.UnicodeScalarView(scalars[windowStart..<windowEnd])), limit: 160)
+            let scalarCodes = scalars[windowStart..<windowEnd]
+                .map { String(format: "U+%04X", $0.value) }
+                .joined(separator: " ")
+            results.append(NumberDiagnosticWindow(token: token, window: window, scalars: scalarCodes))
+            index = tokenEnd
+        }
+
+        return results
+    }
+
+    private static func isNumberDiagnosticTokenScalar(_ scalar: UnicodeScalar) -> Bool {
+        CharacterSet.decimalDigits.contains(scalar)
+            || scalar == ","
+            || scalar == "."
+            || scalar == "/"
+            || CharacterSet.whitespaces.contains(scalar)
+    }
+
+    private static func diagnosticPreview(_ text: String, limit: Int = 320) -> String {
+        var preview = String(text.prefix(limit))
+        if text.count > limit {
+            preview += "..."
+        }
+        return preview
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\t", with: "\\t")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    private static func diagnosticScalars(for text: String, limit: Int = 120) -> String {
+        let scalars = Array(text.unicodeScalars.prefix(limit))
+        var codes = scalars.map { String(format: "U+%04X", $0.value) }
+        if text.unicodeScalars.count > limit {
+            codes.append("...")
+        }
+        return codes.joined(separator: " ")
     }
 
     private static func extractTextSegments(from ssml: String) -> [String] {
