@@ -141,9 +141,19 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
-    resources:
-      - path: ../LICENSES
-        type: folder
+      - name: Copy licence texts
+        script: |
+          LIC_SRC="${SRCROOT}/../LICENSES"
+          LIC_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/LICENSES"
+          if [ -d "$LIC_SRC" ]; then
+            rm -rf "$LIC_DST"
+            cp -r "$LIC_SRC" "$LIC_DST"
+            echo "✅ LICENSES copied: $(ls "$LIC_DST" | wc -l) files"
+          else
+            echo "❌ LICENSES not found: $LIC_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR
@@ -237,9 +247,20 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
-    resources:
-      - path: ../LICENSES
-        type: folder
+      - name: Copy licence texts
+        script: |
+          LIC_SRC="${SRCROOT}/../LICENSES"
+          LIC_DST="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources/LICENSES"
+          if [ -d "$LIC_SRC" ]; then
+            mkdir -p "${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/Contents/Resources"
+            rm -rf "$LIC_DST"
+            cp -r "$LIC_SRC" "$LIC_DST"
+            echo "✅ LICENSES copied: $(ls "$LIC_DST" | wc -l) files"
+          else
+            echo "❌ LICENSES not found: $LIC_SRC"
+            exit 1
+          fi
+        basedOnDependencyAnalysis: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
