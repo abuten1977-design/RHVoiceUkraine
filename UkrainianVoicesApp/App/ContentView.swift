@@ -143,12 +143,20 @@ private var buildIdentityText: String {
 /// Повні тексти ліцензій, що постачаються ВСЕРЕДИНІ застосунку (вимога GPL-3 §4:
 /// копія ліцензії має супроводжувати програму, а не лежати лише в репозиторії).
 private struct LicenseTextsView: View {
+    /// Тексти можуть лежати або текою `LICENSES/`, або файлами в корені бандла —
+    /// залежно від того, як їх скопіювала збірка. Шукаємо обидва варіанти,
+    /// щоб екран ніколи не був порожнім (баг збірки 212).
     private var files: [URL] {
-        guard let dir = Bundle.main.url(forResource: "LICENSES", withExtension: nil),
-              let items = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
-        else { return [] }
-        return items.filter { $0.pathExtension.lowercased() == "txt" }
-            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        let fm = FileManager.default
+        if let dir = Bundle.main.url(forResource: "LICENSES", withExtension: nil),
+           let items = try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) {
+            let texts = items.filter { $0.pathExtension.lowercased() == "txt" }
+            if !texts.isEmpty { return texts.sorted { $0.lastPathComponent < $1.lastPathComponent } }
+        }
+        let names = ["GPL-3.0", "LGPL-2.1", "Apache-2.0-sonic", "BSL-1.0",
+                     "MIT-ZIPFoundation", "BSD-3-Clause-hts_engine",
+                     "CC-BY-ND-4.0", "CMU-Festvox", "CMU-cmudict"]
+        return names.compactMap { Bundle.main.url(forResource: $0, withExtension: "txt") }
     }
 
     var body: some View {
