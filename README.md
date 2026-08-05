@@ -60,4 +60,10 @@ Signed iOS builds and TestFlight delivery run through GitHub Actions (`build.yml
 
 ## License
 
-RHVoice and the bundled Ukrainian voice data follow their upstream licenses (see `RHVoice/` and per‑voice `Voices/*/README`).
+**RHVoice UA is distributed under the GNU General Public License version 3 or any
+later version** — see [LICENSE](LICENSE), plus the Apple App Store additional
+permission in [APP_STORE_EXCEPTION.md](APP_STORE_EXCEPTION.md).
+
+Components, authors and licences: [NOTICE.md](NOTICE.md). Full licence texts:
+[LICENSES/](LICENSES/). Per-voice details:
+`UkrainianVoicesApp/Extension/Resources/RHVoiceData/voices/*/README.md`.

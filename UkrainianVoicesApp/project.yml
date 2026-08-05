@@ -141,6 +141,8 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
+    resources:
+      - path: ../LICENSES
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR
@@ -234,6 +236,8 @@ targets:
             exit 1
           fi
         basedOnDependencyAnalysis: false
+    resources:
+      - path: ../LICENSES
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac

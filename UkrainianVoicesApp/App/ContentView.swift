@@ -34,43 +34,157 @@ private struct LicenseItem: Identifiable {
     var id: String { title }
 }
 
+private let sourceCodeURL = URL(string: "https://github.com/abuten1977-design/RHVoiceUkraine")!
+
 private let licenseItems: [LicenseItem] = [
     .init(
-        title: "RHVoice engine",
-        license: "LGPL v2.1",
-        attribution: "RHVoice project",
-        note: "Core speech engine. MAGE/GPLv3 components are not built into this app.",
+        title: "RHVoice UA (цей застосунок)",
+        license: "GPL-3.0 або пізніша, з дозволом для App Store",
+        attribution: "ГО «Право вибору»",
+        note: "Вихідний код відкритий. Ви маєте право отримати повний код саме цієї збірки, змінювати його і поширювати далі на умовах GPL-3.",
+        url: sourceCodeURL
+    ),
+    .init(
+        title: "Рушій RHVoice",
+        license: "GPL-3.0 або пізніша (частина файлів — LGPL-2.1)",
+        attribution: "Ольга Яковлева",
+        note: "Основний рушій синтезу. Розповсюдження через App Store дозволене окремим дозволом авторки від 3 серпня 2026 року.",
         url: URL(string: "https://github.com/RHVoice/RHVoice")
+    ),
+    .init(
+        title: "hts_engine API",
+        license: "3-clause BSD",
+        attribution: "HTS Working Group, Nagoya Institute of Technology, Tokyo Institute of Technology",
+        note: "Copyright (c) 2001-2015 Nagoya Institute of Technology; 2001-2008 Tokyo Institute of Technology. All rights reserved. Файли у складі RHVoice змінені авторкою рушія.",
+        url: URL(string: "http://hts-engine.sourceforge.net/")
+    ),
+    .init(
+        title: "sonic",
+        license: "Apache-2.0",
+        attribution: "Bill Cox",
+        note: "Зміна темпу мовлення без спотворення голосу.",
+        url: URL(string: "https://www.apache.org/licenses/LICENSE-2.0")
+    ),
+    .init(
+        title: "Boost, rapidxml, utf8cpp",
+        license: "Boost Software License 1.0",
+        attribution: "Boost contributors, Marcin Kalicinski, Nemanja Trifunovic",
+        note: "Допоміжні бібліотеки у складі рушія.",
+        url: URL(string: "https://www.boost.org/LICENSE_1_0.txt")
+    ),
+    .init(
+        title: "ZIPFoundation",
+        license: "MIT",
+        attribution: "Thomas Zoechling",
+        note: "Розпакування завантажених голосів.",
+        url: URL(string: "https://github.com/weichsel/ZIPFoundation")
     ),
     .init(
         title: "Anatol",
-        license: "LGPL v2.1",
-        attribution: "Анатолій Подорожко",
-        note: "Ukrainian voice data distributed unmodified.",
-        url: URL(string: "https://github.com/RHVoice/RHVoice")
+        license: "LGPL-2.1",
+        attribution: "Диктор Анатолій Подорожко; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Sergey Parshakov, Zvonimir Stanecic",
+        note: "Український голос. Дані розповсюджуються без змін.",
+        url: URL(string: "https://facebook.com/syntezator")
     ),
     .init(
         title: "Natalia",
-        license: "LGPL v2.1",
-        attribution: "Наталія Чехаль",
-        note: "Ukrainian voice data distributed unmodified.",
-        url: URL(string: "https://github.com/RHVoice/RHVoice")
+        license: "LGPL-2.1",
+        attribution: "Дикторка Наталія Чехаль; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Tomasz Bilecki, Zvonimir Stanecic",
+        note: "Український голос. Дані розповсюджуються без змін.",
+        url: URL(string: "https://facebook.com/syntezator")
     ),
     .init(
         title: "Marianna",
         license: "CC BY-ND 4.0",
-        attribution: "Marianna Firtka",
-        note: "Ukrainian voice data distributed unmodified.",
+        attribution: "Дикторка Marianna Firtka; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Maryna Herelyuk, Sergey Parshakov, Beka Gozalishvili",
+        note: "Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).",
         url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
     ),
     .init(
         title: "Volodymyr",
         license: "CC BY-ND 4.0",
-        attribution: "Володимир Беглов",
-        note: "Ukrainian voice data distributed unmodified.",
+        attribution: "Диктор Володимир Беглов; команда «Синтезатор української мови»",
+        note: "Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).",
         url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
+    ),
+    .init(
+        title: "Англійські голоси: Бен, Клара, Сара, Радж",
+        license: "CMU / Festvox",
+        attribution: "Carnegie Mellon University, корпус CMU ARCTIC",
+        note: "Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних.",
+        url: URL(string: "http://www.festvox.org/cmu_arctic/")
+    ),
+    .init(
+        title: "Англійські мовні дані (cmulex)",
+        license: "CMU Pronouncing Dictionary",
+        attribution: "Carnegie Mellon University",
+        note: "Потрібні для читання латиниці українським голосом.",
+        url: URL(string: "https://github.com/cmusphinx/cmudict")
     )
 ]
+
+private let legalNoticeText = """
+RHVoice UA. Copyright © 2026 ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору».
+
+Ця програма розповсюджується за GNU General Public License версії 3 або, на ваш вибір, будь-якої пізнішої версії, разом із додатковим дозволом на розповсюдження через Apple App Store.
+
+Програма постачається БЕЗ ЖОДНИХ ГАРАНТІЙ, у тому числі без гарантій придатності для продажу чи для конкретної мети.
+
+Ви маєте право поширювати копії цієї програми та змінювати її на умовах GPL-3. Ви також маєте право отримати повний вихідний код саме цієї збірки.
+"""
+
+private var buildIdentityText: String {
+    let info = Bundle.main.infoDictionary ?? [:]
+    let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
+    let build = info["CFBundleVersion"] as? String ?? "?"
+    return "Версія \(version), збірка \(build). Вихідний код цієї збірки позначено тегом build-\(build) у репозиторії проєкту."
+}
+
+/// Повні тексти ліцензій, що постачаються ВСЕРЕДИНІ застосунку (вимога GPL-3 §4:
+/// копія ліцензії має супроводжувати програму, а не лежати лише в репозиторії).
+private struct LicenseTextsView: View {
+    private var files: [URL] {
+        guard let dir = Bundle.main.url(forResource: "LICENSES", withExtension: nil),
+              let items = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)
+        else { return [] }
+        return items.filter { $0.pathExtension.lowercased() == "txt" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    var body: some View {
+        List {
+            if files.isEmpty {
+                Text("Тексти ліцензій не знайдено у цій збірці. Вони доступні у репозиторії проєкту, тека LICENSES.")
+                    .foregroundColor(.secondary)
+            } else {
+                ForEach(files, id: \.self) { file in
+                    NavigationLink {
+                        LicenseTextDetailView(file: file)
+                    } label: {
+                        Text(file.deletingPathExtension().lastPathComponent)
+                    }
+                    .accessibilityLabel("Ліцензія \(file.deletingPathExtension().lastPathComponent)")
+                }
+            }
+        }
+        .navigationTitle("Повні тексти")
+    }
+}
+
+private struct LicenseTextDetailView: View {
+    let file: URL
+
+    var body: some View {
+        ScrollView {
+            Text((try? String(contentsOf: file, encoding: .utf8)) ?? "Не вдалося прочитати текст ліцензії.")
+                .font(.footnote)
+                .textSelection(.enabled)
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle(file.deletingPathExtension().lastPathComponent)
+    }
+}
 
 private struct SpeechComponentDiagnosticReport: Equatable {
     let summary: String
@@ -2016,11 +2130,28 @@ private struct LicensesView: View {
                     .textSelection(.enabled)
             }
 
-            Section("Повні тексти") {
-                Text("Повні тексти ліцензій зберігаються у вихідному дереві RHVoice: RHVoiceCore/RHVoice/LICENSE.md та RHVoiceCore/RHVoice/licenses/.")
+            Section("Повні тексти ліцензій") {
+                NavigationLink {
+                    LicenseTextsView()
+                } label: {
+                    Label("Відкрити повні тексти", systemImage: "doc.text")
+                }
+                .accessibilityLabel("Відкрити повні тексти ліцензій")
+                .accessibilityHint("Тексти всіх ліцензій, що постачаються разом із застосунком.")
+            }
+
+            Section("Правова інформація") {
+                Text(legalNoticeText)
                     .textSelection(.enabled)
+                    .accessibilityLabel(legalNoticeText)
+                Link("Вихідний код застосунку", destination: sourceCodeURL)
+                    .accessibilityLabel("Вихідний код застосунку на GitHub")
+                    .accessibilityHint("Відкриває репозиторій із повним вихідним кодом.")
+                Text(buildIdentityText)
+                    .font(.footnote)
                     .foregroundColor(.secondary)
-                    .accessibilityLabel("Повні тексти ліцензій зберігаються у вихідному дереві RHVoice.")
+                    .textSelection(.enabled)
+                    .accessibilityLabel(buildIdentityText)
             }
         }
         .navigationTitle("Ліцензії")

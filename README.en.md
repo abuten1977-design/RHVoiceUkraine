@@ -7,7 +7,7 @@
 RHVoice Ukrainian is a system extension that adds four high-quality Ukrainian voices
 (**Anatol**, **Marianna**, **Natalia**, **Volodymyr**) directly to Apple's VoiceOver screen
 reader. The voices appear in the VoiceOver rotor alongside the built-in system voices and run
-**fully offline** — no internet connection, no text ever leaving the device.
+**entirely on the device** — the text you read is never sent anywhere.
 
 The project is built for blind and low-vision Ukrainian-speaking users, for whom a high-quality
 Ukrainian voice is a matter of working independently with their device every day.
@@ -21,7 +21,7 @@ Ukrainian voice is a matter of working independently with their device every day
 - **4 voices** of different genders: Anatol, Volodymyr (male), Marianna, Natalia (female).
 - **VoiceOver integration** through Apple's official `AVSpeechSynthesisProviderAudioUnit`
   (iOS 16+, macOS 13+). The voices are treated as first-class system voices.
-- **Fully offline.** The engine and language data are bundled in the app; the network is never used.
+- **Synthesis runs entirely on the device.** The engine and the Ukrainian language data are bundled in the app; the text being spoken is never sent anywhere. The network is used only when you choose to download an additional voice for another language.
 - **Parameter control** (speed, volume, pitch) via standard VoiceOver controls, plus in-app
   per-voice tuning (speed accelerator, sentence pause, word gap).
 - **Personal pronunciation dictionary** — users can correct the stress of individual words.
@@ -110,8 +110,22 @@ Foundation or the European Union.
 
 ## Licensing
 
-RHVoice Ukrainian uses the open-source RHVoice engine and bundled language data. The list of
-components and their licenses is in [NOTICE.md](NOTICE.md).
+**RHVoice UA is distributed under the GNU General Public License version 3 or (at
+your option) any later version** — full text in [LICENSE](LICENSE).
+
+Together with GPL-3 we apply the additional permission for distribution through
+Apple's App Store, published by the RHVoice author Olga Yakovleva on 3 August 2026 —
+see [APP_STORE_EXCEPTION.md](APP_STORE_EXCEPTION.md).
+
+The full list of components, their authors and licences is in [NOTICE.md](NOTICE.md);
+full licence texts are in [LICENSES/](LICENSES/).
+
+**Source code:** <https://github.com/abuten1977-design/RHVoiceUkraine>. Every build
+distributed through TestFlight or the App Store is tagged in this repository; the
+build number is shown on the "Ліцензії" screen inside the app.
+
+Donor logos and the app icon are not covered by the GPL — see the "Trademarks and
+logos" section of [NOTICE.md](NOTICE.md).
 
 ---
 

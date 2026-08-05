@@ -28,5 +28,7 @@
     <false/>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.utilities</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 ГО «Право вибору». Ліцензія GNU GPL версії 3 або пізнішої.</string>
 </dict>
 </plist>

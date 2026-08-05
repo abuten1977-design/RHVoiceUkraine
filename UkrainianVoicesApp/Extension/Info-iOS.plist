@@ -53,5 +53,7 @@
         <key>NSExtensionPrincipalClass</key>
         <string>$(PRODUCT_MODULE_NAME).AudioUnitFactory</string>
     </dict>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 ГО «Право вибору». Ліцензія GNU GPL версії 3 або пізнішої.</string>
 </dict>
 </plist>
