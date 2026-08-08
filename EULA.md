@@ -63,9 +63,7 @@
 
 Застосунок **безкоштовний**. У ньому немає покупок усередині, підписок і реклами. Персональні дані не збираються — див. політику приватності.
 
-Застосунок RHVoice UA розробляється громадською організацією «Право вибору» за підтримки Акселераційної програми **Act to Drive Change** проєкту **«Фенікс: Сила спільнот»**, що виконується **Фондом Східна Європа** коштом **Європейського Союзу**.
-
-Думки, висловлені у цьому застосунку та супровідних матеріалах, не обов'язково відображають позицію Фонду Східна Європа та Європейського Союзу.
+Застосунок RHVoice UA розробляється громадською організацією «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу. Наповнення застосунку є відповідальністю ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» та необов’язково відображає позицію Фонду Східна Європа та ЄС.
 
 ---
 
@@ -121,9 +119,7 @@ Support is provided by the developer, NGO "Pravo Vyboru", at rhvoice@pravovyboru
 
 The application is **free of charge**. It contains no in-app purchases, no subscriptions and no advertising. No personal data is collected — see the privacy policy.
 
-RHVoice UA is developed by the NGO "Pravo Vyboru" with the support of the **Act to Drive Change** acceleration programme of the **"Phoenix: Power of Communities"** project, implemented by the **East Europe Foundation** and funded by the **European Union**.
-
-The views expressed in this application and accompanying materials do not necessarily reflect the position of the East Europe Foundation or the European Union.
+RHVoice UA is developed by the NGO "Kharkiv Centre for the Rehabilitation of Young Persons with Disabilities and Their Family Members «Pravo Vyboru»" with the support of the Act to Drive Change acceleration programme of the "Phoenix: Power of Communities" project, implemented by the East Europe Foundation and funded by the European Union. The content of the application is the responsibility of the NGO "Kharkiv Centre for the Rehabilitation of Young Persons with Disabilities and Their Family Members «Pravo Vyboru»" and does not necessarily reflect the position of the East Europe Foundation or the EU.
 
 ---
 

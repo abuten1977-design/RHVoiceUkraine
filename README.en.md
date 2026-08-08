@@ -97,14 +97,7 @@ TestFlight is produced by a local script on the Mac.
 
 <!-- LOGO-BAR (repeat here if needed) -->
 
-The **RHVoice Ukrainian** application is developed by the **NGO "Kharkiv Center for the
-Rehabilitation of Young People with Disabilities and Their Families 'Right of Choice'"** with the
-support of the **Act to Drive Change** acceleration programme of the **"Phoenix: Power of
-Communities"** project, implemented by the **East Europe Foundation** with funding from the
-**European Union**.
-
-The views expressed in this material do not necessarily reflect the position of the East Europe
-Foundation or the European Union.
+RHVoice UA is developed by the NGO "Kharkiv Centre for the Rehabilitation of Young Persons with Disabilities and Their Family Members «Pravo Vyboru»" with the support of the Act to Drive Change acceleration programme of the "Phoenix: Power of Communities" project, implemented by the East Europe Foundation and funded by the European Union. The content of the application is the responsibility of the NGO "Kharkiv Centre for the Rehabilitation of Young Persons with Disabilities and Their Family Members «Pravo Vyboru»" and does not necessarily reflect the position of the East Europe Foundation or the EU.
 
 ---
 
