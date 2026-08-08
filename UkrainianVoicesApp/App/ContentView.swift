@@ -1495,6 +1495,14 @@ struct ContentView: View {
                 .foregroundColor(.secondary)
                 .accessibilityLabel("Підказка щодо діагностики")
 
+            NavigationLink {
+                CapturedRequestsView()
+            } label: {
+                Label("Що почув синтезатор", systemImage: "text.magnifyingglass")
+            }
+            .accessibilityLabel("Що почув синтезатор")
+            .accessibilityHint("Показує текст, який система віддала голосу. Потрібно для розбору скарг на читання чисел, часу і номерів.")
+
             Button {
                 model.clearDebugLog()
             } label: {

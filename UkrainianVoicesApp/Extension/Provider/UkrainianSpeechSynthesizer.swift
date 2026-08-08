@@ -328,6 +328,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         rhLog("synth request: voice=\(voiceId) text=\(text.count) chars")
 
+        // Діагностика: зберегти сам вхідний текст, щоб побачити, яким його віддає
+        // система (нотатка в режимі редагування vs збережена читаються по-різному).
+        // Працює лише з увімкненою «Розширеною діагностикою».
+        RHVoiceRequestCapture.record(text: text, voiceId: voiceId)
+
         let ssmlSnippet = String(text.prefix(200))
         rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")
         self.outputMutex.wait()
