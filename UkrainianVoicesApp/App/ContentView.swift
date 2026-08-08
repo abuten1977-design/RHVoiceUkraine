@@ -21,7 +21,7 @@ private let enabledVoiceIdentifiersKey = RHVoiceSharedSettings.enabledVoiceIdent
 private let selectedVoiceIdentifierKey = RHVoiceSharedSettings.selectedVoiceIdentifierKey
 private let defaultEnabledVoiceIdentifiers = RHVoiceSharedSettings.defaultEnabledVoiceIdentifiers
 private let preferredLanguageOrder = ["Українська", "Англійська"]
-private let donorDisclaimerText = "Застосунок RHVoice UA розробляється громадською організацією «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу. Наповнення застосунку є відповідальністю ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» та необов’язково відображає позицію Фонду Східна Європа та ЄС.
+private let donorDisclaimerText = "Застосунок RHVoice UA розробляється громадською організацією «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу. Наповнення застосунку є відповідальністю ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» та необов’язково відображає позицію Фонду Східна Європа та ЄС."
 private let donorLogosAccessibilityLabel = "Логотипи донорів: Європейський Союз — Прямуємо разом, Фонд Східна Європа, Фенікс — Сила спільнот, Act to Drive Change."
 
 private struct LicenseItem: Identifiable {
