@@ -15,6 +15,7 @@ struct CapturedRequestsView: View {
     @State private var entries: [RHVoiceRequestCapture.Entry] = []
     @State private var isCaptureEnabled: Bool = RHVoiceRequestCapture.isEnabled
     @State private var statusMessage: String = ""
+    @State private var trace: (date: Date?, characters: Int, count: Int) = (nil, 0, 0)
 
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -34,6 +35,21 @@ struct CapturedRequestsView: View {
                     .font(.footnote)
                     .foregroundColor(isCaptureEnabled ? .secondary : .red)
                     .accessibilityLabel(isCaptureEnabled ? "Запис увімкнено" : "Запис вимкнено, нові тексти не зберігаються")
+            }
+
+            Section("Чи доходять запити до голосу") {
+                Text(traceDescription)
+                    .font(.footnote)
+                    .accessibilityLabel(traceDescription)
+
+                Button {
+                    RHVoiceRequestCapture.writeTestEntry()
+                    reload()
+                    announce("Пробний запис створено")
+                } label: {
+                    Label("Створити пробний запис", systemImage: "checkmark.circle")
+                }
+                .accessibilityHint("Записує рядок від імені застосунку. Якщо він з'явиться у списку, а записів від голосу немає — проблема саме в голосовому розширенні.")
             }
 
             Section("Дії") {
@@ -97,9 +113,17 @@ struct CapturedRequestsView: View {
         .onAppear { reload() }
     }
 
+    private var traceDescription: String {
+        guard trace.count > 0, let date = trace.date else {
+            return "Голос ще жодного разу не звертався до синтезатора після встановлення цієї збірки. Прочитайте будь-який текст голосом RHVoice і натисніть «Оновити»."
+        }
+        return "Останнє звернення голосу: \(dateFormatter.string(from: date)), \(trace.characters) символів. Усього звернень: \(trace.count)."
+    }
+
     private func reload() {
         entries = RHVoiceRequestCapture.entries()
         isCaptureEnabled = RHVoiceRequestCapture.isEnabled
+        trace = RHVoiceRequestCapture.trace()
         statusMessage = ""
     }
 
