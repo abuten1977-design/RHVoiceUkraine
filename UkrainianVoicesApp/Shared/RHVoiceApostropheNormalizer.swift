@@ -113,13 +113,23 @@ enum RHVoiceApostropheNormalizer {
         // з «17:01» будуть з'їдені як окремі числа ще до того, як ми
         // побачимо двокрапку між ними.
         let withTime = timeAsWords ? normalizeTime(in: withDates) : withDates
-        let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withTime) : withTime
+        // «Нотатки» автозаміною перетворюють «1/2» на символ «½» — рушій його
+        // мовчки пропускає (аудит Даші, збірка 206, п.27).
+        let withVulgarFractions = normalizeVulgarFractions(in: withTime)
+        let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withVulgarFractions) : withVulgarFractions
+        let withPercent = normalizePercentSigns(in: withAbbreviations)
         // First replace genuine phones. The phone pass uses the shared
         // classifier, so `+9 000.00` remains available for the money pass.
-        let withPhones = phoneProcessing ? normalizePhones(in: withAbbreviations, readingMode: phoneReadingMode) : withAbbreviations
+        let withPhones = phoneProcessing ? normalizePhones(in: withPercent, readingMode: phoneReadingMode) : withPercent
+        // Арифметичні знаки — ПІСЛЯ телефонів (там «+» — частина номера) і ДО
+        // сум, щоб «-17 000» дійшло до грошового правила вже словом «мінус».
+        let withSigns = normalizeArithmeticSigns(in: withPhones)
+        // «30 118 крапка 90»: iOS проговорює крапку словом у сумах так само,
+        // як у датах — ДО грошового правила, поки цифри ще не стали словами.
+        let withVerbalizedDecimals = normalizeVerbalizedDotDecimals(in: withSigns)
         // Bank apps frequently provide balances as ordinary text rather than
         // a telephone say-as block.
-        let withGroupedAmounts = normalizeGroupedAmounts(in: withPhones)
+        let withGroupedAmounts = normalizeGroupedAmounts(in: withVerbalizedDecimals)
         let withNumbers = normalizeNumbers(in: withGroupedAmounts)
         let withDictionary = abbreviationDictionaryEnabled
             ? normalizeAbbreviationDictionary(in: withNumbers, entries: abbreviationDictionaryEntries)
@@ -371,6 +381,92 @@ enum RHVoiceApostropheNormalizer {
             return "\(weekdayName), \(result)"
         }
         return result
+    }
+
+    /// Юнікодні дробові символи («½»), які «Нотатки» підставляють автозаміною.
+    /// Після цифри — змішане число: «1½» → «1 і одна друга».
+    private static let vulgarFractionWords: [(String, String)] = [
+        ("½", "одна друга"), ("⅓", "одна третя"), ("¼", "одна четверта"),
+        ("⅕", "одна п'ята"), ("⅙", "одна шоста"), ("⅐", "одна сьома"),
+        ("⅛", "одна восьма"), ("⅑", "одна дев'ята"), ("⅒", "одна десята"),
+        ("⅔", "дві третіх"), ("⅖", "дві п'ятих"), ("¾", "три четвертих"),
+        ("⅗", "три п'ятих"), ("⅜", "три восьмих"), ("⅘", "чотири п'ятих"),
+        ("⅚", "п'ять шостих"), ("⅝", "п'ять восьмих"), ("⅞", "сім восьмих")
+    ]
+
+    private static func normalizeVulgarFractions(in text: String) -> String {
+        guard text.contains(where: { "½⅓¼⅕⅙⅐⅛⅑⅒⅔⅖¾⅗⅜⅘⅚⅝⅞".contains($0) }) else { return text }
+        var result = text
+        for (symbol, words) in vulgarFractionWords {
+            result = replacingMatches(in: result, pattern: #"([0-9])\s*"# + symbol) { match in
+                guard let digitRange = Range(match.range(at: 1), in: result) else { return nil }
+                return "\(result[digitRange]) і \(words)"
+            }
+            result = result.replacingOccurrences(of: symbol, with: words)
+        }
+        return result
+    }
+
+    /// «15%» → «15 відсотків»: рушій цифри читає сам, нам досить правильної
+    /// форми іменника. Дробовий відсоток («2,5%») — родовий відмінок.
+    private static func normalizePercentSigns(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"([0-9]+(?:[.,][0-9]+)?)\s*%"#
+        ) { match in
+            guard let numberRange = Range(match.range(at: 1), in: text) else { return nil }
+            let number = String(text[numberRange])
+            if number.contains(",") || number.contains(".") {
+                return "\(number) відсотка"
+            }
+            guard let value = Int(number) else { return nil }
+            return "\(number) \(nounForm(for: value, one: "відсоток", few: "відсотки", many: "відсотків"))"
+        }
+    }
+
+    /// Одиночні «+» і «−» поруч із числом (аудит Даші, збірка 206, п.15–16).
+    /// Телефони оброблені раніше, тож «+» тут — арифметичний. Знак мусить
+    /// ПРИЛЯГАТИ до цифри: «Ціна — 250 грн», «10 - 15» і маркер списку
+    /// «- 5 пунктів» — не мінус (урок критика: тире-зв'язка перед сумою
+    /// озвучилася б як від'ємне число). Діапазони («10-15») і слова з
+    /// дефісом захищені lookbehind-ом: перед знаком стоїть цифра/літера.
+    private static func normalizeArithmeticSigns(in text: String) -> String {
+        // Юнікодні мінуси й тире, що прилягають до цифри, зводимо до
+        // ASCII-дефіса (у класі — літеральні символи U+2212, U+2013, U+2014).
+        var result = replacingMatches(in: text, pattern: #"[−–—](?=[0-9])"#) { _ in "-" }
+        result = replacingMatches(in: result, pattern: #"(?<=[0-9])\s*\+\s*(?=[0-9])"#) { _ in " плюс " }
+        result = replacingMatches(in: result, pattern: #"(?<![\p{L}\p{N}])\+(?=[0-9])"#) { _ in "плюс " }
+        result = replacingMatches(in: result, pattern: #"(?<![\p{L}\p{N}])-(?=[0-9])"#) { _ in "мінус " }
+        return result
+    }
+
+    /// «30 118 крапка 90», «9 000 крапка 00»: iOS передає крапку словом
+    /// (доведено для дат логом пристрою 2026-07-21; суми — та сама механіка,
+    /// аудит Даші п.14–15). Лише згруповані тисячними розділювачами числа,
+    /// щоб «Версія 1 крапка 18» лишилась недоторканою; ланцюжок «крапка …
+    /// крапка» (версії, дати) відсікає lookahead.
+    /// Розділювачі розрядів, якими iOS і банки групують тисячі: звичайний
+    /// пробіл, нерозривний U+00A0 і вузький нерозривний U+202F. Swift-escape
+    /// замість літеральних символів — редактори мовчки замінюють NBSP на
+    /// пробіл (урок критика: саме так зламався перший варіант цього проходу).
+    private static let thousandsSeparatorClass = "[ \u{00A0}\u{202F}]"
+
+    private static func normalizeVerbalizedDotDecimals(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,3}(?:"# + thousandsSeparatorClass + #"[0-9]{3})+)\s+крапка\s+([0-9]{1,2})(?![\p{L}\p{N}]|\s+крапка)"#,
+            options: []
+        ) { match, source in
+            guard
+                let integerRange = Range(match.range(at: 1), in: source),
+                let fractionRange = Range(match.range(at: 2), in: source)
+            else { return nil }
+            let integerDigits = String(source[integerRange]).filter(\.isNumber)
+            let fractionDigits = String(source[fractionRange])
+            guard let integerValue = Int(integerDigits) else { return nil }
+            return decimalNumberToWords(integerPart: integerDigits, fractionPart: fractionDigits)
+                ?? integerToWords(integerValue, feminineLastGroup: true)
+        }
     }
 
     private static func normalizePhones(in text: String, readingMode: RHVoicePhoneNumberReadingMode) -> String {
@@ -839,7 +935,15 @@ enum RHVoiceApostropheNormalizer {
     /// `45 сек` (charging state, media controls). Expand only an explicit
     /// number + Ukrainian unit so unrelated short words stay untouched.
     private static func normalizeTimeUnitAbbreviations(in text: String) -> String {
-        replacingMatches(
+        // «5 с» розгортаємо в секунди ЛИШЕ поруч із «хв»/«год» у тому ж тексті
+        // (рядок тривалості «01 год 15 хв 5 с», аудит Даші п.22–23): окреме
+        // «с.» може бути «село» чи «сторінка» — його не чіпаємо.
+        let hasClockContext = text.range(
+            of: #"[0-9][[:space:]]+(хв|год)"#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil
+
+        let expanded = replacingMatches(
             in: text,
             pattern: #"(?<![\p{L}\p{N}])([0-9]{1,4})[[:space:]]+(хв|год|сек)(\.)?([^\p{L}\p{N}]|$)"#,
             options: [.caseInsensitive]
@@ -867,6 +971,22 @@ enum RHVoiceApostropheNormalizer {
 
             let punctuation = match.range(at: 3).location == NSNotFound ? "" : "."
             return "\(numberWords) \(noun)\(punctuation)\(source[suffixRange])"
+        }
+
+        guard hasClockContext else { return expanded }
+        return replacingMatches(
+            in: expanded,
+            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,4})[[:space:]]+с(\.)?(?=[^\p{L}\p{N}]|$)"#,
+            options: []
+        ) { match, source in
+            guard
+                let valueRange = Range(match.range(at: 1), in: source),
+                let value = Int(String(source[valueRange]))
+            else { return nil }
+
+            let noun = nounForm(for: value, one: "секунда", few: "секунди", many: "секунд")
+            let punctuation = match.range(at: 2).location == NSNotFound ? "" : "."
+            return "\(integerToWords(value, feminineLastGroup: true)) \(noun)\(punctuation)"
         }
     }
 
@@ -896,7 +1016,9 @@ enum RHVoiceApostropheNormalizer {
         ) { match, source in
             guard let range = Range(match.range, in: source) else { return nil }
             let token = String(source[range])
-            guard !isPureRomanNumeralToken(token) else { return nil }
+            // Римське число рушій намагався читати як слово («III» → «айіі»,
+            // аудит Даші, збірка 206, п.29) — тепер читаємо числом.
+            guard !isPureRomanNumeralToken(token) else { return romanNumeralToWords(token) }
             return #"<say-as interpret-as="characters">"# + token + "</say-as>"
         }
     }
@@ -904,6 +1026,36 @@ enum RHVoiceApostropheNormalizer {
     private static func isPureRomanNumeralToken(_ token: String) -> Bool {
         let romanChars = Set("IVXLCDM")
         return !token.isEmpty && token.allSatisfy { romanChars.contains($0) }
+    }
+
+    /// Токени, що Є канонічними римськими числами, але в живих текстах майже
+    /// завжди означають інше: розмір одягу XL, резюме CV, диск CD, копія CC
+    /// тощо (урок критика: «Розмір XL» читався б «Розмір сорок»). Їх лишаємо
+    /// сирими — як було до фіксу.
+    private static let romanLookalikeAbbreviations: Set<String> = [
+        "CD", "CV", "XL", "CC", "CM", "MM", "ML", "DL", "DC", "LI", "CI",
+        "CL", "MC", "MD", "MI", "DI", "DIV", "MIX", "MID", "LIV", "XXL", "XXX"
+    ]
+
+    /// «III» → «три». Лише канонічні римські числа; некоректний набір
+    /// римських літер («VVX») лишаємо як був.
+    private static func romanNumeralToWords(_ token: String) -> String? {
+        guard !romanLookalikeAbbreviations.contains(token) else { return nil }
+        guard token.range(
+            of: #"^(?=.)M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$"#,
+            options: .regularExpression
+        ) != nil else { return nil }
+
+        let values: [Character: Int] = ["I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000]
+        var total = 0
+        var previous = 0
+        for character in token.reversed() {
+            guard let value = values[character] else { return nil }
+            total += value < previous ? -value : value
+            previous = max(previous, value)
+        }
+        guard total > 0 else { return nil }
+        return integerToWords(total)
     }
 
     private static func hasDigitSeparator(in text: String) -> Bool {

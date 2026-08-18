@@ -224,9 +224,15 @@ final class VoiceDownloadManager: ObservableObject {
                 try await Task.sleep(for: .milliseconds(700))
                 AVSpeechSynthesisProviderVoice.updateSpeechVoices()
                 self?.refreshInstalled()
-                self?.statusMessage = "Голоси переопубліковано: \(catalog.descriptors.count). Перевірте самоперевірку."
+                let message = "Голоси переопубліковано: \(catalog.descriptors.count). Перевірте самоперевірку."
+                self?.statusMessage = message
+                // Без анонсу VoiceOver мовчить після натискання кнопки —
+                // результат видно лише оком (аудит Даші, збірка 206, п.3).
+                self?.announceForScreenReader(message)
             } catch {
-                self?.statusMessage = "Не вдалося полагодити голоси: \(error.localizedDescription)"
+                let message = "Не вдалося полагодити голоси: \(error.localizedDescription)"
+                self?.statusMessage = message
+                self?.announceForScreenReader(message)
             }
         }
     }

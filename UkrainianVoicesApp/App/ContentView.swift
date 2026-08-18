@@ -208,6 +208,19 @@ private struct VoiceDefinition: Identifiable, Hashable {
 
     var id: String { identifier }
 
+    /// Українська назва для екрана і VoiceOver: латинське ім'я рушій читає з
+    /// англійським акцентом (аудит Даші, збірка 206, п.4). Двигун і система
+    /// знають голос лише за profileName/identifier — їх не чіпаємо.
+    var displayName: String {
+        switch profileName {
+        case "Anatol": return "Анатол"
+        case "Marianna": return "Маріанна"
+        case "Natalia": return "Наталія"
+        case "Volodymyr": return "Володимир"
+        default: return name
+        }
+    }
+
     var languageTitle: String {
         switch language {
         case "uk-UA": return "Українська"
@@ -626,7 +639,7 @@ private final class ContentViewModel: ObservableObject {
         }
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
-        setStatus("Зробити голос \(voice.name) доступним: \(enabled ? "Увімкнено" : "Вимкнено").")
+        setStatus("Зробити голос \(voice.displayName) доступним: \(enabled ? "Увімкнено" : "Вимкнено").")
     }
 
     func selectVoiceForPreview(_ voice: VoiceDefinition) {
@@ -635,7 +648,7 @@ private final class ContentViewModel: ObservableObject {
         }
         selectedVoiceIdentifier = voice.identifier
         persistVoiceState()
-        setStatus("Голос \(voice.name) вибрано для прослуховування.")
+        setStatus("Голос \(voice.displayName) вибрано для прослуховування.")
     }
 
     func listenToSample(for voice: VoiceDefinition) {
@@ -1033,7 +1046,7 @@ private final class ContentViewModel: ObservableObject {
         LogCollector.shared.log("Preview request voice=\(voice.name) profile=\(voiceName) textLength=\(text.count)")
 
         isPreviewPlaying = true
-        setStatus("Готую голос \(voice.name)…")
+        setStatus("Готую голос \(voice.displayName)…")
         playbackController.play(
             text: text,
             voiceName: voiceName,
@@ -1246,7 +1259,7 @@ struct ContentView: View {
                         } label: {
                             voiceRow(voice)
                         }
-                        .accessibilityLabel("\(voice.name), \(voice.languageTitle)")
+                        .accessibilityLabel("\(voice.displayName), \(voice.languageTitle)")
                         .accessibilityValue(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
                         .accessibilityHint("Відкрити налаштування голосу")
                     }
@@ -1330,7 +1343,7 @@ struct ContentView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(voice.name), \(voice.languageTitle)")
+                        .accessibilityLabel("\(voice.displayName), \(voice.languageTitle)")
                         .accessibilityValue(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
                         .accessibilityHint("Відкрити налаштування голосу")
 
@@ -1422,7 +1435,7 @@ struct ContentView: View {
 
     private func voiceRow(_ voice: VoiceDefinition) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(voice.name)
+            Text(voice.displayName)
                 .font(.headline)
             Text(voice.languageTitle)
                 .font(.caption)
@@ -2373,7 +2386,7 @@ private struct VoiceSettingsScreen: View {
         Form {
             Section {
                 Toggle("Зробити голос доступним", isOn: $isEnabled)
-                    .accessibilityLabel("Зробити голос \(voice.name) доступним")
+                    .accessibilityLabel("Зробити голос \(voice.displayName) доступним")
                     .accessibilityValue(isEnabled ? "Увімкнено" : "Вимкнено")
                     .accessibilityHint("Керує доступністю цього голосу для VoiceOver.")
             }
@@ -2384,7 +2397,7 @@ private struct VoiceSettingsScreen: View {
                         Text(preset.title).tag(preset.multiplier)
                     }
                 }
-                .accessibilityHint("Вибирає готовий множник темпу для голосу \(voice.name). Нормально не змінює системну швидкість VoiceOver.")
+                .accessibilityHint("Вибирає готовий множник темпу для голосу \(voice.displayName). Нормально не змінює системну швидкість VoiceOver.")
 
                 sliderRow(
                     title: "Детальний множник",
@@ -2392,7 +2405,7 @@ private struct VoiceSettingsScreen: View {
                     range: 0.8...1.6,
                     step: 0.05,
                     valueText: multiplierText(settings.speedMultiplier),
-                    hint: "Точно налаштовує множник темпу для голосу \(voice.name). 1.0x не змінює системну швидкість VoiceOver."
+                    hint: "Точно налаштовує множник темпу для голосу \(voice.displayName). 1.0x не змінює системну швидкість VoiceOver."
                 )
 
                 sliderRow(
@@ -2401,7 +2414,7 @@ private struct VoiceSettingsScreen: View {
                     range: 0...2000,
                     step: 100,
                     valueText: "\(Int(settings.sentencePause)) мс",
-                    hint: "Змінює паузу між реченнями для голосу \(voice.name)."
+                    hint: "Змінює паузу між реченнями для голосу \(voice.displayName)."
                 )
 
                 sliderRow(
@@ -2410,7 +2423,7 @@ private struct VoiceSettingsScreen: View {
                     range: 0...300,
                     step: 10,
                     valueText: "\(Int(settings.wordGap)) мс",
-                    hint: "Додає проміжок між словами для голосу \(voice.name)."
+                    hint: "Додає проміжок між словами для голосу \(voice.displayName)."
                 )
             }
 
@@ -2419,11 +2432,11 @@ private struct VoiceSettingsScreen: View {
                     isPreviewPlaying ? stopPreview() : playSample()
                 }
                 .accessibilityAddTraits(.startsMediaSession)
-                .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Прослухати голос \(voice.name)")
+                .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Прослухати голос \(voice.displayName)")
                 .accessibilityHint("Промовляє стандартну тестову фразу цим голосом.")
             }
         }
-        .navigationTitle(voice.name)
+        .navigationTitle(voice.displayName)
 #if os(macOS)
         .frame(minWidth: 460, minHeight: 520)
 #endif

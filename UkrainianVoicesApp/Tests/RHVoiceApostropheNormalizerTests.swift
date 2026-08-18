@@ -407,9 +407,12 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     }
 
     func testTelephoneSayAsDoesNotTreatArithmeticPlusAsPhonePrefix() {
+        // Арифметичний плюс не робить число телефоном. Раніше «+» лишався
+        // сирим і рушій його мовчки пропускав (аудит Даші, збірка 206, п.15) —
+        // тепер він вимовляється словом «плюс».
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">10+ 453449161</say-as>"#),
-            "10+ чотириста п'ятдесят три мільйони чотириста сорок дев'ять тисяч сто шістдесят один"
+            "10 плюс чотириста п'ятдесят три мільйони чотириста сорок дев'ять тисяч сто шістдесят один"
         )
     }
 
@@ -575,10 +578,21 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
-    func testRomanNumeralsAreNotWrappedAsLatinAbbreviations() {
+    // Раніше римські числа лишалися сирими, і рушій читав «III» як «айіі»
+    // (аудит Даші, збірка 206, п.29) — тепер вони стають числівниками.
+    func testRomanNumeralsAreSpokenAsNumbers() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Розділ III готовий."),
-            "Розділ III готовий."
+            "Розділ три готовий."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Століття XIV"),
+            "Століття чотирнадцять"
+        )
+        // Некоректний набір римських літер не «читаємо» і не диктуємо по буквах.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Код VVX тут."),
+            "Код VVX тут."
         )
     }
 
@@ -723,6 +737,189 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон ++380671234567."),
             "Телефон плюс тридцять вісім, нуль шістдесят сім, сто двадцять три, сорок п'ять, шістдесят сім."
+        )
+    }
+
+    // MARK: - Фікси за аудитом Даші (збірка 206, 01.08.2026)
+
+    func testStandalonePlusBeforeNumberIsSpoken() {
+        // Пункт 15: «Зараховано +9 000.00» — плюс губився.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зараховано +9 000.00"),
+            "Зараховано плюс дев'ять тисяч"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("2+2"),
+            "2 плюс 2"
+        )
+    }
+
+    func testMinusBeforeAmountIsSpoken() {
+        // Пункт 16: «Зняття -17 000» — мінус мовчав.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зняття -17 000"),
+            "Зняття мінус сімнадцять тисяч"
+        )
+        // Юнікодний мінус U+2212 і коротке тире — та сама вимова.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зняття \u{2212}17 000"),
+            "Зняття мінус сімнадцять тисяч"
+        )
+        // Діапазон не є мінусом: перед знаком стоїть цифра.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10-15"),
+            "10-15"
+        )
+    }
+
+    func testPercentSignsAreSpoken() {
+        // Пункт 28: знак відсотка не відтворювався.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("15%"),
+            "15 відсотків"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1%"),
+            "1 відсоток"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("22%"),
+            "22 відсотки"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("2,5%"),
+            "дві цілих п'ять десятих відсотка"
+        )
+    }
+
+    func testDottedGroupedAmountReadsAsDecimal() {
+        // Пункт 14: сума «30 118.90» з крапкою розвалювалась на два числа.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30 118.90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30 118,90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+    }
+
+    func testVerbalizedDotAmountsFromIOS() {
+        // iOS проговорює крапку словом ще до синтезатора (доведено для дат
+        // логом 2026-07-21) — суми приходять як «30 118 крапка 90».
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30 118 крапка 90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зараховано +9 000 крапка 00"),
+            "Зараховано плюс дев'ять тисяч"
+        )
+        // Версії не чіпаємо: без тисячного розділювача правило не діє.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Версія 1 крапка 18"),
+            "Версія 1 крапка 18"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1 крапка 16 крапка 4"),
+            "1 крапка 16 крапка 4"
+        )
+    }
+
+    func testVulgarFractionSymbolsAreSpoken() {
+        // Пункт 27: «Нотатки» автозаміною перетворюють 1/2 на «½»,
+        // і коса риска «зникала».
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("½"),
+            "одна друга"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("¾"),
+            "три четвертих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1½"),
+            "1 і одна друга"
+        )
+    }
+
+    func testAsciiSimpleFractionsStillWork() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1/2, 3/4"),
+            "один дріб два, три дріб чотири"
+        )
+    }
+
+    func testBareSecondsExpandOnlyInClockContext() {
+        // Пункти 22–23: «01 год 15 хв 5 с» — голе «с» лишалося нерозгорнутим.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("01 год 15 хв 5 с"),
+            "одна година п'ятнадцять хвилин п'ять секунд"
+        )
+        // Без «хв»/«год» поруч «с.» може бути «село» чи «сторінка» — не чіпаємо.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Їхали через 5 с. Іванівка"),
+            "Їхали через 5 с. Іванівка"
+        )
+    }
+
+    func testWiFiBundledDictionaryEntryApplies() {
+        // Пункт 24 аудиту: Wi-Fi має читатися «вай-фай» через базовий словник.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(
+                "Мережа Wi-Fi активна",
+                abbreviationDictionaryEntries: AbbreviationDictionary.bundledEntries
+            ),
+            "Мережа вай-фай активна"
+        )
+    }
+
+    // MARK: - Стражі після критика (18.08.2026)
+
+    func testVerbalizedDotAmountWithNarrowNoBreakSpace() {
+        // Банки і iOS групують розряди нерозривними пробілами (U+202F, U+00A0):
+        // саме ця форма приходить із Приват24, а не ASCII-пробіл.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30\u{202F}118 крапка 90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("9\u{00A0}000 крапка 00"),
+            "дев'ять тисяч"
+        )
+    }
+
+    func testDashBeforePriceIsNotMinus() {
+        // Тире-зв'язка перед сумою — НЕ від'ємне число: знак мінуса мусить
+        // прилягати до цифри.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Ціна — 250 грн"),
+            "Ціна — 250 гривні"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10 - 15 хвилин"),
+            "10 - 15 хвилин"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("- 5 пунктів"),
+            "- 5 пунктів"
+        )
+    }
+
+    func testRomanLookalikeAbbreviationsStayUntouched() {
+        // XL, CV, CD — формально римські числа, але в житті це розмір одягу,
+        // резюме і диск. Лишаємо сирими, як було.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Розмір XL підійшов."),
+            "Розмір XL підійшов."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Надішліть CV сюди."),
+            "Надішліть CV сюди."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Диск CD старий."),
+            "Диск CD старий."
         )
     }
 }
