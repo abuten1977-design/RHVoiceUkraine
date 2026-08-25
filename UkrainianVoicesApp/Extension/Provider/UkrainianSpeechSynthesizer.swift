@@ -5,10 +5,73 @@ import CoreMedia
 import Foundation
 import RHVoiceBridge
 import os.log
+import Security
 
 private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
 private let apostropheLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "apostrophe")
 private let numberDiagLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "number-diag")
+
+// --- ПРОБА КАНАЛIВ ЗАПИСУ (ТИМЧАСОВА, 25.08.2026 - ПIСЛЯ ЗАМIРУ ВИДАЛИТИ) ---
+// Навiщо: пiсочниця забороняє розширенню писати в контейнер App Group
+// (kernel deny file-write-data, зафiксовано 23.08.2026). Без каналу
+// "застосунок <- розширення" тестери не можуть надiслати те, що почув синтезатор.
+// Проба зясовує, куди розширення взагалi МОЖЕ писати. Три канали:
+//   1) звязка ключiв (keychain) - головний кандидат, окремий вiд App Group механiзм;
+//   2) власний контейнер розширення - чи заборонено запис узагалi;
+//   3) контейнер App Group - контроль, МАЄ впасти.
+// Синтез не зачiпає. Виконується один раз, у фоновiй черзi.
+private let writeProbeLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "write-probe")
+
+private func rhProbeLog(_ message: String) {
+    os_log(.info, log: writeProbeLog, "WRITE_PROBE %{public}@", message as NSString)
+    fputs("WRITE_PROBE \(message)\n", stderr)
+}
+
+private let rhWriteProbeToken: Void = {
+#if os(iOS)
+    DispatchQueue.global(qos: .utility).async {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "rhvoice.writeprobe",
+            kSecAttrAccount as String: "probe"
+        ]
+        SecItemDelete(query as CFDictionary)
+        var add = query
+        add[kSecValueData as String] = Data("probe-ok".utf8)
+        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        let addStatus = SecItemAdd(add as CFDictionary, nil)
+        rhProbeLog("keychain write status=\(addStatus)")
+
+        var readQuery = query
+        readQuery[kSecReturnData as String] = true
+        var out: CFTypeRef?
+        let readStatus = SecItemCopyMatching(readQuery as CFDictionary, &out)
+        let readBack = (out as? Data).flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
+        rhProbeLog("keychain read status=\(readStatus) value=\(readBack)")
+
+        let ownPath = NSTemporaryDirectory() + "rhvoice_write_probe.txt"
+        do {
+            try Data("probe-ok".utf8).write(to: URL(fileURLWithPath: ownPath))
+            rhProbeLog("own container write OK")
+        } catch {
+            rhProbeLog("own container write FAILED error=\(error)")
+        }
+
+        if let dir = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID) {
+            do {
+                try Data("probe-ok".utf8).write(to: dir.appendingPathComponent("rhvoice_write_probe.txt"))
+                rhProbeLog("app group write OK (unexpected)")
+            } catch {
+                rhProbeLog("app group write FAILED (expected) error=\(error)")
+            }
+        } else {
+            rhProbeLog("app group containerURL is nil")
+        }
+    }
+#endif
+}()
+
 
 // «Розширена діагностика» вмикається перемикачем у застосунку (App Group defaults).
 // Читання UserDefaults не блокує аудіо-потік: значення кешує cfprefsd — на відміну
@@ -132,6 +195,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         // rate/volume/pitch arrive through SSML prosody, and app settings arrive
         // through the App Group snapshot cache.
         rhLog("EXT_DIAG synthesizer init")
+        _ = rhWriteProbeToken
         self.sharedSettingsCache.start()
         RHVoiceDownloadedVoicesCache.shared.start()
         AbbreviationDictionaryCache.shared.start()
