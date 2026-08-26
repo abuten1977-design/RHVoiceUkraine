@@ -5,7 +5,6 @@ import CoreMedia
 import Foundation
 import RHVoiceBridge
 import os.log
-import Security
 
 private let paramLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "params")
 private let apostropheLog = OSLog(subsystem: "com.rhvoice.UkrainianVoices", category: "apostrophe")
@@ -684,7 +683,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func logNumberDiagnostics(label: String, ssml: String, force: Bool) {
-        runWriteProbeIfNeeded()
         if !didLogNumberDiagActiveBuild {
             didLogNumberDiagActiveBuild = true
             let info = Bundle.main.infoDictionary ?? [:]
@@ -710,59 +708,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         for (index, window) in windows.prefix(8).enumerated() {
             numberDiag("\(label)#\(index + 1): token=\"\(window.token)\" window=\"\(window.window)\" scalars=[\(window.scalars)]")
         }
-    }
-
-    // --- ПРОБА КАНАЛIВ ЗАПИСУ (ТИМЧАСОВА, сборка 219 - ПIСЛЯ ЗАМIРУ ВИДАЛИТИ) ---
-    // Пiсочниця забороняє розширенню запис у контейнер App Group (kernel deny,
-    // 23.08.2026), тому канал "застосунок <- розширення" мертвий, i тестери не
-    // можуть надiслати те, що почув синтезатор. Шукаємо обхiдний канал.
-    //
-    // Навмисно НЕ використовує нi фонових черг, нi власних каналiв друку:
-    // друкує через numberDiag, тобто через той самий шлях, чиї рядки ми бачимо
-    // в журналi. Якщо в записi є NUMBER_DIAG, але немає WRITE_PROBE - це справжня
-    // поломка, а не пропущений момент.
-    //
-    // Запис у контейнер App Group НЕ перевiряємо: вiдповiдь уже вiдома (заборонено),
-    // а звернення до containerURL - єдине мiсце, що може зависнути (task-082/086).
-    // Результат проби рахується ОДИН раз, а друкується при КОЖНОМУ синтезi.
-    // Причина: попереднi версiї друкували подiю (перших три синтези) - подiю
-    // легко пропустити, i ми пропустили її тричi за два днi. Прилад мусить
-    // показувати СТАН, а не подiю: тодi достатньо, щоб голос сказав одне слово
-    // у будь-який момент, i вiдповiдь уже в журналi.
-    private static var writeProbeStatus: String?
-
-    private static func runWriteProbeIfNeeded() {
-        if writeProbeStatus == nil {
-            let query: [String: Any] = [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: "rhvoice.writeprobe",
-                kSecAttrAccount as String: "probe"
-            ]
-            SecItemDelete(query as CFDictionary)
-            var add = query
-            add[kSecValueData as String] = Data("probe-ok".utf8)
-            add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-            let addStatus = SecItemAdd(add as CFDictionary, nil)
-
-            var readQuery = query
-            readQuery[kSecReturnData as String] = true
-            var out: CFTypeRef?
-            let readStatus = SecItemCopyMatching(readQuery as CFDictionary, &out)
-            let value = (out as? Data).flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
-
-            let ownPath = NSTemporaryDirectory() + "rhvoice_write_probe.txt"
-            var ownResult = "OK"
-            do {
-                try Data("probe-ok".utf8).write(to: URL(fileURLWithPath: ownPath))
-            } catch {
-                ownResult = "FAILED(\(error))"
-            }
-
-            writeProbeStatus = "keychain add=\(addStatus) read=\(readStatus) value=\(value) own=\(ownResult)"
-        }
-
-        let build = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "?"
-        numberDiag("WRITE_PROBE build=\(build) \(writeProbeStatus ?? "not-run")")
     }
 
     private static func numberDiag(_ message: String) {

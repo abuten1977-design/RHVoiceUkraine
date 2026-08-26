@@ -922,4 +922,47 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             "Диск CD старий."
         )
     }
+
+    // --- Форми, у яких iOS вiддає знак СЛОВОМ (замiр 24.08.2026) ---
+    // При увiмкненiй деталiзацiї пунктуацiї система пiдставляє слово замiсть знака:
+    // «%» → «вiдсоток» (ЗАВЖДИ однина), «:» → «двокрапка». Правила мусять розумiти
+    // обидвi форми, бо налаштування користувача ми не контролюємо i виміряти
+    // на чужих пристроях не можемо.
+
+    func testVerbalizedPercentGetsCorrectNounForm() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("15 відсоток"),
+            "15 відсотків"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("22 відсоток"),
+            "22 відсотки"
+        )
+        // Число, для якого однина ВIРНА — рядок не змiнюється.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1 відсоток"),
+            "1 відсоток"
+        )
+    }
+
+    func testVerbalizedPercentDoesNotTouchAdjectives() {
+        // «вiдсотковий» — не одиниця вимiру, чiпати не можна.
+        let input = "5 відсоткових пунктів"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments(input), input)
+    }
+
+    func testVerbalizedColonReadsAsTime() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("14 двокрапка 30"),
+            "чотирнадцята година тридцять хвилин"
+        )
+    }
+
+    func testVerbalizedColonDoesNotTurnScoreIntoTime() {
+        // Рахунок «3 двокрапка 1»: хвилини мусять бути РIВНО двi цифри,
+        // тому це НЕ час i чiпати його не можна.
+        let input = "3 двокрапка 1"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments(input), input)
+    }
+
 }
