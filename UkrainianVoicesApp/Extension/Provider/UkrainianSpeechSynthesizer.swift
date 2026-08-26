@@ -724,41 +724,45 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     //
     // Запис у контейнер App Group НЕ перевiряємо: вiдповiдь уже вiдома (заборонено),
     // а звернення до containerURL - єдине мiсце, що може зависнути (task-082/086).
-    private static var writeProbeRuns = 0
+    // Результат проби рахується ОДИН раз, а друкується при КОЖНОМУ синтезi.
+    // Причина: попереднi версiї друкували подiю (перших три синтези) - подiю
+    // легко пропустити, i ми пропустили її тричi за два днi. Прилад мусить
+    // показувати СТАН, а не подiю: тодi достатньо, щоб голос сказав одне слово
+    // у будь-який момент, i вiдповiдь уже в журналi.
+    private static var writeProbeStatus: String?
 
     private static func runWriteProbeIfNeeded() {
-        guard writeProbeRuns < 3 else { return }
-        writeProbeRuns += 1
-        numberDiag("WRITE_PROBE b219 start run=\(writeProbeRuns)")
+        if writeProbeStatus == nil {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: "rhvoice.writeprobe",
+                kSecAttrAccount as String: "probe"
+            ]
+            SecItemDelete(query as CFDictionary)
+            var add = query
+            add[kSecValueData as String] = Data("probe-ok".utf8)
+            add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+            let addStatus = SecItemAdd(add as CFDictionary, nil)
 
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "rhvoice.writeprobe",
-            kSecAttrAccount as String: "probe"
-        ]
-        SecItemDelete(query as CFDictionary)
-        var add = query
-        add[kSecValueData as String] = Data("probe-ok".utf8)
-        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
-        let addStatus = SecItemAdd(add as CFDictionary, nil)
-        numberDiag("WRITE_PROBE b219 keychain add=\(addStatus)")
+            var readQuery = query
+            readQuery[kSecReturnData as String] = true
+            var out: CFTypeRef?
+            let readStatus = SecItemCopyMatching(readQuery as CFDictionary, &out)
+            let value = (out as? Data).flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
 
-        var readQuery = query
-        readQuery[kSecReturnData as String] = true
-        var out: CFTypeRef?
-        let readStatus = SecItemCopyMatching(readQuery as CFDictionary, &out)
-        let value = (out as? Data).flatMap { String(data: $0, encoding: .utf8) } ?? "nil"
-        numberDiag("WRITE_PROBE b219 keychain read=\(readStatus) value=\(value)")
+            let ownPath = NSTemporaryDirectory() + "rhvoice_write_probe.txt"
+            var ownResult = "OK"
+            do {
+                try Data("probe-ok".utf8).write(to: URL(fileURLWithPath: ownPath))
+            } catch {
+                ownResult = "FAILED(\(error))"
+            }
 
-        let ownPath = NSTemporaryDirectory() + "rhvoice_write_probe.txt"
-        do {
-            try Data("probe-ok".utf8).write(to: URL(fileURLWithPath: ownPath))
-            numberDiag("WRITE_PROBE b219 own=OK")
-        } catch {
-            numberDiag("WRITE_PROBE b219 own=FAILED \(error)")
+            writeProbeStatus = "keychain add=\(addStatus) read=\(readStatus) value=\(value) own=\(ownResult)"
         }
 
-        numberDiag("WRITE_PROBE b219 done")
+        let build = (Bundle.main.infoDictionary?["CFBundleVersion"] as? String) ?? "?"
+        numberDiag("WRITE_PROBE build=\(build) \(writeProbeStatus ?? "not-run")")
     }
 
     private static func numberDiag(_ message: String) {
