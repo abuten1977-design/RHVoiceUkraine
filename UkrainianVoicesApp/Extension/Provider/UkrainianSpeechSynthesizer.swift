@@ -710,12 +710,20 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
     }
 
+    // Друкує ФРАГМЕНТ тексту користувача у системний журнал. У звичайних
+    // збiрках вимкнено: людина читає голосом банкiвськi суми, коди з SMS,
+    // номери — цьому не мiсце в журналi пристрою. Вмикається лише прапорцем
+    // збiрки для власних замiрiв на пристрої Андрiя.
     private static func numberDiag(_ message: String) {
+        #if !RHVOICE_DIAG
+        return
+        #else
         os_log(.info, log: numberDiagLog, "NUMBER_DIAG %{public}@", message as NSString)
         fputs("NUMBER_DIAG \(message)\n", stderr)
         if rhExtendedDiagnosticsEnabled() {
             "NUMBER_DIAG \(message)".withCString { RHVoiceDebugLogString($0) }
         }
+        #endif
     }
 
     private struct NumberDiagnosticWindow {
