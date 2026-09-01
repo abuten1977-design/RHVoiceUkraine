@@ -108,13 +108,6 @@ private let licenseItems: [LicenseItem] = [
         url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
     ),
     .init(
-        title: "Англійські голоси: Бен, Клара, Сара, Радж",
-        license: "CMU / Festvox",
-        attribution: "Carnegie Mellon University, корпус CMU ARCTIC",
-        note: "Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних.",
-        url: URL(string: "http://www.festvox.org/cmu_arctic/")
-    ),
-    .init(
         title: "Англійські мовні дані (cmulex)",
         license: "CMU Pronouncing Dictionary",
         attribution: "Carnegie Mellon University",
@@ -1613,7 +1606,7 @@ struct ContentView: View {
             Label("Мови", systemImage: "globe")
         }
         .accessibilityLabel("Мови")
-        .accessibilityHint("Українська вбудована; голоси інших мов можна завантажити.")
+        .accessibilityHint("Показує мови, голоси яких є у застосунку.")
     }
 
     private var howToLink: some View {

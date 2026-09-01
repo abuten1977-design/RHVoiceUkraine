@@ -40,7 +40,7 @@ private struct VoiceSelfCheckReport {
             ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) ?? true)
         guard enabled else { return "Словник замін: вимкнено." }
         let user = (try? AbbreviationDictionary.loadEntries().get())?.count ?? 0
-        return "Словник замін у застосунку: базових \(AbbreviationDictionary.bundledEntries.count), власних \(user). Стан extension доступний у журналі по кабелю."
+        return "Словник замін у застосунку: базових \(AbbreviationDictionary.bundledEntries.count), власних \(user)."
     }
 
     private static func directorySize(_ url: URL?) -> Int64 {
@@ -122,7 +122,7 @@ struct DownloadableLanguagesView: View {
             }
             }
 
-            if showDownloadableLanguages, !downloadManager.statusMessage.isEmpty {
+            if !downloadManager.statusMessage.isEmpty {
                 Section {
                     Text(downloadManager.statusMessage)
                         .font(.footnote)
@@ -146,8 +146,10 @@ struct DownloadableLanguagesView: View {
 
     private var selfCheckSection: some View {
         Section("Самоперевірка") {
-            Text(selfCheckReport.stored)
-                .accessibilityLabel(selfCheckReport.stored)
+            if showDownloadableLanguages {
+                Text(selfCheckReport.stored)
+                    .accessibilityLabel(selfCheckReport.stored)
+            }
             Text(selfCheckReport.published)
                 .accessibilityLabel(selfCheckReport.published)
             Text(selfCheckReport.abbreviationDictionary)
@@ -155,7 +157,7 @@ struct DownloadableLanguagesView: View {
             Button("Оновити самоперевірку") { refreshSelfCheck() }
                 .disabled(isRefreshingSelfCheck)
                 .accessibilityLabel("Оновити самоперевірку")
-                .accessibilityHint("Перевірити збережені, опубліковані та системні голоси.")
+                .accessibilityHint("Перевірити список голосів і словник замін.")
             Button("Полагодити голоси") {
                 downloadManager.repairVoices()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { refreshSelfCheck() }
