@@ -54,6 +54,12 @@ private struct VoiceSelfCheckReport {
     }
 }
 
+/// Завантажувані мови приховані в ПЕРШОМУ релізі App Store.
+/// Причина: щойно завантажений голос мовчить, поки процес розширення не
+/// перезапуститься (розбір 31.08.2026, LATEST_HANDOFF). Код лишається на місці —
+/// щоб повернути, достатньо змінити прапорець на `true`.
+private let showDownloadableLanguages = false
+
 /// Екран «Мови»: вбудована українська + додаткові мови, голоси яких
 /// завантажуються за потреби (v1 — англійська).
 struct DownloadableLanguagesView: View {
@@ -74,6 +80,7 @@ struct DownloadableLanguagesView: View {
                 .accessibilityLabel("Українська, 4 голоси, вбудована мова, завжди доступна")
             }
 
+            if showDownloadableLanguages {
             Section("Додаткові мови") {
                 switch downloadManager.manifestState {
                 case .idle, .loading:
@@ -113,8 +120,9 @@ struct DownloadableLanguagesView: View {
                     }
                 }
             }
+            }
 
-            if !downloadManager.statusMessage.isEmpty {
+            if showDownloadableLanguages, !downloadManager.statusMessage.isEmpty {
                 Section {
                     Text(downloadManager.statusMessage)
                         .font(.footnote)
@@ -127,7 +135,11 @@ struct DownloadableLanguagesView: View {
         }
         .navigationTitle("Мови")
         .onAppear {
-            downloadManager.refresh()
+            if showDownloadableLanguages {
+                downloadManager.refresh()
+            } else {
+                downloadManager.refreshInstalled()
+            }
             refreshSelfCheck()
         }
     }
