@@ -2056,7 +2056,7 @@ private struct AboutAcknowledgementView: View {
         List {
             Section("Застосунок") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("RHVoice Ukrainian")
+                    Text("RHVoice UA")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .accessibilityAddTraits(.isHeader)
