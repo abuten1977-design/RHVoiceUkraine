@@ -168,6 +168,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "5NNZPP8CRR"
+        # Вмикає NUMBER_DIAG (опційний запис фрагмента тексту користувача в
+        # системний журнал для замірів на пристрої Андрія, task-226 частина A).
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
     dependencies:
       - target: UkrainianVoicesExtension
       - package: RHVoiceCore
@@ -219,6 +222,9 @@ targets:
         OTHER_LDFLAGS: "$(inherited) -lc++"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "5NNZPP8CRR"
+        # Вмикає NUMBER_DIAG (опційний запис фрагмента тексту користувача в
+        # системний журнал для замірів на пристрої Андрія, task-226 частина A).
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
     dependencies:
       - package: RHVoiceCore
         product: RHVoiceBridge
@@ -351,6 +357,7 @@ targets:
       - path: Shared/RHVoiceApostropheNormalizer.swift
       - path: Shared/RHVoiceSilenceAnalyzer.swift
       - path: Shared/RHVoiceSharedSettings.swift
+      - path: Shared/RHVoiceTextBreaks.swift
       - path: Shared/RHVoiceDownloadableVoices.swift
       - path: Shared/RHVoicePublishedVoiceCatalog.swift
       - path: Shared/PersonalUserDictionary.swift
@@ -361,6 +368,7 @@ targets:
       - path: Tests/RHVoiceSharedSettingsSnapshotCacheTests.swift
       - path: Tests/PersonalUserDictionaryTests.swift
       - path: Tests/RHVoiceDownloadableVoicesTests.swift
+      - path: Tests/RHVoiceTextBreaksTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoicePipelineSplitterTests

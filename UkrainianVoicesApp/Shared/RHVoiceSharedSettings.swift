@@ -14,7 +14,11 @@ enum RHVoiceSharedSettings {
     static let rateKey = "rate"
     static let volumeKey = "volume"
     static let speedMultiplierKey = "speedMultiplier"
+    // Legacy `<break time>` мілісекунди (build ≤225) — двигун їх ніколи не
+    // читав (RHVoice 1.16 розбирає лише strength), лишено тільки для міграції
+    // старих значень у sentencePauseStrengthKey.
     static let sentencePauseKey = "sentencePause"
+    static let sentencePauseStrengthKey = "sentencePauseStrength"
     static let wordGapKey = "wordGap"
     static let pitchKey = "pitch"
     // Opt-in запис прочитаного тексту в RHVoiceDebug.log у Release-збірках
@@ -61,6 +65,87 @@ enum RHVoiceSharedSettings {
 enum RHVoicePhoneNumberReadingMode: String, CaseIterable {
     case groups
     case digits
+}
+
+/// SSML `<break>` strength as the bundled RHVoice 1.16 engine actually reads
+/// it: it parses only the `strength` attribute and ignores `time` entirely
+/// (RHVoiceCore/RHVoice/src/include/core/ssml.hpp:345-362,
+/// break_handler::enter). `.none` means "emit no `<break>` at all" — there is
+/// no `strength="none"` tag.
+///
+/// ФАКТ (task-226 round 2): у UI лишились тільки ДВА положення, не чотири.
+/// `weak`/`x-weak` дають `break_default` (`ssml.hpp:351-354`), яке
+/// `language::get_word_break` (`core/language.cpp:1399-1415`) не повертає
+/// взагалі — рішення йде дереву `phrasing_dtree`, тобто ефект НІЧИМ не
+/// відрізняється від відсутності тега. Це положення видалено обґрунтовано.
+///
+/// «Довга» (`strong`/`x-strong` → `break_sentence`, `ssml.hpp:357-360`) видалено
+/// НЕ з цієї причини. ВИПРАВЛЕНО (task-226 round 3): попередній висновок, що
+/// `document::add_break` на `break_sentence` (`core/document.hpp:434-438`)
+/// «обриває речення без паузи», був НЕВІРНИЙ. `add_break` дійсно викликає лише
+/// `finish_sentence()` і сам не створює команду паузи — але наступний текст
+/// після цього стає НОВИМ реченням, а `language::insert_pauses`
+/// (`core/language.cpp:1827-1838`) ставить сегмент `pau` на початок і кінець
+/// КОЖНОГО речення. Тобто «Довга» таки дає паузу — таку саму, як після крапки,
+/// лише ціною штучного розриву речення. Положення знято ДО ЗАМІРУ на слуху, а
+/// не тому що воно не працює; повертати в UI цим заходом не будемо (потрібен
+/// замір), але коментар більше не тримає невірний ВИСНОВОК як ФАКТ.
+///
+/// Лишається один задокументований робочий рівень — `medium` (`break_phrase`).
+enum RHVoicePauseStrength: String, Codable, CaseIterable, Hashable {
+    case none
+    case medium
+
+    var displayName: String {
+        switch self {
+        case .none: return "Немає"
+        case .medium: return "Звичайна"
+        }
+    }
+
+    /// SSML `strength` attribute value, or nil when no `<break>` should be emitted.
+    var ssmlValue: String? {
+        switch self {
+        case .none: return nil
+        case .medium: return "medium"
+        }
+    }
+
+    /// Legacy `<break time>` millisecond value written ONLY for rollback safety:
+    /// builds ≤225 read `sentencePause` as a required key, and this project has
+    /// already rolled back to a previous build once. This build itself never
+    /// reads this key back for its OWN settings — it always has a real
+    /// `sentencePauseStrength` to write — but it does read a build-≤225 user's
+    /// existing value once, to migrate it (see `resolved(from:...)` and
+    /// `RHVoiceSpeechSettings.init(from:)` below).
+    var legacyMilliseconds: Double {
+        switch self {
+        case .none: return 0
+        case .medium: return 200
+        }
+    }
+
+    /// Reads a strength from `key`, falling back to migrating a legacy
+    /// `<break time>` millisecond value at `legacyMillisecondsKey` if present,
+    /// falling back to `fallback` if neither key is present.
+    ///
+    /// The migration is NOT "any legacy value means no pause": `ssml.hpp:345`
+    /// sets `break_strength strength=break_phrase` BEFORE reading the
+    /// `strength` attribute, so build ≤225's `<break time='…ms'/>` — which
+    /// never set `strength` — already produced a real `break_phrase` pause;
+    /// only the requested millisecond duration was ignored. A user who had
+    /// raised that old slider above zero had a working pause and must keep
+    /// one (`.medium`); only an old value of exactly 0 (pause switched off)
+    /// migrates to `.none`.
+    static func resolved(from defaults: UserDefaults?, key: String, legacyMillisecondsKey: String, fallback: RHVoicePauseStrength) -> RHVoicePauseStrength {
+        if let raw = defaults?.string(forKey: key), let strength = RHVoicePauseStrength(rawValue: raw) {
+            return strength
+        }
+        if let legacyMilliseconds = defaults?.object(forKey: legacyMillisecondsKey) as? Double {
+            return legacyMilliseconds > 0 ? .medium : .none
+        }
+        return fallback
+    }
 }
 
 enum RHVoiceDarwinNotifications {
@@ -159,17 +244,21 @@ struct RHVoiceSpeechSettings: Codable, Equatable {
     var rate: Double
     var volume: Double
     var speedMultiplier: Double
-    var sentencePause: Double
+    var sentencePauseStrength: RHVoicePauseStrength
     var wordGap: Double
     var pitch: Double
 
-    init(rate: Double, volume: Double, speedMultiplier: Double, sentencePause: Double, wordGap: Double, pitch: Double) {
+    init(rate: Double, volume: Double, speedMultiplier: Double, sentencePauseStrength: RHVoicePauseStrength, wordGap: Double, pitch: Double) {
         self.rate = rate
         self.volume = volume
         self.speedMultiplier = speedMultiplier
-        self.sentencePause = sentencePause
+        self.sentencePauseStrength = sentencePauseStrength
         self.wordGap = wordGap
         self.pitch = pitch
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case rate, volume, speedMultiplier, sentencePauseStrength, sentencePause, wordGap, pitch
     }
 
     init(from decoder: Decoder) throws {
@@ -177,16 +266,45 @@ struct RHVoiceSpeechSettings: Codable, Equatable {
         rate            = try c.decode(Double.self, forKey: .rate)
         volume          = try c.decode(Double.self, forKey: .volume)
         speedMultiplier = try c.decode(Double.self, forKey: .speedMultiplier)
-        sentencePause   = try c.decode(Double.self, forKey: .sentencePause)
+        // Builds ≤225 wrote this exact JSON snapshot file (schemaVersion 1) with
+        // a `sentencePause` millisecond value and no `sentencePauseStrength` key
+        // at all, so THIS is the path a real upgrading user's pause setting
+        // migrates through, not just `RHVoicePauseStrength.resolved` below.
+        // `ssml.hpp:345` defaults to `break_phrase` before reading `strength`,
+        // so that old `<break time='…ms'/>` (never had a `strength` attribute)
+        // already produced a real pause — only its requested duration was
+        // ignored. A nonzero legacy value must migrate to `.medium`, not silently
+        // to `.none`; a clean install (neither key present) still defaults to
+        // `.none`, same as before.
+        if let strength = try? c.decode(RHVoicePauseStrength.self, forKey: .sentencePauseStrength) {
+            sentencePauseStrength = strength
+        } else if let legacyMilliseconds = try? c.decode(Double.self, forKey: .sentencePause) {
+            sentencePauseStrength = legacyMilliseconds > 0 ? .medium : .none
+        } else {
+            sentencePauseStrength = .none
+        }
         wordGap         = (try? c.decode(Double.self, forKey: .wordGap)) ?? 0.0
         pitch           = (try? c.decode(Double.self, forKey: .pitch)) ?? 1.0
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(rate, forKey: .rate)
+        try c.encode(volume, forKey: .volume)
+        try c.encode(speedMultiplier, forKey: .speedMultiplier)
+        try c.encode(sentencePauseStrength, forKey: .sentencePauseStrength)
+        // Rollback safety only (see `RHVoicePauseStrength.legacyMilliseconds`):
+        // builds ≤225 require this key to be present and never read it back here.
+        try c.encode(sentencePauseStrength.legacyMilliseconds, forKey: .sentencePause)
+        try c.encode(wordGap, forKey: .wordGap)
+        try c.encode(pitch, forKey: .pitch)
     }
 
     static let recommended = RHVoiceSpeechSettings(
         rate: 0.5,
         volume: 1.0,
         speedMultiplier: 1.0,
-        sentencePause: 0.0,
+        sentencePauseStrength: .none,
         wordGap: 0.0,
         pitch: 1.0
     )
@@ -263,7 +381,9 @@ enum RHVoiceSharedSettingsStore {
             defaults.set(snapshot.generalSettings.rate, forKey: RHVoiceSharedSettings.rateKey)
             defaults.set(snapshot.generalSettings.volume, forKey: RHVoiceSharedSettings.volumeKey)
             defaults.set(snapshot.generalSettings.speedMultiplier, forKey: RHVoiceSharedSettings.speedMultiplierKey)
-            defaults.set(snapshot.generalSettings.sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
+            defaults.set(snapshot.generalSettings.sentencePauseStrength.rawValue, forKey: RHVoiceSharedSettings.sentencePauseStrengthKey)
+            // Rollback safety only — see `RHVoicePauseStrength.legacyMilliseconds`.
+            defaults.set(snapshot.generalSettings.sentencePauseStrength.legacyMilliseconds, forKey: RHVoiceSharedSettings.sentencePauseKey)
             defaults.set(snapshot.generalSettings.wordGap, forKey: RHVoiceSharedSettings.wordGapKey)
             defaults.set(snapshot.generalSettings.pitch, forKey: RHVoiceSharedSettings.pitchKey)
 
@@ -274,7 +394,9 @@ enum RHVoiceSharedSettingsStore {
                 defaults.set(perVoice.settings.rate, forKey: "\(prefix).rate")
                 defaults.set(perVoice.settings.volume, forKey: "\(prefix).volume")
                 defaults.set(perVoice.settings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
-                defaults.set(perVoice.settings.sentencePause, forKey: "\(prefix).sentencePause")
+                defaults.set(perVoice.settings.sentencePauseStrength.rawValue, forKey: "\(prefix).sentencePauseStrength")
+                // Rollback safety only — see `RHVoicePauseStrength.legacyMilliseconds`.
+                defaults.set(perVoice.settings.sentencePauseStrength.legacyMilliseconds, forKey: "\(prefix).sentencePause")
                 defaults.set(perVoice.settings.wordGap, forKey: "\(prefix).wordGap")
                 defaults.set(perVoice.settings.pitch, forKey: "\(prefix).pitch")
             }
@@ -297,7 +419,12 @@ enum RHVoiceSharedSettingsStore {
             rate: defaults?.object(forKey: RHVoiceSharedSettings.rateKey) as? Double ?? RHVoiceSpeechSettings.recommended.rate,
             volume: defaults?.object(forKey: RHVoiceSharedSettings.volumeKey) as? Double ?? RHVoiceSpeechSettings.recommended.volume,
             speedMultiplier: defaults?.object(forKey: RHVoiceSharedSettings.speedMultiplierKey) as? Double ?? RHVoiceSpeechSettings.recommended.speedMultiplier,
-            sentencePause: defaults?.object(forKey: RHVoiceSharedSettings.sentencePauseKey) as? Double ?? RHVoiceSpeechSettings.recommended.sentencePause,
+            sentencePauseStrength: RHVoicePauseStrength.resolved(
+                from: defaults,
+                key: RHVoiceSharedSettings.sentencePauseStrengthKey,
+                legacyMillisecondsKey: RHVoiceSharedSettings.sentencePauseKey,
+                fallback: RHVoiceSpeechSettings.recommended.sentencePauseStrength
+            ),
             wordGap: defaults?.object(forKey: RHVoiceSharedSettings.wordGapKey) as? Double ?? RHVoiceSpeechSettings.recommended.wordGap,
             pitch: defaults?.object(forKey: RHVoiceSharedSettings.pitchKey) as? Double ?? RHVoiceSpeechSettings.recommended.pitch
         )
@@ -322,7 +449,12 @@ enum RHVoiceSharedSettingsStore {
                         rate: defaults?.object(forKey: "\(prefix).rate") as? Double ?? general.rate,
                         volume: defaults?.object(forKey: "\(prefix).volume") as? Double ?? general.volume,
                         speedMultiplier: defaults?.object(forKey: "\(prefix).speedMultiplier") as? Double ?? general.speedMultiplier,
-                        sentencePause: defaults?.object(forKey: "\(prefix).sentencePause") as? Double ?? general.sentencePause,
+                        sentencePauseStrength: RHVoicePauseStrength.resolved(
+                            from: defaults,
+                            key: "\(prefix).sentencePauseStrength",
+                            legacyMillisecondsKey: "\(prefix).sentencePause",
+                            fallback: general.sentencePauseStrength
+                        ),
                         wordGap: defaults?.object(forKey: "\(prefix).wordGap") as? Double ?? general.wordGap,
                         pitch: defaults?.object(forKey: "\(prefix).pitch") as? Double ?? general.pitch
                     )

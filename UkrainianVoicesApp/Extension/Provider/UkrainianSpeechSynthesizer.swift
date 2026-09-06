@@ -400,20 +400,24 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let effectiveVolume = ssmlVolume ?? 1.0
         let finalVolume = Self.clampVolume(effectiveVolume)
         let effectivePitch = Self.clampPitch(ssmlPitch ?? 1.0)
-        let sentencePauseMs = Int(Self.clampSentencePause(voiceSettings.sentencePause).rounded())
+        let sentencePauseStrength = voiceSettings.sentencePauseStrength
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeStandaloneApostropheRequest(text)
             ?? Self.normalizeApostrophesInTextSegments(text)
         Self.logNumberDiagnostics(label: "after-apostrophe-normalize", ssml: normalizedText, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "after-apostrophe-normalize", ssml: normalizedText)
-        let synthesisText = Self.applyTextBreaks(to: normalizedText, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
+        let textWithBreaks = RHVoiceTextBreaks.applyPunctuationAndWordGapBreaks(to: normalizedText, sentencePauseStrength: sentencePauseStrength, wordGapMs: wordGapMs)
+        // Unconditional: not gated by the punctuation-pause setting above — see
+        // insertPauseBeforeRoleWordSentence's doc comment for why it always emits
+        // 'medium' regardless of what the user picked.
+        let synthesisText = RHVoiceTextBreaks.insertPauseBeforeRoleWordSentence(in: textWithBreaks)
         Self.logNumberDiagnostics(label: "final-engine-input", ssml: synthesisText, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "final-engine-input", ssml: synthesisText)
 
         #if DEBUG
-        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseMs=\(sentencePauseMs) wordGapMs=\(wordGapMs)")
-        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs)
-        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseMs=%d useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseMs, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseMs > 0) ? 1 : 0, wordGapMs), stderr)
+        rhLog("synth: voice=\(profileName) ssmlRate=\(String(format: "%.1f", effectiveRatePercent))% mapped=\(String(format: "%.2f", mappedRate)) accelerator=\(String(format: "%.2f", accelerator)) final=\(String(format: "%.2f", finalRate)) vol=\(String(format: "%.2f", finalVolume)) pitch=\(String(format: "%.2f", effectivePitch)) pauseStrength=\(sentencePauseStrength.rawValue) wordGapMs=\(wordGapMs)")
+        os_log(.info, log: paramLog, "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseStrength=%{public}@ useCustom=%d wordGapMs=%d", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseStrength.rawValue, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseStrength != .none) ? 1 : 0, wordGapMs)
+        fputs(String(format: "PARAMS ssmlRatePct=%.1f mappedRate=%.2f accelerator=%.2f finalRate=%.2f vol=%.2f pitch=%.2f pauseStrength=%@ useCustom=%d wordGapMs=%d\n", effectiveRatePercent, mappedRate, accelerator, finalRate, finalVolume, effectivePitch, sentencePauseStrength.rawValue, (accelerator != 1.0 || ssmlPitch != nil || wordGapMs > 0 || sentencePauseStrength != .none) ? 1 : 0, wordGapMs), stderr)
         #endif
 
         let fragments = RHVoicePipelineSplitter.pipelineFragments(from: synthesisText)
@@ -632,10 +636,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
 
         return nil
-    }
-
-    private static func clampSentencePause(_ value: Double) -> Double {
-        min(max(value, 0.0), 2_000.0)
     }
 
     private static func clampWordGap(_ value: Double) -> Double {
@@ -865,94 +865,6 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         CharacterSet.letters.contains(scalar)
             || CharacterSet.decimalDigits.contains(scalar)
             || isApostropheLikeScalar(scalar)
-    }
-
-    private static func applyTextBreaks(to ssml: String, sentencePauseMs: Int, wordGapMs: Int) -> String {
-        guard sentencePauseMs > 0 || wordGapMs > 0 else { return ssml }
-
-        var output = ""
-        var textSegment = ""
-        var tagSegment = ""
-        var insideTag = false
-
-        for character in ssml {
-            if insideTag {
-                tagSegment.append(character)
-                if character == ">" {
-                    output += transformTextSegment(textSegment, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
-                    textSegment.removeAll(keepingCapacity: true)
-                    output += tagSegment
-                    tagSegment.removeAll(keepingCapacity: true)
-                    insideTag = false
-                }
-            } else if character == "<" {
-                insideTag = true
-                tagSegment.append(character)
-            } else {
-                textSegment.append(character)
-            }
-        }
-
-        if insideTag {
-            output += textSegment + tagSegment
-        } else {
-            output += transformTextSegment(textSegment, sentencePauseMs: sentencePauseMs, wordGapMs: wordGapMs)
-        }
-
-        if output.range(of: #"<\s*speak\b"#, options: .regularExpression) != nil {
-            return output
-        }
-        return "<speak>\(output)</speak>"
-    }
-
-    private static func transformTextSegment(_ text: String, sentencePauseMs: Int, wordGapMs: Int) -> String {
-        let characters = Array(text)
-        guard !characters.isEmpty else { return text }
-
-        var output = ""
-        for index in characters.indices {
-            let character = characters[index]
-            output.append(character)
-
-            if sentencePauseMs > 0 && isSentencePunctuation(character) && !isDecimalSeparator(characters, at: index) {
-                output += "<break time='\(sentencePauseMs)ms'/>"
-            }
-
-            if wordGapMs > 0 && isWordCharacter(character) {
-                let nextIndex = index + 1
-                if nextIndex < characters.count, isWhitespace(characters[nextIndex]), nextWordStarts(afterWhitespaceFrom: nextIndex, in: characters) {
-                    output += "<break time='\(wordGapMs)ms'/>"
-                }
-            }
-        }
-        return output
-    }
-
-    private static func nextWordStarts(afterWhitespaceFrom index: Int, in characters: [Character]) -> Bool {
-        var cursor = index
-        while cursor < characters.count, isWhitespace(characters[cursor]) {
-            cursor += 1
-        }
-        return cursor < characters.count && isWordCharacter(characters[cursor])
-    }
-
-    private static func isSentencePunctuation(_ character: Character) -> Bool {
-        character == "." || character == "," || character == "!" || character == "?"
-    }
-
-    private static func isDecimalSeparator(_ characters: [Character], at index: Int) -> Bool {
-        guard characters[index] == "." || characters[index] == "," else { return false }
-        let previous = index > 0 ? characters[index - 1] : nil
-        let next = index + 1 < characters.count ? characters[index + 1] : nil
-        return previous?.isNumber == true && next?.isNumber == true
-    }
-
-    private static func isWhitespace(_ character: Character) -> Bool {
-        character.unicodeScalars.allSatisfy { CharacterSet.whitespacesAndNewlines.contains($0) }
-    }
-
-    private static func isWordCharacter(_ character: Character) -> Bool {
-        character.unicodeScalars.contains { CharacterSet.letters.contains($0) || CharacterSet.decimalDigits.contains($0) }
     }
 
     private static func extractSSMLVolume(from ssml: String) -> Double {

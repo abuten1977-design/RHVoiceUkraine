@@ -236,7 +236,7 @@ private struct VoiceSettingsState: Equatable {
     var rate = 0.5
     var volume = 1.0
     var speedMultiplier = 1.0
-    var sentencePause = 0.0
+    var sentencePauseStrength: RHVoicePauseStrength = .none
     var wordGap = 0.0
     var pitch = 1.0
 
@@ -376,7 +376,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var volume: Double
     @Published var speedMultiplier: Double
     @Published var pitch: Double
-    @Published var sentencePause: Double
+    @Published var sentencePauseStrength: RHVoicePauseStrength
     @Published var wordGap: Double
     @Published var testText: String
     @Published var enabledVoiceIdentifiers: Set<String>
@@ -423,7 +423,7 @@ private final class ContentViewModel: ObservableObject {
         self.volume = Self.clampBaselineMultiplier(general.volume)
         self.speedMultiplier = Self.clampSpeedMultiplier(general.speedMultiplier)
         self.pitch = general.pitch
-        self.sentencePause = general.sentencePause
+        self.sentencePauseStrength = general.sentencePauseStrength
         self.wordGap = Self.clampWordGap(general.wordGap)
         self.testText = "Привіт! Це тест українського голосу."
         self.enabledVoiceIdentifiers = Self.normalizedEnabledVoices([])
@@ -445,7 +445,7 @@ private final class ContentViewModel: ObservableObject {
                 rate: 0.5,
                 volume: 1.0,
                 speedMultiplier: Self.clampSpeedMultiplier(general.speedMultiplier),
-                sentencePause: general.sentencePause,
+                sentencePauseStrength: general.sentencePauseStrength,
                 wordGap: Self.clampWordGap(general.wordGap),
                 pitch: 1.0
             ))
@@ -493,7 +493,7 @@ private final class ContentViewModel: ObservableObject {
                     fallbackRate: rate,
                     fallbackVolume: volume,
                     fallbackSpeedMultiplier: speedMultiplier,
-                    fallbackSentencePause: sentencePause,
+                    fallbackSentencePauseStrength: sentencePauseStrength,
                     fallbackWordGap: wordGap,
                     fallbackPitch: pitch
                 )
@@ -545,14 +545,14 @@ private final class ContentViewModel: ObservableObject {
         let initialRate = snapshot.generalSettings.rate
         let initialVolume = Self.clampBaselineMultiplier(snapshot.generalSettings.volume)
         let initialSpeedMultiplier = Self.clampSpeedMultiplier(snapshot.generalSettings.speedMultiplier)
-        let initialSentencePause = snapshot.generalSettings.sentencePause
+        let initialSentencePauseStrength = snapshot.generalSettings.sentencePauseStrength
         let initialWordGap = Self.clampWordGap(snapshot.generalSettings.wordGap)
 
         enabledVoiceIdentifiers = Self.normalizedEnabledVoices(storedEnabled)
         selectedVoiceIdentifier = snapshot.selectedVoiceIdentifier
         volume = initialVolume
         speedMultiplier = initialSpeedMultiplier
-        sentencePause = initialSentencePause
+        sentencePauseStrength = initialSentencePauseStrength
         wordGap = initialWordGap
         pitch = snapshot.generalSettings.pitch
         personalDictionaryEntries = entries
@@ -567,12 +567,12 @@ private final class ContentViewModel: ObservableObject {
                     rate: stored.settings.rate,
                     volume: 1.0,
                     speedMultiplier: Self.clampSpeedMultiplier(stored.settings.speedMultiplier),
-                    sentencePause: stored.settings.sentencePause,
+                    sentencePauseStrength: stored.settings.sentencePauseStrength,
                     wordGap: Self.clampWordGap(stored.settings.wordGap),
                     pitch: 1.0
                 ).neutralizedVoiceOverControlledSettings())
             }
-            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: snapshot.generalSettings.pitch))
+            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePauseStrength: initialSentencePauseStrength, fallbackWordGap: initialWordGap, fallbackPitch: snapshot.generalSettings.pitch))
         })
 
         normalizeSelection()
@@ -612,7 +612,7 @@ private final class ContentViewModel: ObservableObject {
                 fallbackRate: rate,
                 fallbackVolume: volume,
                 fallbackSpeedMultiplier: speedMultiplier,
-                fallbackSentencePause: sentencePause,
+                fallbackSentencePauseStrength: sentencePauseStrength,
                 fallbackWordGap: wordGap,
                 fallbackPitch: pitch
             )
@@ -1002,8 +1002,8 @@ private final class ContentViewModel: ObservableObject {
         persistGeneralSettings()
     }
 
-    func updateGeneralSentencePause(_ value: Double) {
-        sentencePause = value
+    func updateGeneralSentencePauseStrength(_ value: RHVoicePauseStrength) {
+        sentencePauseStrength = value
         persistGeneralSettings()
     }
 
@@ -1025,7 +1025,11 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(normalizedSettings.rate, forKey: "\(prefix).rate")
         defaults.set(normalizedSettings.volume, forKey: "\(prefix).volume")
         defaults.set(normalizedSettings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
-        defaults.set(normalizedSettings.sentencePause, forKey: "\(prefix).sentencePause")
+        defaults.set(normalizedSettings.sentencePauseStrength.rawValue, forKey: "\(prefix).sentencePauseStrength")
+        // Rollback safety only, written immediately for the same reason as in
+        // `persistGeneralSettings()` (task-226 round 4, п.6): `persistSharedSnapshot()`
+        // below may not run this session if `sharedStorageState` never reaches `.ready`.
+        defaults.set(normalizedSettings.sentencePauseStrength.legacyMilliseconds, forKey: "\(prefix).sentencePause")
         defaults.set(Self.clampWordGap(normalizedSettings.wordGap), forKey: "\(prefix).wordGap")
         defaults.set(normalizedSettings.pitch, forKey: "\(prefix).pitch")
         persistSharedSnapshot()
@@ -1069,7 +1073,14 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(0.5, forKey: RHVoiceSharedSettings.rateKey)
         defaults.set(1.0, forKey: RHVoiceSharedSettings.volumeKey)
         defaults.set(Self.clampSpeedMultiplier(speedMultiplier), forKey: RHVoiceSharedSettings.speedMultiplierKey)
-        defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
+        defaults.set(sentencePauseStrength.rawValue, forKey: RHVoiceSharedSettings.sentencePauseStrengthKey)
+        // Rollback safety only (see `RHVoicePauseStrength.legacyMilliseconds`),
+        // written immediately: `persistSharedSnapshot()` below writes the same
+        // legacy key too, but only after a background disk round-trip guarded
+        // by `sharedStorageState == .ready`, which can simply never run. Without
+        // this line a user who rolls back to build ≤225 while that guard is
+        // blocking would read a stale legacy value (task-226 round 4, п.6).
+        defaults.set(sentencePauseStrength.legacyMilliseconds, forKey: RHVoiceSharedSettings.sentencePauseKey)
         defaults.set(Self.clampWordGap(wordGap), forKey: RHVoiceSharedSettings.wordGapKey)
         defaults.set(1.0, forKey: RHVoiceSharedSettings.pitchKey)
         persistSharedSnapshot()
@@ -1112,7 +1123,7 @@ private final class ContentViewModel: ObservableObject {
             rate: 0.5,
             volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(speedMultiplier),
-            sentencePause: sentencePause,
+            sentencePauseStrength: sentencePauseStrength,
             wordGap: Self.clampWordGap(wordGap),
             pitch: 1.0
         )
@@ -1122,7 +1133,7 @@ private final class ContentViewModel: ObservableObject {
                 rate: 0.5,
                 volume: 1.0,
                 speedMultiplier: settings.speedMultiplier,
-                sentencePause: settings.sentencePause,
+                sentencePauseStrength: settings.sentencePauseStrength,
                 wordGap: settings.wordGap,
                 pitch: 1.0
             )
@@ -1134,7 +1145,7 @@ private final class ContentViewModel: ObservableObject {
                         rate: 0.5,
                         volume: 1.0,
                         speedMultiplier: Self.clampSpeedMultiplier(state.speedMultiplier),
-                        sentencePause: state.sentencePause,
+                        sentencePauseStrength: state.sentencePauseStrength,
                         wordGap: Self.clampWordGap(state.wordGap),
                         pitch: 1.0
                     )
@@ -1173,7 +1184,7 @@ private final class ContentViewModel: ObservableObject {
         fallbackRate: Double,
         fallbackVolume: Double,
         fallbackSpeedMultiplier: Double,
-        fallbackSentencePause: Double,
+        fallbackSentencePauseStrength: RHVoicePauseStrength,
         fallbackWordGap: Double,
         fallbackPitch: Double
     ) -> VoiceSettingsState {
@@ -1183,7 +1194,12 @@ private final class ContentViewModel: ObservableObject {
             rate: 0.5,
             volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier),
-            sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
+            sentencePauseStrength: RHVoicePauseStrength.resolved(
+                from: defaults,
+                key: "\(prefix).sentencePauseStrength",
+                legacyMillisecondsKey: "\(prefix).sentencePause",
+                fallback: fallbackSentencePauseStrength
+            ),
             wordGap: Self.clampWordGap(defaults.object(forKey: "\(prefix).wordGap") as? Double ?? fallbackWordGap),
             pitch: 1.0
         )
@@ -1406,9 +1422,9 @@ struct ContentView: View {
                 // дає людинi, — смiття в iнтерфейсi i зайве питання на перевiрцi Apple.
                 #if RHVOICE_DIAG
                 diagnosticSection
-                #endif
                     .padding(.horizontal, 12)
                     .padding(.bottom, 16)
+                #endif
             }
             .navigationTitle("Українські голоси")
         }
@@ -2415,14 +2431,12 @@ private struct VoiceSettingsScreen: View {
                     hint: "Точно налаштовує множник темпу для голосу \(voice.displayName). 1.0x не змінює системну швидкість VoiceOver."
                 )
 
-                sliderRow(
-                    title: "Пауза між реченнями",
-                    value: settingBinding(\.sentencePause),
-                    range: 0...2000,
-                    step: 100,
-                    valueText: "\(Int(settings.sentencePause)) мс",
-                    hint: "Змінює паузу між реченнями для голосу \(voice.displayName)."
-                )
+                Picker("Пауза після розділових знаків", selection: sentencePauseStrengthBinding) {
+                    ForEach(RHVoicePauseStrength.allCases, id: \.self) { strength in
+                        Text(strength.displayName).tag(strength)
+                    }
+                }
+                .accessibilityHint("Встановлює паузу після крапки, коми, знаку оклику та знаку питання для голосу \(voice.displayName).")
 
                 sliderRow(
                     title: "Проміжок між словами",
@@ -2455,6 +2469,16 @@ private struct VoiceSettingsScreen: View {
             set: { newValue in
                 settings.useCustomSettings = true
                 settings[keyPath: keyPath] = newValue
+            }
+        )
+    }
+
+    private var sentencePauseStrengthBinding: Binding<RHVoicePauseStrength> {
+        Binding(
+            get: { settings.sentencePauseStrength },
+            set: { newValue in
+                settings.useCustomSettings = true
+                settings.sentencePauseStrength = newValue
             }
         )
     }
