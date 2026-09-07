@@ -31,10 +31,10 @@ struct CapturedRequestsView: View {
                     .foregroundColor(.secondary)
                     .accessibilityLabel("Порядок дій: увімкнути розширену діагностику, прочитати текст голосом, повернутися сюди, оновити, скопіювати записи і надіслати розробнику.")
 
-                Text(isCaptureEnabled ? "Запис увімкнено." : "Запис вимкнено — нові тексти не зберігаються.")
+                Text(isCaptureEnabled ? NSLocalizedString("Запис увімкнено.", comment: "") : NSLocalizedString("Запис вимкнено — нові тексти не зберігаються.", comment: ""))
                     .font(.footnote)
                     .foregroundColor(isCaptureEnabled ? .secondary : .red)
-                    .accessibilityLabel(isCaptureEnabled ? "Запис увімкнено" : "Запис вимкнено, нові тексти не зберігаються")
+                    .accessibilityLabel(isCaptureEnabled ? NSLocalizedString("Запис увімкнено", comment: "") : NSLocalizedString("Запис вимкнено, нові тексти не зберігаються", comment: ""))
             }
 
             Section("Чи доходять запити до голосу") {
@@ -45,7 +45,7 @@ struct CapturedRequestsView: View {
                 Button {
                     RHVoiceRequestCapture.writeTestEntry()
                     reload()
-                    announce("Пробний запис створено")
+                    announce(NSLocalizedString("Пробний запис створено", comment: ""))
                 } label: {
                     Label("Створити пробний запис", systemImage: "checkmark.circle")
                 }
@@ -71,7 +71,7 @@ struct CapturedRequestsView: View {
                 Button(role: .destructive) {
                     RHVoiceRequestCapture.clear()
                     reload()
-                    announce("Записи очищено")
+                    announce(NSLocalizedString("Записи очищено", comment: ""))
                 } label: {
                     Label("Очистити записи", systemImage: "trash")
                 }
@@ -85,7 +85,7 @@ struct CapturedRequestsView: View {
                 }
             }
 
-            Section(entries.isEmpty ? "Записів немає" : "Записи (найновіший перший)") {
+            Section(entries.isEmpty ? NSLocalizedString("Записів немає", comment: "") : NSLocalizedString("Записи (найновіший перший)", comment: "")) {
                 if entries.isEmpty {
                     Text("Поки нічого не записано. Увімкніть діагностику і прочитайте будь-який текст голосом RHVoice.")
                         .font(.footnote)
@@ -99,12 +99,12 @@ struct CapturedRequestsView: View {
                             Text(entry.text)
                                 .font(.system(.body, design: .monospaced))
                                 .textSelection(.enabled)
-                            Text("\(entry.characters) символів")
+                            Text(String(format: NSLocalizedString("%@ символів", comment: ""), String(entry.characters)))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Запис від \(dateFormatter.string(from: entry.date)), \(entry.characters) символів. Текст: \(entry.text)")
+                        .accessibilityLabel(String(format: NSLocalizedString("Запис від %@, %@ символів. Текст: %@", comment: ""), dateFormatter.string(from: entry.date), String(entry.characters), entry.text))
                     }
                 }
             }
@@ -115,9 +115,9 @@ struct CapturedRequestsView: View {
 
     private var traceDescription: String {
         guard trace.count > 0, let date = trace.date else {
-            return "Голос ще жодного разу не звертався до синтезатора після встановлення цієї збірки. Прочитайте будь-який текст голосом RHVoice і натисніть «Оновити»."
+            return NSLocalizedString("Голос ще жодного разу не звертався до синтезатора після встановлення цієї збірки. Прочитайте будь-який текст голосом RHVoice і натисніть «Оновити».", comment: "")
         }
-        return "Останнє звернення голосу: \(dateFormatter.string(from: date)), \(trace.characters) символів. Усього звернень: \(trace.count)."
+        return String(format: NSLocalizedString("Останнє звернення голосу: %@, %@ символів. Усього звернень: %@.", comment: ""), dateFormatter.string(from: date), String(trace.characters), String(trace.count))
     }
 
     private func reload() {
@@ -135,8 +135,8 @@ struct CapturedRequestsView: View {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(report, forType: .string)
         #endif
-        statusMessage = "Скопійовано \(entries.count) записів."
-        announce("Записи скопійовано")
+        statusMessage = String(format: NSLocalizedString("Скопійовано %@ записів.", comment: ""), String(entries.count))
+        announce(NSLocalizedString("Записи скопійовано", comment: ""))
     }
 
     private func announce(_ message: String) {

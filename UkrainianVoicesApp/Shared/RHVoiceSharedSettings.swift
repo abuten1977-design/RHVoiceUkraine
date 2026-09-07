@@ -98,8 +98,8 @@ enum RHVoicePauseStrength: String, Codable, CaseIterable, Hashable {
 
     var displayName: String {
         switch self {
-        case .none: return "Немає"
-        case .medium: return "Звичайна"
+        case .none: return NSLocalizedString("Немає", comment: "")
+        case .medium: return NSLocalizedString("Звичайна", comment: "")
         }
     }
 

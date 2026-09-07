@@ -7,9 +7,9 @@ private struct VoiceSelfCheckReport {
     let abbreviationDictionary: String
 
     static let initial = Self(
-        stored: "На пристрої збережено: перевірка ще не виконувалась.",
-        published: "Опублікований список: перевірка ще не виконувалась.",
-        abbreviationDictionary: "Словник замін: перевірка ще не виконувалась."
+        stored: NSLocalizedString("На пристрої збережено: перевірка ще не виконувалась.", comment: ""),
+        published: NSLocalizedString("Опублікований список: перевірка ще не виконувалась.", comment: ""),
+        abbreviationDictionary: NSLocalizedString("Словник замін: перевірка ще не виконувалась.", comment: "")
     )
 
     static func collect() -> Self {
@@ -17,20 +17,20 @@ private struct VoiceSelfCheckReport {
         let storedNames = voices.map { descriptor -> String in
             let id = descriptor.identifier.components(separatedBy: ".").last ?? descriptor.identifier
             let size = directorySize(RHVoiceDownloadableVoices.voiceDirectoryURL(id: id))
-            return "\(descriptor.name) — \(String(format: "%.1f", Double(size) / 1_048_576.0)) МБ"
+            return String(format: NSLocalizedString("%@ — %@ МБ", comment: ""), NSLocalizedString(descriptor.name, comment: ""), String(format: "%.1f", Double(size) / 1_048_576.0))
         }
         let stored = storedNames.isEmpty
-            ? "На пристрої збережено: завантажених голосів немає."
-            : "На пристрої збережено: \(storedNames.joined(separator: ", "))."
+            ? NSLocalizedString("На пристрої збережено: завантажених голосів немає.", comment: "")
+            : String(format: NSLocalizedString("На пристрої збережено: %@.", comment: ""), storedNames.joined(separator: ", "))
 
         guard let catalog = RHVoicePublishedVoiceCatalog.loadPublished() else {
             return Self(
                 stored: stored,
-                published: "Опублікований список голосів відсутній.",
+                published: NSLocalizedString("Опублікований список голосів відсутній.", comment: ""),
                 abbreviationDictionary: abbreviationDictionaryStatus()
             )
         }
-        let published = "Опубліковано голосів: \(catalog.descriptors.count), версія списку \(catalog.revision)."
+        let published = String(format: NSLocalizedString("Опубліковано голосів: %@, версія списку %@.", comment: ""), String(catalog.descriptors.count), String(catalog.revision))
         return Self(stored: stored, published: published, abbreviationDictionary: abbreviationDictionaryStatus())
     }
 
@@ -38,9 +38,9 @@ private struct VoiceSelfCheckReport {
         let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
         let enabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) == nil
             ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) ?? true)
-        guard enabled else { return "Словник замін: вимкнено." }
+        guard enabled else { return NSLocalizedString("Словник замін: вимкнено.", comment: "") }
         let user = (try? AbbreviationDictionary.loadEntries().get())?.count ?? 0
-        return "Словник замін у застосунку: базових \(AbbreviationDictionary.bundledEntries.count), власних \(user)."
+        return String(format: NSLocalizedString("Словник замін у застосунку: базових %@, власних %@.", comment: ""), String(AbbreviationDictionary.bundledEntries.count), String(user))
     }
 
     private static func directorySize(_ url: URL?) -> Int64 {
@@ -108,13 +108,13 @@ struct DownloadableLanguagesView: View {
                                 )
                             } label: {
                                 HStack {
-                                    Text(language.nameUk)
+                                    Text(NSLocalizedString(language.nameUk, comment: ""))
                                     Spacer()
                                     Text(installedCountText(language))
                                         .foregroundColor(.secondary)
                                 }
                             }
-                            .accessibilityLabel("\(language.nameUk), \(installedCountText(language))")
+                            .accessibilityLabel("\(NSLocalizedString(language.nameUk, comment: "")), \(installedCountText(language))")
                             .accessibilityHint("Відкрити список голосів для завантаження")
                         }
                     }
@@ -127,7 +127,7 @@ struct DownloadableLanguagesView: View {
                     Text(downloadManager.statusMessage)
                         .font(.footnote)
                         .foregroundColor(.secondary)
-                        .accessibilityLabel("Стан: \(downloadManager.statusMessage)")
+                        .accessibilityLabel(String(format: NSLocalizedString("Стан: %@", comment: ""), downloadManager.statusMessage))
                 }
             }
 
@@ -181,9 +181,9 @@ struct DownloadableLanguagesView: View {
     private func installedCountText(_ language: ManifestLanguage) -> String {
         let installed = language.voices.filter { downloadManager.isInstalled($0) }.count
         if installed == 0 {
-            return "не завантажено"
+            return NSLocalizedString("не завантажено", comment: "")
         }
-        return "завантажено: \(installed) із \(language.voices.count)"
+        return String(format: NSLocalizedString("завантажено: %@ із %@", comment: ""), String(installed), String(language.voices.count))
     }
 }
 
@@ -212,15 +212,15 @@ struct DownloadableLanguageVoicesView: View {
                     Text(downloadManager.statusMessage)
                         .font(.footnote)
                         .foregroundColor(.secondary)
-                        .accessibilityLabel("Стан: \(downloadManager.statusMessage)")
+                        .accessibilityLabel(String(format: NSLocalizedString("Стан: %@", comment: ""), downloadManager.statusMessage))
                 }
             }
         }
-        .navigationTitle(language.nameUk)
+        .navigationTitle(NSLocalizedString(language.nameUk, comment: ""))
         .onAppear { downloadManager.refreshInstalled() }
         .alert(item: $voicePendingDelete) { voice in
             Alert(
-                title: Text("Видалити голос \(voice.userFacingName)?"),
+                title: Text(String(format: NSLocalizedString("Видалити голос %@?", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""))),
                 message: Text("Голос зникне з VoiceOver. Його можна буде завантажити знову."),
                 primaryButton: .destructive(Text("Видалити")) {
                     downloadManager.delete(voice)
@@ -237,17 +237,17 @@ struct DownloadableLanguageVoicesView: View {
     private func voiceRow(_ voice: ManifestVoice) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(voice.userFacingName)
-                Text("\(voice.genderUk), \(voice.sizeMegabytesText)")
+                Text(NSLocalizedString(voice.userFacingName, comment: ""))
+                Text("\(NSLocalizedString(voice.genderUk, comment: "")), \(voice.sizeMegabytesText)")
                     .font(.footnote)
                     .foregroundColor(.secondary)
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(rowAccessibilityLabel(voice))
             .accessibilityHint(downloadManager.isInstalled(voice)
-                ? "Доступна дія: Видалити голос."
-                : "Доступна дія: Завантажити голос.")
-            .accessibilityAction(named: downloadManager.isInstalled(voice) ? "Видалити голос" : "Завантажити голос") {
+                ? NSLocalizedString("Доступна дія: Видалити голос.", comment: "")
+                : NSLocalizedString("Доступна дія: Завантажити голос.", comment: ""))
+            .accessibilityAction(named: downloadManager.isInstalled(voice) ? NSLocalizedString("Видалити голос", comment: "") : NSLocalizedString("Завантажити голос", comment: "")) {
                 if downloadManager.isInstalled(voice) {
                     voicePendingDelete = voice
                 } else {
@@ -260,33 +260,33 @@ struct DownloadableLanguageVoicesView: View {
             if let progress = downloadManager.downloadProgress[voice.id] {
                 ProgressView(value: progress)
                     .frame(width: 80)
-                    .accessibilityLabel("Завантаження \(voice.userFacingName)")
-                    .accessibilityValue("\(Int(progress * 100)) відсотків")
+                    .accessibilityLabel(String(format: NSLocalizedString("Завантаження %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: "")))
+                    .accessibilityValue(String(format: NSLocalizedString("%@ відсотків", comment: ""), String(Int(progress * 100))))
             } else if downloadManager.isInstalled(voice) {
                 Button("Видалити") {
                     voicePendingDelete = voice
                 }
                 .foregroundColor(.red)
-                .accessibilityLabel("Видалити голос \(voice.userFacingName)")
+                .accessibilityLabel(String(format: NSLocalizedString("Видалити голос %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: "")))
                 .accessibilityHint("Голос зникне з VoiceOver, його можна буде завантажити знову.")
             } else {
                 Button("Завантажити") {
                     downloadManager.download(voice, language: language)
                 }
-                .accessibilityLabel("Завантажити голос \(voice.userFacingName), \(voice.sizeMegabytesText)")
+                .accessibilityLabel(String(format: NSLocalizedString("Завантажити голос %@, %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""), voice.sizeMegabytesText))
                 .accessibilityHint("Після завантаження голос з'явиться у списку голосів і у VoiceOver.")
             }
         }
     }
 
     private func rowAccessibilityLabel(_ voice: ManifestVoice) -> String {
-        var label = "\(voice.userFacingName), \(voice.genderUk), \(voice.sizeMegabytesText)"
+        var label = "\(NSLocalizedString(voice.userFacingName, comment: "")), \(NSLocalizedString(voice.genderUk, comment: "")), \(voice.sizeMegabytesText)"
         if let progress = downloadManager.downloadProgress[voice.id] {
-            label += ", завантаження \(Int(progress * 100)) відсотків"
+            label += String(format: NSLocalizedString(", завантаження %@ відсотків", comment: ""), String(Int(progress * 100)))
         } else if downloadManager.isInstalled(voice) {
-            label += ", завантажено"
+            label += NSLocalizedString(", завантажено", comment: "")
         } else {
-            label += ", не завантажено"
+            label += NSLocalizedString(", не завантажено", comment: "")
         }
         return label
     }

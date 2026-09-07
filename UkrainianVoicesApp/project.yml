@@ -1,6 +1,9 @@
 name: UkrainianVoices
 options:
   bundleIdPrefix: com.rhvoice
+  # Мова розробки = українська: ключі локалізації — це самі українські надписи,
+  # тому за відсутності перекладу застосунок показує український текст.
+  developmentLanguage: uk
   deploymentTarget:
     macOS: "13.0"
     iOS: "16.0"

@@ -79,7 +79,7 @@ enum RHVoiceRequestCapture {
         append(Entry(date: Date(),
                      voiceId: "перевірка з застосунку",
                      characters: 0,
-                     text: "Пробний запис. Якщо ви його бачите, показ списку працює."),
+                     text: NSLocalizedString("Пробний запис. Якщо ви його бачите, показ списку працює.", comment: "")),
                to: defaults)
         defaults.synchronize()
     }
@@ -120,17 +120,22 @@ enum RHVoiceRequestCapture {
 
     /// Готовий до пересилання текст: усе, що записалось, одним шматком.
     static func report(entries: [Entry]) -> String {
-        guard !entries.isEmpty else { return "Записів немає." }
+        guard !entries.isEmpty else { return NSLocalizedString("Записів немає.", comment: "") }
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy HH:mm:ss"
         return entries.enumerated().map { index, entry in
-            """
-            Запис \(index + 1) — \(formatter.string(from: entry.date))
-            Голос: \(entry.voiceId)
-            Довжина: \(entry.characters) символів
+            String(format: NSLocalizedString("""
+            Запис %@ — %@
+            Голос: %@
+            Довжина: %@ символів
             Текст:
-            \(entry.text)
-            """
+            %@
+            """, comment: ""),
+                   String(index + 1),
+                   formatter.string(from: entry.date),
+                   entry.voiceId,
+                   String(entry.characters),
+                   entry.text)
         }.joined(separator: "\n\n———\n\n")
     }
 

@@ -28,17 +28,17 @@ enum AbbreviationDictionaryError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .emptyAbbreviation:
-            return "Поле «Скорочення» не може бути порожнім."
+            return NSLocalizedString("Поле «Скорочення» не може бути порожнім.", comment: "")
         case .emptyReplacement:
-            return "Поле «Як читати» не може бути порожнім."
+            return NSLocalizedString("Поле «Як читати» не може бути порожнім.", comment: "")
         case .appGroupUnavailable:
-            return "Не вдалося відкрити спільне сховище App Group."
+            return NSLocalizedString("Не вдалося відкрити спільне сховище App Group.", comment: "")
         case .unreadableFile:
-            return "Файл словника не вдалося прочитати. Працює базовий словник."
+            return NSLocalizedString("Файл словника не вдалося прочитати. Працює базовий словник.", comment: "")
         case .fileTooLarge:
-            return "Файл словника завеликий. Максимальний розмір — 1 МБ."
+            return NSLocalizedString("Файл словника завеликий. Максимальний розмір — 1 МБ.", comment: "")
         case .emptyImport:
-            return "У файлі немає коректних записів. Мій словник не змінено."
+            return NSLocalizedString("У файлі немає коректних записів. Мій словник не змінено.", comment: "")
         }
     }
 }
@@ -59,7 +59,7 @@ struct AbbreviationDictionaryImportSummary: Equatable {
     let skipped: Int
 
     var spokenDescription: String {
-        "Словник завантажено: додано \(added), оновлено \(updated), пропущено \(skipped)."
+        String(format: NSLocalizedString("Словник завантажено: додано %@, оновлено %@, пропущено %@.", comment: ""), String(added), String(updated), String(skipped))
     }
 }
 

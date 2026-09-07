@@ -69,9 +69,9 @@ struct RHVoicePublishedVoiceCatalog: Codable, Equatable {
         case appGroupUnavailable, invalidDescriptors, readBackMismatch
         var errorDescription: String? {
             switch self {
-            case .appGroupUnavailable: return "Спільне сховище голосів недоступне."
-            case .invalidDescriptors: return "Каталог голосів містить некоректні дані."
-            case .readBackMismatch: return "Не вдалося перевірити запис каталогу голосів."
+            case .appGroupUnavailable: return NSLocalizedString("Спільне сховище голосів недоступне.", comment: "")
+            case .invalidDescriptors: return NSLocalizedString("Каталог голосів містить некоректні дані.", comment: "")
+            case .readBackMismatch: return NSLocalizedString("Не вдалося перевірити запис каталогу голосів.", comment: "")
             }
         }
     }

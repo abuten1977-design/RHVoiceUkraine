@@ -38,6 +38,9 @@ RHVoice_sources.tar.gz
 *.txt
 !UkrainianVoicesApp/Extension/Resources/RHVoiceData/voices/**/bpf.txt
 !CMakeLists.txt
+# Список ключів перекладу — вхід для scripts/i18n/build_strings.py.
+# Без нього генератор не працює у свіжому клоні.
+!scripts/i18n/keys_uk.txt
 !README.md
 !*.md
 
@@ -77,3 +80,7 @@ AuthKey_*
 *.codexprobe
 *.pre_*
 project.yml.backup_*
+
+# Python
+__pycache__/
+*.pyc

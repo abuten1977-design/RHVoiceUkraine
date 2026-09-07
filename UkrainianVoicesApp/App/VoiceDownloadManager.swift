@@ -42,7 +42,7 @@ struct ManifestVoice: Codable, Equatable, Identifiable {
     var sampleText: String?
 
     var sizeMegabytesText: String {
-        String(format: "%.1f МБ", Double(sizeBytes) / 1_048_576.0)
+        String(format: NSLocalizedString("%.1f МБ", comment: ""), Double(sizeBytes) / 1_048_576.0)
     }
 
     var userFacingName: String {
@@ -112,9 +112,9 @@ final class VoiceDownloadManager: ObservableObject {
                let decoded = try? JSONDecoder().decode(VoiceManifest.self, from: cached) {
                 manifest = decoded
                 manifestState = .loaded
-                statusMessage = "Немає інтернету — показано збережений список голосів."
+                statusMessage = NSLocalizedString("Немає інтернету — показано збережений список голосів.", comment: "")
             } else {
-                manifestState = .failed("Не вдалося завантажити список голосів. Перевірте інтернет і спробуйте ще раз.")
+                manifestState = .failed(NSLocalizedString("Не вдалося завантажити список голосів. Перевірте інтернет і спробуйте ще раз.", comment: ""))
             }
         }
     }
@@ -140,7 +140,7 @@ final class VoiceDownloadManager: ObservableObject {
     func download(_ voice: ManifestVoice, language: ManifestLanguage) {
         guard !isDownloading(voice) else { return }
         downloadProgress[voice.id] = 0
-        statusMessage = "Завантаження голосу \(voice.userFacingName)…"
+        statusMessage = String(format: NSLocalizedString("Завантаження голосу %@…", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""))
 
         Task { [weak self] in
             do {
@@ -151,12 +151,12 @@ final class VoiceDownloadManager: ObservableObject {
                 }
                 await MainActor.run { [weak self] in
                     self?.downloadProgress[voice.id] = nil
-                    self?.finishVoicesChange(message: "Голос \(voice.userFacingName) завантажено. Тепер його можна увімкнути у VoiceOver.")
+                    self?.finishVoicesChange(message: String(format: NSLocalizedString("Голос %@ завантажено. Тепер його можна увімкнути у VoiceOver.", comment: ""), NSLocalizedString(voice.userFacingName, comment: "")))
                 }
             } catch {
                 await MainActor.run { [weak self] in
                     self?.downloadProgress[voice.id] = nil
-                    self?.statusMessage = "Не вдалося завантажити голос \(voice.userFacingName): \(error.localizedDescription)"
+                    self?.statusMessage = String(format: NSLocalizedString("Не вдалося завантажити голос %@: %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""), error.localizedDescription)
                 }
             }
         }
@@ -164,16 +164,16 @@ final class VoiceDownloadManager: ObservableObject {
 
     func delete(_ voice: ManifestVoice) {
         guard let dir = RHVoiceDownloadableVoices.voiceDirectoryURL(id: voice.id) else { return }
-        let name = voice.userFacingName
+        let name = NSLocalizedString(voice.userFacingName, comment: "")
         DispatchQueue.global(qos: .utility).async { [weak self] in
             do {
                 try FileManager.default.removeItem(at: dir)
                 DispatchQueue.main.async {
-                    self?.finishVoicesChange(message: "Голос \(name) видалено.")
+                    self?.finishVoicesChange(message: String(format: NSLocalizedString("Голос %@ видалено.", comment: ""), name))
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self?.statusMessage = "Не вдалося видалити голос \(name): \(error.localizedDescription)"
+                    self?.statusMessage = String(format: NSLocalizedString("Не вдалося видалити голос %@: %@", comment: ""), name, error.localizedDescription)
                 }
             }
         }
@@ -202,7 +202,7 @@ final class VoiceDownloadManager: ObservableObject {
                 }
             } catch {
                 DispatchQueue.main.async {
-                    self?.statusMessage = "Не вдалося опублікувати список голосів: \(error.localizedDescription)"
+                    self?.statusMessage = String(format: NSLocalizedString("Не вдалося опублікувати список голосів: %@", comment: ""), error.localizedDescription)
                 }
             }
         }
@@ -212,7 +212,7 @@ final class VoiceDownloadManager: ObservableObject {
     /// list. Disk I/O stays off the main actor; the second refresh helps iOS
     /// recover from a stale Audio Unit enumeration without a device reboot.
     func repairVoices() {
-        statusMessage = "Полагодження голосів: переопубліковуємо список."
+        statusMessage = NSLocalizedString("Полагодження голосів: переопубліковуємо список.", comment: "")
         Task { [weak self] in
             do {
                 let catalog = try await Task.detached(priority: .utility) {
@@ -224,13 +224,13 @@ final class VoiceDownloadManager: ObservableObject {
                 try await Task.sleep(for: .milliseconds(700))
                 AVSpeechSynthesisProviderVoice.updateSpeechVoices()
                 self?.refreshInstalled()
-                let message = "Голоси переопубліковано: \(catalog.descriptors.count). Перевірте самоперевірку."
+                let message = String(format: NSLocalizedString("Голоси переопубліковано: %@. Перевірте самоперевірку.", comment: ""), String(catalog.descriptors.count))
                 self?.statusMessage = message
                 // Без анонсу VoiceOver мовчить після натискання кнопки —
                 // результат видно лише оком (аудит Даші, збірка 206, п.3).
                 self?.announceForScreenReader(message)
             } catch {
-                let message = "Не вдалося полагодити голоси: \(error.localizedDescription)"
+                let message = String(format: NSLocalizedString("Не вдалося полагодити голоси: %@", comment: ""), error.localizedDescription)
                 self?.statusMessage = message
                 self?.announceForScreenReader(message)
             }
@@ -266,10 +266,10 @@ final class VoiceDownloadManager: ObservableObject {
 
         var errorDescription: String? {
             switch self {
-            case .badResponse: return "сервер не відповів"
-            case .checksumMismatch: return "файл пошкоджено при передачі"
-            case .invalidArchive: return "архів голосу неповний"
-            case .appGroupUnavailable: return "спільне сховище недоступне"
+            case .badResponse: return NSLocalizedString("сервер не відповів", comment: "")
+            case .checksumMismatch: return NSLocalizedString("файл пошкоджено при передачі", comment: "")
+            case .invalidArchive: return NSLocalizedString("архів голосу неповний", comment: "")
+            case .appGroupUnavailable: return NSLocalizedString("спільне сховище недоступне", comment: "")
             }
         }
     }

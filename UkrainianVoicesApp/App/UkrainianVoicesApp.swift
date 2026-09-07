@@ -56,7 +56,7 @@ private final class MacAppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "Українські голоси"
+            window.title = NSLocalizedString("Українські голоси", comment: "")
             window.contentViewController = NSHostingController(rootView: ContentView())
             window.center()
             fallbackWindow = window
