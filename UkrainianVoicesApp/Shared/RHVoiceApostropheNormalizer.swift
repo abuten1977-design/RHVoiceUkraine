@@ -42,7 +42,12 @@ enum RHVoiceApostropheNormalizer {
     private static func spokenStandaloneLetterName(for text: String) -> String? {
         // Invisible formatting scalars are category Cf, so neither
         // `.whitespacesAndNewlines` nor the regex `\s` removes them — and a live
-        // iOS 27 capture did contain U+200E inside a VoiceOver string. Strip them
+        // iOS 27 capture did contain U+200E inside a VoiceOver string (see
+        // ~/aiwork/copilot/ЗАМЕР_2026-09-05_кнопки_ios26.md, part 2 — iPhone18,3,
+        // iOS 27.0; the LRM sits inside the element label at the input-ssml
+        // stage). Note it was seen in a button label, not in a letter-name
+        // request, so this hardening is defensive, not a reproduced failure.
+        // Strip them
         // (and any surrounding punctuation) before comparing, or the rule misses
         // silently.
         let visibleScalars = text.unicodeScalars.filter { !invisibleFormattingScalars.contains($0) }
