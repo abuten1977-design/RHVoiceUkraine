@@ -403,6 +403,7 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         let sentencePauseStrength = voiceSettings.sentencePauseStrength
         let wordGapMs = Int(Self.clampWordGap(voiceSettings.wordGap).rounded())
         let normalizedText = Self.normalizeStandaloneApostropheRequest(text)
+            ?? Self.normalizeStandaloneLetterNameRequest(text)
             ?? Self.normalizeApostrophesInTextSegments(text)
         Self.logNumberDiagnostics(label: "after-apostrophe-normalize", ssml: normalizedText, force: shouldLogNumberDiag)
         Self.logApostropheEncoding(label: "after-apostrophe-normalize", ssml: normalizedText)
@@ -656,6 +657,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
     private static func normalizeStandaloneApostropheRequest(_ ssml: String) -> String? {
         RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest(ssml)
+    }
+
+    private static func normalizeStandaloneLetterNameRequest(_ ssml: String) -> String? {
+        RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ssml)
     }
 
     private static func normalizeApostrophes(_ text: String) -> String {

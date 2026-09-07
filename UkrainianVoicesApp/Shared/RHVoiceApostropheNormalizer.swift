@@ -10,6 +10,48 @@ enum RHVoiceApostropheNormalizer {
         return spokenStandaloneApostropheName(for: text)
     }
 
+    /// VoiceOver does not always send the letter «і» itself. When the user moves
+    /// character by character it sends the letter's Unicode NAME instead
+    /// («білорусько-українська i»), and the trailing letter inside that name is a
+    /// LATIN i (U+0069), not the Cyrillic і — measured on Андрій's iPhone 12,
+    /// iOS 26.6.1, build 226, syslog capture 2026-09-06 (`cap26_2026-09-06.txt`).
+    /// A Ukrainian engine reads that Latin letter the English way, which is the
+    /// «ай» Андрій hears at the end of the phrase.
+    ///
+    /// The other Ukrainian letters he checked in the same capture («ї», «є»)
+    /// arrive as the letter itself and already sound right, so they are
+    /// deliberately NOT touched here.
+    ///
+    /// Decision (Андрій, 2026-09-07): speak just the letter «і», the same way the
+    /// other letters are spoken — not a corrected long description.
+    ///
+    /// Safe by construction: this phrase arrives as a whole standalone request
+    /// with nothing else in it, so it cannot collide with ordinary text.
+    static func normalizeStandaloneLetterNameRequest(_ ssml: String) -> String? {
+        let text = extractTextSegments(from: ssml).joined().trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return nil }
+
+        return spokenStandaloneLetterName(for: text)
+    }
+
+    private static func spokenStandaloneLetterName(for text: String) -> String? {
+        let collapsed = text
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .lowercased()
+        return standaloneLetterNameReplacements[collapsed]
+    }
+
+    /// Keys cover what was measured plus the near variants we cannot rule out,
+    /// because the wording comes from an iOS localization table we do not own:
+    /// both word orders, and both the Latin «i» (measured) and the Cyrillic «і»
+    /// (so a device that sends the correct letter is normalized too).
+    private static let standaloneLetterNameReplacements: [String: String] = [
+        "білорусько-українська i": "і",
+        "білорусько-українська і": "і",
+        "українсько-білоруська i": "і",
+        "українсько-білоруська і": "і"
+    ]
+
     static func normalizeInTextSegments(
         _ ssml: String,
         datesAsWords: Bool = true,

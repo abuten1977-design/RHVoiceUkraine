@@ -965,4 +965,57 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments(input), input)
     }
 
+
+    // MARK: - Letter «і» announced by its Unicode name (measured 2026-09-06)
+
+    func testMeasuredLetterINameRequestBecomesTheLetterItself() {
+        // Рядок ЗНЯТИЙ з живого iPhone 12 / iOS 26.6.1, збірка 226, журнал
+        // cap26_2026-09-06.txt. Остання буква у назві — ЛАТИНСЬКА i (U+0069),
+        // саме через неї Андрій чув «ай» у кінці фрази.
+        let measured = "<speak><lang xml:lang=\"uk\"><prosody rate=\"400.0%\"> білорусько-українська \u{0069} </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "і")
+    }
+
+    func testLetterINameIsNormalizedRegardlessOfLetterVariantAndWordOrder() {
+        let variants = [
+            "білорусько-українська \u{0069}",
+            "білорусько-українська \u{0456}",
+            "українсько-білоруська \u{0069}",
+            "українсько-білоруська \u{0456}",
+            "  Білорусько-Українська   \u{0069}  "
+        ]
+        for variant in variants {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
+                "і",
+                "не спрацювало на варіанті: \(variant)"
+            )
+        }
+    }
+
+    func testOtherLettersAreLeftAlone() {
+        // «ї» та «є» приходять самою буквою і вже звучать правильно (той самий
+        // замір), тому правило не має до них торкатися.
+        for text in ["<speak>Їжак</speak>", "<speak>Євген</speak>", "<speak>ї</speak>", "<speak>є</speak>", "<speak> yi </speak>"] {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testOrdinaryTextWithTheSameWordsIsNotReplaced() {
+        // Сторож: правило спрацьовує ЛИШЕ на цілому запиті, що складається саме
+        // з назви букви, і не чіпає звичайну мову.
+        let ordinary = [
+            "білорусько-українська співпраця",
+            "це білорусько-українська i ще щось",
+            "Мова білорусько-українська"
+        ]
+        for text in ordinary {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testEmptyRequestIsNotTouched() {
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("<speak></speak>"))
+    }
+
 }
