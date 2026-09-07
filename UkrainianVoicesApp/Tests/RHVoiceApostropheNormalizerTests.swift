@@ -993,12 +993,27 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         }
     }
 
-    func testOtherLettersAreLeftAlone() {
-        // «ї» та «є» приходять самою буквою і вже звучать правильно (той самий
-        // замір), тому правило не має до них торкатися.
-        for text in ["<speak>Їжак</speak>", "<speak>Євген</speak>", "<speak>ї</speak>", "<speak>є</speak>", "<speak> yi </speak>"] {
+    func testOtherLettersAreLeftAloneByDecision() {
+        // ВАЖЛИВО, чому саме NIL. Це рішення Андрія (07.09.2026): він просив
+        // виправити ЛИШЕ «і». У тому ж замірі є також « українська ї » та « yi »
+        // — вони НЕ ідеальні, просто Андрій каже, що на слух вони звучать
+        // нормально. Якщо він попросить — сюди додається ключ, і цей тест
+        // змінюється разом із рішенням. Тест закріплює МЕЖУ ЗАДАЧІ, а не якість.
+        for text in ["<speak>Їжак</speak>", "<speak>Євген</speak>", "<speak>ї</speak>", "<speak>є</speak>", "<speak> українська ї </speak>", "<speak> yi </speak>"] {
             XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
         }
+    }
+
+    func testInvisibleFormattingCharactersDoNotDefeatTheRule() {
+        // U+200E (LRM) реально трапляється всередині рядків VoiceOver на iOS 27.
+        // Він не належить до пробільних, тож без окремого зняття правило б
+        // мовчки промахнулося.
+        let withLRM = "\u{200E} білорусько-українська \u{0069}\u{200E} "
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(withLRM), "і")
+    }
+
+    func testTrailingPunctuationDoesNotDefeatTheRule() {
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("білорусько-українська \u{0069}."), "і")
     }
 
     func testOrdinaryTextWithTheSameWordsIsNotReplaced() {

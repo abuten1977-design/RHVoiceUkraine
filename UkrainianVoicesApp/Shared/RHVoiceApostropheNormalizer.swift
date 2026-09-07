@@ -18,9 +18,14 @@ enum RHVoiceApostropheNormalizer {
     /// A Ukrainian engine reads that Latin letter the English way, which is the
     /// «ай» Андрій hears at the end of the phrase.
     ///
-    /// The other Ukrainian letters he checked in the same capture («ї», «є»)
-    /// arrive as the letter itself and already sound right, so they are
-    /// deliberately NOT touched here.
+    /// Scope is deliberately ONE letter. Correction of an earlier wrong claim in
+    /// this comment (independent critic, 2026-09-07): «ї» does NOT arrive as the
+    /// bare letter — the same capture also contains « українська ї » (a name
+    /// phrase, but ending in the CYRILLIC ї, so it is read correctly) and « yi »
+    /// (two LATIN letters). «є» as a name phrase does not appear in the capture
+    /// at all. Андрій reports both «ї» forms sound fine to him and asked for the
+    /// «і» fix only, so they are left alone BY DECISION, not because they are
+    /// already ideal. Revisit only if he asks.
     ///
     /// Decision (Андрій, 2026-09-07): speak just the letter «і», the same way the
     /// other letters are spoken — not a corrected long description.
@@ -35,11 +40,29 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func spokenStandaloneLetterName(for text: String) -> String? {
-        let collapsed = text
+        // Invisible formatting scalars are category Cf, so neither
+        // `.whitespacesAndNewlines` nor the regex `\s` removes them — and a live
+        // iOS 27 capture did contain U+200E inside a VoiceOver string. Strip them
+        // (and any surrounding punctuation) before comparing, or the rule misses
+        // silently.
+        let visibleScalars = text.unicodeScalars.filter { !invisibleFormattingScalars.contains($0) }
+        let trimSet = CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters)
+        let collapsed = String(String.UnicodeScalarView(visibleScalars))
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: trimSet)
             .lowercased()
         return standaloneLetterNameReplacements[collapsed]
     }
+
+    private static let invisibleFormattingScalars: Set<UnicodeScalar> = {
+        var scalars = Set<UnicodeScalar>()
+        for value: UInt32 in 0x200B...0x200F {
+            scalars.insert(UnicodeScalar(value)!)
+        }
+        scalars.insert(UnicodeScalar(0x2060)!) // word joiner
+        scalars.insert(UnicodeScalar(0xFEFF)!) // BOM / zero-width no-break space
+        return scalars
+    }()
 
     /// Keys cover what was measured plus the near variants we cannot rule out,
     /// because the wording comes from an iOS localization table we do not own:
