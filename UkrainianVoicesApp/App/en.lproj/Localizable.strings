@@ -353,6 +353,11 @@
 "спільне сховище недоступне" = "shared storage unavailable";
 "файл пошкоджено при передачі" = "file was corrupted during transfer";
 "читати як %@" = "read as %@";
+"Англійські голоси: Бен, Клара, Сара, Радж" = "English voices: Ben, Clara, Sarah, Raj";
+"Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних." = "Downloaded on demand. The models were trained for the RHVoice engine, so they are modified derivatives of the original data.";
+"Українська вбудована; голоси інших мов можна завантажити." = "Ukrainian is built in; voices for other languages can be downloaded.";
+"Перевірити збережені, опубліковані та системні голоси." = "Check the stored, published and system voices.";
+"Carnegie Mellon University, корпус CMU ARCTIC" = "Carnegie Mellon University, CMU ARCTIC corpus";
 "%@: %@." = "%@: %@.";
 "чоловічий" = "male";
 "жіночий" = "female";

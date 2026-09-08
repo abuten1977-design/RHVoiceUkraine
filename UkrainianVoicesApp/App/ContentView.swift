@@ -108,6 +108,13 @@ private let licenseItems: [LicenseItem] = [
         url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
     ),
     .init(
+        title: NSLocalizedString("Англійські голоси: Бен, Клара, Сара, Радж", comment: ""),
+        license: "CMU / Festvox",
+        attribution: NSLocalizedString("Carnegie Mellon University, корпус CMU ARCTIC", comment: ""),
+        note: NSLocalizedString("Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних.", comment: ""),
+        url: URL(string: "http://www.festvox.org/cmu_arctic/")
+    ),
+    .init(
         title: NSLocalizedString("Англійські мовні дані (cmulex)", comment: ""),
         license: "CMU Pronouncing Dictionary",
         attribution: "Carnegie Mellon University",
@@ -1308,14 +1315,13 @@ struct ContentView: View {
                     }
                 }
 
-                // Роздiл дiагностики лишається ТIЛЬКИ у замiрочних збiрках.
+                // Роздiл дiагностики ПРИБРАНО з iнтерфейсу (рiшення Андрiя 08.09.2026).
                 // Причина: забрати журнал користувач не може нi за яких налаштувань —
                 // розширенню заборонена будь-яка запис (доведено 26.08.2026), а системний
                 // журнал знiмається лише комп'ютером по кабелю. Перемикач, який нiчого не
                 // дає людинi, — смiття в iнтерфейсi i зайве питання на перевiрцi Apple.
-                #if RHVOICE_DIAG
-                diagnosticSection
-                #endif
+                // Запис у СИСТЕМНИЙ журнал (NUMBER_DIAG) лишається пiд прапорцем
+                // RHVOICE_DIAG — це прилад для замiрiв по кабелю, а не екран.
             }
             .navigationTitle("Українські голоси")
             .onAppear {
@@ -1415,18 +1421,13 @@ struct ContentView: View {
                 readingSection
                     .padding(.horizontal, 12)
 
-                Divider()
-
-                // Роздiл дiагностики лишається ТIЛЬКИ у замiрочних збiрках.
+                // Роздiл дiагностики ПРИБРАНО з iнтерфейсу (рiшення Андрiя 08.09.2026).
                 // Причина: забрати журнал користувач не може нi за яких налаштувань —
                 // розширенню заборонена будь-яка запис (доведено 26.08.2026), а системний
                 // журнал знiмається лише комп'ютером по кабелю. Перемикач, який нiчого не
                 // дає людинi, — смiття в iнтерфейсi i зайве питання на перевiрцi Apple.
-                #if RHVOICE_DIAG
-                diagnosticSection
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 16)
-                #endif
+                // Запис у СИСТЕМНИЙ журнал (NUMBER_DIAG) лишається пiд прапорцем
+                // RHVOICE_DIAG — це прилад для замiрiв по кабелю, а не екран.
             }
             .navigationTitle("Українські голоси")
         }
@@ -1516,6 +1517,9 @@ struct ContentView: View {
         }
     }
 
+    // НЕ ПIДКЛЮЧЕНО до жодного екрана з 08.09.2026: роздiл дiагностики прибрано з
+    // iнтерфейсу (див. коментар у body). Код лишено на мiсцi навмисно — щоб
+    // повернути роздiл у замiрочнiй збiрцi, достатньо знову викликати його з body.
     @ViewBuilder
     private var diagnosticSection: some View {
         Section("Діагностика") {
@@ -1624,7 +1628,7 @@ struct ContentView: View {
             Label("Мови", systemImage: "globe")
         }
         .accessibilityLabel("Мови")
-        .accessibilityHint("Показує мови, голоси яких є у застосунку.")
+        .accessibilityHint("Українська вбудована; голоси інших мов можна завантажити.")
     }
 
     private var howToLink: some View {
