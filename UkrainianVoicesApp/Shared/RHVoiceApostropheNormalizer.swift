@@ -36,13 +36,90 @@ enum RHVoiceApostropheNormalizer {
     /// itself, the same way the other letters are spoken — not a corrected long
     /// description. Covers «і» and «є».
     ///
-    /// Safe by construction: this phrase arrives as a whole standalone request
-    /// with nothing else in it, so it cannot collide with ordinary text.
+    /// Third correction (2026-09-08, live captures from both devices —
+    /// `~/aiwork/copilot/cap_letters_2026-09-08_ios26.txt` and
+    /// `~/rhvoice/cap27_letters_2026-09-08.txt`): iOS 26 sends the letter-name
+    /// phrase as ONE text run inside the SSML (single `<lang><prosody>` wrap),
+    /// so joining every text run and comparing the joined string against the
+    /// dictionary is safe — there is only one run to join. iOS 27 sends the
+    /// SAME phrase as THREE separate `<s>` sentences (name, pause, alphabet
+    /// word, e.g. `<s><lang>...білорусько-українська i...</lang></s>
+    /// <s><break.../></s><s><lang>Іван</lang></s>`). Joining those three runs
+    /// produces « білорусько-українська i Іван », which is not a dictionary
+    /// key, so the old join-then-compare logic silently failed to fire on
+    /// iOS 27 — the bug this rewrite fixes.
+    ///
+    /// Each text run is now checked against the dictionary on its own:
+    /// - Exactly one run, and it matches → return the bare letter, unchanged
+    ///   from the original iOS 26 behaviour proved on Андрій's phone.
+    /// - Several runs, and at least one matches → return the original SSML
+    ///   with ONLY the matching run's text replaced; every tag (`<speak>`,
+    ///   `<prosody>`, `<s>`, `<lang>`, `<break>`) and every non-matching run
+    ///   (the alphabet word) is left exactly as iOS sent it.
+    /// - No run matches → nil, same as before (request continues unmodified).
+    ///
+    /// Safe by construction either way: only a run whose ENTIRE normalized
+    /// text equals a dictionary key is touched, so it cannot collide with
+    /// ordinary text that merely contains these words as a substring.
     static func normalizeStandaloneLetterNameRequest(_ ssml: String) -> String? {
-        let text = extractTextSegments(from: ssml).joined().trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return nil }
+        let segments = extractTextSegments(from: ssml)
+        guard !segments.isEmpty else { return nil }
 
-        return spokenStandaloneLetterName(for: text)
+        if segments.count == 1 {
+            let text = segments[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return nil }
+            return spokenStandaloneLetterName(for: text)
+        }
+
+        let (rewritten, matchedAny) = replacingEachTextSegment(in: ssml) { segment in
+            spokenStandaloneLetterName(for: segment)
+        }
+        return matchedAny ? rewritten : nil
+    }
+
+    /// Walks `ssml` exactly like `extractTextSegments`, but rebuilds the
+    /// string: every tag is copied through untouched, and each non-empty text
+    /// run is individually offered to `replacement`. A run is substituted only
+    /// when `replacement` returns non-nil for THAT run — there is no joining
+    /// of runs, so a match in one run cannot be triggered or blocked by the
+    /// content of a neighbouring run.
+    private static func replacingEachTextSegment(
+        in ssml: String,
+        replacement: (String) -> String?
+    ) -> (result: String, matchedAny: Bool) {
+        var output = ""
+        var textSegment = ""
+        var insideTag = false
+        var matchedAny = false
+
+        func flushTextSegment() {
+            guard !textSegment.isEmpty else { return }
+            if let replaced = replacement(textSegment) {
+                output += replaced
+                matchedAny = true
+            } else {
+                output += textSegment
+            }
+            textSegment.removeAll(keepingCapacity: true)
+        }
+
+        for character in ssml {
+            if insideTag {
+                output.append(character)
+                if character == ">" {
+                    insideTag = false
+                }
+            } else if character == "<" {
+                flushTextSegment()
+                insideTag = true
+                output.append(character)
+            } else {
+                textSegment.append(character)
+            }
+        }
+        flushTextSegment()
+
+        return (output, matchedAny)
     }
 
     private static func spokenStandaloneLetterName(for text: String) -> String? {

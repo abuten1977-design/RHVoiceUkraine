@@ -1088,4 +1088,58 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("<speak></speak>"))
     }
 
+    // MARK: - iOS 26 vs iOS 27 letter-name shapes (measured 2026-09-08)
+    //
+    // iOS 26 sends the letter-name phrase as ONE text run — see
+    // ~/aiwork/copilot/cap_letters_2026-09-08_ios26.txt. iOS 27 sends the SAME
+    // phrase as THREE separate `<s>` sentences (name, pause, alphabet word) —
+    // see ~/rhvoice/cap27_letters_2026-09-08.txt (Mac, ssh andrey@10.164.231.25).
+    // Both forms below are copied verbatim from those captures.
+
+    func testIOS26CaptureLetterINameBecomesTheLetterItself() {
+        // Verbatim from cap_letters_2026-09-08_ios26.txt (single text run) —
+        // old join-then-compare behaviour must not change for this shape.
+        let ios26 = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> білорусько-українська i </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios26), "і")
+    }
+
+    func testIOS26CaptureLetterENameBecomesTheLetterItself() {
+        // Verbatim from cap_letters_2026-09-08_ios26.txt (single text run).
+        let ios26 = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> українська ї </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios26), "є")
+    }
+
+    func testIOS27CaptureLetterINameRewritesOnlyTheMatchingSentence() {
+        // Verbatim from cap27_letters_2026-09-08.txt: three separate <s>
+        // sentences (name, pause, alphabet word "Іван"). Only the first
+        // sentence's text is replaced; the pause and "Іван" stay untouched.
+        let ios27 = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\"> білорусько-українська i </lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Іван</lang></s></prosody></speak>"
+        let expected = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\">і</lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Іван</lang></s></prosody></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27), expected)
+    }
+
+    func testIOS27CaptureLetterENameRewritesOnlyTheMatchingSentence() {
+        // Verbatim from cap27_letters_2026-09-08.txt, alphabet word "Євген".
+        let ios27 = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\"> українська ї </lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Євген</lang></s></prosody></speak>"
+        let expected = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\">є</lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Євген</lang></s></prosody></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27), expected)
+    }
+
+    func testIOS27CaptureRealLetterYiIsNotTouched() {
+        // Verbatim from cap27_letters_2026-09-08.txt: the real «ї» arrives as
+        // « yi » (two Latin letters), already sounds correct, and « yi » is
+        // not a dictionary key — neither this sentence nor "Їжак" matches, so
+        // the whole request must come back nil, unmodified.
+        let ios27 = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\"> yi </lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Їжак</lang></s></prosody></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27))
+    }
+
+    func testIOS27StyleMultiSentenceOrdinarySpeechIsNotTouched() {
+        // A multi-<s> request that is NOT a letter-name announcement (no
+        // sentence text matches the dictionary) must come back nil untouched,
+        // the same as any other ordinary text passed through this rule.
+        let ordinary = "<speak><prosody rate=\"100%\"><s><lang xml:lang=\"uk-UA\">Привіт</lang></s><s><lang xml:lang=\"uk-UA\">Як справи</lang></s></prosody></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ordinary))
+    }
+
 }
