@@ -994,14 +994,69 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     }
 
     func testOtherLettersAreLeftAloneByDecision() {
-        // ВАЖЛИВО, чому саме NIL. Це рішення Андрія (07.09.2026): він просив
-        // виправити ЛИШЕ «і». У тому ж замірі є також « українська ї » та « yi »
-        // — вони НЕ ідеальні, просто Андрій каже, що на слух вони звучать
-        // нормально. Якщо він попросить — сюди додається ключ, і цей тест
-        // змінюється разом із рішенням. Тест закріплює МЕЖУ ЗАДАЧІ, а не якість.
-        for text in ["<speak>Їжак</speak>", "<speak>Євген</speak>", "<speak>ї</speak>", "<speak>є</speak>", "<speak> українська ї </speak>", "<speak> yi </speak>"] {
+        // ВАЖЛИВО, чому саме NIL. Правило чіпає лише цілі запити-назви букв, що
+        // збігаються з таблицею (зараз «і» і «є»). Звичайний текст із самими
+        // буквами не є такою назвою і має лишатися недоторканим.
+        for text in ["<speak>Їжак</speak>", "<speak>Євген</speak>", "<speak>ї</speak>", "<speak>є</speak>"] {
             XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
         }
+    }
+
+    // MARK: - Letter «є» announced by iOS's wrong letter name (measured 2026-09-06)
+
+    func testMeasuredLetterENameRequestBecomesTheLetterItself() {
+        // Рядок ЗНЯТИЙ з живого iPhone / iOS, журнал cap26_2026-09-06.txt: при
+        // читанні по буквах «є» iOS називає ЧУЖУ кириличну літеру «ї»
+        // (U+0457), через що замість «йе» чується «йи».
+        let measured = "<speak><lang xml:lang=\"uk\"><prosody rate=\"400.0%\"> українська ї </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "є")
+    }
+
+    func testLetterENameIsNormalizedRegardlessOfWordingAndWordOrder() {
+        // «українська ї» — виміряна форма. «українська є» — правильне
+        // формулювання, на випадок якщо Apple виправить свою локалізацію.
+        // Обидва порядки слів покриті так само, як і для «і» вище.
+        let variants = [
+            "українська ї",
+            "ї українська",
+            "українська є",
+            "є українська",
+            "  Українська   Ї  "
+        ]
+        for variant in variants {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
+                "є",
+                "не спрацювало на варіанті: \(variant)"
+            )
+        }
+    }
+
+    func testRealLetterYiRequestIsNotTouched() {
+        // Справжня буква «ї» приходить як « yi » (дві ЛАТИНСЬКІ літери) і вже
+        // звучить правильно — цього правила вона торкатися не повинна.
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(" yi "))
+    }
+
+    func testOrdinaryTextWithLetterEWordsIsNotReplaced() {
+        // Сторож: слова «українська» і «ї» посеред звичайного речення не є
+        // цілим запитом-назвою букви і не повинні замінюватися.
+        let ordinary = [
+            "це українська ї та ще щось",
+            "Мова українська, ї не єдина буква"
+        ]
+        for text in ordinary {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testInvisibleFormattingCharactersDoNotDefeatTheLetterERule() {
+        let withLRM = "\u{200E} українська ї\u{200E} "
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(withLRM), "є")
+    }
+
+    func testTrailingPunctuationDoesNotDefeatTheLetterERule() {
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("українська ї."), "є")
     }
 
     func testInvisibleFormattingCharactersDoNotDefeatTheRule() {

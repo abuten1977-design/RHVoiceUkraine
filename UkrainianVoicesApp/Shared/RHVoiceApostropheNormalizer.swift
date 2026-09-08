@@ -18,17 +18,23 @@ enum RHVoiceApostropheNormalizer {
     /// A Ukrainian engine reads that Latin letter the English way, which is the
     /// «ай» Андрій hears at the end of the phrase.
     ///
-    /// Scope is deliberately ONE letter. Correction of an earlier wrong claim in
+    /// Scope was originally ONE letter. Correction of an earlier wrong claim in
     /// this comment (independent critic, 2026-09-07): «ї» does NOT arrive as the
-    /// bare letter — the same capture also contains « українська ї » (a name
-    /// phrase, but ending in the CYRILLIC ї, so it is read correctly) and « yi »
-    /// (two LATIN letters). «є» as a name phrase does not appear in the capture
-    /// at all. Андрій reports both «ї» forms sound fine to him and asked for the
-    /// «і» fix only, so they are left alone BY DECISION, not because they are
-    /// already ideal. Revisit only if he asks.
+    /// bare letter — the same capture also contains « українська ї » and « yi »
+    /// (two LATIN letters).
     ///
-    /// Decision (Андрій, 2026-09-07): speak just the letter «і», the same way the
-    /// other letters are spoken — not a corrected long description.
+    /// Second correction (2026-09-08, same capture `cap26_2026-09-06.txt`):
+    /// « українська ї » is what iOS sends when the user reads the letter «є»
+    /// by character, not «ї» — iOS names the WRONG letter (Cyrillic ї, U+0457)
+    /// in its own Ukrainian VoiceOver localization, so it sounds like «йи»
+    /// instead of «йе». That is a bug in iOS's localization table, not ours.
+    /// The real «ї» arrives as « yi » (two LATIN letters) and sounds correct,
+    /// so it stays untouched. Андрій reports the « yi » form sounds fine to
+    /// him.
+    ///
+    /// Decision (Андрій, 2026-09-07 and 2026-09-08): speak just the letter
+    /// itself, the same way the other letters are spoken — not a corrected long
+    /// description. Covers «і» and «є».
     ///
     /// Safe by construction: this phrase arrives as a whole standalone request
     /// with nothing else in it, so it cannot collide with ordinary text.
@@ -73,11 +79,35 @@ enum RHVoiceApostropheNormalizer {
     /// because the wording comes from an iOS localization table we do not own:
     /// both word orders, and both the Latin «i» (measured) and the Cyrillic «і»
     /// (so a device that sends the correct letter is normalized too).
+    ///
+    /// «є» entries (measured 2026-09-06, `cap26_2026-09-06.txt`): iOS sends
+    /// « українська ї » when the user reads «є» by character — it names the
+    /// wrong (Cyrillic ї) letter, which is why «є» sounds like «йи». Also cover
+    /// « українська є » (the correct wording, in case Apple fixes its own
+    /// localization) and both word orders, matching the style already used for
+    /// «і» above.
+    ///
+    /// ⚠ TIED TO A CURRENT APPLE BUG — RECHECK ON EVERY MAJOR iOS RELEASE
+    /// (independent critic, 2026-09-08). « українська ї » is the CORRECT Unicode
+    /// name of the letter «ї». The key is right today only because Apple's own
+    /// `VOTOutputPunctuation` [uk] table currently emits it for «є» instead
+    /// (proved in the capture: the phrase is always followed by the alphabet
+    /// word «Євген», while the real «ї» arrives as « yi » followed by «Їжак»).
+    /// If Apple ever fixes that table, the real «ї» will start arriving as
+    /// « українська ї » and this rule would speak «є» for it — the same defect
+    /// moved to the neighbouring letter. The « українська є » key does NOT
+    /// protect against that. This cannot be disproved by measurement today; it
+    /// needs a fresh capture after an iOS upgrade. Tracked as a project debt in
+    /// the working notes kept outside this repository (`copilot/docs/DEBTS.md`).
     private static let standaloneLetterNameReplacements: [String: String] = [
         "білорусько-українська i": "і",
         "білорусько-українська і": "і",
         "українсько-білоруська i": "і",
-        "українсько-білоруська і": "і"
+        "українсько-білоруська і": "і",
+        "українська ї": "є",
+        "ї українська": "є",
+        "українська є": "є",
+        "є українська": "є"
     ]
 
     static func normalizeInTextSegments(
