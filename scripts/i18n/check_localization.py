@@ -580,10 +580,10 @@ def dump():
 INTENTIONALLY_RAW = [
     ("App/ContentView.swift", "Українська", "порівнюється у preferredLanguageOrder — сортування груп голосів"),
     ("App/ContentView.swift", "Англійська", "те саме"),
-    ("Shared/RHVoiceDownloadableVoices.swift", "Бен", "пишеться у meta.json і звіряється тестами"),
-    ("Shared/RHVoiceDownloadableVoices.swift", "Клара", "те саме"),
-    ("Shared/RHVoiceDownloadableVoices.swift", "Сара", "те саме"),
-    ("Shared/RHVoiceDownloadableVoices.swift", "Радж", "те саме"),
+    # 14.09.2026: імена англійських голосів переведено на ЛАТИНИЦЮ (Ben/Clara/
+    # Sarah/Raj) — у роторі ім'я озвучує сам англійський голос, а кирилиці він
+    # не читає. Кирилічних літералів тут більше немає; записи лишені як мітка,
+    # щоб повернення кирилиці в цей файл одразу впало в око на рев'ю.
     ("Shared/RHVoiceRequestCapture.swift", "перевірка з застосунку", "діагностичні дані в App Group, не інтерфейс"),
     ("Shared/RHVoiceRequestCapture.swift", "не вдалося закодувати запис", "те саме"),
 ]

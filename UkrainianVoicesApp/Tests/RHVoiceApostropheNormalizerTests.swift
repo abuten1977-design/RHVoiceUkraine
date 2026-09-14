@@ -1059,6 +1059,64 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("українська ї."), "є")
     }
 
+    // MARK: - Letter «ґ» announced by its Unicode name (measured 2026-09-14)
+
+    func testMeasuredSmallGheWithUpturnNameRequestBecomesTheLetterItself() {
+        // Рядок ЗНЯТИЙ з живого iPhone 12 / iOS 26.6.1, збірка 230, журнал
+        // /tmp/cap_g_2026-09-14_0957.txt. iOS шле не саму літеру, а її
+        // юнікодну назву, перекладену наполовину: латинське «ghe» + «піднесення».
+        // Андрій незалежно підтвердив на слух: чув «г піднесення».
+        let measured = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> ghe, піднесення </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "ґ")
+    }
+
+    func testGheNameIsNormalizedRegardlessOfCommaAndWordOrder() {
+        let variants = [
+            "ghe, піднесення",
+            "ghe піднесення",
+            "піднесення, ghe",
+            "піднесення ghe",
+            "ге, піднесення",
+            "  GHE,   Піднесення  "
+        ]
+        for variant in variants {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
+                "ґ",
+                "не спрацювало на варіанті: \(variant)"
+            )
+        }
+    }
+
+    func testCapitalGheArrivesCorrectlyAndIsLeftAlone() {
+        // ⭐ВЕЛИКА «Ґ» НЕ ЗЛАМАНА: iOS шле «Велика» плюс СПРАВЖНЮ літеру в тезі
+        // посимвольного читання. Андрій підтвердив на слух 14.09, що вона звучить
+        // правильно. Правило не повинно її чіпати — інакше ми зламаємо робоче.
+        let capital = "<speak><lang xml:lang=\"uk\">Велика <say-as interpret-as=\"characters\">ґ</say-as></lang></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(capital))
+    }
+
+    func testOrdinaryUkrainianTextWithTheWordPidnesennyaIsNotReplaced() {
+        // Сторож: «піднесення» — звичайне українське слово. Правило має ловити
+        // лише цілий запит-назву букви, а не будь-яку згадку слова.
+        let ordinary = [
+            "піднесення духу",
+            "економічне піднесення країни",
+            "це піднесення, а не спад"
+        ]
+        for text in ordinary {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testWordsContainingGheAreNotTouched() {
+        // Слова з «ґ» усередині Андрій 14.09 почув правильно — суцільне читання
+        // не ламається. Правило не повинно в них лізти.
+        for text in ["<speak>ґанок,</speak>", "<speak>ґудзик,</speak>", "<speak>ґрунт</speak>", "<speak>дзиґа</speak>"] {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
     func testInvisibleFormattingCharactersDoNotDefeatTheRule() {
         // U+200E (LRM) реально трапляється всередині рядків VoiceOver на iOS 27.
         // Він не належить до пробільних, тож без окремого зняття правило б

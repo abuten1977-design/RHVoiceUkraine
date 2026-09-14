@@ -108,7 +108,7 @@ private let licenseItems: [LicenseItem] = [
         url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
     ),
     .init(
-        title: NSLocalizedString("Англійські голоси: Бен, Клара, Сара, Радж", comment: ""),
+        title: NSLocalizedString("Англійські голоси: Ben, Clara, Sarah, Raj", comment: ""),
         license: "CMU / Festvox",
         attribution: NSLocalizedString("Carnegie Mellon University, корпус CMU ARCTIC", comment: ""),
         note: NSLocalizedString("Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних.", comment: ""),
@@ -208,17 +208,22 @@ private struct VoiceDefinition: Identifiable, Hashable {
 
     var id: String { identifier }
 
-    /// Українська назва для екрана і VoiceOver: латинське ім'я рушій читає з
-    /// англійським акцентом (аудит Даші, збірка 206, п.4). Двигун і система
-    /// знають голос лише за profileName/identifier — їх не чіпаємо.
+    /// ВБУДОВАНІ УКРАЇНСЬКІ голоси показуються кирилицею: латинське ім'я
+    /// український рушій читає з англійським акцентом (аудит Даші, збірка 206,
+    /// п.4). Тому в системі вони лишаються Anatol/Marianna/…, а на екрані —
+    /// Анатол/Маріанна/… Це свідоме розходження саме для них.
+    /// ЗАВАНТАЖУВАНІ АНГЛІЙСЬКІ голоси — навпаки, латиницею в обох місцях
+    /// (див. нижче). Двигун і система знають голос лише за
+    /// profileName/identifier — їх не чіпаємо.
     var displayName: String {
         switch profileName {
         case "Anatol": return NSLocalizedString("Анатол", comment: "")
         case "Marianna": return NSLocalizedString("Маріанна", comment: "")
         case "Natalia": return NSLocalizedString("Наталія", comment: "")
         case "Volodymyr": return NSLocalizedString("Володимир", comment: "")
-        // Завантажені голоси приходять з українською назвою («Бен», «Клара»…):
-        // перекладаємо тут, щоб усі місця показу отримали вже перекладене імʼя.
+        // Завантажені голоси приходять з ЛАТИНСЬКОЮ назвою («Ben», «Clara»…) —
+        // свідоме рішення 14.09.2026: у роторі ім'я озвучує сам англійський
+        // голос, а кирилиці він не читає, тож «Бен» звучало як тиша.
         default: return NSLocalizedString(name, comment: "")
         }
     }

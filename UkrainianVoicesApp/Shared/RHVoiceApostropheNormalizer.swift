@@ -176,6 +176,19 @@ enum RHVoiceApostropheNormalizer {
     /// protect against that. This cannot be disproved by measurement today; it
     /// needs a fresh capture after an iOS upgrade. Tracked as a project debt in
     /// the working notes kept outside this repository (`copilot/docs/DEBTS.md`).
+    /// «ґ» entries (measured 2026-09-14, `/tmp/cap_g_2026-09-14_0957.txt`,
+    /// iPhone 12 / iOS 26.6.1, build 230): reading the SMALL «ґ» by character
+    /// sends ` ghe, піднесення ` — the Unicode name of U+0491 half-translated
+    /// by Apple, Latin «ghe» plus a Ukrainian word. Andriy heard exactly that:
+    /// «г піднесення». The comma sits INSIDE the string, and the trim below
+    /// only strips punctuation at the edges, so the key keeps it; the
+    /// comma-less and swapped-order variants are covered for the same reason
+    /// as above, plus a Cyrillic «ге» spelling in case Apple finishes the
+    /// translation.
+    /// ⚠️ The CAPITAL «Ґ» is NOT here on purpose: it arrives correctly, as
+    /// «Велика» plus the real letter inside a `say-as` tag, and Andriy
+    /// confirmed by ear that it already sounds right. A key for it would
+    /// change something that is not broken.
     private static let standaloneLetterNameReplacements: [String: String] = [
         "білорусько-українська i": "і",
         "білорусько-українська і": "і",
@@ -184,7 +197,13 @@ enum RHVoiceApostropheNormalizer {
         "українська ї": "є",
         "ї українська": "є",
         "українська є": "є",
-        "є українська": "є"
+        "є українська": "є",
+        "ghe, піднесення": "ґ",
+        "ghe піднесення": "ґ",
+        "піднесення, ghe": "ґ",
+        "піднесення ghe": "ґ",
+        "ге, піднесення": "ґ",
+        "ге піднесення": "ґ"
     ]
 
     static func normalizeInTextSegments(
