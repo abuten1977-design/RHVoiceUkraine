@@ -123,6 +123,26 @@ static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt
 static NSString* const RHVoicePersonalDictionaryChangedNotification = @"com.rhvoice.UkrainianVoices.personalDictionaryChanged";
 static NSString* const RHVoiceDownloadedVoicesChangedNotification = @"com.rhvoice.UkrainianVoices.downloadedVoicesChanged";
 
+// Системный журнал для USERDICT гейтится ТЕМ ЖЕ согласием, что и файловый
+// (см. RHVoiceDebugLog.m): в Release без включённой «Розширеної діагностики»
+// мы не пишем ничего. Причина отдельного канала не в песочнице — файловый
+// журнал просто выключен по умолчанию, а системный снимается кабелем и виден
+// сразу, без доступа к контейнеру.
+static BOOL RHVoiceExtendedDiagnosticsEnabled(void) {
+#if DEBUG
+    return YES;
+#else
+    static NSUserDefaults* groupDefaults = nil;
+    static dispatch_once_t diagOnceToken;
+    dispatch_once(&diagOnceToken, ^{
+        groupDefaults = [[NSUserDefaults alloc] initWithSuiteName:RHVoiceAppGroupIdentifier];
+    });
+    return [groupDefaults boolForKey:@"extendedDiagnostics"];
+#endif
+}
+
+#define RHVoiceUserdictDiag(...) do { if (RHVoiceExtendedDiagnosticsEnabled()) NSLog(__VA_ARGS__); } while (0)
+
 static NSURL* RHVoiceSharedContainerURL(void) {
     return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];
 }
@@ -184,6 +204,7 @@ static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
     NSError* error = nil;
     if (![fm createDirectoryAtURL:dictURL withIntermediateDirectories:YES attributes:nil error:&error]) {
         RHVoiceDebugLogWrite("USERDICT personal config mkdir failed: %s", error.localizedDescription.UTF8String);
+        RHVoiceUserdictDiag(@"USERDICT_DIAG personal config mkdir failed: %@", error.localizedDescription);
         return dataPath;
     }
 
@@ -193,6 +214,7 @@ static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
         [fm removeItemAtPath:targetConfig error:nil];
         if (![fm copyItemAtPath:sourceConfig toPath:targetConfig error:&error]) {
             RHVoiceDebugLogWrite("USERDICT config copy failed: %s", error.localizedDescription.UTF8String);
+            RHVoiceUserdictDiag(@"USERDICT_DIAG config copy failed: %@", error.localizedDescription);
             return dataPath;
         }
     }
@@ -203,11 +225,14 @@ static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
     if ([fm fileExistsAtPath:personalSource]) {
         if (![fm copyItemAtPath:personalSource toPath:personalTarget error:&error]) {
             RHVoiceDebugLogWrite("USERDICT personal copy failed: %s", error.localizedDescription.UTF8String);
+            RHVoiceUserdictDiag(@"USERDICT_DIAG personal copy failed: %@", error.localizedDescription);
             return dataPath;
         }
         RHVoiceDebugLogWrite("USERDICT personal loaded path=%s", personalSource.UTF8String);
+        RHVoiceUserdictDiag(@"USERDICT_DIAG personal loaded bytes=%llu", (unsigned long long)[[[NSFileManager defaultManager] attributesOfItemAtPath:personalTarget error:nil][NSFileSize] unsignedLongLongValue]);
     } else {
         RHVoiceDebugLogWrite("USERDICT personal missing; bundled only");
+        RHVoiceUserdictDiag(@"USERDICT_DIAG personal missing; bundled only");
     }
 
     return [configURL path];
@@ -274,6 +299,7 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     RHVoiceEngine* engine = (__bridge RHVoiceEngine*)observer;
     engine.personalDictionaryRefreshRequested = YES;
     RHVoiceDebugLogWrite("USERDICT refresh requested by Darwin notification");
+    RHVoiceUserdictDiag(@"USERDICT_DIAG refresh requested by Darwin notification");
 }
 
 // MARK: - @implementation
@@ -337,6 +363,7 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     RHVoiceDebugLogWrite("USERDICT personal changed old=%s new=%s",
                          self.personalDictionarySignature.UTF8String,
                          signature.UTF8String);
+    RHVoiceUserdictDiag(@"USERDICT_DIAG personal changed old=%@ new=%@", self.personalDictionarySignature, signature);
     [self cancel];
     if (self.engine) {
         RHVoice_delete_tts_engine(self.engine);
@@ -378,6 +405,11 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     RHVoiceDebugLogWrite("USERDICT config path=%s signature=%s",
                          configPath.UTF8String,
                          self.personalDictionarySignature.UTF8String);
+    // ⭐14.09.2026: дублируем в СИСТЕМНЫЙ журнал. Файловый журнал в Release
+    // выключен, пока пользователь не включит расширенную диагностику, и на iOS
+    // его записи ни разу не наблюдались — про личный словарь ударений мы не
+    // знали ничего. Системный журнал снимается кабелем.
+    RHVoiceUserdictDiag(@"USERDICT_DIAG config path=%@ signature=%@", configPath, self.personalDictionarySignature);
 
     RHVoice_init_params params;
     memset(&params, 0, sizeof(params));

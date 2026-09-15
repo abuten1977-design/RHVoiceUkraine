@@ -321,20 +321,71 @@ struct AbbreviationDictionaryMatcher {
     }
 }
 
+/// Что кэш сделал с одной попыткой перечитать файл словаря.
+/// Вынесено в отдельный тип, чтобы поведение при ОШИБКЕ чтения проверялось
+/// тестом, а не только глазами: именно оно нас и подвело (см. `apply`).
+enum AbbreviationDictionaryReloadDecision: Equatable {
+    case applied(entryCount: Int)
+    case keptPreviousAfterReadFailure
+}
+
 /// The provider only reads an in-memory snapshot on the speech path. A Darwin
 /// notification schedules App Group I/O in the background, so a bad container
 /// cannot freeze VoiceOver and an updated dictionary applies without restart.
+///
+/// ⭐14.09.2026. Раньше ошибка чтения файла молча превращалась в ПУСТОЙ словарь,
+/// и подпись файла при этом запоминалась как обработанная — пользовательские
+/// замены пропадали навсегда, пока человек не перезапишет файл руками (отзыв
+/// тестера Даниила, сборка 231). Теперь неудача не запоминается, а повтор идёт
+/// в ФОНЕ и не чаще кулдауна: путь речи не должен ждать заведомо сбойное чтение
+/// (замечание критика — иначе при постоянном сбое речь тормозила бы на каждом
+/// куске фразы).
 final class AbbreviationDictionaryCache {
     static let shared = AbbreviationDictionaryCache()
 
     private let queue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.abbreviation-dictionary", qos: .utility)
     private let lock = NSLock()
-    private var cachedEntries = AbbreviationDictionary.bundledEntries
-    private var matcher = AbbreviationDictionaryMatcher(entries: AbbreviationDictionary.bundledEntries)
+    private var cachedEntries: [AbbreviationDictionaryEntry]
+    private var matcher: AbbreviationDictionaryMatcher
     private var observing = false
     private var cachedSignature = AbbreviationDictionaryFileSignature(exists: false, modificationDate: nil, size: 0)
+    /// Когда последняя попытка чтения ЗАКОНЧИЛАСЬ ОШИБКОЙ. Пока здесь не nil,
+    /// кэш считает себя в состоянии сбоя: подпись «изменилась» будет верна
+    /// всегда (мы её не запомнили), поэтому решение принимает только кулдаун.
+    private var lastFailedReloadAt: Date?
+    /// Идёт ли перечитывание прямо сейчас. Без этого флага каждый следующий
+    /// кусок фразы ставил бы в очередь ещё одну работу, пока первая висит.
+    private var reloadInFlight = false
+    /// Чаще этого не перечитываем после неудачи: файл читается на пути речи,
+    /// а сбой может быть постоянным (битый файл, закрытый контейнер).
+    private static let readRetryCooldown: TimeInterval = 2
 
-    private init() {}
+    private let loadEntries: () -> Result<[AbbreviationDictionaryEntry], AbbreviationDictionaryError>
+    private let readSignature: () -> AbbreviationDictionaryFileSignature
+    private let now: () -> Date
+    /// Только для тестов: сколько раз кэш реально ходил читать файл.
+    private(set) var readAttemptCount = 0
+
+    init(
+        loadEntries: @escaping () -> Result<[AbbreviationDictionaryEntry], AbbreviationDictionaryError> = { AbbreviationDictionary.loadEntries() },
+        readSignature: @escaping () -> AbbreviationDictionaryFileSignature = { AbbreviationDictionary.fileSignature() },
+        now: @escaping () -> Date = { Date() }
+    ) {
+        self.loadEntries = loadEntries
+        self.readSignature = readSignature
+        self.now = now
+        self.cachedEntries = AbbreviationDictionary.bundledEntries
+        self.matcher = AbbreviationDictionaryMatcher(entries: AbbreviationDictionary.bundledEntries)
+    }
+
+    deinit {
+        // Наблюдатель регистрируется без удержания self; без снятия в Darwin-центре
+        // остался бы висячий указатель (замечание критика к тестовому init).
+        CFNotificationCenterRemoveEveryObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque()
+        )
+    }
 
     func start() {
         lock.lock()
@@ -374,28 +425,115 @@ final class AbbreviationDictionaryCache {
         }
     }
 
-    private func reloadIfFileChanged() {
-        let signature = AbbreviationDictionary.fileSignature()
-        lock.lock(); let changed = signature != cachedSignature; lock.unlock()
+    func reloadIfFileChanged() {
+        let signature = readSignature()
+        lock.lock()
+        let changed = signature != cachedSignature
+        let failedAt = lastFailedReloadAt
+        let inFlight = reloadInFlight
+        lock.unlock()
+
+        // Перечитывание уже идёт — второй заход только наплодил бы работу.
+        guard !inFlight else { return }
+
+        if let failedAt {
+            // ⚠️ В состоянии сбоя `changed` ВСЕГДА истинно: подпись мы намеренно
+            // не запомнили. Поэтому решает только кулдаун, иначе чтение файла
+            // случалось бы на каждый кусок фразы (блокер, найденный критиком).
+            guard now().timeIntervalSince(failedAt) >= Self.readRetryCooldown else { return }
+            beginReload(source: "retry-after-read-failure", waitForResult: false)
+            return
+        }
+
         guard changed else { return }
-        reloadSynchronously(source: "signature-change")
+        beginReload(source: "signature-change", waitForResult: true)
     }
 
     private func reloadSynchronously(source: String) {
+        beginReload(source: source, waitForResult: true)
+    }
+
+    /// Ставит ОДНО перечитывание. `waitForResult` ждёт его короткое время —
+    /// так делается только когда файл честно изменился. После сбоя чтения ждать
+    /// нельзя: сбой может быть постоянным, а это путь речи.
+    private func beginReload(source: String, waitForResult: Bool) {
+        lock.lock()
+        if reloadInFlight {
+            lock.unlock()
+            return
+        }
+        reloadInFlight = true
+        lock.unlock()
+
         let ready = DispatchSemaphore(value: 0)
         queue.async { [weak self] in
             self?.reloadNow(source: source)
             ready.signal()
         }
-        _ = ready.wait(timeout: .now() + 0.3)
+        if waitForResult {
+            _ = ready.wait(timeout: .now() + 0.3)
+        }
     }
 
     private func reloadNow(source: String) {
-        let userEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []
-        let merged = AbbreviationDictionary.mergedEntries(userEntries: userEntries)
-        let signature = AbbreviationDictionary.fileSignature()
-        lock.lock(); cachedEntries = merged; matcher = AbbreviationDictionaryMatcher(entries: merged); cachedSignature = signature; lock.unlock()
-        NSLog("ABBREV_DICT_DIAG source=%@ bundled=%d user=%d total=%d", source, AbbreviationDictionary.bundledEntries.count, userEntries.count, merged.count)
+        // ⚠️ Подпись снимается ДО чтения содержимого. Если сделать наоборот и
+        // файл перезапишут между двумя вызовами, в кэш ляжет СТАРОЕ содержимое
+        // под НОВОЙ подписью — и оно застрянет там навсегда (нашёл критик).
+        let signature = readSignature()
+        let result = loadEntries()
+        apply(loadResult: result, signature: signature, source: source)
+        // Счётчик растёт ПОСЛЕ применения: тесты ждут именно по нему, и если
+        // увеличить его раньше, ожидание закончится до того, как записи лягут
+        // в кэш (нашёл критик — на нагруженной машине тест бы мигал).
+        lock.lock(); readAttemptCount += 1; lock.unlock()
+    }
+
+    /// Применяет результат ОДНОЙ попытки чтения.
+    ///
+    /// Успех — записи и подпись запоминаются. Ошибка чтения — прежние записи
+    /// остаются в силе, подпись НЕ запоминается, и отмечается время неудачи,
+    /// чтобы следующая фраза попробовала снова. «Файла нет» ошибкой не
+    /// считается: `loadEntries` возвращает для него пустой успех, и тогда
+    /// пользовательских замен действительно нет.
+    @discardableResult
+    func apply(
+        loadResult: Result<[AbbreviationDictionaryEntry], AbbreviationDictionaryError>,
+        signature: AbbreviationDictionaryFileSignature,
+        source: String
+    ) -> AbbreviationDictionaryReloadDecision {
+        switch loadResult {
+        case .success(let userEntries):
+            let merged = AbbreviationDictionary.mergedEntries(userEntries: userEntries)
+            lock.lock()
+            cachedEntries = merged
+            matcher = AbbreviationDictionaryMatcher(entries: merged)
+            cachedSignature = signature
+            lastFailedReloadAt = nil
+            reloadInFlight = false
+            lock.unlock()
+            NSLog("ABBREV_DICT_DIAG source=%@ bundled=%d user=%d total=%d", source, AbbreviationDictionary.bundledEntries.count, userEntries.count, merged.count)
+            return .applied(entryCount: merged.count)
+        case .failure(let error):
+            lock.lock()
+            let keptCount = cachedEntries.count
+            lastFailedReloadAt = now()
+            reloadInFlight = false
+            lock.unlock()
+            NSLog("ABBREV_DICT_DIAG source=%@ read-failed=%@ kept=%d signature-not-remembered", source, String(describing: error), keptCount)
+            return .keptPreviousAfterReadFailure
+        }
+    }
+
+    /// Только для тестов: что сейчас лежит в кэше.
+    var cachedEntriesForTesting: [AbbreviationDictionaryEntry] {
+        lock.lock(); defer { lock.unlock() }
+        return cachedEntries
+    }
+
+    /// Только для тестов: какую подпись кэш считает обработанной.
+    var cachedSignatureForTesting: AbbreviationDictionaryFileSignature {
+        lock.lock(); defer { lock.unlock() }
+        return cachedSignature
     }
 
     private static let notificationCallback: CFNotificationCallback = { _, observer, _, _, _ in

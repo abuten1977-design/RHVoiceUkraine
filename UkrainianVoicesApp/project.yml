@@ -371,6 +371,7 @@ targets:
       - path: Tests/RHVoiceSharedSettingsSnapshotCacheTests.swift
       - path: Tests/PersonalUserDictionaryTests.swift
       - path: Tests/RHVoiceDownloadableVoicesTests.swift
+      - path: Tests/AbbreviationDictionaryCacheTests.swift
       - path: Tests/RHVoiceTextBreaksTests.swift
     settings:
       base:
