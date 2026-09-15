@@ -10,6 +10,202 @@ enum RHVoiceApostropheNormalizer {
         return spokenStandaloneApostropheName(for: text)
     }
 
+    /// VoiceOver does not always send the letter «і» itself. When the user moves
+    /// character by character it sends the letter's Unicode NAME instead
+    /// («білорусько-українська i»), and the trailing letter inside that name is a
+    /// LATIN i (U+0069), not the Cyrillic і — measured on Андрій's iPhone 12,
+    /// iOS 26.6.1, build 226, syslog capture 2026-09-06 (`cap26_2026-09-06.txt`).
+    /// A Ukrainian engine reads that Latin letter the English way, which is the
+    /// «ай» Андрій hears at the end of the phrase.
+    ///
+    /// Scope was originally ONE letter. Correction of an earlier wrong claim in
+    /// this comment (independent critic, 2026-09-07): «ї» does NOT arrive as the
+    /// bare letter — the same capture also contains « українська ї » and « yi »
+    /// (two LATIN letters).
+    ///
+    /// Second correction (2026-09-08, same capture `cap26_2026-09-06.txt`):
+    /// « українська ї » is what iOS sends when the user reads the letter «є»
+    /// by character, not «ї» — iOS names the WRONG letter (Cyrillic ї, U+0457)
+    /// in its own Ukrainian VoiceOver localization, so it sounds like «йи»
+    /// instead of «йе». That is a bug in iOS's localization table, not ours.
+    /// The real «ї» arrives as « yi » (two LATIN letters) and sounds correct,
+    /// so it stays untouched. Андрій reports the « yi » form sounds fine to
+    /// him.
+    ///
+    /// Decision (Андрій, 2026-09-07 and 2026-09-08): speak just the letter
+    /// itself, the same way the other letters are spoken — not a corrected long
+    /// description. Covers «і» and «є».
+    ///
+    /// Third correction (2026-09-08, live captures from both devices —
+    /// `~/aiwork/copilot/cap_letters_2026-09-08_ios26.txt` and
+    /// `~/rhvoice/cap27_letters_2026-09-08.txt`): iOS 26 sends the letter-name
+    /// phrase as ONE text run inside the SSML (single `<lang><prosody>` wrap),
+    /// so joining every text run and comparing the joined string against the
+    /// dictionary is safe — there is only one run to join. iOS 27 sends the
+    /// SAME phrase as THREE separate `<s>` sentences (name, pause, alphabet
+    /// word, e.g. `<s><lang>...білорусько-українська i...</lang></s>
+    /// <s><break.../></s><s><lang>Іван</lang></s>`). Joining those three runs
+    /// produces « білорусько-українська i Іван », which is not a dictionary
+    /// key, so the old join-then-compare logic silently failed to fire on
+    /// iOS 27 — the bug this rewrite fixes.
+    ///
+    /// Each text run is now checked against the dictionary on its own:
+    /// - Exactly one run, and it matches → return the bare letter, unchanged
+    ///   from the original iOS 26 behaviour proved on Андрій's phone.
+    /// - Several runs, and at least one matches → return the original SSML
+    ///   with ONLY the matching run's text replaced; every tag (`<speak>`,
+    ///   `<prosody>`, `<s>`, `<lang>`, `<break>`) and every non-matching run
+    ///   (the alphabet word) is left exactly as iOS sent it.
+    /// - No run matches → nil, same as before (request continues unmodified).
+    ///
+    /// Safe by construction either way: only a run whose ENTIRE normalized
+    /// text equals a dictionary key is touched, so it cannot collide with
+    /// ordinary text that merely contains these words as a substring.
+    static func normalizeStandaloneLetterNameRequest(_ ssml: String) -> String? {
+        let segments = extractTextSegments(from: ssml)
+        guard !segments.isEmpty else { return nil }
+
+        if segments.count == 1 {
+            let text = segments[0].trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return nil }
+            return spokenStandaloneLetterName(for: text)
+        }
+
+        let (rewritten, matchedAny) = replacingEachTextSegment(in: ssml) { segment in
+            spokenStandaloneLetterName(for: segment)
+        }
+        return matchedAny ? rewritten : nil
+    }
+
+    /// Walks `ssml` exactly like `extractTextSegments`, but rebuilds the
+    /// string: every tag is copied through untouched, and each non-empty text
+    /// run is individually offered to `replacement`. A run is substituted only
+    /// when `replacement` returns non-nil for THAT run — there is no joining
+    /// of runs, so a match in one run cannot be triggered or blocked by the
+    /// content of a neighbouring run.
+    private static func replacingEachTextSegment(
+        in ssml: String,
+        replacement: (String) -> String?
+    ) -> (result: String, matchedAny: Bool) {
+        var output = ""
+        var textSegment = ""
+        var insideTag = false
+        var matchedAny = false
+
+        func flushTextSegment() {
+            guard !textSegment.isEmpty else { return }
+            if let replaced = replacement(textSegment) {
+                output += replaced
+                matchedAny = true
+            } else {
+                output += textSegment
+            }
+            textSegment.removeAll(keepingCapacity: true)
+        }
+
+        for character in ssml {
+            if insideTag {
+                output.append(character)
+                if character == ">" {
+                    insideTag = false
+                }
+            } else if character == "<" {
+                flushTextSegment()
+                insideTag = true
+                output.append(character)
+            } else {
+                textSegment.append(character)
+            }
+        }
+        flushTextSegment()
+
+        return (output, matchedAny)
+    }
+
+    private static func spokenStandaloneLetterName(for text: String) -> String? {
+        // Invisible formatting scalars are category Cf, so neither
+        // `.whitespacesAndNewlines` nor the regex `\s` removes them — and a live
+        // iOS 27 capture did contain U+200E inside a VoiceOver string (see
+        // ~/aiwork/copilot/ЗАМЕР_2026-09-05_кнопки_ios26.md, part 2 — iPhone18,3,
+        // iOS 27.0; the LRM sits inside the element label at the input-ssml
+        // stage). Note it was seen in a button label, not in a letter-name
+        // request, so this hardening is defensive, not a reproduced failure.
+        // Strip them
+        // (and any surrounding punctuation) before comparing, or the rule misses
+        // silently.
+        let visibleScalars = text.unicodeScalars.filter { !invisibleFormattingScalars.contains($0) }
+        let trimSet = CharacterSet.whitespacesAndNewlines.union(.punctuationCharacters)
+        let collapsed = String(String.UnicodeScalarView(visibleScalars))
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: trimSet)
+            .lowercased()
+        return standaloneLetterNameReplacements[collapsed]
+    }
+
+    private static let invisibleFormattingScalars: Set<UnicodeScalar> = {
+        var scalars = Set<UnicodeScalar>()
+        for value: UInt32 in 0x200B...0x200F {
+            scalars.insert(UnicodeScalar(value)!)
+        }
+        scalars.insert(UnicodeScalar(0x2060)!) // word joiner
+        scalars.insert(UnicodeScalar(0xFEFF)!) // BOM / zero-width no-break space
+        return scalars
+    }()
+
+    /// Keys cover what was measured plus the near variants we cannot rule out,
+    /// because the wording comes from an iOS localization table we do not own:
+    /// both word orders, and both the Latin «i» (measured) and the Cyrillic «і»
+    /// (so a device that sends the correct letter is normalized too).
+    ///
+    /// «є» entries (measured 2026-09-06, `cap26_2026-09-06.txt`): iOS sends
+    /// « українська ї » when the user reads «є» by character — it names the
+    /// wrong (Cyrillic ї) letter, which is why «є» sounds like «йи». Also cover
+    /// « українська є » (the correct wording, in case Apple fixes its own
+    /// localization) and both word orders, matching the style already used for
+    /// «і» above.
+    ///
+    /// ⚠ TIED TO A CURRENT APPLE BUG — RECHECK ON EVERY MAJOR iOS RELEASE
+    /// (independent critic, 2026-09-08). « українська ї » is the CORRECT Unicode
+    /// name of the letter «ї». The key is right today only because Apple's own
+    /// `VOTOutputPunctuation` [uk] table currently emits it for «є» instead
+    /// (proved in the capture: the phrase is always followed by the alphabet
+    /// word «Євген», while the real «ї» arrives as « yi » followed by «Їжак»).
+    /// If Apple ever fixes that table, the real «ї» will start arriving as
+    /// « українська ї » and this rule would speak «є» for it — the same defect
+    /// moved to the neighbouring letter. The « українська є » key does NOT
+    /// protect against that. This cannot be disproved by measurement today; it
+    /// needs a fresh capture after an iOS upgrade. Tracked as a project debt in
+    /// the working notes kept outside this repository (`copilot/docs/DEBTS.md`).
+    /// «ґ» entries (measured 2026-09-14, `/tmp/cap_g_2026-09-14_0957.txt`,
+    /// iPhone 12 / iOS 26.6.1, build 230): reading the SMALL «ґ» by character
+    /// sends ` ghe, піднесення ` — the Unicode name of U+0491 half-translated
+    /// by Apple, Latin «ghe» plus a Ukrainian word. Andriy heard exactly that:
+    /// «г піднесення». The comma sits INSIDE the string, and the trim below
+    /// only strips punctuation at the edges, so the key keeps it; the
+    /// comma-less and swapped-order variants are covered for the same reason
+    /// as above, plus a Cyrillic «ге» spelling in case Apple finishes the
+    /// translation.
+    /// ⚠️ The CAPITAL «Ґ» is NOT here on purpose: it arrives correctly, as
+    /// «Велика» plus the real letter inside a `say-as` tag, and Andriy
+    /// confirmed by ear that it already sounds right. A key for it would
+    /// change something that is not broken.
+    private static let standaloneLetterNameReplacements: [String: String] = [
+        "білорусько-українська i": "і",
+        "білорусько-українська і": "і",
+        "українсько-білоруська i": "і",
+        "українсько-білоруська і": "і",
+        "українська ї": "є",
+        "ї українська": "є",
+        "українська є": "є",
+        "є українська": "є",
+        "ghe, піднесення": "ґ",
+        "ghe піднесення": "ґ",
+        "піднесення, ghe": "ґ",
+        "піднесення ghe": "ґ",
+        "ге, піднесення": "ґ",
+        "ге піднесення": "ґ"
+    ]
+
     static func normalizeInTextSegments(
         _ ssml: String,
         datesAsWords: Bool = true,
@@ -113,13 +309,23 @@ enum RHVoiceApostropheNormalizer {
         // з «17:01» будуть з'їдені як окремі числа ще до того, як ми
         // побачимо двокрапку між ними.
         let withTime = timeAsWords ? normalizeTime(in: withDates) : withDates
-        let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withTime) : withTime
+        // «Нотатки» автозаміною перетворюють «1/2» на символ «½» — рушій його
+        // мовчки пропускає (аудит Даші, збірка 206, п.27).
+        let withVulgarFractions = normalizeVulgarFractions(in: withTime)
+        let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withVulgarFractions) : withVulgarFractions
+        let withPercent = normalizePercentSigns(in: withAbbreviations)
         // First replace genuine phones. The phone pass uses the shared
         // classifier, so `+9 000.00` remains available for the money pass.
-        let withPhones = phoneProcessing ? normalizePhones(in: withAbbreviations, readingMode: phoneReadingMode) : withAbbreviations
+        let withPhones = phoneProcessing ? normalizePhones(in: withPercent, readingMode: phoneReadingMode) : withPercent
+        // Арифметичні знаки — ПІСЛЯ телефонів (там «+» — частина номера) і ДО
+        // сум, щоб «-17 000» дійшло до грошового правила вже словом «мінус».
+        let withSigns = normalizeArithmeticSigns(in: withPhones)
+        // «30 118 крапка 90»: iOS проговорює крапку словом у сумах так само,
+        // як у датах — ДО грошового правила, поки цифри ще не стали словами.
+        let withVerbalizedDecimals = normalizeVerbalizedDotDecimals(in: withSigns)
         // Bank apps frequently provide balances as ordinary text rather than
         // a telephone say-as block.
-        let withGroupedAmounts = normalizeGroupedAmounts(in: withPhones)
+        let withGroupedAmounts = normalizeGroupedAmounts(in: withVerbalizedDecimals)
         let withNumbers = normalizeNumbers(in: withGroupedAmounts)
         let withDictionary = abbreviationDictionaryEnabled
             ? normalizeAbbreviationDictionary(in: withNumbers, entries: abbreviationDictionaryEntries)
@@ -371,6 +577,97 @@ enum RHVoiceApostropheNormalizer {
             return "\(weekdayName), \(result)"
         }
         return result
+    }
+
+    /// Юнікодні дробові символи («½»), які «Нотатки» підставляють автозаміною.
+    /// Після цифри — змішане число: «1½» → «1 і одна друга».
+    private static let vulgarFractionWords: [(String, String)] = [
+        ("½", "одна друга"), ("⅓", "одна третя"), ("¼", "одна четверта"),
+        ("⅕", "одна п'ята"), ("⅙", "одна шоста"), ("⅐", "одна сьома"),
+        ("⅛", "одна восьма"), ("⅑", "одна дев'ята"), ("⅒", "одна десята"),
+        ("⅔", "дві третіх"), ("⅖", "дві п'ятих"), ("¾", "три четвертих"),
+        ("⅗", "три п'ятих"), ("⅜", "три восьмих"), ("⅘", "чотири п'ятих"),
+        ("⅚", "п'ять шостих"), ("⅝", "п'ять восьмих"), ("⅞", "сім восьмих")
+    ]
+
+    private static func normalizeVulgarFractions(in text: String) -> String {
+        guard text.contains(where: { "½⅓¼⅕⅙⅐⅛⅑⅒⅔⅖¾⅗⅜⅘⅚⅝⅞".contains($0) }) else { return text }
+        var result = text
+        for (symbol, words) in vulgarFractionWords {
+            result = replacingMatches(in: result, pattern: #"([0-9])\s*"# + symbol) { match in
+                guard let digitRange = Range(match.range(at: 1), in: result) else { return nil }
+                return "\(result[digitRange]) і \(words)"
+            }
+            result = result.replacingOccurrences(of: symbol, with: words)
+        }
+        return result
+    }
+
+    /// «15%» → «15 відсотків»: рушій цифри читає сам, нам досить правильної
+    /// форми іменника. Дробовий відсоток («2,5%») — родовий відмінок.
+    private static func normalizePercentSigns(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            // iOS при увiмкненiй пунктуацiї замiнює «%» словом «вiдсоток» — ЗАВЖДИ
+            // в однинi, незалежно вiд числа (замiр 24.08.2026). Тому ловимо обидвi
+            // форми: сам знак і слово. Слово не видаляємо — лише ставимо у вiрному
+            // вiдмiнку, щоб не вiдбирати в користувача те, що вiн сам увiмкнув.
+            // Негативний перегляд захищає «вiдсотковий», «вiдсоткова» тощо.
+            pattern: #"([0-9]+(?:[.,][0-9]+)?)\s*(?:%|відсоток(?![а-яіїєґА-ЯІЇЄҐ]))"#
+        ) { match in
+            guard let numberRange = Range(match.range(at: 1), in: text) else { return nil }
+            let number = String(text[numberRange])
+            if number.contains(",") || number.contains(".") {
+                return "\(number) відсотка"
+            }
+            guard let value = Int(number) else { return nil }
+            return "\(number) \(nounForm(for: value, one: "відсоток", few: "відсотки", many: "відсотків"))"
+        }
+    }
+
+    /// Одиночні «+» і «−» поруч із числом (аудит Даші, збірка 206, п.15–16).
+    /// Телефони оброблені раніше, тож «+» тут — арифметичний. Знак мусить
+    /// ПРИЛЯГАТИ до цифри: «Ціна — 250 грн», «10 - 15» і маркер списку
+    /// «- 5 пунктів» — не мінус (урок критика: тире-зв'язка перед сумою
+    /// озвучилася б як від'ємне число). Діапазони («10-15») і слова з
+    /// дефісом захищені lookbehind-ом: перед знаком стоїть цифра/літера.
+    private static func normalizeArithmeticSigns(in text: String) -> String {
+        // Юнікодні мінуси й тире, що прилягають до цифри, зводимо до
+        // ASCII-дефіса (у класі — літеральні символи U+2212, U+2013, U+2014).
+        var result = replacingMatches(in: text, pattern: #"[−–—](?=[0-9])"#) { _ in "-" }
+        result = replacingMatches(in: result, pattern: #"(?<=[0-9])\s*\+\s*(?=[0-9])"#) { _ in " плюс " }
+        result = replacingMatches(in: result, pattern: #"(?<![\p{L}\p{N}])\+(?=[0-9])"#) { _ in "плюс " }
+        result = replacingMatches(in: result, pattern: #"(?<![\p{L}\p{N}])-(?=[0-9])"#) { _ in "мінус " }
+        return result
+    }
+
+    /// «30 118 крапка 90», «9 000 крапка 00»: iOS передає крапку словом
+    /// (доведено для дат логом пристрою 2026-07-21; суми — та сама механіка,
+    /// аудит Даші п.14–15). Лише згруповані тисячними розділювачами числа,
+    /// щоб «Версія 1 крапка 18» лишилась недоторканою; ланцюжок «крапка …
+    /// крапка» (версії, дати) відсікає lookahead.
+    /// Розділювачі розрядів, якими iOS і банки групують тисячі: звичайний
+    /// пробіл, нерозривний U+00A0 і вузький нерозривний U+202F. Swift-escape
+    /// замість літеральних символів — редактори мовчки замінюють NBSP на
+    /// пробіл (урок критика: саме так зламався перший варіант цього проходу).
+    private static let thousandsSeparatorClass = "[ \u{00A0}\u{202F}]"
+
+    private static func normalizeVerbalizedDotDecimals(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,3}(?:"# + thousandsSeparatorClass + #"[0-9]{3})+)\s+крапка\s+([0-9]{1,2})(?![\p{L}\p{N}]|\s+крапка)"#,
+            options: []
+        ) { match, source in
+            guard
+                let integerRange = Range(match.range(at: 1), in: source),
+                let fractionRange = Range(match.range(at: 2), in: source)
+            else { return nil }
+            let integerDigits = String(source[integerRange]).filter(\.isNumber)
+            let fractionDigits = String(source[fractionRange])
+            guard let integerValue = Int(integerDigits) else { return nil }
+            return decimalNumberToWords(integerPart: integerDigits, fractionPart: fractionDigits)
+                ?? integerToWords(integerValue, feminineLastGroup: true)
+        }
     }
 
     private static func normalizePhones(in text: String, readingMode: RHVoicePhoneNumberReadingMode) -> String {
@@ -812,7 +1109,11 @@ enum RHVoiceApostropheNormalizer {
         // ГГ:ХХ, ГГ 0-23, ХХ рівно 2 цифри (інакше це не час, напр. рахунок «3:1»).
         replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}:])([0-9]{1,2}):([0-9]{2})(?![\p{L}\p{N}:])"#,
+            // iOS при увiмкненiй пунктуацiї замiнює «:» словом «двокрапка»
+            // (замiр 24.08.2026: «8 14 двокрапка 30»), i правило мовчало —
+            // це й був давнiй баг «14:30». Ловимо обидвi форми.
+            // Захист вiд рахункiв «3:1» лишається той самий: хвилини — РIВНО двi цифри.
+            pattern: #"(?<![\p{L}\p{N}:])([0-9]{1,2})\s*(?::|двокрапка)\s*([0-9]{2})(?![\p{L}\p{N}:])"#,
             options: []
         ) { match, source in
             guard
@@ -839,7 +1140,15 @@ enum RHVoiceApostropheNormalizer {
     /// `45 сек` (charging state, media controls). Expand only an explicit
     /// number + Ukrainian unit so unrelated short words stay untouched.
     private static func normalizeTimeUnitAbbreviations(in text: String) -> String {
-        replacingMatches(
+        // «5 с» розгортаємо в секунди ЛИШЕ поруч із «хв»/«год» у тому ж тексті
+        // (рядок тривалості «01 год 15 хв 5 с», аудит Даші п.22–23): окреме
+        // «с.» може бути «село» чи «сторінка» — його не чіпаємо.
+        let hasClockContext = text.range(
+            of: #"[0-9][[:space:]]+(хв|год)"#,
+            options: [.regularExpression, .caseInsensitive]
+        ) != nil
+
+        let expanded = replacingMatches(
             in: text,
             pattern: #"(?<![\p{L}\p{N}])([0-9]{1,4})[[:space:]]+(хв|год|сек)(\.)?([^\p{L}\p{N}]|$)"#,
             options: [.caseInsensitive]
@@ -867,6 +1176,22 @@ enum RHVoiceApostropheNormalizer {
 
             let punctuation = match.range(at: 3).location == NSNotFound ? "" : "."
             return "\(numberWords) \(noun)\(punctuation)\(source[suffixRange])"
+        }
+
+        guard hasClockContext else { return expanded }
+        return replacingMatches(
+            in: expanded,
+            pattern: #"(?<![\p{L}\p{N}])([0-9]{1,4})[[:space:]]+с(\.)?(?=[^\p{L}\p{N}]|$)"#,
+            options: []
+        ) { match, source in
+            guard
+                let valueRange = Range(match.range(at: 1), in: source),
+                let value = Int(String(source[valueRange]))
+            else { return nil }
+
+            let noun = nounForm(for: value, one: "секунда", few: "секунди", many: "секунд")
+            let punctuation = match.range(at: 2).location == NSNotFound ? "" : "."
+            return "\(integerToWords(value, feminineLastGroup: true)) \(noun)\(punctuation)"
         }
     }
 
@@ -896,7 +1221,9 @@ enum RHVoiceApostropheNormalizer {
         ) { match, source in
             guard let range = Range(match.range, in: source) else { return nil }
             let token = String(source[range])
-            guard !isPureRomanNumeralToken(token) else { return nil }
+            // Римське число рушій намагався читати як слово («III» → «айіі»,
+            // аудит Даші, збірка 206, п.29) — тепер читаємо числом.
+            guard !isPureRomanNumeralToken(token) else { return romanNumeralToWords(token) }
             return #"<say-as interpret-as="characters">"# + token + "</say-as>"
         }
     }
@@ -904,6 +1231,36 @@ enum RHVoiceApostropheNormalizer {
     private static func isPureRomanNumeralToken(_ token: String) -> Bool {
         let romanChars = Set("IVXLCDM")
         return !token.isEmpty && token.allSatisfy { romanChars.contains($0) }
+    }
+
+    /// Токени, що Є канонічними римськими числами, але в живих текстах майже
+    /// завжди означають інше: розмір одягу XL, резюме CV, диск CD, копія CC
+    /// тощо (урок критика: «Розмір XL» читався б «Розмір сорок»). Їх лишаємо
+    /// сирими — як було до фіксу.
+    private static let romanLookalikeAbbreviations: Set<String> = [
+        "CD", "CV", "XL", "CC", "CM", "MM", "ML", "DL", "DC", "LI", "CI",
+        "CL", "MC", "MD", "MI", "DI", "DIV", "MIX", "MID", "LIV", "XXL", "XXX"
+    ]
+
+    /// «III» → «три». Лише канонічні римські числа; некоректний набір
+    /// римських літер («VVX») лишаємо як був.
+    private static func romanNumeralToWords(_ token: String) -> String? {
+        guard !romanLookalikeAbbreviations.contains(token) else { return nil }
+        guard token.range(
+            of: #"^(?=.)M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$"#,
+            options: .regularExpression
+        ) != nil else { return nil }
+
+        let values: [Character: Int] = ["I": 1, "V": 5, "X": 10, "L": 50, "C": 100, "D": 500, "M": 1000]
+        var total = 0
+        var previous = 0
+        for character in token.reversed() {
+            guard let value = values[character] else { return nil }
+            total += value < previous ? -value : value
+            previous = max(previous, value)
+        }
+        guard total > 0 else { return nil }
+        return integerToWords(total)
     }
 
     private static func hasDigitSeparator(in text: String) -> Bool {

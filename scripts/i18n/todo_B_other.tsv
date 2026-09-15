@@ -1,0 +1,73 @@
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	48	Пробний запис створено
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	74	Записи очищено
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	102	\(entry.characters) символів
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	107	Запис від \(dateFormatter.string(from: entry.date)), \(entry.characters) символів. Текст: \(entry.text)
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	118	Голос ще жодного разу не звертався до синтезатора після встановлення цієї збірки. Прочитайте будь-який текст голосом RHVoice і натисніть «Оновити».
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	120	Останнє звернення голосу: \(dateFormatter.string(from: date)), \(trace.characters) символів. Усього звернень: \(trace.count).
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	138	Скопійовано \(entries.count) записів.
+B	UkrainianVoicesApp/App/CapturedRequestsView.swift	139	Записи скопійовано
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	10	На пристрої збережено: перевірка ще не виконувалась.
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	11	Опублікований список: перевірка ще не виконувалась.
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	12	Словник замін: перевірка ще не виконувалась.
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	20	\(descriptor.name) — \(String(format: "%.1f", Double(size) / 1_048_576.0)) МБ
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	23	На пристрої збережено: завантажених голосів немає.
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	24	На пристрої збережено: \(storedNames.joined(separator: ", ")).
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	29	Опублікований список голосів відсутній.
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	33	Опубліковано голосів: \(catalog.descriptors.count), версія списку \(catalog.revision).
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	41	Словник замін: вимкнено.
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	43	Словник замін у застосунку: базових \(AbbreviationDictionary.bundledEntries.count), власних \(user).
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	130	Стан: \(downloadManager.statusMessage)
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	184	не завантажено
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	186	завантажено: \(installed) із \(language.voices.count)
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	215	Стан: \(downloadManager.statusMessage)
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	223	Видалити голос \(voice.userFacingName)?
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	250	Видалити голос
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	250	Завантажити голос
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	263	Завантаження \(voice.userFacingName)
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	264	\(Int(progress * 100)) відсотків
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	270	Видалити голос \(voice.userFacingName)
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	276	Завантажити голос \(voice.userFacingName), \(voice.sizeMegabytesText)
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	285	, завантаження \(Int(progress * 100)) відсотків
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	287	, завантажено
+B	UkrainianVoicesApp/App/DownloadableLanguagesView.swift	289	, не завантажено
+B	UkrainianVoicesApp/App/UkrainianVoicesApp.swift	59	Українські голоси
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	45	%.1f МБ
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	115	Немає інтернету — показано збережений список голосів.
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	117	Не вдалося завантажити список голосів. Перевірте інтернет і спробуйте ще раз.
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	143	Завантаження голосу \(voice.userFacingName)…
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	154	Голос \(voice.userFacingName) завантажено. Тепер його можна увімкнути у VoiceOver.
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	159	Не вдалося завантажити голос \(voice.userFacingName): \(error.localizedDescription)
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	172	Голос \(name) видалено.
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	176	Не вдалося видалити голос \(name): \(error.localizedDescription)
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	205	Не вдалося опублікувати список голосів: \(error.localizedDescription)
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	215	Полагодження голосів: переопубліковуємо список.
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	227	Голоси переопубліковано: \(catalog.descriptors.count). Перевірте самоперевірку.
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	233	Не вдалося полагодити голоси: \(error.localizedDescription)
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	269	сервер не відповів
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	270	файл пошкоджено при передачі
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	271	архів голосу неповний
+B	UkrainianVoicesApp/App/VoiceDownloadManager.swift	272	спільне сховище недоступне
+B	UkrainianVoicesApp/Shared/AbbreviationDictionary.swift	31	Поле «Скорочення» не може бути порожнім.
+B	UkrainianVoicesApp/Shared/AbbreviationDictionary.swift	33	Поле «Як читати» не може бути порожнім.
+B	UkrainianVoicesApp/Shared/AbbreviationDictionary.swift	35	Не вдалося відкрити спільне сховище App Group.
+B	UkrainianVoicesApp/Shared/AbbreviationDictionary.swift	37	Файл словника не вдалося прочитати. Працює базовий словник.
+B	UkrainianVoicesApp/Shared/AbbreviationDictionary.swift	39	Файл словника завеликий. Максимальний розмір — 1 МБ.
+B	UkrainianVoicesApp/Shared/AbbreviationDictionary.swift	41	У файлі немає коректних записів. Мій словник не змінено.
+B	UkrainianVoicesApp/Shared/AbbreviationDictionary.swift	62	Словник завантажено: додано \(added), оновлено \(updated), пропущено \(skipped).
+B	UkrainianVoicesApp/Shared/PersonalUserDictionary.swift	30	Поле «Слово» не може бути порожнім.
+B	UkrainianVoicesApp/Shared/PersonalUserDictionary.swift	32	Поле «Слово з наголосом» не може бути порожнім.
+B	UkrainianVoicesApp/Shared/PersonalUserDictionary.swift	34	Не вдалося відкрити спільне сховище App Group.
+B	UkrainianVoicesApp/Shared/RHVoiceDownloadableVoices.swift	29	Бен
+B	UkrainianVoicesApp/Shared/RHVoiceDownloadableVoices.swift	30	Клара
+B	UkrainianVoicesApp/Shared/RHVoiceDownloadableVoices.swift	31	Сара
+B	UkrainianVoicesApp/Shared/RHVoiceDownloadableVoices.swift	32	Радж
+B	UkrainianVoicesApp/Shared/RHVoicePublishedVoiceCatalog.swift	72	Спільне сховище голосів недоступне.
+B	UkrainianVoicesApp/Shared/RHVoicePublishedVoiceCatalog.swift	73	Каталог голосів містить некоректні дані.
+B	UkrainianVoicesApp/Shared/RHVoicePublishedVoiceCatalog.swift	74	Не вдалося перевірити запис каталогу голосів.
+B	UkrainianVoicesApp/Shared/RHVoiceRequestCapture.swift	80	перевірка з застосунку
+B	UkrainianVoicesApp/Shared/RHVoiceRequestCapture.swift	82	Пробний запис. Якщо ви його бачите, показ списку працює.
+B	UkrainianVoicesApp/Shared/RHVoiceRequestCapture.swift	96	не вдалося закодувати запис
+B	UkrainianVoicesApp/Shared/RHVoiceRequestCapture.swift	123	Записів немає.
+B	UkrainianVoicesApp/Shared/RHVoiceRequestCapture.swift	127	\n            Запис \(index + 1) — \(formatter.string(from: entry.date))\n            Голос: \(entry.voiceId)\n            Довжина: \(entry.characters) символів\n            Текст:\n            \(entry.text)\n            
+B	UkrainianVoicesApp/Shared/RHVoiceSharedSettings.swift	101	Немає
+B	UkrainianVoicesApp/Shared/RHVoiceSharedSettings.swift	102	Звичайна

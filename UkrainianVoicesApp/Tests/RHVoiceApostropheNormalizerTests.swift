@@ -407,9 +407,12 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     }
 
     func testTelephoneSayAsDoesNotTreatArithmeticPlusAsPhonePrefix() {
+        // Арифметичний плюс не робить число телефоном. Раніше «+» лишався
+        // сирим і рушій його мовчки пропускав (аудит Даші, збірка 206, п.15) —
+        // тепер він вимовляється словом «плюс».
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments(#"<say-as interpret-as="telephone">10+ 453449161</say-as>"#),
-            "10+ чотириста п'ятдесят три мільйони чотириста сорок дев'ять тисяч сто шістдесят один"
+            "10 плюс чотириста п'ятдесят три мільйони чотириста сорок дев'ять тисяч сто шістдесят один"
         )
     }
 
@@ -575,10 +578,21 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
-    func testRomanNumeralsAreNotWrappedAsLatinAbbreviations() {
+    // Раніше римські числа лишалися сирими, і рушій читав «III» як «айіі»
+    // (аудит Даші, збірка 206, п.29) — тепер вони стають числівниками.
+    func testRomanNumeralsAreSpokenAsNumbers() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Розділ III готовий."),
-            "Розділ III готовий."
+            "Розділ три готовий."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Століття XIV"),
+            "Століття чотирнадцять"
+        )
+        // Некоректний набір римських літер не «читаємо» і не диктуємо по буквах.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Код VVX тут."),
+            "Код VVX тут."
         )
     }
 
@@ -725,4 +739,465 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             "Телефон плюс тридцять вісім, нуль шістдесят сім, сто двадцять три, сорок п'ять, шістдесят сім."
         )
     }
+
+    // MARK: - Фікси за аудитом Даші (збірка 206, 01.08.2026)
+
+    func testStandalonePlusBeforeNumberIsSpoken() {
+        // Пункт 15: «Зараховано +9 000.00» — плюс губився.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зараховано +9 000.00"),
+            "Зараховано плюс дев'ять тисяч"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("2+2"),
+            "2 плюс 2"
+        )
+    }
+
+    func testMinusBeforeAmountIsSpoken() {
+        // Пункт 16: «Зняття -17 000» — мінус мовчав.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зняття -17 000"),
+            "Зняття мінус сімнадцять тисяч"
+        )
+        // Юнікодний мінус U+2212 і коротке тире — та сама вимова.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зняття \u{2212}17 000"),
+            "Зняття мінус сімнадцять тисяч"
+        )
+        // Діапазон не є мінусом: перед знаком стоїть цифра.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10-15"),
+            "10-15"
+        )
+    }
+
+    func testPercentSignsAreSpoken() {
+        // Пункт 28: знак відсотка не відтворювався.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("15%"),
+            "15 відсотків"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1%"),
+            "1 відсоток"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("22%"),
+            "22 відсотки"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("2,5%"),
+            "дві цілих п'ять десятих відсотка"
+        )
+    }
+
+    func testDottedGroupedAmountReadsAsDecimal() {
+        // Пункт 14: сума «30 118.90» з крапкою розвалювалась на два числа.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30 118.90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30 118,90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+    }
+
+    func testVerbalizedDotAmountsFromIOS() {
+        // iOS проговорює крапку словом ще до синтезатора (доведено для дат
+        // логом 2026-07-21) — суми приходять як «30 118 крапка 90».
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30 118 крапка 90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Зараховано +9 000 крапка 00"),
+            "Зараховано плюс дев'ять тисяч"
+        )
+        // Версії не чіпаємо: без тисячного розділювача правило не діє.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Версія 1 крапка 18"),
+            "Версія 1 крапка 18"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1 крапка 16 крапка 4"),
+            "1 крапка 16 крапка 4"
+        )
+    }
+
+    func testVulgarFractionSymbolsAreSpoken() {
+        // Пункт 27: «Нотатки» автозаміною перетворюють 1/2 на «½»,
+        // і коса риска «зникала».
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("½"),
+            "одна друга"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("¾"),
+            "три четвертих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1½"),
+            "1 і одна друга"
+        )
+    }
+
+    func testAsciiSimpleFractionsStillWork() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1/2, 3/4"),
+            "один дріб два, три дріб чотири"
+        )
+    }
+
+    func testBareSecondsExpandOnlyInClockContext() {
+        // Пункти 22–23: «01 год 15 хв 5 с» — голе «с» лишалося нерозгорнутим.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("01 год 15 хв 5 с"),
+            "одна година п'ятнадцять хвилин п'ять секунд"
+        )
+        // Без «хв»/«год» поруч «с.» може бути «село» чи «сторінка» — не чіпаємо.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Їхали через 5 с. Іванівка"),
+            "Їхали через 5 с. Іванівка"
+        )
+    }
+
+    func testWiFiBundledDictionaryEntryApplies() {
+        // Пункт 24 аудиту: Wi-Fi має читатися «вай-фай» через базовий словник.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments(
+                "Мережа Wi-Fi активна",
+                abbreviationDictionaryEntries: AbbreviationDictionary.bundledEntries
+            ),
+            "Мережа вай-фай активна"
+        )
+    }
+
+    // MARK: - Стражі після критика (18.08.2026)
+
+    func testVerbalizedDotAmountWithNarrowNoBreakSpace() {
+        // Банки і iOS групують розряди нерозривними пробілами (U+202F, U+00A0):
+        // саме ця форма приходить із Приват24, а не ASCII-пробіл.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("30\u{202F}118 крапка 90"),
+            "тридцять тисяч сто вісімнадцять цілих дев'яносто сотих"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("9\u{00A0}000 крапка 00"),
+            "дев'ять тисяч"
+        )
+    }
+
+    func testDashBeforePriceIsNotMinus() {
+        // Тире-зв'язка перед сумою — НЕ від'ємне число: знак мінуса мусить
+        // прилягати до цифри.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Ціна — 250 грн"),
+            "Ціна — 250 гривні"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("10 - 15 хвилин"),
+            "10 - 15 хвилин"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("- 5 пунктів"),
+            "- 5 пунктів"
+        )
+    }
+
+    func testRomanLookalikeAbbreviationsStayUntouched() {
+        // XL, CV, CD — формально римські числа, але в житті це розмір одягу,
+        // резюме і диск. Лишаємо сирими, як було.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Розмір XL підійшов."),
+            "Розмір XL підійшов."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Надішліть CV сюди."),
+            "Надішліть CV сюди."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Диск CD старий."),
+            "Диск CD старий."
+        )
+    }
+
+    // --- Форми, у яких iOS вiддає знак СЛОВОМ (замiр 24.08.2026) ---
+    // При увiмкненiй деталiзацiї пунктуацiї система пiдставляє слово замiсть знака:
+    // «%» → «вiдсоток» (ЗАВЖДИ однина), «:» → «двокрапка». Правила мусять розумiти
+    // обидвi форми, бо налаштування користувача ми не контролюємо i виміряти
+    // на чужих пристроях не можемо.
+
+    func testVerbalizedPercentGetsCorrectNounForm() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("15 відсоток"),
+            "15 відсотків"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("22 відсоток"),
+            "22 відсотки"
+        )
+        // Число, для якого однина ВIРНА — рядок не змiнюється.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("1 відсоток"),
+            "1 відсоток"
+        )
+    }
+
+    func testVerbalizedPercentDoesNotTouchAdjectives() {
+        // «вiдсотковий» — не одиниця вимiру, чiпати не можна.
+        let input = "5 відсоткових пунктів"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments(input), input)
+    }
+
+    func testVerbalizedColonReadsAsTime() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("14 двокрапка 30"),
+            "чотирнадцята година тридцять хвилин"
+        )
+    }
+
+    func testVerbalizedColonDoesNotTurnScoreIntoTime() {
+        // Рахунок «3 двокрапка 1»: хвилини мусять бути РIВНО двi цифри,
+        // тому це НЕ час i чiпати його не можна.
+        let input = "3 двокрапка 1"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments(input), input)
+    }
+
+
+    // MARK: - Letter «і» announced by its Unicode name (measured 2026-09-06)
+
+    func testMeasuredLetterINameRequestBecomesTheLetterItself() {
+        // Рядок ЗНЯТИЙ з живого iPhone 12 / iOS 26.6.1, збірка 226, журнал
+        // cap26_2026-09-06.txt. Остання буква у назві — ЛАТИНСЬКА i (U+0069),
+        // саме через неї Андрій чув «ай» у кінці фрази.
+        let measured = "<speak><lang xml:lang=\"uk\"><prosody rate=\"400.0%\"> білорусько-українська \u{0069} </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "і")
+    }
+
+    func testLetterINameIsNormalizedRegardlessOfLetterVariantAndWordOrder() {
+        let variants = [
+            "білорусько-українська \u{0069}",
+            "білорусько-українська \u{0456}",
+            "українсько-білоруська \u{0069}",
+            "українсько-білоруська \u{0456}",
+            "  Білорусько-Українська   \u{0069}  "
+        ]
+        for variant in variants {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
+                "і",
+                "не спрацювало на варіанті: \(variant)"
+            )
+        }
+    }
+
+    func testOtherLettersAreLeftAloneByDecision() {
+        // ВАЖЛИВО, чому саме NIL. Правило чіпає лише цілі запити-назви букв, що
+        // збігаються з таблицею (зараз «і» і «є»). Звичайний текст із самими
+        // буквами не є такою назвою і має лишатися недоторканим.
+        for text in ["<speak>Їжак</speak>", "<speak>Євген</speak>", "<speak>ї</speak>", "<speak>є</speak>"] {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    // MARK: - Letter «є» announced by iOS's wrong letter name (measured 2026-09-06)
+
+    func testMeasuredLetterENameRequestBecomesTheLetterItself() {
+        // Рядок ЗНЯТИЙ з живого iPhone / iOS, журнал cap26_2026-09-06.txt: при
+        // читанні по буквах «є» iOS називає ЧУЖУ кириличну літеру «ї»
+        // (U+0457), через що замість «йе» чується «йи».
+        let measured = "<speak><lang xml:lang=\"uk\"><prosody rate=\"400.0%\"> українська ї </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "є")
+    }
+
+    func testLetterENameIsNormalizedRegardlessOfWordingAndWordOrder() {
+        // «українська ї» — виміряна форма. «українська є» — правильне
+        // формулювання, на випадок якщо Apple виправить свою локалізацію.
+        // Обидва порядки слів покриті так само, як і для «і» вище.
+        let variants = [
+            "українська ї",
+            "ї українська",
+            "українська є",
+            "є українська",
+            "  Українська   Ї  "
+        ]
+        for variant in variants {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
+                "є",
+                "не спрацювало на варіанті: \(variant)"
+            )
+        }
+    }
+
+    func testRealLetterYiRequestIsNotTouched() {
+        // Справжня буква «ї» приходить як « yi » (дві ЛАТИНСЬКІ літери) і вже
+        // звучить правильно — цього правила вона торкатися не повинна.
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(" yi "))
+    }
+
+    func testOrdinaryTextWithLetterEWordsIsNotReplaced() {
+        // Сторож: слова «українська» і «ї» посеред звичайного речення не є
+        // цілим запитом-назвою букви і не повинні замінюватися.
+        let ordinary = [
+            "це українська ї та ще щось",
+            "Мова українська, ї не єдина буква"
+        ]
+        for text in ordinary {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testInvisibleFormattingCharactersDoNotDefeatTheLetterERule() {
+        let withLRM = "\u{200E} українська ї\u{200E} "
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(withLRM), "є")
+    }
+
+    func testTrailingPunctuationDoesNotDefeatTheLetterERule() {
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("українська ї."), "є")
+    }
+
+    // MARK: - Letter «ґ» announced by its Unicode name (measured 2026-09-14)
+
+    func testMeasuredSmallGheWithUpturnNameRequestBecomesTheLetterItself() {
+        // Рядок ЗНЯТИЙ з живого iPhone 12 / iOS 26.6.1, збірка 230, журнал
+        // /tmp/cap_g_2026-09-14_0957.txt. iOS шле не саму літеру, а її
+        // юнікодну назву, перекладену наполовину: латинське «ghe» + «піднесення».
+        // Андрій незалежно підтвердив на слух: чув «г піднесення».
+        let measured = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> ghe, піднесення </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "ґ")
+    }
+
+    func testGheNameIsNormalizedRegardlessOfCommaAndWordOrder() {
+        let variants = [
+            "ghe, піднесення",
+            "ghe піднесення",
+            "піднесення, ghe",
+            "піднесення ghe",
+            "ге, піднесення",
+            "  GHE,   Піднесення  "
+        ]
+        for variant in variants {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
+                "ґ",
+                "не спрацювало на варіанті: \(variant)"
+            )
+        }
+    }
+
+    func testCapitalGheArrivesCorrectlyAndIsLeftAlone() {
+        // ⭐ВЕЛИКА «Ґ» НЕ ЗЛАМАНА: iOS шле «Велика» плюс СПРАВЖНЮ літеру в тезі
+        // посимвольного читання. Андрій підтвердив на слух 14.09, що вона звучить
+        // правильно. Правило не повинно її чіпати — інакше ми зламаємо робоче.
+        let capital = "<speak><lang xml:lang=\"uk\">Велика <say-as interpret-as=\"characters\">ґ</say-as></lang></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(capital))
+    }
+
+    func testOrdinaryUkrainianTextWithTheWordPidnesennyaIsNotReplaced() {
+        // Сторож: «піднесення» — звичайне українське слово. Правило має ловити
+        // лише цілий запит-назву букви, а не будь-яку згадку слова.
+        let ordinary = [
+            "піднесення духу",
+            "економічне піднесення країни",
+            "це піднесення, а не спад"
+        ]
+        for text in ordinary {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testWordsContainingGheAreNotTouched() {
+        // Слова з «ґ» усередині Андрій 14.09 почув правильно — суцільне читання
+        // не ламається. Правило не повинно в них лізти.
+        for text in ["<speak>ґанок,</speak>", "<speak>ґудзик,</speak>", "<speak>ґрунт</speak>", "<speak>дзиґа</speak>"] {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testInvisibleFormattingCharactersDoNotDefeatTheRule() {
+        // U+200E (LRM) реально трапляється всередині рядків VoiceOver на iOS 27.
+        // Він не належить до пробільних, тож без окремого зняття правило б
+        // мовчки промахнулося.
+        let withLRM = "\u{200E} білорусько-українська \u{0069}\u{200E} "
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(withLRM), "і")
+    }
+
+    func testTrailingPunctuationDoesNotDefeatTheRule() {
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("білорусько-українська \u{0069}."), "і")
+    }
+
+    func testOrdinaryTextWithTheSameWordsIsNotReplaced() {
+        // Сторож: правило спрацьовує ЛИШЕ на цілому запиті, що складається саме
+        // з назви букви, і не чіпає звичайну мову.
+        let ordinary = [
+            "білорусько-українська співпраця",
+            "це білорусько-українська i ще щось",
+            "Мова білорусько-українська"
+        ]
+        for text in ordinary {
+            XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text))
+        }
+    }
+
+    func testEmptyRequestIsNotTouched() {
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("<speak></speak>"))
+    }
+
+    // MARK: - iOS 26 vs iOS 27 letter-name shapes (measured 2026-09-08)
+    //
+    // iOS 26 sends the letter-name phrase as ONE text run — see
+    // ~/aiwork/copilot/cap_letters_2026-09-08_ios26.txt. iOS 27 sends the SAME
+    // phrase as THREE separate `<s>` sentences (name, pause, alphabet word) —
+    // see ~/rhvoice/cap27_letters_2026-09-08.txt (Mac, ssh andrey@10.164.231.25).
+    // Both forms below are copied verbatim from those captures.
+
+    func testIOS26CaptureLetterINameBecomesTheLetterItself() {
+        // Verbatim from cap_letters_2026-09-08_ios26.txt (single text run) —
+        // old join-then-compare behaviour must not change for this shape.
+        let ios26 = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> білорусько-українська i </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios26), "і")
+    }
+
+    func testIOS26CaptureLetterENameBecomesTheLetterItself() {
+        // Verbatim from cap_letters_2026-09-08_ios26.txt (single text run).
+        let ios26 = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> українська ї </prosody></lang></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios26), "є")
+    }
+
+    func testIOS27CaptureLetterINameRewritesOnlyTheMatchingSentence() {
+        // Verbatim from cap27_letters_2026-09-08.txt: three separate <s>
+        // sentences (name, pause, alphabet word "Іван"). Only the first
+        // sentence's text is replaced; the pause and "Іван" stay untouched.
+        let ios27 = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\"> білорусько-українська i </lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Іван</lang></s></prosody></speak>"
+        let expected = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\">і</lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Іван</lang></s></prosody></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27), expected)
+    }
+
+    func testIOS27CaptureLetterENameRewritesOnlyTheMatchingSentence() {
+        // Verbatim from cap27_letters_2026-09-08.txt, alphabet word "Євген".
+        let ios27 = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\"> українська ї </lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Євген</lang></s></prosody></speak>"
+        let expected = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\">є</lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Євген</lang></s></prosody></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27), expected)
+    }
+
+    func testIOS27CaptureRealLetterYiIsNotTouched() {
+        // Verbatim from cap27_letters_2026-09-08.txt: the real «ї» arrives as
+        // « yi » (two Latin letters), already sounds correct, and « yi » is
+        // not a dictionary key — neither this sentence nor "Їжак" matches, so
+        // the whole request must come back nil, unmodified.
+        let ios27 = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\"> yi </lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Їжак</lang></s></prosody></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27))
+    }
+
+    func testIOS27StyleMultiSentenceOrdinarySpeechIsNotTouched() {
+        // A multi-<s> request that is NOT a letter-name announcement (no
+        // sentence text matches the dictionary) must come back nil untouched,
+        // the same as any other ordinary text passed through this rule.
+        let ordinary = "<speak><prosody rate=\"100%\"><s><lang xml:lang=\"uk-UA\">Привіт</lang></s><s><lang xml:lang=\"uk-UA\">Як справи</lang></s></prosody></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ordinary))
+    }
+
 }

@@ -25,11 +25,21 @@ enum RHVoiceDownloadableVoices {
     /// Internal CMU voice IDs are not useful when VoiceOver reads them aloud.
     /// Keep engine `profileName` unchanged; this map is only for user-visible
     /// labels and is also applied to previously downloaded meta.json files.
+    ///
+    /// ⭐LATIN, NOT CYRILLIC (measured by ear 2026-09-14, build 230, iPhone 12
+    /// iOS 26.6.1). In the VoiceOver rotor the voice name is spoken by THAT
+    /// voice itself, and an English CMU voice cannot read Cyrillic — so
+    /// «Бен» came out as silence and the user heard an unnamed, blank entry.
+    /// In Settings → VoiceOver → Speech the same name reads fine, because
+    /// there the Ukrainian voice announces it. Ostap reported the same blank
+    /// rotor entry on 2026-08-31 (build 222) on a different device.
+    /// Decision by Andriy 2026-09-14: Latin everywhere — the app screen and
+    /// the system voice list must show ONE name, not two.
     static let humanReadableNames: [String: String] = [
-        "bdl": "Бен",
-        "clb": "Клара",
-        "slt": "Сара",
-        "ksp": "Радж"
+        "bdl": "Ben",
+        "clb": "Clara",
+        "slt": "Sarah",
+        "ksp": "Raj"
     ]
 
     static func userFacingName(id: String, fallback: String) -> String {

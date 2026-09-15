@@ -1,11 +1,11 @@
-# Ліцензійна угода з користувачем / End User Licence Agreement
+# Права користувача, ліцензії та підтримка / User rights, licences and support
 
 **Застосунок:** RHVoice UA (RHVoice Ukrainian) — українські голоси синтезу мовлення для VoiceOver.
 **Розробник:** Громадська організація «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей „Право вибору“», ЄДРПОУ 26202439, м. Харків, Україна.
 **Контакт:** rhvoice@pravovyboru.org
 **Вихідний код:** https://github.com/abuten1977-design/RHVoiceUkraine
 
-Цей текст замінює стандартну ліцензійну угоду Apple (Apple Licensed Application End User Licence Agreement) для цього застосунку.
+Це **пояснювальний документ проєкту**: простими словами описує ваші права на застосунок і голоси. Він **не замінює** ліцензійну угоду Apple — у App Store діє стандартна Licensed Application End User Licence Agreement, а права на сам код визначає GPL-3 разом із App Store exception автора рушія.
 
 ---
 
@@ -50,9 +50,9 @@
 
 Підтримку користувачів надає розробник — ГО «Право вибору», пошта rhvoice@pravovyboru.org. **Apple не надає підтримки цього застосунку і не відповідає за нього.**
 
-### 6. Умови, обов'язкові за правилами Apple
+### 6. Що передбачають правила Apple
 
-1. Ця угода укладена між вами і розробником, а не між вами і Apple. **Apple не є стороною цієї угоди.**
+1. Угода про використання застосунку укладається між вами і розробником, а не між вами і Apple. **Apple не є її стороною.**
 2. Ліцензія на застосунок дійсна для пристроїв, якими ви володієте або які контролюєте, згідно з правилами App Store.
 3. За будь-якими претензіями щодо застосунку — його якості, роботи, відповідності опису, порушення прав третіх осіб — звертайтеся до розробника, а не до Apple.
 4. Apple та її дочірні компанії є третіми особами — вигодонабувачами цієї угоди і мають право забезпечувати її виконання щодо вас.
@@ -106,9 +106,9 @@ The application is provided "as is", **without any warranty**, including without
 
 Support is provided by the developer, NGO "Pravo Vyboru", at rhvoice@pravovyboru.org. **Apple provides no support for this application and bears no responsibility for it.**
 
-### 6. Terms required by Apple
+### 6. What Apple's rules provide
 
-1. This agreement is between you and the developer, not between you and Apple. **Apple is not a party to this agreement.**
+1. The agreement covering use of the application is between you and the developer, not between you and Apple. **Apple is not a party to it.**
 2. The licence covers devices that you own or control, as permitted by the App Store rules.
 3. Any claim relating to the application — its quality, performance, conformity to description, or infringement of third-party rights — must be addressed to the developer, not to Apple.
 4. Apple and its subsidiaries are third-party beneficiaries of this agreement and may enforce it against you.

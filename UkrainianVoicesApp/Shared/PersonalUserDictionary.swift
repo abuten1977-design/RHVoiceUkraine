@@ -27,11 +27,11 @@ enum PersonalUserDictionaryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyDisplayWord:
-            return "Поле «Слово» не може бути порожнім."
+            return NSLocalizedString("Поле «Слово» не може бути порожнім.", comment: "")
         case .emptyStressedWord:
-            return "Поле «Слово з наголосом» не може бути порожнім."
+            return NSLocalizedString("Поле «Слово з наголосом» не може бути порожнім.", comment: "")
         case .appGroupUnavailable:
-            return "Не вдалося відкрити спільне сховище App Group."
+            return NSLocalizedString("Не вдалося відкрити спільне сховище App Group.", comment: "")
         }
     }
 }

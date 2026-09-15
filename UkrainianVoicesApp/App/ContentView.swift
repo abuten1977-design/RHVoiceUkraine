@@ -21,8 +21,8 @@ private let enabledVoiceIdentifiersKey = RHVoiceSharedSettings.enabledVoiceIdent
 private let selectedVoiceIdentifierKey = RHVoiceSharedSettings.selectedVoiceIdentifierKey
 private let defaultEnabledVoiceIdentifiers = RHVoiceSharedSettings.defaultEnabledVoiceIdentifiers
 private let preferredLanguageOrder = ["Українська", "Англійська"]
-private let donorDisclaimerText = "Застосунок RHVoice UA розробляється громадською організацією «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу. Наповнення застосунку є відповідальністю ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» та необов’язково відображає позицію Фонду Східна Європа та ЄС.
-private let donorLogosAccessibilityLabel = "Логотипи донорів: Європейський Союз — Прямуємо разом, Фонд Східна Європа, Фенікс — Сила спільнот, Act to Drive Change."
+private let donorDisclaimerText = NSLocalizedString("Застосунок RHVoice UA розробляється громадською організацією «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу. Наповнення застосунку є відповідальністю ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» та необов’язково відображає позицію Фонду Східна Європа та ЄС.", comment: "")
+private let donorLogosAccessibilityLabel = NSLocalizedString("Логотипи донорів: Європейський Союз — Прямуємо разом, Фонд Східна Європа, Фенікс — Сила спільнот, Act to Drive Change.", comment: "")
 
 private struct LicenseItem: Identifiable {
     let title: String
@@ -38,92 +38,92 @@ private let sourceCodeURL = URL(string: "https://github.com/abuten1977-design/RH
 
 private let licenseItems: [LicenseItem] = [
     .init(
-        title: "RHVoice UA (цей застосунок)",
-        license: "GPL-3.0 або пізніша, з дозволом для App Store",
-        attribution: "ГО «Право вибору»",
-        note: "Вихідний код відкритий. Ви маєте право отримати повний код саме цієї збірки, змінювати його і поширювати далі на умовах GPL-3.",
+        title: NSLocalizedString("RHVoice UA (цей застосунок)", comment: ""),
+        license: NSLocalizedString("GPL-3.0 або пізніша, з дозволом для App Store", comment: ""),
+        attribution: NSLocalizedString("ГО «Право вибору»", comment: ""),
+        note: NSLocalizedString("Вихідний код відкритий. Ви маєте право отримати повний код саме цієї збірки, змінювати його і поширювати далі на умовах GPL-3.", comment: ""),
         url: sourceCodeURL
     ),
     .init(
-        title: "Рушій RHVoice",
-        license: "GPL-3.0 або пізніша (частина файлів — LGPL-2.1)",
-        attribution: "Ольга Яковлева",
-        note: "Основний рушій синтезу. Розповсюдження через App Store дозволене окремим дозволом авторки від 3 серпня 2026 року.",
+        title: NSLocalizedString("Рушій RHVoice", comment: ""),
+        license: NSLocalizedString("GPL-3.0 або пізніша (частина файлів — LGPL-2.1)", comment: ""),
+        attribution: NSLocalizedString("Ольга Яковлева", comment: ""),
+        note: NSLocalizedString("Основний рушій синтезу. Розповсюдження через App Store дозволене окремим дозволом авторки від 3 серпня 2026 року.", comment: ""),
         url: URL(string: "https://github.com/RHVoice/RHVoice")
     ),
     .init(
         title: "hts_engine API",
         license: "3-clause BSD",
         attribution: "HTS Working Group, Nagoya Institute of Technology, Tokyo Institute of Technology",
-        note: "Copyright (c) 2001-2015 Nagoya Institute of Technology; 2001-2008 Tokyo Institute of Technology. All rights reserved. Файли у складі RHVoice змінені авторкою рушія.",
+        note: NSLocalizedString("Copyright (c) 2001-2015 Nagoya Institute of Technology; 2001-2008 Tokyo Institute of Technology. All rights reserved. Файли у складі RHVoice змінені авторкою рушія.", comment: ""),
         url: URL(string: "http://hts-engine.sourceforge.net/")
     ),
     .init(
         title: "sonic",
         license: "Apache-2.0",
         attribution: "Bill Cox",
-        note: "Зміна темпу мовлення без спотворення голосу.",
+        note: NSLocalizedString("Зміна темпу мовлення без спотворення голосу.", comment: ""),
         url: URL(string: "https://www.apache.org/licenses/LICENSE-2.0")
     ),
     .init(
         title: "Boost, rapidxml, utf8cpp",
         license: "Boost Software License 1.0",
         attribution: "Boost contributors, Marcin Kalicinski, Nemanja Trifunovic",
-        note: "Допоміжні бібліотеки у складі рушія.",
+        note: NSLocalizedString("Допоміжні бібліотеки у складі рушія.", comment: ""),
         url: URL(string: "https://www.boost.org/LICENSE_1_0.txt")
     ),
     .init(
         title: "ZIPFoundation",
         license: "MIT",
         attribution: "Thomas Zoechling",
-        note: "Розпакування завантажених голосів.",
+        note: NSLocalizedString("Розпакування завантажених голосів.", comment: ""),
         url: URL(string: "https://github.com/weichsel/ZIPFoundation")
     ),
     .init(
         title: "Anatol",
         license: "LGPL-2.1",
-        attribution: "Диктор Анатолій Подорожко; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Sergey Parshakov, Zvonimir Stanecic",
-        note: "Український голос. Дані розповсюджуються без змін.",
+        attribution: NSLocalizedString("Диктор Анатолій Подорожко; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Sergey Parshakov, Zvonimir Stanecic", comment: ""),
+        note: NSLocalizedString("Український голос. Дані розповсюджуються без змін.", comment: ""),
         url: URL(string: "https://facebook.com/syntezator")
     ),
     .init(
         title: "Natalia",
         license: "LGPL-2.1",
-        attribution: "Дикторка Наталія Чехаль; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Tomasz Bilecki, Zvonimir Stanecic",
-        note: "Український голос. Дані розповсюджуються без змін.",
+        attribution: NSLocalizedString("Дикторка Наталія Чехаль; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Tomasz Bilecki, Zvonimir Stanecic", comment: ""),
+        note: NSLocalizedString("Український голос. Дані розповсюджуються без змін.", comment: ""),
         url: URL(string: "https://facebook.com/syntezator")
     ),
     .init(
         title: "Marianna",
         license: "CC BY-ND 4.0",
-        attribution: "Дикторка Marianna Firtka; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Maryna Herelyuk, Sergey Parshakov, Beka Gozalishvili",
-        note: "Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).",
+        attribution: NSLocalizedString("Дикторка Marianna Firtka; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Maryna Herelyuk, Sergey Parshakov, Beka Gozalishvili", comment: ""),
+        note: NSLocalizedString("Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).", comment: ""),
         url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
     ),
     .init(
         title: "Volodymyr",
         license: "CC BY-ND 4.0",
-        attribution: "Диктор Володимир Беглов; команда «Синтезатор української мови»",
-        note: "Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).",
+        attribution: NSLocalizedString("Диктор Володимир Беглов; команда «Синтезатор української мови»", comment: ""),
+        note: NSLocalizedString("Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).", comment: ""),
         url: URL(string: "https://creativecommons.org/licenses/by-nd/4.0/")
     ),
     .init(
-        title: "Англійські голоси: Бен, Клара, Сара, Радж",
+        title: NSLocalizedString("Англійські голоси: Ben, Clara, Sarah, Raj", comment: ""),
         license: "CMU / Festvox",
-        attribution: "Carnegie Mellon University, корпус CMU ARCTIC",
-        note: "Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних.",
+        attribution: NSLocalizedString("Carnegie Mellon University, корпус CMU ARCTIC", comment: ""),
+        note: NSLocalizedString("Завантажуються за потреби. Моделі натреновано для рушія RHVoice, тобто це змінені похідні оригінальних даних.", comment: ""),
         url: URL(string: "http://www.festvox.org/cmu_arctic/")
     ),
     .init(
-        title: "Англійські мовні дані (cmulex)",
+        title: NSLocalizedString("Англійські мовні дані (cmulex)", comment: ""),
         license: "CMU Pronouncing Dictionary",
         attribution: "Carnegie Mellon University",
-        note: "Потрібні для читання латиниці українським голосом.",
+        note: NSLocalizedString("Потрібні для читання латиниці українським голосом.", comment: ""),
         url: URL(string: "https://github.com/cmusphinx/cmudict")
     )
 ]
 
-private let legalNoticeText = """
+private let legalNoticeText = NSLocalizedString("""
 RHVoice UA. Copyright © 2026 ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору».
 
 Ця програма розповсюджується за GNU General Public License версії 3 або, на ваш вибір, будь-якої пізнішої версії, разом із додатковим дозволом на розповсюдження через Apple App Store.
@@ -131,13 +131,13 @@ RHVoice UA. Copyright © 2026 ГО «Харківський центр реаб�
 Програма постачається БЕЗ ЖОДНИХ ГАРАНТІЙ, у тому числі без гарантій придатності для продажу чи для конкретної мети.
 
 Ви маєте право поширювати копії цієї програми та змінювати її на умовах GPL-3. Ви також маєте право отримати повний вихідний код саме цієї збірки.
-"""
+""", comment: "")
 
 private var buildIdentityText: String {
     let info = Bundle.main.infoDictionary ?? [:]
     let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
     let build = info["CFBundleVersion"] as? String ?? "?"
-    return "Версія \(version), збірка \(build). Вихідний код цієї збірки позначено тегом build-\(build) у репозиторії проєкту."
+    return String(format: NSLocalizedString("Версія %@, збірка %@. Вихідний код цієї збірки позначено тегом build-%@ у репозиторії проєкту.", comment: ""), version, build, build)
 }
 
 /// Повні тексти ліцензій, що постачаються ВСЕРЕДИНІ застосунку (вимога GPL-3 §4:
@@ -171,7 +171,7 @@ private struct LicenseTextsView: View {
                     } label: {
                         Text(file.deletingPathExtension().lastPathComponent)
                     }
-                    .accessibilityLabel("Ліцензія \(file.deletingPathExtension().lastPathComponent)")
+                    .accessibilityLabel(String(format: NSLocalizedString("Ліцензія %@", comment: ""), file.deletingPathExtension().lastPathComponent))
                 }
             }
         }
@@ -184,7 +184,7 @@ private struct LicenseTextDetailView: View {
 
     var body: some View {
         ScrollView {
-            Text((try? String(contentsOf: file, encoding: .utf8)) ?? "Не вдалося прочитати текст ліцензії.")
+            Text((try? String(contentsOf: file, encoding: .utf8)) ?? NSLocalizedString("Не вдалося прочитати текст ліцензії.", comment: ""))
                 .font(.footnote)
                 .textSelection(.enabled)
                 .padding()
@@ -208,6 +208,26 @@ private struct VoiceDefinition: Identifiable, Hashable {
 
     var id: String { identifier }
 
+    /// ВБУДОВАНІ УКРАЇНСЬКІ голоси показуються кирилицею: латинське ім'я
+    /// український рушій читає з англійським акцентом (аудит Даші, збірка 206,
+    /// п.4). Тому в системі вони лишаються Anatol/Marianna/…, а на екрані —
+    /// Анатол/Маріанна/… Це свідоме розходження саме для них.
+    /// ЗАВАНТАЖУВАНІ АНГЛІЙСЬКІ голоси — навпаки, латиницею в обох місцях
+    /// (див. нижче). Двигун і система знають голос лише за
+    /// profileName/identifier — їх не чіпаємо.
+    var displayName: String {
+        switch profileName {
+        case "Anatol": return NSLocalizedString("Анатол", comment: "")
+        case "Marianna": return NSLocalizedString("Маріанна", comment: "")
+        case "Natalia": return NSLocalizedString("Наталія", comment: "")
+        case "Volodymyr": return NSLocalizedString("Володимир", comment: "")
+        // Завантажені голоси приходять з ЛАТИНСЬКОЮ назвою («Ben», «Clara»…) —
+        // свідоме рішення 14.09.2026: у роторі ім'я озвучує сам англійський
+        // голос, а кирилиці він не читає, тож «Бен» звучало як тиша.
+        default: return NSLocalizedString(name, comment: "")
+        }
+    }
+
     var languageTitle: String {
         switch language {
         case "uk-UA": return "Українська"
@@ -230,7 +250,7 @@ private struct VoiceSettingsState: Equatable {
     var rate = 0.5
     var volume = 1.0
     var speedMultiplier = 1.0
-    var sentencePause = 0.0
+    var sentencePauseStrength: RHVoicePauseStrength = .none
     var wordGap = 0.0
     var pitch = 1.0
 
@@ -257,11 +277,11 @@ private struct AcceleratorPreset: Identifiable, Hashable {
 }
 
 private let acceleratorPresets: [AcceleratorPreset] = [
-    .init(title: "Повільно", multiplier: 0.8),
-    .init(title: "Нормально", multiplier: 1.0),
-    .init(title: "Трохи швидше", multiplier: 1.15),
-    .init(title: "Швидко", multiplier: 1.3),
-    .init(title: "Дуже швидко", multiplier: 1.5)
+    .init(title: NSLocalizedString("Повільно", comment: ""), multiplier: 0.8),
+    .init(title: NSLocalizedString("Нормально", comment: ""), multiplier: 1.0),
+    .init(title: NSLocalizedString("Трохи швидше", comment: ""), multiplier: 1.15),
+    .init(title: NSLocalizedString("Швидко", comment: ""), multiplier: 1.3),
+    .init(title: NSLocalizedString("Дуже швидко", comment: ""), multiplier: 1.5)
 ]
 
 // Каталог голосів живе в ContentViewModel.voiceCatalog: він динамічний —
@@ -276,7 +296,7 @@ private final class PreviewPlaybackController {
         var errorDescription: String? {
             switch self {
             case .synthesisFailed(let voiceName):
-                return "Не вдалося синтезувати зразок для голосу \(voiceName)."
+                return String(format: NSLocalizedString("Не вдалося синтезувати зразок для голосу %@.", comment: ""), voiceName)
             }
         }
     }
@@ -370,7 +390,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var volume: Double
     @Published var speedMultiplier: Double
     @Published var pitch: Double
-    @Published var sentencePause: Double
+    @Published var sentencePauseStrength: RHVoicePauseStrength
     @Published var wordGap: Double
     @Published var testText: String
     @Published var enabledVoiceIdentifiers: Set<String>
@@ -417,7 +437,7 @@ private final class ContentViewModel: ObservableObject {
         self.volume = Self.clampBaselineMultiplier(general.volume)
         self.speedMultiplier = Self.clampSpeedMultiplier(general.speedMultiplier)
         self.pitch = general.pitch
-        self.sentencePause = general.sentencePause
+        self.sentencePauseStrength = general.sentencePauseStrength
         self.wordGap = Self.clampWordGap(general.wordGap)
         self.testText = "Привіт! Це тест українського голосу."
         self.enabledVoiceIdentifiers = Self.normalizedEnabledVoices([])
@@ -439,7 +459,7 @@ private final class ContentViewModel: ObservableObject {
                 rate: 0.5,
                 volume: 1.0,
                 speedMultiplier: Self.clampSpeedMultiplier(general.speedMultiplier),
-                sentencePause: general.sentencePause,
+                sentencePauseStrength: general.sentencePauseStrength,
                 wordGap: Self.clampWordGap(general.wordGap),
                 pitch: 1.0
             ))
@@ -487,7 +507,7 @@ private final class ContentViewModel: ObservableObject {
                     fallbackRate: rate,
                     fallbackVolume: volume,
                     fallbackSpeedMultiplier: speedMultiplier,
-                    fallbackSentencePause: sentencePause,
+                    fallbackSentencePauseStrength: sentencePauseStrength,
                     fallbackWordGap: wordGap,
                     fallbackPitch: pitch
                 )
@@ -523,7 +543,7 @@ private final class ContentViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
             guard let self, self.sharedStorageState == .loading else { return }
             self.sharedStorageState = .unavailable
-            self.setStatus("Спільне сховище недоступне: налаштування і словник тимчасово не зберігаються. Голоси працюють.")
+            self.setStatus(NSLocalizedString("Спільне сховище недоступне: налаштування і словник тимчасово не зберігаються. Голоси працюють.", comment: ""))
         }
     }
 
@@ -539,14 +559,14 @@ private final class ContentViewModel: ObservableObject {
         let initialRate = snapshot.generalSettings.rate
         let initialVolume = Self.clampBaselineMultiplier(snapshot.generalSettings.volume)
         let initialSpeedMultiplier = Self.clampSpeedMultiplier(snapshot.generalSettings.speedMultiplier)
-        let initialSentencePause = snapshot.generalSettings.sentencePause
+        let initialSentencePauseStrength = snapshot.generalSettings.sentencePauseStrength
         let initialWordGap = Self.clampWordGap(snapshot.generalSettings.wordGap)
 
         enabledVoiceIdentifiers = Self.normalizedEnabledVoices(storedEnabled)
         selectedVoiceIdentifier = snapshot.selectedVoiceIdentifier
         volume = initialVolume
         speedMultiplier = initialSpeedMultiplier
-        sentencePause = initialSentencePause
+        sentencePauseStrength = initialSentencePauseStrength
         wordGap = initialWordGap
         pitch = snapshot.generalSettings.pitch
         personalDictionaryEntries = entries
@@ -561,12 +581,12 @@ private final class ContentViewModel: ObservableObject {
                     rate: stored.settings.rate,
                     volume: 1.0,
                     speedMultiplier: Self.clampSpeedMultiplier(stored.settings.speedMultiplier),
-                    sentencePause: stored.settings.sentencePause,
+                    sentencePauseStrength: stored.settings.sentencePauseStrength,
                     wordGap: Self.clampWordGap(stored.settings.wordGap),
                     pitch: 1.0
                 ).neutralizedVoiceOverControlledSettings())
             }
-            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePause: initialSentencePause, fallbackWordGap: initialWordGap, fallbackPitch: snapshot.generalSettings.pitch))
+            return (voice.identifier, ContentViewModel.loadStoredSettings(for: voice.identifier, fallbackRate: initialRate, fallbackVolume: initialVolume, fallbackSpeedMultiplier: initialSpeedMultiplier, fallbackSentencePauseStrength: initialSentencePauseStrength, fallbackWordGap: initialWordGap, fallbackPitch: snapshot.generalSettings.pitch))
         })
 
         normalizeSelection()
@@ -606,7 +626,7 @@ private final class ContentViewModel: ObservableObject {
                 fallbackRate: rate,
                 fallbackVolume: volume,
                 fallbackSpeedMultiplier: speedMultiplier,
-                fallbackSentencePause: sentencePause,
+                fallbackSentencePauseStrength: sentencePauseStrength,
                 fallbackWordGap: wordGap,
                 fallbackPitch: pitch
             )
@@ -626,7 +646,7 @@ private final class ContentViewModel: ObservableObject {
         }
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
-        setStatus("Зробити голос \(voice.name) доступним: \(enabled ? "Увімкнено" : "Вимкнено").")
+        setStatus(String(format: NSLocalizedString("Зробити голос %@ доступним: %@.", comment: ""), NSLocalizedString(voice.displayName, comment: ""), enabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: "")))
     }
 
     func selectVoiceForPreview(_ voice: VoiceDefinition) {
@@ -635,7 +655,7 @@ private final class ContentViewModel: ObservableObject {
         }
         selectedVoiceIdentifier = voice.identifier
         persistVoiceState()
-        setStatus("Голос \(voice.name) вибрано для прослуховування.")
+        setStatus(String(format: NSLocalizedString("Голос %@ вибрано для прослуховування.", comment: ""), voice.displayName))
     }
 
     func listenToSample(for voice: VoiceDefinition) {
@@ -646,7 +666,7 @@ private final class ContentViewModel: ObservableObject {
 
     func previewSelectedVoice() {
         guard let voice = selectedVoice else {
-            setStatus("Спочатку виберіть голос.")
+            setStatus(NSLocalizedString("Спочатку виберіть голос.", comment: ""))
             return
         }
         previewVoice(voice, overrideText: testText)
@@ -654,7 +674,7 @@ private final class ContentViewModel: ObservableObject {
 
     func previewDictionaryText(_ text: String) {
         guard let voice = selectedVoice ?? voiceCatalog.first else {
-            setStatus("Спочатку виберіть голос.")
+            setStatus(NSLocalizedString("Спочатку виберіть голос.", comment: ""))
             return
         }
         previewVoice(voice, overrideText: text)
@@ -688,7 +708,7 @@ private final class ContentViewModel: ObservableObject {
                 let url = try AbbreviationDictionary.makeExportFile(entries: entries)
                 DispatchQueue.main.async { self?.abbreviationDictionaryShareURL = url }
             } catch {
-                DispatchQueue.main.async { self?.setStatus("Не вдалося підготувати файл словника: \(error.localizedDescription)") }
+                DispatchQueue.main.async { self?.setStatus(String(format: NSLocalizedString("Не вдалося підготувати файл словника: %@", comment: ""), error.localizedDescription)) }
             }
         }
     }
@@ -709,7 +729,7 @@ private final class ContentViewModel: ObservableObject {
                     self?.setStatus(result.summary.spokenDescription)
                 }
             } catch {
-                DispatchQueue.main.async { self?.setStatus("Не вдалося завантажити словник: \(error.localizedDescription)") }
+                DispatchQueue.main.async { self?.setStatus(String(format: NSLocalizedString("Не вдалося завантажити словник: %@", comment: ""), error.localizedDescription)) }
             }
         }
     }
@@ -726,10 +746,10 @@ private final class ContentViewModel: ObservableObject {
         do {
             if let oldAbbreviation {
                 try AbbreviationDictionary.updateEntry(oldAbbreviation: oldAbbreviation, abbreviation: abbreviation, replacement: replacement)
-                setStatus("Запис словника замін оновлено.")
+                setStatus(NSLocalizedString("Запис словника замін оновлено.", comment: ""))
             } else {
                 try AbbreviationDictionary.addEntry(abbreviation: abbreviation, replacement: replacement)
-                setStatus("Запис додано до словника замін.")
+                setStatus(NSLocalizedString("Запис додано до словника замін.", comment: ""))
             }
             reloadAbbreviationDictionary()
             prepareAbbreviationDictionaryExport()
@@ -749,7 +769,7 @@ private final class ContentViewModel: ObservableObject {
             try AbbreviationDictionary.removeEntry(abbreviation: entry.abbreviation)
             reloadAbbreviationDictionary()
             prepareAbbreviationDictionaryExport()
-            setStatus("Запис «\(entry.abbreviation)» видалено зі словника замін.")
+            setStatus(String(format: NSLocalizedString("Запис «%@» видалено зі словника замін.", comment: ""), entry.abbreviation))
         } catch {
             setStatus(error.localizedDescription)
         }
@@ -763,10 +783,10 @@ private final class ContentViewModel: ObservableObject {
         do {
             if let id {
                 try PersonalUserDictionary.updateEntry(id: id, displayWord: displayWord, stressedWord: stressedWord)
-                setStatus("Запис словника оновлено.")
+                setStatus(NSLocalizedString("Запис словника оновлено.", comment: ""))
             } else {
                 try PersonalUserDictionary.addEntry(displayWord: displayWord, stressedWord: stressedWord)
-                setStatus("Запис додано до словника.")
+                setStatus(NSLocalizedString("Запис додано до словника.", comment: ""))
             }
             reloadPersonalDictionary()
             return true
@@ -784,7 +804,7 @@ private final class ContentViewModel: ObservableObject {
         do {
             try PersonalUserDictionary.removeEntry(id: entry.id)
             reloadPersonalDictionary()
-            setStatus("Запис «\(entry.displayWord)» видалено зі словника.")
+            setStatus(String(format: NSLocalizedString("Запис «%@» видалено зі словника.", comment: ""), entry.displayWord))
         } catch {
             setStatus(error.localizedDescription)
         }
@@ -793,15 +813,15 @@ private final class ContentViewModel: ObservableObject {
     func stopPreview() {
         playbackController.stop()
         isPreviewPlaying = false
-        setStatus("Прослуховування зупинено.")
+        setStatus(NSLocalizedString("Прослуховування зупинено.", comment: ""))
     }
 
     func applyVoicesToSystem() {
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
         let message = enabledVoiceIdentifiers.isEmpty
-            ? "Зараз немає доступних голосів RHVoice."
-            : "Список системних голосів оновлено. Доступних голосів: \(enabledVoiceIdentifiers.count)."
+            ? NSLocalizedString("Зараз немає доступних голосів RHVoice.", comment: "")
+            : String(format: NSLocalizedString("Список системних голосів оновлено. Доступних голосів: %@.", comment: ""), String(enabledVoiceIdentifiers.count))
         setStatus(message)
     }
 
@@ -810,14 +830,14 @@ private final class ContentViewModel: ObservableObject {
         selectedVoiceIdentifier = RHVoiceSharedSettings.defaultVoiceIdentifier
         persistVoiceState()
         AVSpeechSynthesisProviderVoice.updateSpeechVoices()
-        setStatus("Рекомендовані голоси відновлено: усі українські голоси.")
+        setStatus(NSLocalizedString("Рекомендовані голоси відновлено: усі українські голоси.", comment: ""))
     }
 
     func runSpeechComponentDiagnostics() {
 #if os(macOS)
         isRunningSpeechComponentDiagnostics = true
         speechComponentDiagnosticReport = nil
-        setStatus("Запущено діагностику мовного компонента.")
+        setStatus(NSLocalizedString("Запущено діагностику мовного компонента.", comment: ""))
 
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -875,7 +895,7 @@ private final class ContentViewModel: ObservableObject {
             )
         }
 #else
-        setStatus("Діагностика мовного компонента доступна лише на macOS.")
+        setStatus(NSLocalizedString("Діагностика мовного компонента доступна лише на macOS.", comment: ""))
 #endif
     }
 
@@ -910,7 +930,7 @@ private final class ContentViewModel: ObservableObject {
 
     func setDatesAsWords(_ enabled: Bool) {
         datesAsWordsEnabled = enabled
-        announceToggleState("Читати дати словами", enabled: enabled)
+        announceToggleState(NSLocalizedString("Читати дати словами", comment: ""), enabled: enabled)
         Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
                 .set(enabled, forKey: RHVoiceSharedSettings.datesAsWordsKey)
@@ -919,7 +939,7 @@ private final class ContentViewModel: ObservableObject {
 
     func setTimeAsWords(_ enabled: Bool) {
         timeAsWordsEnabled = enabled
-        announceToggleState("Читати час словами", enabled: enabled)
+        announceToggleState(NSLocalizedString("Читати час словами", comment: ""), enabled: enabled)
         Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.timeAsWordsKey)
         }
@@ -927,7 +947,7 @@ private final class ContentViewModel: ObservableObject {
 
     func setAbbreviationsAsWords(_ enabled: Bool) {
         abbreviationsAsWordsEnabled = enabled
-        announceToggleState("Розгортати скорочення", enabled: enabled)
+        announceToggleState(NSLocalizedString("Розгортати скорочення", comment: ""), enabled: enabled)
         Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
         }
@@ -935,7 +955,7 @@ private final class ContentViewModel: ObservableObject {
 
     func setAbbreviationDictionaryEnabled(_ enabled: Bool) {
         abbreviationDictionaryEnabled = enabled
-        announceToggleState("Застосовувати словник замін", enabled: enabled)
+        announceToggleState(NSLocalizedString("Застосовувати словник замін", comment: ""), enabled: enabled)
         Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey)
         }
@@ -943,7 +963,7 @@ private final class ContentViewModel: ObservableObject {
 
     func setPhoneNumberProcessing(_ enabled: Bool) {
         phoneNumberProcessingEnabled = enabled
-        announceToggleState("Обробляти телефонні номери", enabled: enabled)
+        announceToggleState(NSLocalizedString("Обробляти телефонні номери", comment: ""), enabled: enabled)
         Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.phoneNumberProcessingKey)
         }
@@ -954,14 +974,14 @@ private final class ContentViewModel: ObservableObject {
         Self.storageQueue.async { [weak self] in
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(mode.rawValue, forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey)
             DispatchQueue.main.async {
-                self?.setStatus(mode == .groups ? "Номери читаються групами." : "Номери читаються по цифрах.")
+                self?.setStatus(mode == .groups ? NSLocalizedString("Номери читаються групами.", comment: "") : NSLocalizedString("Номери читаються по цифрах.", comment: ""))
             }
         }
     }
 
     func setExtendedDiagnostics(_ enabled: Bool) {
         extendedDiagnosticsEnabled = enabled
-        announceToggleState("Розширена діагностика", enabled: enabled)
+        announceToggleState(NSLocalizedString("Розширена діагностика", comment: ""), enabled: enabled)
         Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?
                 .set(enabled, forKey: RHVoiceSharedSettings.extendedDiagnosticsKey)
@@ -976,7 +996,7 @@ private final class ContentViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self?.debugLogSize = size
                 self?.debugLogShareURL = shareURL
-                self?.setStatus("Лог очищено.")
+                self?.setStatus(NSLocalizedString("Лог очищено.", comment: ""))
             }
         }
     }
@@ -996,8 +1016,8 @@ private final class ContentViewModel: ObservableObject {
         persistGeneralSettings()
     }
 
-    func updateGeneralSentencePause(_ value: Double) {
-        sentencePause = value
+    func updateGeneralSentencePauseStrength(_ value: RHVoicePauseStrength) {
+        sentencePauseStrength = value
         persistGeneralSettings()
     }
 
@@ -1019,7 +1039,11 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(normalizedSettings.rate, forKey: "\(prefix).rate")
         defaults.set(normalizedSettings.volume, forKey: "\(prefix).volume")
         defaults.set(normalizedSettings.speedMultiplier, forKey: "\(prefix).speedMultiplier")
-        defaults.set(normalizedSettings.sentencePause, forKey: "\(prefix).sentencePause")
+        defaults.set(normalizedSettings.sentencePauseStrength.rawValue, forKey: "\(prefix).sentencePauseStrength")
+        // Rollback safety only, written immediately for the same reason as in
+        // `persistGeneralSettings()` (task-226 round 4, п.6): `persistSharedSnapshot()`
+        // below may not run this session if `sharedStorageState` never reaches `.ready`.
+        defaults.set(normalizedSettings.sentencePauseStrength.legacyMilliseconds, forKey: "\(prefix).sentencePause")
         defaults.set(Self.clampWordGap(normalizedSettings.wordGap), forKey: "\(prefix).wordGap")
         defaults.set(normalizedSettings.pitch, forKey: "\(prefix).pitch")
         persistSharedSnapshot()
@@ -1033,7 +1057,7 @@ private final class ContentViewModel: ObservableObject {
         LogCollector.shared.log("Preview request voice=\(voice.name) profile=\(voiceName) textLength=\(text.count)")
 
         isPreviewPlaying = true
-        setStatus("Готую голос \(voice.name)…")
+        setStatus(String(format: NSLocalizedString("Готую голос %@…", comment: ""), voice.displayName))
         playbackController.play(
             text: text,
             voiceName: voiceName,
@@ -1043,7 +1067,7 @@ private final class ContentViewModel: ObservableObject {
             onFinish: { [weak self] in
                 guard let self else { return }
                 self.isPreviewPlaying = false
-                self.setStatus("Прослуховування завершено.")
+                self.setStatus(NSLocalizedString("Прослуховування завершено.", comment: ""))
             },
             onError: { [weak self] error in
                 guard let self else { return }
@@ -1063,7 +1087,14 @@ private final class ContentViewModel: ObservableObject {
         defaults.set(0.5, forKey: RHVoiceSharedSettings.rateKey)
         defaults.set(1.0, forKey: RHVoiceSharedSettings.volumeKey)
         defaults.set(Self.clampSpeedMultiplier(speedMultiplier), forKey: RHVoiceSharedSettings.speedMultiplierKey)
-        defaults.set(sentencePause, forKey: RHVoiceSharedSettings.sentencePauseKey)
+        defaults.set(sentencePauseStrength.rawValue, forKey: RHVoiceSharedSettings.sentencePauseStrengthKey)
+        // Rollback safety only (see `RHVoicePauseStrength.legacyMilliseconds`),
+        // written immediately: `persistSharedSnapshot()` below writes the same
+        // legacy key too, but only after a background disk round-trip guarded
+        // by `sharedStorageState == .ready`, which can simply never run. Without
+        // this line a user who rolls back to build ≤225 while that guard is
+        // blocking would read a stale legacy value (task-226 round 4, п.6).
+        defaults.set(sentencePauseStrength.legacyMilliseconds, forKey: RHVoiceSharedSettings.sentencePauseKey)
         defaults.set(Self.clampWordGap(wordGap), forKey: RHVoiceSharedSettings.wordGapKey)
         defaults.set(1.0, forKey: RHVoiceSharedSettings.pitchKey)
         persistSharedSnapshot()
@@ -1085,7 +1116,7 @@ private final class ContentViewModel: ObservableObject {
     /// toggle. Persisting to the App Group happens independently and must not
     /// delay this user feedback.
     private func announceToggleState(_ title: String, enabled: Bool) {
-        let message = "\(title): \(enabled ? "Увімкнено" : "Вимкнено")."
+        let message = String(format: NSLocalizedString("%@: %@.", comment: ""), title, enabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
         statusMessage = message
         LogCollector.shared.log(message)
         DispatchQueue.main.async { announce(message) }
@@ -1106,7 +1137,7 @@ private final class ContentViewModel: ObservableObject {
             rate: 0.5,
             volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(speedMultiplier),
-            sentencePause: sentencePause,
+            sentencePauseStrength: sentencePauseStrength,
             wordGap: Self.clampWordGap(wordGap),
             pitch: 1.0
         )
@@ -1116,7 +1147,7 @@ private final class ContentViewModel: ObservableObject {
                 rate: 0.5,
                 volume: 1.0,
                 speedMultiplier: settings.speedMultiplier,
-                sentencePause: settings.sentencePause,
+                sentencePauseStrength: settings.sentencePauseStrength,
                 wordGap: settings.wordGap,
                 pitch: 1.0
             )
@@ -1128,7 +1159,7 @@ private final class ContentViewModel: ObservableObject {
                         rate: 0.5,
                         volume: 1.0,
                         speedMultiplier: Self.clampSpeedMultiplier(state.speedMultiplier),
-                        sentencePause: state.sentencePause,
+                        sentencePauseStrength: state.sentencePauseStrength,
                         wordGap: Self.clampWordGap(state.wordGap),
                         pitch: 1.0
                     )
@@ -1156,7 +1187,7 @@ private final class ContentViewModel: ObservableObject {
                 try RHVoiceSharedSettingsStore.saveSnapshot(snapshot)
             } catch {
                 DispatchQueue.main.async {
-                    self?.setStatus("Не вдалося зберегти спільні налаштування: \(error.localizedDescription)")
+                    self?.setStatus(String(format: NSLocalizedString("Не вдалося зберегти спільні налаштування: %@", comment: ""), error.localizedDescription))
                 }
             }
         }
@@ -1167,7 +1198,7 @@ private final class ContentViewModel: ObservableObject {
         fallbackRate: Double,
         fallbackVolume: Double,
         fallbackSpeedMultiplier: Double,
-        fallbackSentencePause: Double,
+        fallbackSentencePauseStrength: RHVoicePauseStrength,
         fallbackWordGap: Double,
         fallbackPitch: Double
     ) -> VoiceSettingsState {
@@ -1177,7 +1208,12 @@ private final class ContentViewModel: ObservableObject {
             rate: 0.5,
             volume: 1.0,
             speedMultiplier: Self.clampSpeedMultiplier(defaults.object(forKey: "\(prefix).speedMultiplier") as? Double ?? fallbackSpeedMultiplier),
-            sentencePause: defaults.object(forKey: "\(prefix).sentencePause") as? Double ?? fallbackSentencePause,
+            sentencePauseStrength: RHVoicePauseStrength.resolved(
+                from: defaults,
+                key: "\(prefix).sentencePauseStrength",
+                legacyMillisecondsKey: "\(prefix).sentencePause",
+                fallback: fallbackSentencePauseStrength
+            ),
             wordGap: Self.clampWordGap(defaults.object(forKey: "\(prefix).wordGap") as? Double ?? fallbackWordGap),
             pitch: 1.0
         )
@@ -1246,8 +1282,8 @@ struct ContentView: View {
                         } label: {
                             voiceRow(voice)
                         }
-                        .accessibilityLabel("\(voice.name), \(voice.languageTitle)")
-                        .accessibilityValue(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
+                        .accessibilityLabel("\(NSLocalizedString(voice.displayName, comment: "")), \(NSLocalizedString(voice.languageTitle, comment: ""))")
+                        .accessibilityValue(model.isEnabled(voice) ? NSLocalizedString("Доступний", comment: "") : NSLocalizedString("Вимкнений", comment: ""))
                         .accessibilityHint("Відкрити налаштування голосу")
                     }
                 }
@@ -1280,11 +1316,17 @@ struct ContentView: View {
                         Text(model.statusMessage)
                             .font(.footnote)
                             .foregroundColor(.secondary)
-                            .accessibilityLabel("Стан: \(model.statusMessage)")
+                            .accessibilityLabel(String(format: NSLocalizedString("Стан: %@", comment: ""), model.statusMessage))
                     }
                 }
 
-                diagnosticSection
+                // Роздiл дiагностики ПРИБРАНО з iнтерфейсу (рiшення Андрiя 08.09.2026).
+                // Причина: забрати журнал користувач не може нi за яких налаштувань —
+                // розширенню заборонена будь-яка запис (доведено 26.08.2026), а системний
+                // журнал знiмається лише комп'ютером по кабелю. Перемикач, який нiчого не
+                // дає людинi, — смiття в iнтерфейсi i зайве питання на перевiрцi Apple.
+                // Запис у СИСТЕМНИЙ журнал (NUMBER_DIAG) лишається пiд прапорцем
+                // RHVOICE_DIAG — це прилад для замiрiв по кабелю, а не екран.
             }
             .navigationTitle("Українські голоси")
             .onAppear {
@@ -1330,8 +1372,8 @@ struct ContentView: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(voice.name), \(voice.languageTitle)")
-                        .accessibilityValue(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
+                        .accessibilityLabel("\(NSLocalizedString(voice.displayName, comment: "")), \(NSLocalizedString(voice.languageTitle, comment: ""))")
+                        .accessibilityValue(model.isEnabled(voice) ? NSLocalizedString("Доступний", comment: "") : NSLocalizedString("Вимкнений", comment: ""))
                         .accessibilityHint("Відкрити налаштування голосу")
 
                         if voice.id != voiceCatalog.last?.id {
@@ -1384,11 +1426,13 @@ struct ContentView: View {
                 readingSection
                     .padding(.horizontal, 12)
 
-                Divider()
-
-                diagnosticSection
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 16)
+                // Роздiл дiагностики ПРИБРАНО з iнтерфейсу (рiшення Андрiя 08.09.2026).
+                // Причина: забрати журнал користувач не може нi за яких налаштувань —
+                // розширенню заборонена будь-яка запис (доведено 26.08.2026), а системний
+                // журнал знiмається лише комп'ютером по кабелю. Перемикач, який нiчого не
+                // дає людинi, — смiття в iнтерфейсi i зайве питання на перевiрцi Apple.
+                // Запис у СИСТЕМНИЙ журнал (NUMBER_DIAG) лишається пiд прапорцем
+                // RHVOICE_DIAG — це прилад для замiрiв по кабелю, а не екран.
             }
             .navigationTitle("Українські голоси")
         }
@@ -1422,12 +1466,12 @@ struct ContentView: View {
 
     private func voiceRow(_ voice: VoiceDefinition) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(voice.name)
+            Text(NSLocalizedString(voice.displayName, comment: ""))
                 .font(.headline)
-            Text(voice.languageTitle)
+            Text(NSLocalizedString(voice.languageTitle, comment: ""))
                 .font(.caption)
                 .foregroundColor(.secondary)
-            Text(model.isEnabled(voice) ? "Доступний" : "Вимкнений")
+            Text(model.isEnabled(voice) ? NSLocalizedString("Доступний", comment: "") : NSLocalizedString("Вимкнений", comment: ""))
                 .font(.caption)
                 .foregroundColor(model.isEnabled(voice) ? .secondary : .orange)
         }
@@ -1442,7 +1486,7 @@ struct ContentView: View {
             )) {
                 Label("Читати дати словами", systemImage: "calendar")
             }
-            .accessibilityValue(model.datesAsWordsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityValue(model.datesAsWordsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
             .accessibilityHint("Увімкнено: повні дати, як-от 10.07.2026, читаються словами — «десяте липня дві тисячі двадцять шостого року». Вимкнено: дати читаються цифрами.")
 
             Text("Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами.")
@@ -1452,19 +1496,19 @@ struct ContentView: View {
             Toggle(isOn: Binding(get: { model.timeAsWordsEnabled }, set: { model.setTimeAsWords($0) })) {
                 Label("Читати час словами", systemImage: "clock")
             }
-            .accessibilityValue(model.timeAsWordsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityValue(model.timeAsWordsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
             .accessibilityHint("Увімкнено: 17:01 читається як час словами. Вимкнено: RHVoice не розгортає запис часу у години та хвилини.")
 
             Toggle(isOn: Binding(get: { model.abbreviationsAsWordsEnabled }, set: { model.setAbbreviationsAsWords($0) })) {
                 Label("Розгортати скорочення", systemImage: "textformat.abc")
             }
-            .accessibilityValue(model.abbreviationsAsWordsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityValue(model.abbreviationsAsWordsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
             .accessibilityHint("Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
 
             Toggle(isOn: Binding(get: { model.phoneNumberProcessingEnabled }, set: { model.setPhoneNumberProcessing($0) })) {
                 Label("Обробляти телефонні номери", systemImage: "phone")
             }
-            .accessibilityValue(model.phoneNumberProcessingEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityValue(model.phoneNumberProcessingEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
             .accessibilityHint("Увімкнено: RHVoice розпізнає номери та читає їх обраним способом. Вимкнено: номер читає система без обробки RHVoice.")
 
             Picker("Читати номер", selection: Binding(get: { model.phoneNumberReadingMode }, set: { model.setPhoneNumberReadingMode($0) })) {
@@ -1478,6 +1522,9 @@ struct ContentView: View {
         }
     }
 
+    // НЕ ПIДКЛЮЧЕНО до жодного екрана з 08.09.2026: роздiл дiагностики прибрано з
+    // iнтерфейсу (див. коментар у body). Код лишено на мiсцi навмисно — щоб
+    // повернути роздiл у замiрочнiй збiрцi, достатньо знову викликати його з body.
     @ViewBuilder
     private var diagnosticSection: some View {
         Section("Діагностика") {
@@ -1487,13 +1534,21 @@ struct ContentView: View {
             )) {
                 Label("Розширена діагностика", systemImage: "stethoscope")
             }
-            .accessibilityValue(model.extendedDiagnosticsEnabled ? "Увімкнено" : "Вимкнено")
+            .accessibilityValue(model.extendedDiagnosticsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
             .accessibilityHint("Коли увімкнено, застосунок записує діагностику у файл. Діагностика синтезатора на iPhone доступна через кабель у системному журналі: iOS не дозволяє speech-extension записувати спільний файл.")
 
             Text("Цей файл містить діагностику застосунку. На iPhone журнал синтезатора VoiceOver доступний лише по кабелю в системному журналі: iOS забороняє extension записувати його у спільний файл.")
                 .font(.footnote)
                 .foregroundColor(.secondary)
                 .accessibilityLabel("Підказка щодо діагностики")
+
+            NavigationLink {
+                CapturedRequestsView()
+            } label: {
+                Label("Що почув синтезатор", systemImage: "text.magnifyingglass")
+            }
+            .accessibilityLabel("Що почув синтезатор")
+            .accessibilityHint("Показує текст, який система віддала голосу. Потрібно для розбору скарг на читання чисел, часу і номерів.")
 
             Button {
                 model.clearDebugLog()
@@ -1517,10 +1572,10 @@ struct ContentView: View {
                     .foregroundColor(.secondary)
             }
 
-            Text("Розмір логу: \(model.debugLogSize) байт")
+            Text(String(format: NSLocalizedString("Розмір логу: %@ байт", comment: ""), String(model.debugLogSize)))
                 .font(.footnote)
                 .foregroundColor(.secondary)
-                .accessibilityLabel("Розмір логу: \(model.debugLogSize) байт")
+                .accessibilityLabel(String(format: NSLocalizedString("Розмір логу: %@ байт", comment: ""), String(model.debugLogSize)))
         }
     }
 
@@ -1632,7 +1687,7 @@ private struct PersonalDictionaryView: View {
             Section {
                 Button {
                     showsTechnicalInfo.toggle()
-                    announce("Технічна інформація: \(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто").")
+                    announce(String(format: NSLocalizedString("Технічна інформація: %@.", comment: ""), showsTechnicalInfo ? NSLocalizedString("Розгорнуто", comment: "") : NSLocalizedString("Згорнуто", comment: "")))
                 } label: {
                     HStack {
                         Text("Технічна інформація")
@@ -1642,16 +1697,16 @@ private struct PersonalDictionaryView: View {
                     }
                 }
                 .accessibilityLabel("Технічна інформація")
-                .accessibilityValue(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто")
+                .accessibilityValue(showsTechnicalInfo ? NSLocalizedString("Розгорнуто", comment: "") : NSLocalizedString("Згорнуто", comment: ""))
                 .accessibilityHint("Подвійний дотик розгортає або згортає стан файлів особистого словника.")
 
                 if showsTechnicalInfo {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(fileStatus.dictionaryExists ? "user_dictionary.txt: \(fileStatus.dictionarySize) байт" : "user_dictionary.txt: не створено")
-                        Text(fileStatus.metadataExists ? "user_dictionary_meta.json: \(fileStatus.metadataSize) байт" : "user_dictionary_meta.json: не створено")
+                        Text(fileStatus.dictionaryExists ? String(format: NSLocalizedString("user_dictionary.txt: %@ байт", comment: ""), String(fileStatus.dictionarySize)) : NSLocalizedString("user_dictionary.txt: не створено", comment: ""))
+                        Text(fileStatus.metadataExists ? String(format: NSLocalizedString("user_dictionary_meta.json: %@ байт", comment: ""), String(fileStatus.metadataSize)) : NSLocalizedString("user_dictionary_meta.json: не створено", comment: ""))
                             .foregroundColor(.secondary)
                         if let modifiedAt = fileStatus.dictionaryModifiedAt {
-                            Text("Оновлено: \(modifiedAt.formatted(date: .numeric, time: .standard))")
+                            Text(String(format: NSLocalizedString("Оновлено: %@", comment: ""), modifiedAt.formatted(date: .numeric, time: .standard)))
                                 .foregroundColor(.secondary)
                         }
 #if os(macOS)
@@ -1689,7 +1744,7 @@ private struct PersonalDictionaryView: View {
                                 }
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("\(entry.displayWord), вимова \(entry.stressedWord)")
+                            .accessibilityLabel(String(format: NSLocalizedString("%@, вимова %@", comment: ""), entry.displayWord, entry.stressedWord))
                             .accessibilityHint("Відкрити редагування запису. Доступна дія: Видалити.")
                             .accessibilityAction(named: "Видалити") {
                                 entryPendingDeletion = entry
@@ -1719,7 +1774,7 @@ private struct PersonalDictionaryView: View {
                                 } label: {
                                     Label("Видалити", systemImage: "trash")
                                 }
-                                .accessibilityLabel("Видалити \(entry.displayWord)")
+                                .accessibilityLabel(String(format: NSLocalizedString("Видалити %@", comment: ""), entry.displayWord))
                                 .accessibilityHint("Відкриває підтвердження перед видаленням запису.")
                             }
                             .font(.caption)
@@ -1730,7 +1785,7 @@ private struct PersonalDictionaryView: View {
                             } label: {
                                 Label("Видалити", systemImage: "trash")
                             }
-                            .accessibilityLabel("Видалити \(entry.displayWord)")
+                            .accessibilityLabel(String(format: NSLocalizedString("Видалити %@", comment: ""), entry.displayWord))
                         }
                     }
                     .onDelete { offsets in
@@ -1771,7 +1826,7 @@ private struct PersonalDictionaryView: View {
         }
         .onAppear(perform: reload)
         .confirmationDialog(
-            entryPendingDeletion.map { "Видалити запис «\($0.displayWord)»?" } ?? "Видалити запис?",
+            entryPendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.displayWord) } ?? NSLocalizedString("Видалити запис?", comment: ""),
             isPresented: Binding(
                 get: { entryPendingDeletion != nil },
                 set: { if !$0 { entryPendingDeletion = nil } }
@@ -1816,7 +1871,7 @@ private struct AbbreviationDictionaryView: View {
             Section {
                 Toggle("Застосовувати словник замін", isOn: $enabled)
                     .accessibilityLabel("Застосовувати словник замін")
-                    .accessibilityValue(enabled ? "Увімкнено" : "Вимкнено")
+                    .accessibilityValue(enabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
                     .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
             }
 
@@ -1846,7 +1901,7 @@ private struct AbbreviationDictionaryView: View {
                             }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(entry.abbreviation), читати як \(entry.replacement)")
+                        .accessibilityLabel(String(format: NSLocalizedString("%@, читати як %@", comment: ""), entry.abbreviation, entry.replacement))
                         .accessibilityHint("Відкрити редагування запису. Доступна дія: Видалити.")
                         .accessibilityAction(named: "Видалити") {
                             pendingDeletion = entry
@@ -1868,11 +1923,11 @@ private struct AbbreviationDictionaryView: View {
                     Button { editingEntry = entry } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(entry.abbreviation).font(.headline)
-                            Text("читати як \(entry.replacement)").foregroundColor(.secondary)
+                            Text(String(format: NSLocalizedString("читати як %@", comment: ""), entry.replacement)).foregroundColor(.secondary)
                         }
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Базова заміна: \(entry.abbreviation), читати як \(entry.replacement)")
+                    .accessibilityLabel(String(format: NSLocalizedString("Базова заміна: %@, читати як %@", comment: ""), entry.abbreviation, entry.replacement))
                     .accessibilityHint("Створити власне перевизначення цього правила")
                 }
             }
@@ -1912,13 +1967,13 @@ private struct AbbreviationDictionaryView: View {
         }
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.plainText], allowsMultipleSelection: false) { result in
             guard case let .success(urls) = result, let url = urls.first else {
-                if case let .failure(error) = result { reportMessage("Не вдалося відкрити файл словника: \(error.localizedDescription)") }
+                if case let .failure(error) = result { reportMessage(String(format: NSLocalizedString("Не вдалося відкрити файл словника: %@", comment: ""), error.localizedDescription)) }
                 return
             }
             readImportFile(url)
         }
         .confirmationDialog(
-            pendingDeletion.map { "Видалити запис «\($0.abbreviation)»?" } ?? "Видалити запис?",
+            pendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.abbreviation) } ?? NSLocalizedString("Видалити запис?", comment: ""),
             isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
         ) {
             if let entry = pendingDeletion {
@@ -1942,7 +1997,7 @@ private struct AbbreviationDictionaryView: View {
             Button("Скасувати", role: .cancel) { pendingImport = nil }
         } message: {
             if let preview = pendingImport {
-                Text("Знайдено записів: \(preview.entries.count). Некоректних рядків буде пропущено: \(preview.skippedLines).")
+                Text(String(format: NSLocalizedString("Знайдено записів: %@. Некоректних рядків буде пропущено: %@.", comment: ""), String(preview.entries.count), String(preview.skippedLines)))
             }
         }
     }
@@ -2014,7 +2069,7 @@ private struct AbbreviationDictionaryEditorView: View {
                     Button("Скасувати") { dismiss() }
                 }
             }
-            .navigationTitle(entry == nil ? "Новий запис" : "Редагувати запис")
+            .navigationTitle(entry == nil ? NSLocalizedString("Новий запис", comment: "") : NSLocalizedString("Редагувати запис", comment: ""))
         }
         .onAppear {
             focusedField = .abbreviation
@@ -2028,7 +2083,7 @@ private struct AboutAcknowledgementView: View {
         List {
             Section("Застосунок") {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("RHVoice Ukrainian")
+                    Text("RHVoice UA")
                         .font(.title2)
                         .fontWeight(.semibold)
                         .accessibilityAddTraits(.isHeader)
@@ -2117,19 +2172,19 @@ private struct LicensesView: View {
                         Text(item.title)
                             .font(.headline)
                             .accessibilityAddTraits(.isHeader)
-                        Text("Ліцензія: \(item.license)")
-                        Text("Атрибуція: \(item.attribution)")
+                        Text(String(format: NSLocalizedString("Ліцензія: %@", comment: ""), item.license))
+                        Text(String(format: NSLocalizedString("Атрибуція: %@", comment: ""), item.attribution))
                         Text(item.note)
                             .foregroundColor(.secondary)
                         if let url = item.url {
                             Link("Відкрити ліцензію або проєкт", destination: url)
-                                .accessibilityLabel("Відкрити ліцензію для \(item.title)")
+                                .accessibilityLabel(String(format: NSLocalizedString("Відкрити ліцензію для %@", comment: ""), item.title))
                                 .accessibilityAddTraits(.isLink)
                         }
                     }
                     .textSelection(.enabled)
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel("\(item.title). Ліцензія: \(item.license). Атрибуція: \(item.attribution). \(item.note)")
+                    .accessibilityLabel(String(format: NSLocalizedString("%@. Ліцензія: %@. Атрибуція: %@. %@", comment: ""), item.title, item.license, item.attribution, item.note))
                 }
             }
 
@@ -2179,23 +2234,23 @@ private struct VoiceOverHowToView: View {
 
             Section("iPhone або iPad") {
                 NumberedInstructionList(items: [
-                    "Відкрийте Налаштування.",
-                    "Перейдіть до Універсальний доступ.",
-                    "Відкрийте VoiceOver.",
-                    "Відкрийте Мовлення.",
-                    "Додайте або виберіть українську мову.",
-                    "У списку голосів виберіть Anatol, Marianna, Natalia або Volodymyr."
+                    NSLocalizedString("Відкрийте Налаштування.", comment: ""),
+                    NSLocalizedString("Перейдіть до Універсальний доступ.", comment: ""),
+                    NSLocalizedString("Відкрийте VoiceOver.", comment: ""),
+                    NSLocalizedString("Відкрийте Мовлення.", comment: ""),
+                    NSLocalizedString("Додайте або виберіть українську мову.", comment: ""),
+                    NSLocalizedString("У списку голосів виберіть Anatol, Marianna, Natalia або Volodymyr.", comment: "")
                 ])
             }
 
             Section("Mac") {
                 NumberedInstructionList(items: [
-                    "Відкрийте Системні параметри.",
-                    "Перейдіть до Універсальний доступ.",
-                    "Відкрийте VoiceOver.",
-                    "Відкрийте налаштування голосу або мовлення VoiceOver.",
-                    "Додайте українську мову або виберіть український голос.",
-                    "Виберіть Anatol, Marianna, Natalia або Volodymyr."
+                    NSLocalizedString("Відкрийте Системні параметри.", comment: ""),
+                    NSLocalizedString("Перейдіть до Універсальний доступ.", comment: ""),
+                    NSLocalizedString("Відкрийте VoiceOver.", comment: ""),
+                    NSLocalizedString("Відкрийте налаштування голосу або мовлення VoiceOver.", comment: ""),
+                    NSLocalizedString("Додайте українську мову або виберіть український голос.", comment: ""),
+                    NSLocalizedString("Виберіть Anatol, Marianna, Natalia або Volodymyr.", comment: "")
                 ])
             }
 
@@ -2226,7 +2281,7 @@ private struct NumberedInstructionList: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Крок \(index + 1): \(item)")
+                .accessibilityLabel(String(format: NSLocalizedString("Крок %@: %@", comment: ""), String(index + 1), item))
             }
         }
         .textSelection(.enabled)
@@ -2237,7 +2292,7 @@ private var appVersionText: String {
     let info = Bundle.main.infoDictionary ?? [:]
     let version = info["CFBundleShortVersionString"] as? String ?? "1.0"
     let build = info["CFBundleVersion"] as? String ?? "1"
-    return "Версія \(version), збірка \(build)"
+    return String(format: NSLocalizedString("Версія %@, збірка %@", comment: ""), version, build)
 }
 
 private struct PersonalDictionaryEditorView: View {
@@ -2297,12 +2352,12 @@ private struct PersonalDictionaryEditorView: View {
                 }
 
                 Section {
-                    Button(isPreviewPlaying ? "Зупинити" : "Прослухати") {
+                    Button(isPreviewPlaying ? NSLocalizedString("Зупинити", comment: "") : NSLocalizedString("Прослухати", comment: "")) {
                         isPreviewPlaying ? stopPreview() : preview(stressedWord)
                     }
                     .disabled(stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityAddTraits(.startsMediaSession)
-                    .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Перевірити слово")
+                    .accessibilityLabel(isPreviewPlaying ? NSLocalizedString("Зупинити прослуховування", comment: "") : NSLocalizedString("Перевірити слово", comment: ""))
                     .accessibilityHint("Промовляє введену вимову. Після збереження так само має звучати слово за словником.")
                 }
 
@@ -2322,7 +2377,7 @@ private struct PersonalDictionaryEditorView: View {
                     .accessibilityLabel("Скасувати")
                 }
             }
-            .navigationTitle(entry == nil ? "Нове слово" : "Редагування")
+            .navigationTitle(entry == nil ? NSLocalizedString("Нове слово", comment: "") : NSLocalizedString("Редагування", comment: ""))
         }
         .onAppear {
             focusedField = .displayWord
@@ -2365,8 +2420,8 @@ private struct VoiceSettingsScreen: View {
         Form {
             Section {
                 Toggle("Зробити голос доступним", isOn: $isEnabled)
-                    .accessibilityLabel("Зробити голос \(voice.name) доступним")
-                    .accessibilityValue(isEnabled ? "Увімкнено" : "Вимкнено")
+                    .accessibilityLabel(String(format: NSLocalizedString("Зробити голос %@ доступним", comment: ""), voice.displayName))
+                    .accessibilityValue(isEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
                     .accessibilityHint("Керує доступністю цього голосу для VoiceOver.")
             }
 
@@ -2376,46 +2431,44 @@ private struct VoiceSettingsScreen: View {
                         Text(preset.title).tag(preset.multiplier)
                     }
                 }
-                .accessibilityHint("Вибирає готовий множник темпу для голосу \(voice.name). Нормально не змінює системну швидкість VoiceOver.")
+                .accessibilityHint(String(format: NSLocalizedString("Вибирає готовий множник темпу для голосу %@. Нормально не змінює системну швидкість VoiceOver.", comment: ""), voice.displayName))
 
                 sliderRow(
-                    title: "Детальний множник",
+                    title: NSLocalizedString("Детальний множник", comment: ""),
                     value: settingBinding(\.speedMultiplier),
                     range: 0.8...1.6,
                     step: 0.05,
                     valueText: multiplierText(settings.speedMultiplier),
-                    hint: "Точно налаштовує множник темпу для голосу \(voice.name). 1.0x не змінює системну швидкість VoiceOver."
+                    hint: String(format: NSLocalizedString("Точно налаштовує множник темпу для голосу %@. 1.0x не змінює системну швидкість VoiceOver.", comment: ""), voice.displayName)
                 )
 
-                sliderRow(
-                    title: "Пауза між реченнями",
-                    value: settingBinding(\.sentencePause),
-                    range: 0...2000,
-                    step: 100,
-                    valueText: "\(Int(settings.sentencePause)) мс",
-                    hint: "Змінює паузу між реченнями для голосу \(voice.name)."
-                )
+                Picker("Пауза після розділових знаків", selection: sentencePauseStrengthBinding) {
+                    ForEach(RHVoicePauseStrength.allCases, id: \.self) { strength in
+                        Text(strength.displayName).tag(strength)
+                    }
+                }
+                .accessibilityHint(String(format: NSLocalizedString("Встановлює паузу після крапки, коми, знаку оклику та знаку питання для голосу %@.", comment: ""), voice.displayName))
 
                 sliderRow(
-                    title: "Проміжок між словами",
+                    title: NSLocalizedString("Проміжок між словами", comment: ""),
                     value: settingBinding(\.wordGap),
                     range: 0...300,
                     step: 10,
-                    valueText: "\(Int(settings.wordGap)) мс",
-                    hint: "Додає проміжок між словами для голосу \(voice.name)."
+                    valueText: String(format: NSLocalizedString("%@ мс", comment: ""), String(Int(settings.wordGap))),
+                    hint: String(format: NSLocalizedString("Додає проміжок між словами для голосу %@.", comment: ""), voice.displayName)
                 )
             }
 
             Section {
-                Button(isPreviewPlaying ? "Зупинити" : "Прослухати") {
+                Button(isPreviewPlaying ? NSLocalizedString("Зупинити", comment: "") : NSLocalizedString("Прослухати", comment: "")) {
                     isPreviewPlaying ? stopPreview() : playSample()
                 }
                 .accessibilityAddTraits(.startsMediaSession)
-                .accessibilityLabel(isPreviewPlaying ? "Зупинити прослуховування" : "Прослухати голос \(voice.name)")
+                .accessibilityLabel(isPreviewPlaying ? NSLocalizedString("Зупинити прослуховування", comment: "") : String(format: NSLocalizedString("Прослухати голос %@", comment: ""), NSLocalizedString(voice.displayName, comment: "")))
                 .accessibilityHint("Промовляє стандартну тестову фразу цим голосом.")
             }
         }
-        .navigationTitle(voice.name)
+        .navigationTitle(NSLocalizedString(voice.displayName, comment: ""))
 #if os(macOS)
         .frame(minWidth: 460, minHeight: 520)
 #endif
@@ -2427,6 +2480,16 @@ private struct VoiceSettingsScreen: View {
             set: { newValue in
                 settings.useCustomSettings = true
                 settings[keyPath: keyPath] = newValue
+            }
+        )
+    }
+
+    private var sentencePauseStrengthBinding: Binding<RHVoicePauseStrength> {
+        Binding(
+            get: { settings.sentencePauseStrength },
+            set: { newValue in
+                settings.useCustomSettings = true
+                settings.sentencePauseStrength = newValue
             }
         )
     }

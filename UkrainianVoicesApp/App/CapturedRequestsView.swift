@@ -1,0 +1,149 @@
+import SwiftUI
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
+
+/// Екран «Що почув синтезатор».
+///
+/// Показує текст, який система віддала нашому голосу останніми разами. Потрібен,
+/// щоб тестувальник міг надіслати реальний вхід, не підключаючи телефон кабелем:
+/// прочитав текст у застосунку → зайшов сюди → натиснув «Скопіювати» → вставив
+/// у повідомлення.
+struct CapturedRequestsView: View {
+    @State private var entries: [RHVoiceRequestCapture.Entry] = []
+    @State private var isCaptureEnabled: Bool = RHVoiceRequestCapture.isEnabled
+    @State private var statusMessage: String = ""
+    @State private var trace: (date: Date?, characters: Int, count: Int) = (nil, 0, 0)
+
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy HH:mm:ss"
+        return formatter
+    }()
+
+    var body: some View {
+        List {
+            Section("Як зробити запис") {
+                Text("1. Увімкніть «Розширену діагностику» на головному екрані. 2. Прочитайте потрібний текст голосом RHVoice у будь-якому застосунку. 3. Поверніться сюди, натисніть «Оновити», потім «Скопіювати записи» і вставте їх у повідомлення розробнику.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .accessibilityLabel("Порядок дій: увімкнути розширену діагностику, прочитати текст голосом, повернутися сюди, оновити, скопіювати записи і надіслати розробнику.")
+
+                Text(isCaptureEnabled ? NSLocalizedString("Запис увімкнено.", comment: "") : NSLocalizedString("Запис вимкнено — нові тексти не зберігаються.", comment: ""))
+                    .font(.footnote)
+                    .foregroundColor(isCaptureEnabled ? .secondary : .red)
+                    .accessibilityLabel(isCaptureEnabled ? NSLocalizedString("Запис увімкнено", comment: "") : NSLocalizedString("Запис вимкнено, нові тексти не зберігаються", comment: ""))
+            }
+
+            Section("Чи доходять запити до голосу") {
+                Text(traceDescription)
+                    .font(.footnote)
+                    .accessibilityLabel(traceDescription)
+
+                Button {
+                    RHVoiceRequestCapture.writeTestEntry()
+                    reload()
+                    announce(NSLocalizedString("Пробний запис створено", comment: ""))
+                } label: {
+                    Label("Створити пробний запис", systemImage: "checkmark.circle")
+                }
+                .accessibilityHint("Записує рядок від імені застосунку. Якщо він з'явиться у списку, а записів від голосу немає — проблема саме в голосовому розширенні.")
+            }
+
+            Section("Дії") {
+                Button {
+                    reload()
+                } label: {
+                    Label("Оновити", systemImage: "arrow.clockwise")
+                }
+                .accessibilityHint("Перечитує збережені записи.")
+
+                Button {
+                    copyReport()
+                } label: {
+                    Label("Скопіювати записи", systemImage: "doc.on.doc")
+                }
+                .disabled(entries.isEmpty)
+                .accessibilityHint("Копіює всі записи у буфер обміну, щоб вставити їх у повідомлення.")
+
+                Button(role: .destructive) {
+                    RHVoiceRequestCapture.clear()
+                    reload()
+                    announce(NSLocalizedString("Записи очищено", comment: ""))
+                } label: {
+                    Label("Очистити записи", systemImage: "trash")
+                }
+                .disabled(entries.isEmpty)
+                .accessibilityHint("Стирає збережені тексти з пристрою.")
+
+                if !statusMessage.isEmpty {
+                    Text(statusMessage)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Section(entries.isEmpty ? NSLocalizedString("Записів немає", comment: "") : NSLocalizedString("Записи (найновіший перший)", comment: "")) {
+                if entries.isEmpty {
+                    Text("Поки нічого не записано. Увімкніть діагностику і прочитайте будь-який текст голосом RHVoice.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(entries) { entry in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(dateFormatter.string(from: entry.date))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text(entry.text)
+                                .font(.system(.body, design: .monospaced))
+                                .textSelection(.enabled)
+                            Text(String(format: NSLocalizedString("%@ символів", comment: ""), String(entry.characters)))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(String(format: NSLocalizedString("Запис від %@, %@ символів. Текст: %@", comment: ""), dateFormatter.string(from: entry.date), String(entry.characters), entry.text))
+                    }
+                }
+            }
+        }
+        .navigationTitle("Що почув синтезатор")
+        .onAppear { reload() }
+    }
+
+    private var traceDescription: String {
+        guard trace.count > 0, let date = trace.date else {
+            return NSLocalizedString("Голос ще жодного разу не звертався до синтезатора після встановлення цієї збірки. Прочитайте будь-який текст голосом RHVoice і натисніть «Оновити».", comment: "")
+        }
+        return String(format: NSLocalizedString("Останнє звернення голосу: %@, %@ символів. Усього звернень: %@.", comment: ""), dateFormatter.string(from: date), String(trace.characters), String(trace.count))
+    }
+
+    private func reload() {
+        entries = RHVoiceRequestCapture.entries()
+        isCaptureEnabled = RHVoiceRequestCapture.isEnabled
+        trace = RHVoiceRequestCapture.trace()
+        statusMessage = ""
+    }
+
+    private func copyReport() {
+        let report = RHVoiceRequestCapture.report(entries: entries)
+        #if os(iOS)
+        UIPasteboard.general.string = report
+        #else
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(report, forType: .string)
+        #endif
+        statusMessage = String(format: NSLocalizedString("Скопійовано %@ записів.", comment: ""), String(entries.count))
+        announce(NSLocalizedString("Записи скопійовано", comment: ""))
+    }
+
+    private func announce(_ message: String) {
+        #if os(iOS)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            UIAccessibility.post(notification: .announcement, argument: message)
+        }
+        #endif
+    }
+}

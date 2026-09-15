@@ -40,7 +40,7 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
 
         let voices = RHVoiceDownloadableVoices.scanInstalledVoices(rootOverride: tempRoot)
         XCTAssertEqual(voices.count, 1)
-        XCTAssertEqual(voices[0].name, "Бен")
+        XCTAssertEqual(voices[0].name, "Ben")
         XCTAssertEqual(voices[0].identifier, "com.rhvoice.UkrainianVoices.bdl")
         XCTAssertEqual(voices[0].language, "en-US")
         XCTAssertEqual(voices[0].profileName, "Bdl")
@@ -52,7 +52,7 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
 
         let voices = RHVoiceDownloadableVoices.scanInstalledVoices(rootOverride: tempRoot)
         XCTAssertEqual(voices.count, 1)
-        XCTAssertEqual(voices[0].name, "Сара")
+        XCTAssertEqual(voices[0].name, "Sarah")
         XCTAssertEqual(voices[0].profileName, "Slt")
         XCTAssertEqual(voices[0].language, "en-US")
     }
@@ -126,7 +126,7 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
         _ = try makeVoiceDir("ksp", info: "name=Ksp\nlanguage=English\n")
 
         let voices = RHVoiceDownloadableVoices.scanInstalledVoices(rootOverride: tempRoot)
-        XCTAssertEqual(voices.map(\.name), ["Клара", "Радж"])
+        XCTAssertEqual(voices.map(\.name), ["Clara", "Raj"])
         XCTAssertEqual(voices.map(\.profileName), ["Clb", "Ksp"])
         XCTAssertEqual(voices.map(\.identifier), [
             "com.rhvoice.UkrainianVoices.clb",
@@ -134,7 +134,7 @@ final class RHVoiceDownloadableVoicesTests: XCTestCase {
         ])
 
         let catalog = try RHVoicePublishedVoiceCatalog.make(downloaded: voices, revision: 8)
-        XCTAssertEqual(catalog.descriptors.map(\.name).suffix(2), ["Клара", "Радж"])
+        XCTAssertEqual(catalog.descriptors.map(\.name).suffix(2), ["Clara", "Raj"])
         XCTAssertTrue(catalog.identifiers.contains("com.rhvoice.UkrainianVoices.clb"))
     }
 

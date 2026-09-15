@@ -1,0 +1,120 @@
+121	Download voice %@, %@
+122	Download dictionary from file
+123	Replace my entries
+124	Entry "%@" deleted from Replacement Dictionary.
+125	Entry "%@" deleted from My Dictionary.
+126	Recording is off — new texts aren't saved.
+127	Recording is off, new texts are not saved
+128	Record from %@, %@ characters. Text: %@
+129	Entry added to Replacement Dictionary.
+130	Entry added to My Dictionary.
+131	Replacement Dictionary entry updated.
+132	My Dictionary entry updated.
+133	Recording is on
+134	Recording is on.
+135	Records
+136	Records (newest first)
+137	Records cleared
+138	Records copied
+139	Records a line on behalf of the app. If it appears in the list, but there are no records from the voice — the problem is specifically in the voice extension.
+140	No records
+141	No records.
+142	Speech component diagnostics started.
+143	No RHVoice voices are available right now.
+144	Apply Replacement Dictionary
+145	App
+146	RHVoice UA is developed by the NGO "Kharkiv Centre for the Rehabilitation of Young Persons with Disabilities and Their Family Members «Pravo Vyboru»" with the support of the Act to Drive Change acceleration programme of the "Phoenix: Power of Communities" project, implemented by the East Europe Foundation and funded by the European Union. The content of the application is the responsibility of the NGO "Kharkiv Centre for the Rehabilitation of Young Persons with Disabilities and Their Family Members «Pravo Vyboru»" and does not necessarily reflect the position of the East Europe Foundation or the EU.
+147	Save
+148	Save entry
+149	Save the entry and apply it without restarting VoiceOver.
+150	Normal
+151	Collapsed
+152	Changes speech rate without distorting the voice.
+153	Found entries: %@. Invalid lines will be skipped: %@.
+154	Make voice %@ available
+155	Make voice %@ available: %@.
+156	Make voice available
+157	Stop
+158	Stop sample
+159	The voice catalog contains invalid data.
+160	Controls whether this voice is available to VoiceOver.
+161	Clara
+162	When enabled, the app records diagnostics to a file. Synthesizer diagnostics on iPhone are available via cable in the system log: iOS does not allow the speech extension to write to a shared file.
+163	Voice Team
+164	Components
+165	Copies all records to the clipboard so you can paste them into a message.
+166	Step %@: %@
+167	Log cleared.
+168	Donor logos: European Union — Moving Forward Together, East Europe Foundation, Phoenix — Power of Communities, Act to Drive Change.
+169	Partner Logos
+170	License %@
+171	License: %@
+172	Licenses
+173	Licenses and Attribution
+174	Marianna
+175	Languages
+176	My Dictionary
+177	Saved on device: %@.
+178	Saved on device: no downloaded voices.
+179	Saved on device: check not performed yet.
+180	Voice Settings
+181	Natalia
+182	Couldn't delete voice %@: %@
+183	Couldn't open the shared App Group storage.
+184	Couldn't open the dictionary file: %@
+185	Couldn't download voice %@: %@
+186	Couldn't download the dictionary: %@
+187	Couldn't download the voice list. Check your internet connection and try again.
+188	Couldn't save shared settings: %@
+189	Couldn't publish the voice list: %@
+190	Couldn't verify the voice catalog entry.
+191	Couldn't repair the voices: %@
+192	Couldn't read the license text.
+193	Couldn't prepare the dictionary file: %@
+194	Couldn't synthesize a sample for voice %@.
+195	None
+196	No internet connection — showing the saved voice list.
+197	New Word
+198	New Entry
+199	Numbers are read in groups.
+200	Numbers are read digit by digit.
+201	Normal
+202	Sharing
+203	Process phone numbers
+204	Olha Yakovleva
+205	Update
+206	Update Self-Check
+207	Updated: %@
+208	No published voice list.
+209	Published list: check not performed yet.
+210	Published voices: %@, list version %@.
+211	Main synthesis engine. Distribution via the App Store is permitted by the author's separate permission dated August 3, 2026.
+212	Personal dictionary is empty
+213	Last voice request: %@, %@ characters. Total requests: %@.
+214	Clear Records
+215	Clear Log
+216	Pause after punctuation
+217	Check Word
+218	Check the voice list and Replacement Dictionary.
+219	Before You Begin
+220	Go to Accessibility.
+221	Republish the voice list and ask the system to update it without restarting the iPhone.
+222	Rereads the saved records.
+223	Return to this app, turn on the voice you need in the list, and open VoiceOver settings again. After updating the app, you may need to select the voice again in the system settings.
+224	Full Texts
+225	Full License Texts
+226	Slow
+227	Double-tap expands or collapses the personal dictionary file status.
+228	Share App Log
+229	Share Dictionary
+230	Shows the languages whose voices are in the app.
+231	Shows the text the system sent to the voice. Needed to investigate complaints about how numbers, times, and phone numbers are read.
+232	Nothing has been recorded yet. Turn on diagnostics and have RHVoice read any text aloud.
+233	Repairing voices: republishing the list.
+234	Repair Voices
+235	The "Abbreviation" field can't be empty.
+236	The "Word with Stress" field can't be empty.
+237	The "Word" field can't be empty.
+238	The "How to Read" field can't be empty.
+239	Steps: turn on advanced diagnostics, have the text read aloud, come back here, refresh, copy the records, and send them to the developer.
+240	Needed for the Ukrainian voice to read Latin script.

@@ -1,0 +1,120 @@
+1	Recording %@ — %@\nVoice: %@\nLength: %@ characters\nText:\n%@
+2	RHVoice UA. Copyright © 2026 NGO "Kharkiv Centre for the Rehabilitation of Young Persons with Disabilities and Their Family Members «Pravo Vyboru»".\n\nThis program is distributed under the GNU General Public License version 3 or, at your option, any later version, together with an additional permission for distribution through the Apple App Store.\n\nThe program is provided WITHOUT ANY WARRANTY, including without warranty of merchantability or fitness for a particular purpose.\n\nYou have the right to distribute copies of this program and modify it under the terms of GPL-3. You also have the right to obtain the complete source code of this exact build.
+3	%.1f MB
+4	%@ percent
+5	%@ ms
+6	%@ characters
+7	%@ — %@ MB
+8	%@, pronunciation %@
+9	%@, read as %@
+10	%@. License: %@. Attribution: %@. %@
+11	, downloading %@ percent
+12	, downloaded
+13	, not downloaded
+14	1. Turn on "Advanced diagnostics" on the main screen. 2. Read the text you need aloud with the RHVoice voice in any app. 3. Come back here, tap "Refresh", then "Copy Entries", and paste them into a message to the developer.
+15	4 voices
+16	Copyright (c) 2001-2015 Nagoya Institute of Technology; 2001-2008 Tokyo Institute of Technology. All rights reserved. The files included in RHVoice were modified by the engine's author.
+17	GPL-3.0 or later (some files are LGPL-2.1)
+18	GPL-3.0 or later, with permission for the App Store
+19	RHVoice UA (this app)
+20	iPhone or iPad
+21	user_dictionary.txt: %@ bytes
+22	user_dictionary.txt: not created
+23	user_dictionary_meta.json: %@ bytes
+24	user_dictionary_meta.json: not created
+25	Anatol
+26	English
+27	English language data (cmulex)
+28	Attribution: %@
+29	Basic replacement: %@, read as %@
+30	Basic replacements
+31	Ben
+32	Built-in language
+33	Version %@, build %@
+34	Version %@, build %@. The source code for this build is tagged build-%@ in the project repository.
+35	Choose Anatol, Marianna, Natalia, or Volodymyr.
+36	Selects a preset rate multiplier for the %@ voice. It does not normally change the VoiceOver system speed.
+37	Delete
+38	Delete %@
+39	Delete voice
+40	Delete voice %@
+41	Delete voice %@?
+42	Delete entry "%@"?
+43	Delete entry?
+44	Unavailable
+45	Off
+46	Pronunciation
+47	The source code is open. You have the right to obtain the complete code of this exact build, modify it, and redistribute it under the terms of GPL-3.
+48	App source code
+49	App source code on GitHub
+50	Your replacement dictionary is empty
+51	There are no custom entries yet.
+52	Custom entries
+53	Volodymyr
+54	Sets a pause after a period, comma, exclamation point, and question mark for the %@ voice.
+55	Shows a confirmation before deleting an entry.
+56	Opens the repository with the complete source code.
+57	Opens the system menu for sending app diagnostics. The VoiceOver log is available over a cable.
+58	Opens the system menu to send your custom abbreviations file.
+59	Opens the new word form.
+60	Open VoiceOver.
+61	Open Speech.
+62	Open Settings.
+63	Open System Settings.
+64	Open the voice or speech settings for VoiceOver.
+65	Open license or project
+66	Open license for %@
+67	Open licenses and attribution for RHVoice and the voices.
+68	Open voice settings
+69	Open your personal pronunciation dictionary.
+70	Open full texts
+71	Open full license texts
+72	Open entry editing. Available action: Delete.
+73	Open the system picker for a dictionary text file.
+74	Open the list of voices to download
+75	Open the list of licenses and voice authors.
+76	Open the new word or replacement form.
+77	Open the instructions for turning on the Ukrainian voice in VoiceOver.
+78	Open information about the app and project support.
+79	NGO "Pravo Vyboru"
+80	Voice %@ selected for the sample.
+81	Voice %@ deleted.
+82	Voice %@ downloaded. You can now turn it on in VoiceOver.
+83	The voice will disappear from VoiceOver, and you can download it again.
+84	The voice will disappear from VoiceOver. You can download it again.
+85	The voice has not contacted the synthesizer yet since this build was installed. Read any text with the RHVoice voice, then tap "Refresh".
+86	Voices
+87	Voices republished: %@. Check the self-check.
+88	The voices were created as part of the "Ukrainian Speech Synthesizer" project. Contacts: facebook.com/syntezator, vp88.mobile@gmail.com, rhvoice.su.
+89	Preparing voice %@…
+90	Grouped: each part of the number is read as a whole number. Digit by digit: the previous way of reading a number aloud.
+91	Fine rate adjustment
+92	Narrator Anatoliy Podorozhko; "Ukrainian Speech Synthesizer" team: Artem Plaksin, Volodymyr Pyrih, Sergey Parshakov, Zvonimir Stanecic
+93	Narrator Volodymyr Beglov; "Ukrainian Speech Synthesizer" team
+94	Narrator Marianna Firtka; "Ukrainian Speech Synthesizer" team: Artem Plaksin, Volodymyr Pyrih, Maryna Herelyuk, Sergey Parshakov, Beka Gozalishvili
+95	Narrator Natalia Chekhal; "Ukrainian Speech Synthesizer" team: Artem Plaksin, Volodymyr Pyrih, Tomasz Bilecki, Zvonimir Stanecic
+96	Help
+97	Add or select the Ukrainian language.
+98	Add the Ukrainian language or select a Ukrainian voice.
+99	Add
+100	Add to existing
+101	Add entry
+102	Add entry to the replacement dictionary
+103	Additional languages
+104	Adds a word gap for the %@ voice.
+105	Supporting libraries included in the engine.
+106	Available action: Delete voice.
+107	Available action: Download voice.
+108	Available
+109	Very fast
+110	Diagnostics
+111	Speech component diagnostics are available only on macOS.
+112	Actions
+113	The app log is still empty.
+114	A downloaded voice appears right away on the main screen next to the Ukrainian ones (there you can turn it on or off and play a sample) and in the VoiceOver voice list.
+115	Downloading %@
+116	Downloading voice %@…
+117	Downloading the language list
+118	Downloading the language list…
+119	Download
+120	Download voice

@@ -1,0 +1,118 @@
+241	Legal Information
+242	Rate preset
+243	About
+244	Sample record created.
+245	Sample entry. If you can see it, the list display is working.
+246	Speaks the entered pronunciation directly.
+247	Speaks the entered pronunciation. After saving, the word should sound the same according to the dictionary.
+248	Speaks a regular word to test whether the dictionary is applied.
+249	Speaks a standard test phrase in this voice.
+250	Word gap
+251	Play sample
+252	Play %@ voice sample
+253	Playback finished.
+254	Playback stopped.
+255	Preparing dictionary file
+256	Diagnostics hint
+257	Hint: Word is how it's spelled. Pronunciation is the same word with a plus sign before the stressed vowel, or another word or phrase describing how to read it.
+258	Support the project
+259	After downloading, the voice will appear in the voice list and in VoiceOver.
+260	Raj
+261	Editing
+262	Edit entry
+263	Recommended voices restored: all Ukrainian voices.
+264	Expanded
+265	Expand abbreviations
+266	Log size: %@ bytes
+267	Unpacking downloaded voices.
+268	Advanced diagnostics
+269	RHVoice engine
+270	Self-check
+271	Sarah
+272	Cancel
+273	Copied %@ records.
+274	Copy Records
+275	Words to replace the abbreviation with.
+276	Dictionary loaded: %@ added, %@ updated, %@ skipped.
+277	Replacement Dictionary
+278	Replacement dictionary in the app: %@ built-in, %@ custom.
+279	Replacement dictionary: off.
+280	Replacement dictionary: check not yet performed.
+281	Dictionary is empty.
+282	Word
+283	Word or abbreviation
+284	Word as it is spelled
+285	Word as spelled.
+286	Word is how it's spelled. Pronunciation is the same word with a + sign before the stressed vowel, or another word or phrase describing how to read it.
+287	System voice list updated. Available voices: %@.
+288	First select a voice.
+289	Try again
+290	Shared voice storage unavailable.
+291	Shared storage unavailable — settings and dictionary changes are not saved.
+292	Shared storage unavailable: settings and dictionary are temporarily not saved. Voices are working.
+293	Status: %@
+294	Create a custom override for this rule
+295	Create sample record
+296	Erases the app log. Does not affect the VoiceOver synthesizer log.
+297	Erases saved texts from the device.
+298	Applies to full dates with a four-digit year. Short dates (10.07.26) are always read as digits.
+299	The same word with a plus sign before the stressed vowel, or another word or phrase describing how to read it.
+300	Texts of all licenses included with the app.
+301	License texts not found in this build. They are available in the project repository, LICENSES folder.
+302	Technical information
+303	Technical information: %@.
+304	Tap a rule to create a custom override. A custom entry with the same word takes priority.
+305	The exact entry to replace.
+306	Precisely adjusts the rate multiplier for the %@ voice. 1.0x does not change the VoiceOver system rate.
+307	A bit faster
+308	Here you can set how any word is read: an abbreviation, acronym, name, or title.
+309	In the app's main list, make sure the needed RHVoice voices are marked as available. The Play sample button in each voice's settings gives a quick sound check.
+310	In the voice list, select Anatol, Marianna, Natalia, or Volodymyr.
+311	The file contains no valid entries. My Dictionary was not changed.
+312	Warning: shared storage unavailable, changes are not saved
+313	On
+314	On: 17:01 is read as time in words. Off: RHVoice does not expand the time into hours and minutes.
+315	On: 5 min, 2 hr, and 30 sec are read as full words. Off: abbreviations are left unexpanded.
+316	On: RHVoice recognizes numbers and reads them the chosen way. Off: the system reads the number without RHVoice processing.
+317	On: built-in and custom replacements are applied during reading. Off: the dictionary does not change the text.
+318	On: full dates, such as 10.07.2026, are read in words — "the tenth of July, two thousand twenty-six." Off: dates are read as digits.
+319	Ukrainian
+320	Ukrainian, 4 voices, built-in language, always available
+321	Ukrainian voice. Data is distributed unmodified (the license prohibits derivatives).
+322	Ukrainian voice. Data is distributed unmodified.
+323	Ukrainian voices
+324	Dictionary file is too large. Maximum size is 1 MB.
+325	The dictionary file could not be read. The built-in dictionary is in use.
+326	This file contains app diagnostics. On iPhone, the VoiceOver synthesizer log is only available via cable in the system log: iOS does not allow the extension to write it to a shared file.
+327	Do requests reach the voice
+328	Reading
+329	Read dates in words
+330	Read number
+331	Read time in words
+332	Fast
+333	What the synthesizer heard
+334	How to load a dictionary?
+335	How to create an entry
+336	How to enable a voice
+337	How to read
+338	If the voice doesn't appear
+339	voice archive incomplete
+340	in groups
+341	downloaded: %@ of %@
+342	e.g., БПЛА
+343	e.g., безпілотний літальний апарат
+344	e.g., листоп+ад
+345	e.g., листопад
+346	failed to encode entry
+347	not downloaded
+348	check from the app
+349	digit by digit
+350	server did not respond
+351	shared storage unavailable
+352	file was corrupted during transfer
+353	read as %@
+354	English voices: Ben, Clara, Sarah, Raj
+355	Downloaded on demand. The models were trained for the RHVoice engine, so they are modified derivatives of the original data.
+356	Ukrainian is built in; voices for other languages can be downloaded.
+357	Check the stored, published and system voices.
+358	Carnegie Mellon University, CMU ARCTIC corpus

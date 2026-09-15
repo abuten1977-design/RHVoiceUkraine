@@ -1,0 +1,121 @@
+B	UkrainianVoicesApp/App/ContentView.swift	23	Українська
+B	UkrainianVoicesApp/App/ContentView.swift	23	Англійська
+B	UkrainianVoicesApp/App/ContentView.swift	24	Застосунок RHVoice UA розробляється громадською організацією «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» за підтримки Акселераційної програми Act to Drive Change проєкту «Фенікс: Сила спільнот», що виконується Фондом Східна Європа коштом Європейського Союзу. Наповнення застосунку є відповідальністю ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору» та необов’язково відображає позицію Фонду Східна Європа та ЄС.
+B	UkrainianVoicesApp/App/ContentView.swift	25	Логотипи донорів: Європейський Союз — Прямуємо разом, Фонд Східна Європа, Фенікс — Сила спільнот, Act to Drive Change.
+B	UkrainianVoicesApp/App/ContentView.swift	41	RHVoice UA (цей застосунок)
+B	UkrainianVoicesApp/App/ContentView.swift	42	GPL-3.0 або пізніша, з дозволом для App Store
+B	UkrainianVoicesApp/App/ContentView.swift	43	ГО «Право вибору»
+B	UkrainianVoicesApp/App/ContentView.swift	44	Вихідний код відкритий. Ви маєте право отримати повний код саме цієї збірки, змінювати його і поширювати далі на умовах GPL-3.
+B	UkrainianVoicesApp/App/ContentView.swift	48	Рушій RHVoice
+B	UkrainianVoicesApp/App/ContentView.swift	49	GPL-3.0 або пізніша (частина файлів — LGPL-2.1)
+B	UkrainianVoicesApp/App/ContentView.swift	50	Ольга Яковлева
+B	UkrainianVoicesApp/App/ContentView.swift	51	Основний рушій синтезу. Розповсюдження через App Store дозволене окремим дозволом авторки від 3 серпня 2026 року.
+B	UkrainianVoicesApp/App/ContentView.swift	58	Copyright (c) 2001-2015 Nagoya Institute of Technology; 2001-2008 Tokyo Institute of Technology. All rights reserved. Файли у складі RHVoice змінені авторкою рушія.
+B	UkrainianVoicesApp/App/ContentView.swift	65	Зміна темпу мовлення без спотворення голосу.
+B	UkrainianVoicesApp/App/ContentView.swift	72	Допоміжні бібліотеки у складі рушія.
+B	UkrainianVoicesApp/App/ContentView.swift	79	Розпакування завантажених голосів.
+B	UkrainianVoicesApp/App/ContentView.swift	85	Диктор Анатолій Подорожко; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Sergey Parshakov, Zvonimir Stanecic
+B	UkrainianVoicesApp/App/ContentView.swift	86	Український голос. Дані розповсюджуються без змін.
+B	UkrainianVoicesApp/App/ContentView.swift	92	Дикторка Наталія Чехаль; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Tomasz Bilecki, Zvonimir Stanecic
+B	UkrainianVoicesApp/App/ContentView.swift	93	Український голос. Дані розповсюджуються без змін.
+B	UkrainianVoicesApp/App/ContentView.swift	99	Дикторка Marianna Firtka; команда «Синтезатор української мови»: Artem Plaksin, Volodymyr Pyrih, Maryna Herelyuk, Sergey Parshakov, Beka Gozalishvili
+B	UkrainianVoicesApp/App/ContentView.swift	100	Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).
+B	UkrainianVoicesApp/App/ContentView.swift	106	Диктор Володимир Беглов; команда «Синтезатор української мови»
+B	UkrainianVoicesApp/App/ContentView.swift	107	Український голос. Дані розповсюджуються без змін (ліцензія забороняє похідні).
+B	UkrainianVoicesApp/App/ContentView.swift	111	Англійські мовні дані (cmulex)
+B	UkrainianVoicesApp/App/ContentView.swift	114	Потрібні для читання латиниці українським голосом.
+B	UkrainianVoicesApp/App/ContentView.swift	119	\nRHVoice UA. Copyright © 2026 ГО «Харківський центр реабілітації молодих осіб з інвалідністю та членів їх сімей «Право вибору».\n\nЦя програма розповсюджується за GNU General Public License версії 3 або, на ваш вибір, будь-якої пізнішої версії, разом із додатковим дозволом на розповсюдження через Apple App Store.\n\nПрограма постачається БЕЗ ЖОДНИХ ГАРАНТІЙ, у тому числі без гарантій придатності для продажу чи для конкретної мети.\n\nВи маєте право поширювати копії цієї програми та змінювати її на умовах GPL-3. Ви також маєте право отримати повний вихідний код саме цієї збірки.\n
+B	UkrainianVoicesApp/App/ContentView.swift	133	Версія \(version), збірка \(build). Вихідний код цієї збірки позначено тегом build-\(build) у репозиторії проєкту.
+B	UkrainianVoicesApp/App/ContentView.swift	167	Ліцензія \(file.deletingPathExtension().lastPathComponent)
+B	UkrainianVoicesApp/App/ContentView.swift	209	Анатол
+B	UkrainianVoicesApp/App/ContentView.swift	210	Маріанна
+B	UkrainianVoicesApp/App/ContentView.swift	211	Наталія
+B	UkrainianVoicesApp/App/ContentView.swift	212	Володимир
+B	UkrainianVoicesApp/App/ContentView.swift	219	Українська
+B	UkrainianVoicesApp/App/ContentView.swift	220	Англійська
+B	UkrainianVoicesApp/App/ContentView.swift	266	Повільно
+B	UkrainianVoicesApp/App/ContentView.swift	267	Нормально
+B	UkrainianVoicesApp/App/ContentView.swift	268	Трохи швидше
+B	UkrainianVoicesApp/App/ContentView.swift	269	Швидко
+B	UkrainianVoicesApp/App/ContentView.swift	270	Дуже швидко
+B	UkrainianVoicesApp/App/ContentView.swift	285	Не вдалося синтезувати зразок для голосу \(voiceName).
+B	UkrainianVoicesApp/App/ContentView.swift	532	Спільне сховище недоступне: налаштування і словник тимчасово не зберігаються. Голоси працюють.
+B	UkrainianVoicesApp/App/ContentView.swift	635	Зробити голос \(voice.displayName) доступним: \(enabled ? "Увімкнено" : "Вимкнено").
+B	UkrainianVoicesApp/App/ContentView.swift	644	Голос \(voice.displayName) вибрано для прослуховування.
+B	UkrainianVoicesApp/App/ContentView.swift	655	Спочатку виберіть голос.
+B	UkrainianVoicesApp/App/ContentView.swift	663	Спочатку виберіть голос.
+B	UkrainianVoicesApp/App/ContentView.swift	697	Не вдалося підготувати файл словника: \(error.localizedDescription)
+B	UkrainianVoicesApp/App/ContentView.swift	718	Не вдалося завантажити словник: \(error.localizedDescription)
+B	UkrainianVoicesApp/App/ContentView.swift	735	Запис словника замін оновлено.
+B	UkrainianVoicesApp/App/ContentView.swift	738	Запис додано до словника замін.
+B	UkrainianVoicesApp/App/ContentView.swift	758	Запис «\(entry.abbreviation)» видалено зі словника замін.
+B	UkrainianVoicesApp/App/ContentView.swift	772	Запис словника оновлено.
+B	UkrainianVoicesApp/App/ContentView.swift	775	Запис додано до словника.
+B	UkrainianVoicesApp/App/ContentView.swift	793	Запис «\(entry.displayWord)» видалено зі словника.
+B	UkrainianVoicesApp/App/ContentView.swift	802	Прослуховування зупинено.
+B	UkrainianVoicesApp/App/ContentView.swift	809	Зараз немає доступних голосів RHVoice.
+B	UkrainianVoicesApp/App/ContentView.swift	810	Список системних голосів оновлено. Доступних голосів: \(enabledVoiceIdentifiers.count).
+B	UkrainianVoicesApp/App/ContentView.swift	819	Рекомендовані голоси відновлено: усі українські голоси.
+B	UkrainianVoicesApp/App/ContentView.swift	826	Запущено діагностику мовного компонента.
+B	UkrainianVoicesApp/App/ContentView.swift	884	Діагностика мовного компонента доступна лише на macOS.
+B	UkrainianVoicesApp/App/ContentView.swift	919	Читати дати словами
+B	UkrainianVoicesApp/App/ContentView.swift	928	Читати час словами
+B	UkrainianVoicesApp/App/ContentView.swift	936	Розгортати скорочення
+B	UkrainianVoicesApp/App/ContentView.swift	944	Застосовувати словник замін
+B	UkrainianVoicesApp/App/ContentView.swift	952	Обробляти телефонні номери
+B	UkrainianVoicesApp/App/ContentView.swift	963	Номери читаються групами.
+B	UkrainianVoicesApp/App/ContentView.swift	963	Номери читаються по цифрах.
+B	UkrainianVoicesApp/App/ContentView.swift	970	Розширена діагностика
+B	UkrainianVoicesApp/App/ContentView.swift	985	Лог очищено.
+B	UkrainianVoicesApp/App/ContentView.swift	1046	Готую голос \(voice.displayName)…
+B	UkrainianVoicesApp/App/ContentView.swift	1056	Прослуховування завершено.
+B	UkrainianVoicesApp/App/ContentView.swift	1105	\(title): \(enabled ? "Увімкнено" : "Вимкнено").
+B	UkrainianVoicesApp/App/ContentView.swift	1176	Не вдалося зберегти спільні налаштування: \(error.localizedDescription)
+B	UkrainianVoicesApp/App/ContentView.swift	1305	Стан: \(model.statusMessage)
+B	UkrainianVoicesApp/App/ContentView.swift	1564	Розмір логу: \(model.debugLogSize) байт
+B	UkrainianVoicesApp/App/ContentView.swift	1567	Розмір логу: \(model.debugLogSize) байт
+B	UkrainianVoicesApp/App/ContentView.swift	1679	Технічна інформація: \(showsTechnicalInfo ? "Розгорнуто" : "Згорнуто").
+B	UkrainianVoicesApp/App/ContentView.swift	1694	user_dictionary.txt: \(fileStatus.dictionarySize) байт
+B	UkrainianVoicesApp/App/ContentView.swift	1694	user_dictionary.txt: не створено
+B	UkrainianVoicesApp/App/ContentView.swift	1695	user_dictionary_meta.json: \(fileStatus.metadataSize) байт
+B	UkrainianVoicesApp/App/ContentView.swift	1695	user_dictionary_meta.json: не створено
+B	UkrainianVoicesApp/App/ContentView.swift	1698	Оновлено: \(modifiedAt.formatted(date: .numeric, time: .standard))
+B	UkrainianVoicesApp/App/ContentView.swift	1736	\(entry.displayWord), вимова \(entry.stressedWord)
+B	UkrainianVoicesApp/App/ContentView.swift	1766	Видалити \(entry.displayWord)
+B	UkrainianVoicesApp/App/ContentView.swift	1777	Видалити \(entry.displayWord)
+B	UkrainianVoicesApp/App/ContentView.swift	1818	Видалити запис «\($0.displayWord)»?
+B	UkrainianVoicesApp/App/ContentView.swift	1818	Видалити запис?
+B	UkrainianVoicesApp/App/ContentView.swift	1893	\(entry.abbreviation), читати як \(entry.replacement)
+B	UkrainianVoicesApp/App/ContentView.swift	1915	читати як \(entry.replacement)
+B	UkrainianVoicesApp/App/ContentView.swift	1919	Базова заміна: \(entry.abbreviation), читати як \(entry.replacement)
+B	UkrainianVoicesApp/App/ContentView.swift	1959	Не вдалося відкрити файл словника: \(error.localizedDescription)
+B	UkrainianVoicesApp/App/ContentView.swift	1965	Видалити запис «\($0.abbreviation)»?
+B	UkrainianVoicesApp/App/ContentView.swift	1965	Видалити запис?
+B	UkrainianVoicesApp/App/ContentView.swift	1989	Знайдено записів: \(preview.entries.count). Некоректних рядків буде пропущено: \(preview.skippedLines).
+B	UkrainianVoicesApp/App/ContentView.swift	2164	Ліцензія: \(item.license)
+B	UkrainianVoicesApp/App/ContentView.swift	2165	Атрибуція: \(item.attribution)
+B	UkrainianVoicesApp/App/ContentView.swift	2170	Відкрити ліцензію для \(item.title)
+B	UkrainianVoicesApp/App/ContentView.swift	2176	\(item.title). Ліцензія: \(item.license). Атрибуція: \(item.attribution). \(item.note)
+B	UkrainianVoicesApp/App/ContentView.swift	2226	Відкрийте Налаштування.
+B	UkrainianVoicesApp/App/ContentView.swift	2227	Перейдіть до Універсальний доступ.
+B	UkrainianVoicesApp/App/ContentView.swift	2228	Відкрийте VoiceOver.
+B	UkrainianVoicesApp/App/ContentView.swift	2229	Відкрийте Мовлення.
+B	UkrainianVoicesApp/App/ContentView.swift	2230	Додайте або виберіть українську мову.
+B	UkrainianVoicesApp/App/ContentView.swift	2231	У списку голосів виберіть Anatol, Marianna, Natalia або Volodymyr.
+B	UkrainianVoicesApp/App/ContentView.swift	2237	Відкрийте Системні параметри.
+B	UkrainianVoicesApp/App/ContentView.swift	2238	Перейдіть до Універсальний доступ.
+B	UkrainianVoicesApp/App/ContentView.swift	2239	Відкрийте VoiceOver.
+B	UkrainianVoicesApp/App/ContentView.swift	2240	Відкрийте налаштування голосу або мовлення VoiceOver.
+B	UkrainianVoicesApp/App/ContentView.swift	2241	Додайте українську мову або виберіть український голос.
+B	UkrainianVoicesApp/App/ContentView.swift	2242	Виберіть Anatol, Marianna, Natalia або Volodymyr.
+B	UkrainianVoicesApp/App/ContentView.swift	2273	Крок \(index + 1): \(item)
+B	UkrainianVoicesApp/App/ContentView.swift	2284	Версія \(version), збірка \(build)
+B	UkrainianVoicesApp/App/ContentView.swift	2412	Зробити голос \(voice.displayName) доступним
+B	UkrainianVoicesApp/App/ContentView.swift	2423	Вибирає готовий множник темпу для голосу \(voice.displayName). Нормально не змінює системну швидкість VoiceOver.
+B	UkrainianVoicesApp/App/ContentView.swift	2426	Детальний множник
+B	UkrainianVoicesApp/App/ContentView.swift	2431	Точно налаштовує множник темпу для голосу \(voice.displayName). 1.0x не змінює системну швидкість VoiceOver.
+B	UkrainianVoicesApp/App/ContentView.swift	2439	Встановлює паузу після крапки, коми, знаку оклику та знаку питання для голосу \(voice.displayName).
+B	UkrainianVoicesApp/App/ContentView.swift	2442	Проміжок між словами
+B	UkrainianVoicesApp/App/ContentView.swift	2446	\(Int(settings.wordGap)) мс
+B	UkrainianVoicesApp/App/ContentView.swift	2447	Додає проміжок між словами для голосу \(voice.displayName).
+B	UkrainianVoicesApp/App/ContentView.swift	2456	Прослухати голос \(voice.displayName)

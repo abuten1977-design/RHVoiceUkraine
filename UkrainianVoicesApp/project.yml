@@ -1,6 +1,9 @@
 name: UkrainianVoices
 options:
   bundleIdPrefix: com.rhvoice
+  # Мова розробки = українська: ключі локалізації — це самі українські надписи,
+  # тому за відсутності перекладу застосунок показує український текст.
+  developmentLanguage: uk
   deploymentTarget:
     macOS: "13.0"
     iOS: "16.0"
@@ -163,9 +166,14 @@ targets:
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.0"
-        TARGETED_DEVICE_FAMILY: "1,2"
+        # iPhone only у версії 1.0: на iPad не тестували, тому не заявляємо.
+        # Повернути "1,2" у 1.1 після перевірки на живому iPad.
+        TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "5NNZPP8CRR"
+        # Вмикає NUMBER_DIAG (опційний запис фрагмента тексту користувача в
+        # системний журнал для замірів на пристрої Андрія, task-226 частина A).
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
     dependencies:
       - target: UkrainianVoicesExtension
       - package: RHVoiceCore
@@ -211,11 +219,15 @@ targets:
         INFOPLIST_FILE: Extension/Info-iOS.plist
         CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtension.entitlements
         SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"
         CLANG_CXX_LANGUAGE_STANDARD: "c++17"
         DEFINES_MODULE: YES
         OTHER_LDFLAGS: "$(inherited) -lc++"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "5NNZPP8CRR"
+        # Вмикає NUMBER_DIAG (опційний запис фрагмента тексту користувача в
+        # системний журнал для замірів на пристрої Андрія, task-226 частина A).
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
     dependencies:
       - package: RHVoiceCore
         product: RHVoiceBridge
@@ -348,6 +360,7 @@ targets:
       - path: Shared/RHVoiceApostropheNormalizer.swift
       - path: Shared/RHVoiceSilenceAnalyzer.swift
       - path: Shared/RHVoiceSharedSettings.swift
+      - path: Shared/RHVoiceTextBreaks.swift
       - path: Shared/RHVoiceDownloadableVoices.swift
       - path: Shared/RHVoicePublishedVoiceCatalog.swift
       - path: Shared/PersonalUserDictionary.swift
@@ -358,6 +371,7 @@ targets:
       - path: Tests/RHVoiceSharedSettingsSnapshotCacheTests.swift
       - path: Tests/PersonalUserDictionaryTests.swift
       - path: Tests/RHVoiceDownloadableVoicesTests.swift
+      - path: Tests/RHVoiceTextBreaksTests.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.RHVoicePipelineSplitterTests
