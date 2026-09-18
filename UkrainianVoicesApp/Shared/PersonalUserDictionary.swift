@@ -151,6 +151,15 @@ enum PersonalUserDictionary {
         } else {
             try FileManager.default.moveItem(at: tempURL, to: url)
         }
+        // ⭐18.09.2026: знімаємо захист файла, як це з 31.07 робить словник
+        // замін (`AbbreviationDictionary.save`). Без цього файл недоступний для
+        // читання, поки телефон не розблокували ПІСЛЯ перезавантаження, — а
+        // голос говорить уже на екрані блокування. Саме перезавантаження назвав
+        // спусковим гачком тестер (Даниїл, 16.09), і на словнику замін це
+        // підтвердилось. Тут — та сама профілактика.
+        #if os(iOS)
+        try (url as NSURL).setResourceValue(FileProtectionType.none, forKey: .fileProtectionKey)
+        #endif
     }
 
     private static func notifyDictionaryChanged() {

@@ -128,6 +128,10 @@ final class VoiceDownloadManager: ObservableObject {
     private static func writeManifestCache(_ data: Data) {
         guard let url = manifestCacheURL() else { return }
         try? data.write(to: url, options: [.atomic])
+        // 18.09.2026: те саме зняття захисту, що й у решти файлів контейнера.
+        #if os(iOS)
+        try? (url as NSURL).setResourceValue(FileProtectionType.none, forKey: .fileProtectionKey)
+        #endif
     }
 
     private static func readManifestCache() -> Data? {

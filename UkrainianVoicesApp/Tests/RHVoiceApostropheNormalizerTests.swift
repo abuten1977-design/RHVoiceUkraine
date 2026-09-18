@@ -1096,6 +1096,73 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(capital))
     }
 
+    // MARK: - ВЕЛИКІ літери і російська таблиця VoiceOver (заміри 18.09.2026)
+
+    func testMeasuredCapitalLettersOnIOS27KeepTheMarkerAndFixTheDescription() {
+        // Рядки ЗНЯТІ з живого iPhone 17 / iOS 27.2, збірка 232, журнал
+        // /tmp/caps27b.txt на Маці. При увімкненому вводі ВЕЛИКИМИ iOS ставить
+        // перед описом слово «Велика», через що звірка цілого рядка не
+        // спрацьовувала і буква читалась дослівно (скарга Андрія 18.09).
+        let cases = [
+            ("<speak><lang xml:lang=\"uk-UA\">Велика   білорусько-українська i </lang></speak>", "Велика і"),
+            ("<speak><lang xml:lang=\"uk-UA\">Велика   українська ї </lang></speak>", "Велика є"),
+            ("<speak><lang xml:lang=\"uk-UA\">Велика   ghe, піднесення </lang></speak>", "Велика ґ")
+        ]
+        for (measured, expected) in cases {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured),
+                expected,
+                "не спрацювало на заміреному рядку: \(measured)"
+            )
+        }
+    }
+
+    func testMeasuredCapitalYiIsLeftAloneBecauseItAlreadySoundsRight() {
+        // « yi » навмисно НЕ в таблиці (рішення 08.09: справжня «ї» звучить
+        // правильно). З приставкою «Велика» поведінка має лишитись тією ж.
+        let measured = "<speak><lang xml:lang=\"uk-UA\">Велика   yi </lang></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured))
+    }
+
+    func testMeasuredRussianVoiceOverTableIsUnderstood() {
+        // Рядки ЗНЯТІ з живого iPhone 12 / iOS 26.6.1, збірка 232, журнал
+        // /tmp/caps_letters_2026-09-18.txt: VoiceOver відповідав із РОСІЙСЬКОЇ
+        // таблиці (localization: ru), і український голос читав ці слова
+        // дослівно.
+        let cases = [
+            (" белорусская и украинская i ", "і"),
+            ("Прописная украинская йе", "Прописная є"),
+            ("Прописная йи", "Прописная ї"),
+            ("Прописная гэ с подъемом", "Прописная ґ"),
+            ("Прописная гэ с подъёмом", "Прописная ґ")
+        ]
+        for (measured, expected) in cases {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured),
+                expected,
+                "не спрацювало на заміреному рядку: \(measured)"
+            )
+        }
+    }
+
+    func testOrdinaryTextStartingWithTheMarkerWordIsNotReplaced() {
+        // Сторож: «велика»/«прописная» — звичайні слова. Приставка має
+        // працювати ЛИШЕ разом із відомою назвою букви.
+        let ordinary = [
+            "велика країна",
+            "велика і сильна держава",
+            "прописная истина",
+            "велика ",
+            "заглавная буква в начале предложения"
+        ]
+        for text in ordinary {
+            XCTAssertNil(
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(text),
+                "хибне спрацювання на: \(text)"
+            )
+        }
+    }
+
     func testOrdinaryUkrainianTextWithTheWordPidnesennyaIsNotReplaced() {
         // Сторож: «піднесення» — звичайне українське слово. Правило має ловити
         // лише цілий запит-назву букви, а не будь-яку згадку слова.

@@ -139,8 +139,39 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: trimSet)
             .lowercased()
-        return standaloneLetterNameReplacements[collapsed]
+        if let direct = standaloneLetterNameReplacements[collapsed] {
+            return direct
+        }
+        return capitalLetterNameReplacement(for: collapsed)
     }
+
+    /// iOS 27 prefixes the letter description with the word «Велика» when caps
+    /// input is on, and an iOS 26 phone whose VoiceOver speaks Russian prefixes
+    /// it with «Прописная» (both measured 18.09.2026 — iPhone 17 / iOS 27.2:
+    /// « Велика   ghe, піднесення »; iPhone 12 / iOS 26.6.1:
+    /// « Прописная гэ с подъемом »). The description itself is unchanged, so the
+    /// whole-run equality test missed and the letter was read verbatim.
+    /// The marker word is kept — the user must still hear that the letter is
+    /// capital — and only the description part is replaced.
+    private static func capitalLetterNameReplacement(for collapsed: String) -> String? {
+        for (marker, spokenMarker) in capitalLetterMarkers {
+            let prefix = marker + " "
+            guard collapsed.hasPrefix(prefix) else { continue }
+            let rest = String(collapsed.dropFirst(prefix.count))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let letter = standaloneLetterNameReplacements[rest] else { continue }
+            return spokenMarker + " " + letter
+        }
+        return nil
+    }
+
+    /// Lowercased marker → what we put back into the text. Ukrainian «Велика»
+    /// comes from the uk table, «Прописная»/«Заглавная» from the ru one.
+    private static let capitalLetterMarkers: [(String, String)] = [
+        ("велика", "Велика"),
+        ("прописная", "Прописная"),
+        ("заглавная", "Заглавная")
+    ]
 
     private static let invisibleFormattingScalars: Set<UnicodeScalar> = {
         var scalars = Set<UnicodeScalar>()
@@ -203,7 +234,22 @@ enum RHVoiceApostropheNormalizer {
         "піднесення, ghe": "ґ",
         "піднесення ghe": "ґ",
         "ге, піднесення": "ґ",
-        "ге піднесення": "ґ"
+        "ге піднесення": "ґ",
+        // Russian VOTOutputPunctuation table — measured 18.09.2026 on
+        // iPhone 12 / iOS 26.6.1, where VoiceOver answered from the ru strings
+        // (« белорусская и украинская i », « украинская йе », « йи »,
+        // « гэ с подъемом »). The Ukrainian voice read those words literally.
+        "белорусская и украинская i": "і",
+        "белорусская и украинская і": "і",
+        "украинская и белорусская i": "і",
+        "украинская и белорусская і": "і",
+        "украинская йе": "є",
+        "йе украинская": "є",
+        "йи": "ї",
+        "гэ с подъемом": "ґ",
+        "гэ с подъёмом": "ґ",
+        "гэ, с подъемом": "ґ",
+        "гэ, с подъёмом": "ґ"
     ]
 
     static func normalizeInTextSegments(

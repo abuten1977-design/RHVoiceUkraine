@@ -123,25 +123,19 @@ static NSString* const RHVoicePersonalDictionaryFileName = @"user_dictionary.txt
 static NSString* const RHVoicePersonalDictionaryChangedNotification = @"com.rhvoice.UkrainianVoices.personalDictionaryChanged";
 static NSString* const RHVoiceDownloadedVoicesChangedNotification = @"com.rhvoice.UkrainianVoices.downloadedVoicesChanged";
 
-// Системный журнал для USERDICT гейтится ТЕМ ЖЕ согласием, что и файловый
-// (см. RHVoiceDebugLog.m): в Release без включённой «Розширеної діагностики»
-// мы не пишем ничего. Причина отдельного канала не в песочнице — файловый
-// журнал просто выключен по умолчанию, а системный снимается кабелем и виден
-// сразу, без доступа к контейнеру.
-static BOOL RHVoiceExtendedDiagnosticsEnabled(void) {
-#if DEBUG
-    return YES;
+// 18.09.2026: раньше эти строки гейтились переключателем «Розширена
+// діагностика», а он отключён от всех экранов с 08.09.2026 — прибор молчал у
+// всех, включая нас (docs/DEBTS.md, «ПРИБОР USERDICT_DIAG В СБОРКЕ 232 МЁРТВ»).
+// Теперь гейт — флаг СБОРКИ, ровно как у NUMBER_DIAG: в магазинной сборке
+// флага нет и не пишется ничего, в наших сборках пишется всегда и снимается
+// кабелем. Для ObjC нужен GCC_PREPROCESSOR_DEFINITIONS (целиком Swift-овый
+// SWIFT_ACTIVE_COMPILATION_CONDITIONS сюда не доходит) — см. project.yml,
+// цели RHVoiceKit и RHVoiceKitMac.
+#if RHVOICE_DIAG
+#define RHVoiceUserdictDiag(...) NSLog(__VA_ARGS__)
 #else
-    static NSUserDefaults* groupDefaults = nil;
-    static dispatch_once_t diagOnceToken;
-    dispatch_once(&diagOnceToken, ^{
-        groupDefaults = [[NSUserDefaults alloc] initWithSuiteName:RHVoiceAppGroupIdentifier];
-    });
-    return [groupDefaults boolForKey:@"extendedDiagnostics"];
+#define RHVoiceUserdictDiag(...) do { } while (0)
 #endif
-}
-
-#define RHVoiceUserdictDiag(...) do { if (RHVoiceExtendedDiagnosticsEnabled()) NSLog(__VA_ARGS__); } while (0)
 
 static NSURL* RHVoiceSharedContainerURL(void) {
     return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];

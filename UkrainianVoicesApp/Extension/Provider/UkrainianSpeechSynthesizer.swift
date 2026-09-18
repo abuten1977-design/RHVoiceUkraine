@@ -21,39 +21,53 @@ private func rhExtendedDiagnosticsEnabled() -> Bool {
     rhDiagDefaults?.bool(forKey: RHVoiceSharedSettings.extendedDiagnosticsKey) ?? false
 }
 
+/// ⭐18.09.2026: галочки користувача читаються ЩОРАЗУ СВІЖИМ примірником.
+/// Раніше вони бралися з `rhDiagDefaults` — одного примірника на весь процес, —
+/// і застосунок міг записати нове значення, а розширення й далі бачило старе
+/// (та сама хвороба, що коштувала збірки 214, `RHVoiceRequestCapture` вже давно
+/// обходить її саме так). Перезапустити розширення не може ні людина, ні
+/// застосунок, тому без цього галочка вмикалась лише після перезавантаження
+/// телефона. Робиться ОДИН примірник на висловлювання, а не по одному на
+/// кожну галочку: `synchronize()` — міжпроцесний виклик, а це шлях мовлення.
+private func rhFreshGroupDefaults() -> UserDefaults? {
+    let defaults = UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)
+    defaults?.synchronize()
+    return defaults
+}
+
 // «Читати дати словами»: відсутність ключа = увімкнено (типова поведінка).
-private func rhDatesAsWordsEnabled() -> Bool {
-    guard let defaults = rhDiagDefaults,
+private func rhDatesAsWordsEnabled(_ defaults: UserDefaults?) -> Bool {
+    guard let defaults,
           defaults.object(forKey: RHVoiceSharedSettings.datesAsWordsKey) != nil else { return true }
     return defaults.bool(forKey: RHVoiceSharedSettings.datesAsWordsKey)
 }
 
-private func rhTimeAsWordsEnabled() -> Bool {
-    guard let defaults = rhDiagDefaults,
+private func rhTimeAsWordsEnabled(_ defaults: UserDefaults?) -> Bool {
+    guard let defaults,
           defaults.object(forKey: RHVoiceSharedSettings.timeAsWordsKey) != nil else { return true }
     return defaults.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey)
 }
 
-private func rhAbbreviationsAsWordsEnabled() -> Bool {
-    guard let defaults = rhDiagDefaults,
+private func rhAbbreviationsAsWordsEnabled(_ defaults: UserDefaults?) -> Bool {
+    guard let defaults,
           defaults.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) != nil else { return true }
     return defaults.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey)
 }
 
-private func rhAbbreviationDictionaryEnabled() -> Bool {
-    guard let defaults = rhDiagDefaults,
+private func rhAbbreviationDictionaryEnabled(_ defaults: UserDefaults?) -> Bool {
+    guard let defaults,
           defaults.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) != nil else { return true }
     return defaults.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey)
 }
 
-private func rhPhoneNumberProcessingEnabled() -> Bool {
-    guard let defaults = rhDiagDefaults,
+private func rhPhoneNumberProcessingEnabled(_ defaults: UserDefaults?) -> Bool {
+    guard let defaults,
           defaults.object(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) != nil else { return true }
     return defaults.bool(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey)
 }
 
-private func rhPhoneNumberReadingMode() -> RHVoicePhoneNumberReadingMode {
-    guard let defaults = rhDiagDefaults,
+private func rhPhoneNumberReadingMode(_ defaults: UserDefaults?) -> RHVoicePhoneNumberReadingMode {
+    guard let defaults,
           let raw = defaults.string(forKey: RHVoiceSharedSettings.phoneNumberReadingModeKey),
           let mode = RHVoicePhoneNumberReadingMode(rawValue: raw) else { return .groups }
     return mode
@@ -644,14 +658,16 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     }
 
     private static func normalizeApostrophesInTextSegments(_ ssml: String) -> String {
-        RHVoiceApostropheNormalizer.normalizeInTextSegments(
+        // Один свіжий примірник на все висловлювання — див. rhFreshGroupDefaults().
+        let defaults = rhFreshGroupDefaults()
+        return RHVoiceApostropheNormalizer.normalizeInTextSegments(
             ssml,
-            datesAsWords: rhDatesAsWordsEnabled(),
-            timeAsWords: rhTimeAsWordsEnabled(),
-            abbreviationsAsWords: rhAbbreviationsAsWordsEnabled(),
-            abbreviationDictionaryEnabled: rhAbbreviationDictionaryEnabled(),
-            phoneProcessing: rhPhoneNumberProcessingEnabled(),
-            phoneReadingMode: rhPhoneNumberReadingMode()
+            datesAsWords: rhDatesAsWordsEnabled(defaults),
+            timeAsWords: rhTimeAsWordsEnabled(defaults),
+            abbreviationsAsWords: rhAbbreviationsAsWordsEnabled(defaults),
+            abbreviationDictionaryEnabled: rhAbbreviationDictionaryEnabled(defaults),
+            phoneProcessing: rhPhoneNumberProcessingEnabled(defaults),
+            phoneReadingMode: rhPhoneNumberReadingMode(defaults)
         )
     }
 

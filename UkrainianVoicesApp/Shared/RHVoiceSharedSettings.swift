@@ -372,6 +372,14 @@ enum RHVoiceSharedSettingsStore {
                 attributes: nil
             )
             try data.write(to: fileURL, options: [.atomic])
+            // 18.09.2026: знімок налаштувань читає розширення, і читає його
+            // ПЕРЕД кожною фразою — зокрема на екрані блокування після
+            // перезавантаження. Без зняття захисту читання там зривається, і
+            // налаштування мовчки відкочуються на другу копію (ключі).
+            // Best-effort: якщо зняти не вдалось, збереження все одно відбулось.
+            #if os(iOS)
+            try? (fileURL as NSURL).setResourceValue(FileProtectionType.none, forKey: .fileProtectionKey)
+            #endif
         }
 
         // Keep old keys in sync during migration so existing extension/app builds still read the same values.
