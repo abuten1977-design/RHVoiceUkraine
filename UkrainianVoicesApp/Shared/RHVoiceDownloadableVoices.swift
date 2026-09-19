@@ -92,6 +92,50 @@ enum RHVoiceDownloadableVoices {
         return result
     }
 
+    /// Коротка «довідка» про склад завантажених голосів: скільки їх, як звуться
+    /// і коли востаннє змінювалися їхні теки.
+    ///
+    /// НАВІЩО. Рушій читає `resource_paths` ЛИШЕ на init, тож про новий голос
+    /// йому треба сказати окремо. Досі єдиним способом була одноразова
+    /// Darwin-нотифікація `downloadedVoicesChanged`, а вона не доходить до
+    /// ЗАМОРОЖЕНОГО процесу розширення і в чергу не стає (розбір 31.08.2026,
+    /// борг «англійський голос мовчить до ДРУГОГО перезавантаження»).
+    /// З довідкою міст помічає зміну САМ і від сигналу більше не залежить.
+    ///
+    /// ДЕШЕВО НАВМИСНО: один лістинг невеликої теки, без читання даних голосу.
+    ///
+    /// ЗБІЙ ≠ «ГОЛОСИ ЗНИКЛИ». Якщо теку не вдалося прочитати, повертаємо окреме
+    /// `unreadable`, а не порожній список — інакше помилка читання виглядала б як
+    /// зміна складу і викликала переініціалізацію (урок словника замін, збірка 232).
+    static func installedVoicesSignature(fileManager: FileManager = .default, rootOverride: URL? = nil) -> String {
+        guard let root = rootOverride ?? voicesRootURL() else { return "no-app-group" }
+
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: root.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return "none"
+        }
+        guard let entries = try? fileManager.contentsOfDirectory(
+            at: root,
+            includingPropertiesForKeys: [.isDirectoryKey, .contentModificationDateKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return "unreadable"
+        }
+
+        var parts: [String] = []
+        for entry in entries.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+            let values = try? entry.resourceValues(forKeys: [.isDirectoryKey, .contentModificationDateKey])
+            guard values?.isDirectory == true else { continue }
+            // Той самий критерій «голос встановлено», що й у scanInstalledVoices:
+            // напіврозпакована тека не рахується, а коли розпакування добіжить —
+            // довідка зміниться ще раз, і рушій підхопить голос.
+            guard fileManager.fileExists(atPath: entry.appendingPathComponent("voice.info").path) else { continue }
+            let stamp = values?.contentModificationDate.map { Int($0.timeIntervalSince1970) } ?? 0
+            parts.append("\(entry.lastPathComponent)@\(stamp)")
+        }
+        return "\(parts.count):\(parts.joined(separator: ","))"
+    }
+
     private static func descriptor(forVoiceDirectory directory: URL, infoURL: URL) -> RHVoiceVoiceDescriptor? {
         let dirId = directory.lastPathComponent
         let identifier = "com.rhvoice.UkrainianVoices.\(dirId)"

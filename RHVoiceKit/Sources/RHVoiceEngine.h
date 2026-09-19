@@ -19,6 +19,12 @@ NS_ASSUME_NONNULL_BEGIN
                                    volume:(double)volume
                                     pitch:(double)pitch;
 
+// Народити рушій заново, бо склад завантажених голосів змінився.
+// Рішення «чи треба» приймає Swift (RHVoiceDownloadedVoicesWatcher) — тут лише
+// виконання: скасувати поточний синтез, видалити рушій, підняти новий.
+// Повертає YES, якщо новий рушій реально піднявся.
+- (BOOL)reinitializeEngineForDownloadedVoicesChange;
+
 // Зупинити поточний синтез
 - (void)cancel;
 

@@ -367,6 +367,25 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     [self initializeEngine];
 }
 
+- (BOOL)reinitializeEngineForDownloadedVoicesChange {
+    // Виконавець, не вирішувач: коли саме це робити — вирішує Swift-бік
+    // (RHVoiceDownloadedVoicesWatcher), він під тестами, а міст — ні.
+    // Гейт RHVoiceUserdictDiag — прапорець ЗБІРКИ, у магазинній збірці мовчить.
+    RHVoiceDebugLogWrite("VOICES engine reinit (downloaded voices changed)");
+    RHVoiceUserdictDiag(@"VOICES_DIAG engine reinit requested");
+
+    [self cancel];
+    if (self.engine) {
+        RHVoice_delete_tts_engine(self.engine);
+        self.engine = NULL;
+    }
+    self.initialized = NO;
+    [self initializeEngine];
+
+    RHVoiceUserdictDiag(@"VOICES_DIAG engine reinit done initialized=%d", (int)self.initialized);
+    return self.initialized;
+}
+
 - (BOOL)initializeEngine {
     if (self.initialized) return YES;
 

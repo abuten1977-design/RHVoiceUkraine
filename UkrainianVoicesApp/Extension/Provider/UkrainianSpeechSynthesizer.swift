@@ -107,6 +107,11 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
     private let synthesisQueue = DispatchQueue(label: "com.rhvoice.UkrainianVoices.synthesis", qos: .userInitiated)
     private var synthesisGeneration: UInt64 = 0
     private let sharedSettingsCache = RHVoiceSharedSettingsSnapshotCache()
+    /// Стежить за складом завантажених голосів. Рушій читає `resource_paths`
+    /// лише на init, а Darwin-нотифікація до замороженого процесу не доходить —
+    /// тому звіряємо склад самі. Уся політика в `RHVoiceDownloadedVoicesWatcher`
+    /// (під тестами), тут — лише виклики.
+    private var voicesWatcher = RHVoiceDownloadedVoicesWatcher()
 
     private static let staticVoices: [AVSpeechSynthesisProviderVoice] = [
         AVSpeechSynthesisProviderVoice(name: "Anatol", identifier: "com.rhvoice.UkrainianVoices.anatol",
@@ -159,6 +164,10 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
             guard let self else { return }
             let warmupStart = CFAbsoluteTimeGetCurrent()
             rhLog("WARMUP started")
+            // Довідку знімаємо ДО народження рушія: саме цей склад голосів він
+            // зараз і прочитає. Інакше перша ж фраза виглядала б як «склад
+            // змінився», і рушій народжувався б удруге без потреби.
+            self.voicesWatcher.adopt(signature: RHVoiceDownloadableVoices.installedVoicesSignature())
             _ = self.rhvoiceEngine
             rhLog("WARMUP done elapsedMs=\(Self.elapsedMs(since: warmupStart))")
         }
@@ -371,6 +380,25 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         }
     }
 
+    /// Звіряє склад завантажених голосів і, якщо він змінився, народжує рушій
+    /// заново. Викликається ЛИШЕ для завантажених голосів, на черзі синтезу.
+    private func reinitializeEngineIfDownloadedVoicesChanged() {
+        let signature = RHVoiceDownloadableVoices.installedVoicesSignature()
+        let now = CFAbsoluteTimeGetCurrent()
+        switch self.voicesWatcher.decide(signature: signature, now: now) {
+        case .doNothing:
+            return
+        case .adopt:
+            self.voicesWatcher.adopt(signature: signature)
+        case .reinitialize:
+            NSLog("VOICES_DIAG signature changed old=%@ new=%@", self.voicesWatcher.knownSignature, signature)
+            self.voicesWatcher.noteAttempt(at: now)
+            let ok = self.rhvoiceEngine.reinitializeEngineForDownloadedVoicesChange()
+            self.voicesWatcher.noteResult(success: ok, signature: signature)
+            NSLog("VOICES_DIAG reinit finished ok=%d", ok ? 1 : 0)
+        }
+    }
+
     private func runSynthesisPipeline(
         text: String,
         voiceId: String,
@@ -393,6 +421,12 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
         } else {
             profileName = RHVoiceSharedSettings.builtInVoiceCatalog.first!.profileName
             NSLog("VOICE_CATALOG_DIAG resolve=fallback requested=%@ profile=%@", voiceId, profileName)
+        }
+
+        // Вбудовані чотири українські голоси лежать у бандлі і не змінюються
+        // ніколи — для них перевірка безглузда, і повсякденна мова її не бачить.
+        if !RHVoiceSharedSettings.builtInVoiceCatalog.contains(where: { $0.profileName == profileName }) {
+            self.reinitializeEngineIfDownloadedVoicesChanged()
         }
 
         // Extract rate/volume from SSML
