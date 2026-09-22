@@ -2232,6 +2232,7 @@ private struct VoiceOverHowToView: View {
                     .textSelection(.enabled)
             }
 
+#if os(iOS)
             Section("iPhone або iPad") {
                 NumberedInstructionList(items: [
                     NSLocalizedString("Відкрийте Налаштування.", comment: ""),
@@ -2242,6 +2243,7 @@ private struct VoiceOverHowToView: View {
                     NSLocalizedString("У списку голосів виберіть Anatol, Marianna, Natalia або Volodymyr.", comment: "")
                 ])
             }
+#else
 
             Section("Mac") {
                 NumberedInstructionList(items: [
@@ -2253,6 +2255,7 @@ private struct VoiceOverHowToView: View {
                     NSLocalizedString("Виберіть Anatol, Marianna, Natalia або Volodymyr.", comment: "")
                 ])
             }
+#endif
 
             Section("Якщо голос не з'явився") {
                 Text("Поверніться до цього застосунку, увімкніть потрібний голос у списку і знову відкрийте налаштування VoiceOver. Після оновлення застосунку може знадобитися повторно вибрати голос у системних налаштуваннях.")

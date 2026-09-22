@@ -44,9 +44,9 @@ targets:
         DEVELOPMENT_TEAM: ""
         IPHONEOS_DEPLOYMENT_TARGET: "16.0"
         HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include"
-        # Вмикає USERDICT_DIAG у мості (ObjC). ⚠️ЗНЯТИ ПЕРЕД МАГАЗИННОЮ ЗБІРКОЮ
-        # разом з RHVOICE_DIAG у Swift-цілях — див. docs/DEBTS.md.
-        GCC_PREPROCESSOR_DEFINITIONS: "$(inherited) RHVOICE_DIAG=1"
+        # USERDICT_DIAG у мості вимкнено: магазинна збірка. Вмикати лише для
+        # замірів на пристрої, разом з RHVOICE_DIAG у Swift-цілях.
+        GCC_PREPROCESSOR_DEFINITIONS: "$(inherited)"
 
   RHVoiceKitMac:
     type: framework
@@ -109,7 +109,7 @@ targets:
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include"
-        GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20 RHVOICE_DIAG=1"
+        GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20"
         OTHER_CPLUSPLUSFLAGS: "-D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION -Wno-deprecated-declarations"
         GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: NO
 
@@ -174,9 +174,9 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "5NNZPP8CRR"
-        # Вмикає NUMBER_DIAG (опційний запис фрагмента тексту користувача в
-        # системний журнал для замірів на пристрої Андрія, task-226 частина A).
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
+        # NUMBER_DIAG вимкнено: магазинна збірка. Для замірів на пристрої
+        # повернути RHVOICE_DIAG у ВСІ чотири місця цього файлу.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
     dependencies:
       - target: UkrainianVoicesExtension
       - package: RHVoiceCore
@@ -228,9 +228,9 @@ targets:
         OTHER_LDFLAGS: "$(inherited) -lc++"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: "5NNZPP8CRR"
-        # Вмикає NUMBER_DIAG (опційний запис фрагмента тексту користувача в
-        # системний журнал для замірів на пристрої Андрія, task-226 частина A).
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
+        # NUMBER_DIAG вимкнено: магазинна збірка. Для замірів на пристрої
+        # повернути RHVOICE_DIAG у ВСІ чотири місця цього файлу.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
     dependencies:
       - package: RHVoiceCore
         product: RHVoiceBridge
