@@ -187,9 +187,16 @@ static NSArray<NSString*>* RHVoiceDownloadedVoiceDirectories(void) {
     return result;
 }
 
-static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
+// outPrepared = NO означає: доставка особистого словника ЗІРВАЛАСЬ.
+// Хвороба, вилікувана 28.09.2026: раніше функція мовчки віддавала шлях усередину
+// програми, де особистого словника немає, а викликач однаково запам'ятовував
+// підпис файла як оброблений — і другої спроби не було вже ніколи.
+static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath, BOOL* outPrepared) {
+    if (outPrepared) *outPrepared = YES;
     NSFileManager* fm = [NSFileManager defaultManager];
     NSURL* containerURL = RHVoiceSharedContainerURL();
+    // Немає спільного сховища — особистого словника не існує в принципі.
+    // Це не збій доставки, повторювати нема чого.
     if (!containerURL) return dataPath;
 
     NSURL* configURL = [containerURL URLByAppendingPathComponent:@"RHVoiceConfig" isDirectory:YES];
@@ -199,6 +206,7 @@ static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
     if (![fm createDirectoryAtURL:dictURL withIntermediateDirectories:YES attributes:nil error:&error]) {
         RHVoiceDebugLogWrite("USERDICT personal config mkdir failed: %s", error.localizedDescription.UTF8String);
         RHVoiceUserdictDiag(@"USERDICT_DIAG personal config mkdir failed: %@", error.localizedDescription);
+        if (outPrepared) *outPrepared = NO;
         return dataPath;
     }
 
@@ -209,6 +217,7 @@ static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
         if (![fm copyItemAtPath:sourceConfig toPath:targetConfig error:&error]) {
             RHVoiceDebugLogWrite("USERDICT config copy failed: %s", error.localizedDescription.UTF8String);
             RHVoiceUserdictDiag(@"USERDICT_DIAG config copy failed: %@", error.localizedDescription);
+            if (outPrepared) *outPrepared = NO;
             return dataPath;
         }
     }
@@ -220,6 +229,7 @@ static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
         if (![fm copyItemAtPath:personalSource toPath:personalTarget error:&error]) {
             RHVoiceDebugLogWrite("USERDICT personal copy failed: %s", error.localizedDescription.UTF8String);
             RHVoiceUserdictDiag(@"USERDICT_DIAG personal copy failed: %@", error.localizedDescription);
+            if (outPrepared) *outPrepared = NO;
             return dataPath;
         }
         RHVoiceDebugLogWrite("USERDICT personal loaded path=%s", personalSource.UTF8String);
@@ -282,6 +292,10 @@ static int play_speech_callback(const short* samples, unsigned int count, void* 
 @property (assign) EngineState* activeStreamingState;
 @property (copy) NSString* personalDictionarySignature;
 @property (assign) BOOL personalDictionaryRefreshRequested;
+// Доставка словника зірвалась — треба спробувати ще раз, але не щоразу:
+// перезапуск рушія дорогий, тому не частіше ніж раз на хвилину.
+@property (assign) BOOL personalDictionaryPreparationFailed;
+@property (strong) NSDate* personalDictionaryLastAttempt;
 @end
 
 static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
@@ -327,6 +341,8 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
         _activeStateCondition = [[NSCondition alloc] init];
         _personalDictionarySignature = @"";
         _personalDictionaryRefreshRequested = NO;
+        _personalDictionaryPreparationFailed = NO;
+        _personalDictionaryLastAttempt = [NSDate distantPast];
         CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(),
                                         (__bridge const void*)self,
                                         RHVoicePersonalDictionaryChangedCallback,
@@ -346,11 +362,25 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     return self;
 }
 
+/// Мінімальна пауза між повторними спробами доставити словник після збою.
+static const NSTimeInterval RHVoicePersonalDictionaryRetryInterval = 60.0;
+
 - (void)refreshPersonalDictionaryIfNeeded {
+    if (!self.initialized) return;
+
     NSString* signature = RHVoicePersonalDictionarySignature();
     BOOL forced = self.personalDictionaryRefreshRequested;
-    if (!self.initialized || (!forced && [signature isEqualToString:self.personalDictionarySignature])) {
+    BOOL changed = ![signature isEqualToString:self.personalDictionarySignature];
+    // Минула спроба зірвалась — пробуємо ще раз, але не частіше ніж раз на хвилину.
+    BOOL retryAfterFailure = self.personalDictionaryPreparationFailed &&
+        [[NSDate date] timeIntervalSinceDate:self.personalDictionaryLastAttempt] >= RHVoicePersonalDictionaryRetryInterval;
+
+    if (!forced && !changed && !retryAfterFailure) {
         return;
+    }
+    if (retryAfterFailure && !forced && !changed) {
+        RHVoiceDebugLogWrite("USERDICT retry after failed preparation");
+        RHVoiceUserdictDiag(@"USERDICT_DIAG retry after failed preparation");
     }
     self.personalDictionaryRefreshRequested = NO;
 
@@ -412,8 +442,15 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     callbacks.set_sample_rate = set_sample_rate_callback;
     callbacks.play_speech = play_speech_callback;
 
-    NSString* configPath = RHVoicePrepareWritableConfigPath(dataPath);
+    BOOL personalPrepared = YES;
+    NSString* configPath = RHVoicePrepareWritableConfigPath(dataPath, &personalPrepared);
     self.personalDictionarySignature = RHVoicePersonalDictionarySignature();
+    self.personalDictionaryPreparationFailed = !personalPrepared;
+    self.personalDictionaryLastAttempt = [NSDate date];
+    if (!personalPrepared) {
+        RHVoiceDebugLogWrite("USERDICT preparation FAILED, will retry later");
+        RHVoiceUserdictDiag(@"USERDICT_DIAG preparation FAILED, will retry later");
+    }
     NSLog(@"✅ RHVoice config path: %@", configPath);
     RHVoiceDebugLogWrite("USERDICT config path=%s signature=%s",
                          configPath.UTF8String,

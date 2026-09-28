@@ -85,6 +85,28 @@ enum AbbreviationDictionary {
         entry("грн", "гривні"), entry("вул.", "вулиця"), entry("буд.", "будинок"), entry("кв.", "квартира")
     ]
 
+    /// Варіанти написання тих самих скорочень. Для латинських ключів звірка
+    /// РЕГІСТРОЗАЛЕЖНА (див. sameKey), тому «WiFi» і «WI-FI» не знаходились —
+    /// скарга тестувальників про вай-фай у системному тексті.
+    /// Рішення Андрія 26.09.2026: розширювати КЛЮЧІ, а не переписувати риски в
+    /// тексті — інакше при посимвольному читанні людина почує не той знак.
+    /// Цей список навмисно НЕ показується на екрані «Базові заміни».
+    static let variantEntries: [AbbreviationDictionaryEntry] = [
+        entry("WiFi", "вай-фай"), entry("WIFI", "вай-фай"),
+        entry("wifi", "вай-фай"), entry("wi-fi", "вай-фай"),
+        entry("WI-FI", "вай-фай"), entry("Wi-fi", "вай-фай"),
+        // нерозривний дефіс U+2011 і коротке тире U+2013 — трапляються в
+        // системних написах, візуально не відрізняються від звичайного дефіса
+        entry("Wi\u{2011}Fi", "вай-фай"), entry("Wi\u{2013}Fi", "вай-фай"),
+        entry("USB-А", "ю ес бе а"), entry("usb", "ю ес бе"),
+        entry("VPN-", "ве пе ен "), entry("vpn", "ве пе ен")
+    ]
+
+    /// Те, що реально бере участь у заміні: видимі базові плюс приховані варіанти.
+    static var matchableBundledEntries: [AbbreviationDictionaryEntry] {
+        bundledEntries + variantEntries
+    }
+
     static func loadEntries() -> Result<[AbbreviationDictionaryEntry], AbbreviationDictionaryError> {
         guard let url = dictionaryURL() else { return .failure(.appGroupUnavailable) }
         guard FileManager.default.fileExists(atPath: url.path) else { return .success([]) }
@@ -213,7 +235,7 @@ enum AbbreviationDictionary {
     }
 
     static func mergedEntries(userEntries: [AbbreviationDictionaryEntry]) -> [AbbreviationDictionaryEntry] {
-        var merged = bundledEntries
+        var merged = matchableBundledEntries
         for entry in normalizedEntries(userEntries) {
             merged.removeAll { sameKey($0.abbreviation, entry.abbreviation) }
             merged.append(entry)
@@ -374,8 +396,8 @@ final class AbbreviationDictionaryCache {
         self.loadEntries = loadEntries
         self.readSignature = readSignature
         self.now = now
-        self.cachedEntries = AbbreviationDictionary.bundledEntries
-        self.matcher = AbbreviationDictionaryMatcher(entries: AbbreviationDictionary.bundledEntries)
+        self.cachedEntries = AbbreviationDictionary.matchableBundledEntries
+        self.matcher = AbbreviationDictionaryMatcher(entries: AbbreviationDictionary.matchableBundledEntries)
     }
 
     deinit {

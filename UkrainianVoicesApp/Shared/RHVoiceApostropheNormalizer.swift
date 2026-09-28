@@ -260,7 +260,8 @@ enum RHVoiceApostropheNormalizer {
         abbreviationDictionaryEnabled: Bool = true,
         abbreviationDictionaryEntries: [AbbreviationDictionaryEntry]? = nil,
         phoneProcessing: Bool = true,
-        phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups
+        phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups,
+        slashFractionsAsWords: Bool = true
     ) -> String {
         let withDates = datesAsWords ? normalizeSplitDateSayAsBlocks(in: ssml) : ssml
         let ssml = phoneProcessing
@@ -278,7 +279,7 @@ enum RHVoiceApostropheNormalizer {
                 if character == ">" {
                     output += preserveTelephoneSayAsText
                         ? textSegment
-                        : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
+                        : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode, slashFractionsAsWords: slashFractionsAsWords)
                     textSegment.removeAll(keepingCapacity: true)
                     output += tagSegment
                     if !phoneProcessing {
@@ -302,11 +303,11 @@ enum RHVoiceApostropheNormalizer {
         if insideTag {
             output += (preserveTelephoneSayAsText
                 ? textSegment
-                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)) + tagSegment
+                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode, slashFractionsAsWords: slashFractionsAsWords)) + tagSegment
         } else {
             output += preserveTelephoneSayAsText
                 ? textSegment
-                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode)
+                : normalizeTextSegment(textSegment, datesAsWords: datesAsWords, timeAsWords: timeAsWords, abbreviationsAsWords: abbreviationsAsWords, abbreviationDictionaryEnabled: abbreviationDictionaryEnabled, abbreviationDictionaryEntries: abbreviationDictionaryEntries, phoneProcessing: phoneProcessing, phoneReadingMode: phoneReadingMode, slashFractionsAsWords: slashFractionsAsWords)
         }
         return output
     }
@@ -348,7 +349,8 @@ enum RHVoiceApostropheNormalizer {
         abbreviationDictionaryEnabled: Bool = true,
         abbreviationDictionaryEntries: [AbbreviationDictionaryEntry]? = nil,
         phoneProcessing: Bool = true,
-        phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups
+        phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups,
+        slashFractionsAsWords: Bool = true
     ) -> String {
         let withDates = datesAsWords ? normalizeDates(in: normalizeText(text)) : normalizeText(text)
         // Час має бути розібраний ДО normalizeNumbers, інакше «17» і «01»
@@ -372,7 +374,7 @@ enum RHVoiceApostropheNormalizer {
         // Bank apps frequently provide balances as ordinary text rather than
         // a telephone say-as block.
         let withGroupedAmounts = normalizeGroupedAmounts(in: withVerbalizedDecimals)
-        let withNumbers = normalizeNumbers(in: withGroupedAmounts)
+        let withNumbers = normalizeNumbers(in: withGroupedAmounts, slashFractionsAsWords: slashFractionsAsWords)
         let withDictionary = abbreviationDictionaryEnabled
             ? normalizeAbbreviationDictionary(in: withNumbers, entries: abbreviationDictionaryEntries)
             : withNumbers
@@ -436,7 +438,7 @@ enum RHVoiceApostropheNormalizer {
         }
     }
 
-    private static func normalizeNumbers(in text: String) -> String {
+    private static func normalizeNumbers(in text: String, slashFractionsAsWords: Bool = true) -> String {
         let withMixedFractions = replacingMatches(
             in: text,
             pattern: #"(?<![\p{L}\p{N}/])([0-9]{1,12})\s+цілих\s+([0-9]{1,3})/([0-9]{1,3})(?![\p{L}\p{N}/])"#
@@ -462,11 +464,31 @@ enum RHVoiceApostropheNormalizer {
         ) { match in
             guard
                 let numeratorRange = Range(match.range(at: 1), in: withMixedFractions),
-                let denominatorRange = Range(match.range(at: 2), in: withMixedFractions),
-                let numerator = Int(String(withMixedFractions[numeratorRange])),
-                let denominator = Int(String(withMixedFractions[denominatorRange]))
+                let denominatorRange = Range(match.range(at: 2), in: withMixedFractions)
             else { return nil }
 
+            let numeratorText = String(withMixedFractions[numeratorRange])
+            let denominatorText = String(withMixedFractions[denominatorRange])
+
+            // Рішення Андрія 28.09.2026: НУЛЬ ПОПЕРЕДУ — це не дріб.
+            // Дріб так не пишуть, а дата пишеться постійно: 03/11, 3/04, 01/12.
+            // Ознака однозначна, тому запис лишаємо як є.
+            if hasLeadingZero(numeratorText) || hasLeadingZero(denominatorText) {
+                return nil
+            }
+
+            guard
+                let numerator = Int(numeratorText),
+                let denominator = Int(denominatorText)
+            else { return nil }
+
+            // Увімкнено — читаємо назвою дробу: «1/2» -> «одна друга».
+            // Готовий механізм уже був, ним користувалися лише мішані дроби.
+            // Знаменник від 100 механізм не знає — тоді лишаємо старе «дріб».
+            if slashFractionsAsWords,
+               let fractionWords = simpleFractionToWords(numerator: numerator, denominator: denominator) {
+                return fractionWords
+            }
             return "\(integerToWords(numerator)) дріб \(integerToWords(denominator))"
         }
 
@@ -1152,9 +1174,19 @@ enum RHVoiceApostropheNormalizer {
     }
 
     private static func normalizeTime(in text: String) -> String {
-        // ГГ:ХХ, ГГ 0-23, ХХ рівно 2 цифри (інакше це не час, напр. рахунок «3:1»).
-        replacingMatches(
+        // ЗАМІР 08.09.2026 (SPEECH_CORPUS): VoiceOver віддає час злиплим із
+        // прийменником — «6вересня р.о21:23». Перед цифрами стоїть буква, і
+        // правило часу мовчало. Відриваємо самостійне «о» від цифр ДО розбору.
+        // «о» має бути окремим словом: у «було21:23» перед ним буква — не чіпаємо.
+        let unglued = replacingMatches(
             in: text,
+            pattern: #"(?<![\p{L}])о(?=[0-9]{1,2}\s*(?::|двокрапка)\s*[0-9]{2}(?![\p{L}\p{N}:]))"#,
+            options: []
+        ) { _, _ in "о " }
+
+        // ГГ:ХХ, ГГ 0-23, ХХ рівно 2 цифри (інакше це не час, напр. рахунок «3:1»).
+        return replacingMatches(
+            in: unglued,
             // iOS при увiмкненiй пунктуацiї замiнює «:» словом «двокрапка»
             // (замiр 24.08.2026: «8 14 двокрапка 30»), i правило мовчало —
             // це й був давнiй баг «14:30». Ловимо обидвi форми.
@@ -1172,13 +1204,28 @@ enum RHVoiceApostropheNormalizer {
                 let hourWords = hourOrdinalFeminine(hour)
             else { return nil }
 
+            // Скарга тестувальників: «тривалість 1:05» ставала «перша година
+            // п'ять хвилин». Запис той самий, що й час, — відрізняє лише сусіднє
+            // слово. Якщо ліворуч у межах 24 знаків стоїть «тривал…» — це не час.
+            if let matchRange = Range(match.range, in: source) {
+                let lowerBound = source.index(matchRange.lowerBound,
+                                              offsetBy: -24,
+                                              limitedBy: source.startIndex) ?? source.startIndex
+                let context = source[lowerBound..<matchRange.lowerBound].lowercased()
+                if context.contains("тривал") { return nil }
+            }
+
+            // Рішення Андрія 28.09.2026: нульова година — калька, живою мовою так
+            // не кажуть. Читаємо «нуль годин», решта годин лишається як була.
+            let hourPhrase = hour == 0 ? "нуль годин" : "\(hourWords) година"
+
             if minute == 0 {
-                return "\(hourWords) година рівно"
+                return "\(hourPhrase) рівно"
             }
 
             let minuteWords = integerToWords(minute, feminineLastGroup: true)
             let minuteNoun = nounForm(for: minute, one: "хвилина", few: "хвилини", many: "хвилин")
-            return "\(hourWords) година \(minuteWords) \(minuteNoun)"
+            return "\(hourPhrase) \(minuteWords) \(minuteNoun)"
         }
     }
 
@@ -1588,6 +1635,11 @@ enum RHVoiceApostropheNormalizer {
         default:
             return ""
         }
+    }
+
+    /// Нуль попереду («03», «004») — ознака дати чи коду, а не дробу.
+    private static func hasLeadingZero(_ digits: String) -> Bool {
+        digits.count > 1 && digits.hasPrefix("0")
     }
 
     private static func simpleFractionToWords(numerator: Int, denominator: Int) -> String? {

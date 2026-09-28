@@ -220,6 +220,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR.Extension
         INFOPLIST_FILE: Extension/Info-iOS.plist
+        MARKETING_VERSION: "1.0.1"
         CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtension.entitlements
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1"
@@ -341,6 +342,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac.Extension
         INFOPLIST_FILE: Extension/Info.plist
+        MARKETING_VERSION: "1.0.1"
         CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtensionMac.entitlements
         SWIFT_VERSION: "5.0"
         DEFINES_MODULE: YES

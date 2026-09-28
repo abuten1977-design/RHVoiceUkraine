@@ -463,22 +463,70 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
-    func testSlashBetweenNumbersIsSpokenAsDrib() {
+    // Рішення Андрія 28.09.2026: коса риска між числами читається НАЗВОЮ ДРОБУ
+    // («одна друга»), а не «один дріб два» — так каже людина і так учать у школі.
+    func testSlashFractionsAreSpokenAsFractionNames() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Дроби 3/5, 9/10, 15/32."),
-            "Дроби три дріб п'ять, дев'ять дріб десять, п'ятнадцять дріб тридцять два."
+            "Дроби три п'ятих, дев'ять десятих, п'ятнадцять тридцять других."
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Половина 1/2 і третина 1/3."),
-            "Половина один дріб два і третина один дріб три."
+            "Половина одна друга і третина одна третя."
         )
+    }
+
+    // Знаменник від 100 механізм назв не знає — лишається старе читання «дріб».
+    func testSlashFractionsWithBigDenominatorKeepDrib() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Сторінка 100/200."),
             "Сторінка сто дріб двісті."
         )
+    }
+
+    // Вимикач «Читати дроби словами» вимкнено — поведінка як до правки.
+    func testSlashFractionsToggleOffKeepsDrib() {
         XCTAssertEqual(
-            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 3/11."),
-            "Дата три дріб одинадцять."
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Половина 1/2.", slashFractionsAsWords: false),
+            "Половина один дріб два."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дроби 3/5.", slashFractionsAsWords: false),
+            "Дроби три дріб п'ять."
+        )
+    }
+
+    // Нуль попереду — це дата або код, а не дріб (рішення Андрія 28.09.2026).
+    func testLeadingZeroIsNotTreatedAsFraction() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 03/11."),
+            "Дата 03/11."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 3/04."),
+            "Дата 3/04."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 01/12."),
+            "Дата 01/12."
+        )
+        // Справжній дріб без нуля попереду працює як раніше.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дріб 3/4."),
+            "Дріб три четвертих."
+        )
+    }
+
+    // ДВІ І БІЛЬШЕ косих рисок — це вже не дріб (адреса, дата, посилання).
+    // Правило не застосовується взагалі, текст лишається як є.
+    func testTwoSlashesAreNotTreatedAsFraction() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Адреса 12/3/4."),
+            "Адреса 12/3/4."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 3/11/2026."),
+            "Дата 3/11/2026."
         )
     }
 
@@ -540,10 +588,69 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             RHVoiceApostropheNormalizer.normalizeInTextSegments("17:05"),
             "сімнадцята година п'ять хвилин"
         )
+        // Рішення Андрія 28.09.2026: нульова година -> «нуль годин».
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("00:22"),
-            "нульова година двадцять дві хвилини"
+            "нуль годин двадцять дві хвилини"
         )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("00:00"),
+            "нуль годин рівно"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("00:30"),
+            "нуль годин тридцять хвилин"
+        )
+    }
+
+    // ЗАМІР 08.09.2026: VoiceOver віддає «6вересня р.о21:23» — прийменник
+    // злипається з цифрами, і правило часу мовчало.
+    func testGluedPrepositionBeforeTimeIsStillRecognised() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("ієї, 6вересня р.о21:23, Надіслано"),
+            "ієї, 6вересня р.о двадцять перша година двадцять три хвилини, Надіслано"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("5червня р.о10:43"),
+            "5червня р.о десята година сорок три хвилини"
+        )
+        // «о» всередині слова не відривається: це не прийменник.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("було21:23"),
+            "було21:23"
+        )
+    }
+
+    // Скарга: «тривалість 1:05» читалась як «перша година п'ять хвилин».
+    func testDurationIsNotReadAsTime() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Тривалість 1:05"),
+            "Тривалість 1:05"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Тривалість: 1:05"),
+            "Тривалість: 1:05"
+        )
+        // Звичайний час поруч зі словом про нараду читається як раніше.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Нарада 14:30"),
+            "Нарада чотирнадцята година тридцять хвилин"
+        )
+    }
+
+    // Скарга про вай-фай: ключ був лише «Wi-Fi», а звірка латиниці
+    // регістрозалежна, тому «WiFi» і «WI-FI» не знаходились.
+    func testWiFiSpellingVariantsApply() {
+        for spelling in ["Wi-Fi", "WiFi", "WIFI", "wifi", "WI-FI", "Wi-fi"] {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeInTextSegments(
+                    "Мережа \(spelling) активна",
+                    abbreviationDictionaryEntries: AbbreviationDictionary.matchableBundledEntries
+                ),
+                "Мережа вай-фай активна",
+                "не спрацювало написання \(spelling)"
+            )
+        }
     }
 
     func testTimeLikeRatiosWithNonTwoDigitMinutesAreNotTouched() {
@@ -844,9 +951,10 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     }
 
     func testAsciiSimpleFractionsStillWork() {
+        // Після рішення 28.09.2026 читаємо назвою дробу, а не по знаках.
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("1/2, 3/4"),
-            "один дріб два, три дріб чотири"
+            "одна друга, три четвертих"
         )
     }
 

@@ -407,6 +407,7 @@ private final class ContentViewModel: ObservableObject {
     @Published var datesAsWordsEnabled: Bool = true
     @Published var timeAsWordsEnabled: Bool = true
     @Published var abbreviationsAsWordsEnabled: Bool = true
+    @Published var slashFractionsAsWordsEnabled: Bool = true
     @Published var abbreviationDictionaryEnabled: Bool = true
     @Published var phoneNumberProcessingEnabled: Bool = true
     @Published var phoneNumberReadingMode: RHVoicePhoneNumberReadingMode = .groups
@@ -918,6 +919,8 @@ private final class ContentViewModel: ObservableObject {
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.timeAsWordsKey) ?? true)
                 self?.abbreviationsAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) == nil
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationsAsWordsKey) ?? true)
+                self?.slashFractionsAsWordsEnabled = defaults?.object(forKey: RHVoiceSharedSettings.slashFractionsAsWordsKey) == nil
+                    ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.slashFractionsAsWordsKey) ?? true)
                 self?.abbreviationDictionaryEnabled = defaults?.object(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) == nil
                     ? true : (defaults?.bool(forKey: RHVoiceSharedSettings.abbreviationDictionaryEnabledKey) ?? true)
                 self?.phoneNumberProcessingEnabled = defaults?.object(forKey: RHVoiceSharedSettings.phoneNumberProcessingKey) == nil
@@ -942,6 +945,14 @@ private final class ContentViewModel: ObservableObject {
         announceToggleState(NSLocalizedString("Читати час словами", comment: ""), enabled: enabled)
         Self.storageQueue.async {
             UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.timeAsWordsKey)
+        }
+    }
+
+    func setSlashFractionsAsWords(_ enabled: Bool) {
+        slashFractionsAsWordsEnabled = enabled
+        announceToggleState(NSLocalizedString("Читати дроби словами", comment: ""), enabled: enabled)
+        Self.storageQueue.async {
+            UserDefaults(suiteName: RHVoiceSharedSettings.appGroupID)?.set(enabled, forKey: RHVoiceSharedSettings.slashFractionsAsWordsKey)
         }
     }
 
@@ -1504,6 +1515,16 @@ struct ContentView: View {
             }
             .accessibilityValue(model.abbreviationsAsWordsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
             .accessibilityHint("Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
+
+            Toggle(isOn: Binding(get: { model.slashFractionsAsWordsEnabled }, set: { model.setSlashFractionsAsWords($0) })) {
+                Label("Читати дроби словами", systemImage: "divide")
+            }
+            .accessibilityValue(model.slashFractionsAsWordsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
+            .accessibilityHint("Увімкнено: 1/2 читається як «одна друга», 3/4 — «три четвертих». Вимкнено: коса риска читається словом «дріб».")
+
+            Text("Стосується лише запису з однією косою рискою. Навчальний рік 2024/2025, розмір такту і адреси з двома рисками правило не чіпає.")
+                .font(.footnote)
+                .foregroundColor(.secondary)
 
             Toggle(isOn: Binding(get: { model.phoneNumberProcessingEnabled }, set: { model.setPhoneNumberProcessing($0) })) {
                 Label("Обробляти телефонні номери", systemImage: "phone")

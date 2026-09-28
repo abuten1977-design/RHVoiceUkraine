@@ -36,6 +36,11 @@ enum RHVoiceSharedSettings {
     static let phoneNumberProcessingKey = "phoneNumberProcessing"
     static let phoneNumberReadingModeKey = "phoneNumberReadingMode"
     static let abbreviationDictionaryEnabledKey = "abbreviationDictionaryEnabled"
+    // «Читати дроби словами»: 1/2 -> «одна друга». Увімкнено за замовчуванням.
+    // Вимкнено — коса риска читається як раніше, словом «дріб».
+    // Рішення Андрія 28.09.2026: потрібен окремий вимикач, бо коса риска
+    // не завжди дріб (навчальний рік 2024/2025, розмір такту 3/4, адреса 12/3).
+    static let slashFractionsAsWordsKey = "slashFractionsAsWords"
     static let settingsChangedNotificationName = "com.rhvoice.UkrainianVoices.sharedSettingsChanged"
     static let personalDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.personalDictionaryChanged"
     static let abbreviationDictionaryChangedNotificationName = "com.rhvoice.UkrainianVoices.abbreviationDictionaryChanged"
