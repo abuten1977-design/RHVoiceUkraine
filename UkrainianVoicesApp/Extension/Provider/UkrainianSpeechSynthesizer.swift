@@ -359,10 +359,14 @@ public final class UkrainianSpeechSynthesizer: AVSpeechSynthesisProviderAudioUni
 
         rhLog("synth request: voice=\(voiceId) text=\(text.count) chars")
 
-        // Діагностика: зберегти сам вхідний текст, щоб побачити, яким його віддає
-        // система (нотатка в режимі редагування vs збережена читаються по-різному).
-        // Працює лише з увімкненою «Розширеною діагностикою».
-        RHVoiceRequestCapture.record(text: text, voiceId: voiceId)
+        // ⭐28.09.2026: ЗВІДСИ ПРИБРАНО запис `RHVoiceRequestCapture.record`.
+        // Розширенню заборонена БУДЬ-ЯКА запис (замір 26.08.2026, підтверджено
+        // на пристрої 18.09 і 28.09): система відмовляла 222 рази за три хвилини,
+        // по три спроби на кожну фразу, і кожна тягла міжпроцесний `synchronize()`
+        // на шляху мовлення. Прибор був потрібен, поки ми не бачили входу; тепер
+        // вхід знімається журналом по кабелю (`IPHONE_SYSLOG_INSTRUMENT_2026-08-23.md`),
+        // а екран, який показував ці записи, прибрано ще у збірці 230.
+        // Сам текст входу видно в журналі нижче (`PITCH_DIAG ssmlSnippet`).
 
         let ssmlSnippet = String(text.prefix(200))
         rhLog("PITCH_DIAG ssmlSnippet=\(ssmlSnippet)")

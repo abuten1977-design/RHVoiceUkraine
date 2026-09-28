@@ -531,6 +531,14 @@ private final class ContentViewModel: ObservableObject {
             RHVoiceMacAppGroupMigration.migrateIfNeeded { message in
                 LogCollector.shared.log(message)
             }
+            // ⭐28.09.2026: папку налаштувань рушія готує ЗАСТОСУНОК на старті —
+            // розширенню запис заборонена (замір 26.08). Після міграції
+            // контейнера, бо джерело словника лежить у ньому.
+            if let outcome = RHVoiceEngineConfigPreparation.prepareForApp() {
+                LogCollector.shared.log("Папка налаштувань рушія: conf=\(outcome.engineConfigCopied), словник наголосів=\(outcome.personalDictionaryCopied)")
+            } else {
+                LogCollector.shared.log("Папку налаштувань рушія приготувати НЕ вдалося")
+            }
             let snapshot = RHVoiceSharedSettingsStore.loadSnapshot()
             let entries = PersonalUserDictionary.loadEntries()
             let abbreviationEntries = (try? AbbreviationDictionary.loadEntries().get()) ?? []

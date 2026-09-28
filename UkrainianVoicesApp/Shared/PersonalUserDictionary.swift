@@ -163,6 +163,10 @@ enum PersonalUserDictionary {
     }
 
     private static func notifyDictionaryChanged() {
+        // ⭐28.09.2026 ПОРЯДОК ВАЖЛИВИЙ: спершу доставити словник у папку
+        // налаштувань рушія, ПОТІМ кинути сигнал. Робить це застосунок, бо
+        // розширенню запис заборонена (див. RHVoiceEngineConfigPreparation).
+        RHVoiceEngineConfigPreparation.prepareForApp()
         RHVoiceDarwinNotifications.notifyPersonalDictionaryChanged()
     }
 

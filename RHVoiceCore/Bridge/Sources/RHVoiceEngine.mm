@@ -141,11 +141,32 @@ static NSURL* RHVoiceSharedContainerURL(void) {
     return [[NSFileManager defaultManager] containerURLForSecurityApplicationGroupIdentifier:RHVoiceAppGroupIdentifier];
 }
 
-static NSString* RHVoicePersonalDictionarySignature(void) {
+// Папку налаштувань рушія готує ЗАСТОСУНОК
+// (`Shared/RHVoiceEngineConfigPreparation.swift`). Розширення тільки читає:
+// писати йому заборонено — замір 26.08.2026, підтверджено на пристрої 18.09 і 28.09.
+static NSURL* RHVoiceSharedEngineConfigURL(void) {
     NSURL* containerURL = RHVoiceSharedContainerURL();
-    if (!containerURL) return @"no-app-group";
+    if (!containerURL) return nil;
+    return [containerURL URLByAppendingPathComponent:@"RHVoiceConfig" isDirectory:YES];
+}
 
-    NSString* path = [[containerURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] path];
+static NSURL* RHVoiceSharedPersonalDictionaryURL(void) {
+    NSURL* configURL = RHVoiceSharedEngineConfigURL();
+    if (!configURL) return nil;
+    return [[[configURL URLByAppendingPathComponent:@"dicts" isDirectory:YES]
+             URLByAppendingPathComponent:@"Ukrainian" isDirectory:YES]
+            URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName];
+}
+
+// ⭐28.09.2026: підпис знімається з ТОГО САМОГО файла, який читатиме рушій, —
+// з копії, приготованої застосунком. Раніше брався з джерела в корені
+// контейнера: якщо доставка зривалась, підпис усе одно «змінювався», і рушій
+// дарма перезапускався на тих самих даних.
+static NSString* RHVoicePersonalDictionarySignature(void) {
+    NSURL* dictURL = RHVoiceSharedPersonalDictionaryURL();
+    if (!dictURL) return @"no-app-group";
+
+    NSString* path = [dictURL path];
     NSDictionary<NSFileAttributeKey, id>* attributes =
         [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
     if (!attributes) return @"missing";
@@ -187,46 +208,39 @@ static NSArray<NSString*>* RHVoiceDownloadedVoiceDirectories(void) {
     return result;
 }
 
-static NSString* RHVoicePrepareWritableConfigPath(NSString* dataPath) {
-    NSFileManager* fm = [NSFileManager defaultManager];
-    NSURL* containerURL = RHVoiceSharedContainerURL();
-    if (!containerURL) return dataPath;
-
-    NSURL* configURL = [containerURL URLByAppendingPathComponent:@"RHVoiceConfig" isDirectory:YES];
-    NSURL* dictURL = [[configURL URLByAppendingPathComponent:@"dicts" isDirectory:YES]
-        URLByAppendingPathComponent:@"Ukrainian" isDirectory:YES];
-    NSError* error = nil;
-    if (![fm createDirectoryAtURL:dictURL withIntermediateDirectories:YES attributes:nil error:&error]) {
-        RHVoiceDebugLogWrite("USERDICT personal config mkdir failed: %s", error.localizedDescription.UTF8String);
-        RHVoiceUserdictDiag(@"USERDICT_DIAG personal config mkdir failed: %@", error.localizedDescription);
+// ⭐28.09.2026 ПЕРЕРОБЛЕНО: тут БІЛЬШЕ НЕ ПИШЕТЬСЯ НІЧОГО.
+// Раніше ця функція з середини РОЗШИРЕННЯ створювала папку налаштувань рушія і
+// копіювала туди RHVoice.conf та особистий словник наголосів. Розширенню
+// заборонена будь-яка запис (замір 26.08.2026 `WRITE_PROBE`; на пристрої
+// підтверджено 18.09 — 125 відмов, і 28.09 — 222 відмови), тому доставка
+// словника, найпевніше, не працювала НІКОЛИ.
+// Тепер папку готує ЗАСТОСУНОК, якому запис дозволена
+// (`Shared/RHVoiceEngineConfigPreparation.swift`), а тут лишилась ЛИШЕ перевірка,
+// що приготоване є і читається. Немає — чесно працюємо на словниках з бандла.
+static NSString* RHVoiceResolveConfigPath(NSString* dataPath) {
+    NSURL* configURL = RHVoiceSharedEngineConfigURL();
+    if (!configURL) {
+        RHVoiceDebugLogWrite("USERDICT no app group; bundled config only");
+        RHVoiceUserdictDiag(@"USERDICT_DIAG no app group; bundled config only");
         return dataPath;
     }
 
-    NSString* sourceConfig = [dataPath stringByAppendingPathComponent:@"RHVoice.conf"];
-    NSString* targetConfig = [[configURL URLByAppendingPathComponent:@"RHVoice.conf"] path];
-    if ([fm fileExistsAtPath:sourceConfig]) {
-        [fm removeItemAtPath:targetConfig error:nil];
-        if (![fm copyItemAtPath:sourceConfig toPath:targetConfig error:&error]) {
-            RHVoiceDebugLogWrite("USERDICT config copy failed: %s", error.localizedDescription.UTF8String);
-            RHVoiceUserdictDiag(@"USERDICT_DIAG config copy failed: %@", error.localizedDescription);
-            return dataPath;
-        }
+    NSFileManager* fm = [NSFileManager defaultManager];
+    NSString* preparedConfig = [[configURL URLByAppendingPathComponent:@"RHVoice.conf"] path];
+    if (![fm isReadableFileAtPath:preparedConfig]) {
+        RHVoiceDebugLogWrite("USERDICT prepared config unreadable: %s", preparedConfig.UTF8String);
+        RHVoiceUserdictDiag(@"USERDICT_DIAG prepared config unreadable (app has not prepared it): %@", preparedConfig);
+        return dataPath;
     }
 
-    NSString* personalSource = [[[containerURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] standardizedURL] path];
-    NSString* personalTarget = [[dictURL URLByAppendingPathComponent:RHVoicePersonalDictionaryFileName] path];
-    [fm removeItemAtPath:personalTarget error:nil];
-    if ([fm fileExistsAtPath:personalSource]) {
-        if (![fm copyItemAtPath:personalSource toPath:personalTarget error:&error]) {
-            RHVoiceDebugLogWrite("USERDICT personal copy failed: %s", error.localizedDescription.UTF8String);
-            RHVoiceUserdictDiag(@"USERDICT_DIAG personal copy failed: %@", error.localizedDescription);
-            return dataPath;
-        }
-        RHVoiceDebugLogWrite("USERDICT personal loaded path=%s", personalSource.UTF8String);
-        RHVoiceUserdictDiag(@"USERDICT_DIAG personal loaded bytes=%llu", (unsigned long long)[[[NSFileManager defaultManager] attributesOfItemAtPath:personalTarget error:nil][NSFileSize] unsignedLongLongValue]);
+    NSString* personal = [RHVoiceSharedPersonalDictionaryURL() path];
+    if (personal && [fm isReadableFileAtPath:personal]) {
+        RHVoiceDebugLogWrite("USERDICT personal ready path=%s", personal.UTF8String);
+        RHVoiceUserdictDiag(@"USERDICT_DIAG personal ready bytes=%llu",
+                            (unsigned long long)[[fm attributesOfItemAtPath:personal error:nil][NSFileSize] unsignedLongLongValue]);
     } else {
-        RHVoiceDebugLogWrite("USERDICT personal missing; bundled only");
-        RHVoiceUserdictDiag(@"USERDICT_DIAG personal missing; bundled only");
+        RHVoiceDebugLogWrite("USERDICT personal absent; bundled only");
+        RHVoiceUserdictDiag(@"USERDICT_DIAG personal absent; bundled only");
     }
 
     return [configURL path];
@@ -347,9 +361,15 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
 }
 
 - (void)refreshPersonalDictionaryIfNeeded {
+    if (!self.initialized) return;
+
     NSString* signature = RHVoicePersonalDictionarySignature();
     BOOL forced = self.personalDictionaryRefreshRequested;
-    if (!self.initialized || (!forced && [signature isEqualToString:self.personalDictionarySignature])) {
+    BOOL changed = ![signature isEqualToString:self.personalDictionarySignature];
+    // ⭐28.09.2026: повторних спроб тут більше немає і бути не може — доставку
+    // робить застосунок. Якщо він її не зробив, підпис приготованої копії не
+    // змінився, і перезапускати рушій на тих самих даних немає сенсу (дорого).
+    if (!forced && !changed) {
         return;
     }
     self.personalDictionaryRefreshRequested = NO;
@@ -412,7 +432,7 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
     callbacks.set_sample_rate = set_sample_rate_callback;
     callbacks.play_speech = play_speech_callback;
 
-    NSString* configPath = RHVoicePrepareWritableConfigPath(dataPath);
+    NSString* configPath = RHVoiceResolveConfigPath(dataPath);
     self.personalDictionarySignature = RHVoicePersonalDictionarySignature();
 #if DEBUG
     NSLog(@"✅ RHVoice config path: %@", configPath);

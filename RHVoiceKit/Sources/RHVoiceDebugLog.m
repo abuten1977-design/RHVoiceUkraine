@@ -19,7 +19,22 @@ static void ensureLogQueue(void) {
 // Файл пишеться: у DEBUG — завжди; у Release — лише коли користувач увімкнув
 // «Розширену діагностику» в застосунку (App Store privacy: без згоди
 // прочитаний текст на диск не потрапляє).
+// ⭐28.09.2026: усередині РОЗШИРЕННЯ файл не пишеться НІКОЛИ.
+// Розширенню заборонена будь-яка запис (замір 26.08.2026; замір 18.09 показав
+// відмови саме на `RHVoiceDebug.log`). Спроби були марні: забрати цей файл
+// користувач усе одно не може, журнал знімається кабелем. У ЗАСТОСУНКУ файл
+// лишається як був — там запис дозволена і буває корисною.
+static BOOL rhRunningInsideAppExtension(void) {
+    static BOOL isExtension = NO;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        isExtension = [[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"];
+    });
+    return isExtension;
+}
+
 static BOOL rhFileLoggingEnabled(void) {
+    if (rhRunningInsideAppExtension()) return NO;
 #if DEBUG
     return YES;
 #else
