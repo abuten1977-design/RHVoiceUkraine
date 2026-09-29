@@ -530,6 +530,81 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    // MARK: - збірка 240: те, що VoiceOver вимовив за нас (замір 29.09.2026)
+    //
+    // На iPhone 12 / iOS 26.6.1 при увімкненій пунктуації «1/2» доходить до нас
+    // як «1 скісна риска 2», а «45 хв.» — як «45 Хвылын» (VoiceOver розгорнув
+    // сам, російськими літерами). Ми повертаємо вихідний запис, тому всі старі
+    // захисти мусять діяти так само, як на звичайному знаку.
+
+    func testSpokenSlashBetweenDigitsIsReadAsFraction() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дроби: 1 скісна риска 2, 3 скісна риска 4."),
+            "Дроби: одна друга, три четвертих."
+        )
+    }
+
+    func testSpokenSlashKeepsEveryOldFractionGuard() {
+        // Нуль попереду — дата, а не дріб.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Дата 03 скісна риска 11."),
+            "Дата 03/11."
+        )
+        // Дві риски — не дріб: обидві мають повернутись, інакше захист осліпне.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Адреса 12 скісна риска 3 скісна риска 4."),
+            "Адреса 12/3/4."
+        )
+        // Вимикач дробів вимкнено — читання як до правки 238.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Половина 1 скісна риска 2.", slashFractionsAsWords: false),
+            "Половина один дріб два."
+        )
+        // Знаменник від 100 назв не має — лишається «дріб».
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Сторінка 100 скісна риска 200."),
+            "Сторінка сто дріб двісті."
+        )
+    }
+
+    func testSpokenSlashOutsideDigitsIsLeftAlone() {
+        // Слова без цифр — це просто слова, знака тут не було.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Це скісна риска, а не дріб."),
+            "Це скісна риска, а не дріб."
+        )
+        // «\» VoiceOver називає «зворотна скісна риска» — дробом це не стає.
+        let backslash = RHVoiceApostropheNormalizer.normalizeInTextSegments("Шлях 1 зворотна скісна риска 2.")
+        XCTAssertFalse(backslash.contains("одна друга"))
+        XCTAssertFalse(backslash.contains("/"))
+    }
+
+    func testVoiceOverSpokenMinutesExpandWithGrammar() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Залишилося 45 Хвылын."),
+            "Залишилося сорок п'ять хвилин."
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Ще 1 Хвылын."),
+            "Ще одна хвилина."
+        )
+    }
+
+    func testVoiceOverSpokenMinutesWithAbbreviationsOffStayAWord() {
+        // Розгортати нема кому, але лишати «Хвылын» не можна — це не слово.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Залишилося 45 Хвылын", abbreviationsAsWords: false),
+            "Залишилося 45 хвилин"
+        )
+    }
+
+    func testVoiceOverSpokenMinutesWithoutNumberAreJustSpelledRight() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Лишилось кілька Хвылын тому."),
+            "Лишилось кілька хвилин тому."
+        )
+    }
+
     func testMixedSlashFractionsNormalizeToUkrainianFractionWords() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Мішані: 2 цілих 4/7; 10 цілих 11/12; 154 цілих 1/3."),

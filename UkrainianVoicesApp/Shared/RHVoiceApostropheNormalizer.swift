@@ -352,7 +352,14 @@ enum RHVoiceApostropheNormalizer {
         phoneReadingMode: RHVoicePhoneNumberReadingMode = .groups,
         slashFractionsAsWords: Bool = true
     ) -> String {
-        let withDates = datesAsWords ? normalizeDates(in: normalizeText(text)) : normalizeText(text)
+        // ⭐Замір 29.09.2026 (iPhone 12, iOS 26.6.1): частину знаків VoiceOver
+        // переписує СВОЇМИ словами ще до нас, і наші правила шукають запис,
+        // якого вже немає. Тому найперший крок — повернути вихідний вигляд.
+        let withSpokenForms = normalizeVoiceOverSpokenForms(
+            in: normalizeText(text),
+            abbreviationsAsWords: abbreviationsAsWords
+        )
+        let withDates = datesAsWords ? normalizeDates(in: withSpokenForms) : withSpokenForms
         // Час має бути розібраний ДО normalizeNumbers, інакше «17» і «01»
         // з «17:01» будуть з'їдені як окремі числа ще до того, як ми
         // побачимо двокрапку між ними.
@@ -436,6 +443,57 @@ enum RHVoiceApostropheNormalizer {
         default:
             return nil
         }
+    }
+
+    /// Те, що VoiceOver вимовив за нас (доведено заміром 29.09.2026, журнал
+    /// `cap26_2026-09-29_контрольний_текст.txt`, рядки від `vot`):
+    ///
+    /// * `1/2` при увімкненій пунктуації доходить як «1 скісна риска 2» —
+    ///   самого знака в тексті вже немає, і правило дробів мовчить;
+    /// * `45 хв.` доходить як «45 Хвылын» — VoiceOver розгорнув скорочення сам,
+    ///   ще й російськими літерами. Такого слова в українській мові немає,
+    ///   тому переплутати його зі звичайним текстом неможливо.
+    ///
+    /// Ми повертаємо ВИХІДНИЙ запис, а не пишемо окремі правила для усної
+    /// форми. Інакше та сама логіка (нуль попереду — дата, дві риски — не дріб,
+    /// відмінювання хвилин, вимикач дробів) жила б у двох місцях і розійшлася б.
+    private static func normalizeVoiceOverSpokenForms(
+        in text: String,
+        abbreviationsAsWords: Bool
+    ) -> String {
+        // Косу риску повертаємо ТІЛЬКИ між цифрами: у звичайному тексті
+        // «скісна риска» може бути просто словами. Вимога цифри з обох боків
+        // заразом відсікає «зворотна скісна риска» (це «\», а не дріб) —
+        // між цифрою і словом «скісна» там стоїть ще одне слово.
+        // Самі цифри навмисно НЕ захоплюємо: інакше в «12 скісна риска 3
+        // скісна риска 4» друга риска лишилась би словом, і запис із двома
+        // рисками перестав би бути видимим для захисту «дві риски — не дріб».
+        let withSlashes = replacingMatches(
+            in: text,
+            pattern: #"(?<=[0-9])[[:space:]]+скісна[[:space:]]+риска[[:space:]]+(?=[0-9])"#,
+            options: [.caseInsensitive]
+        ) { _, _ in "/" }
+
+        // Замірено лише форму «Хвылын»; закінчення додано на запас, бо слова
+        // з таким коренем в українській мові немає — зіпсувати нічого не може.
+        // Поруч із числом віддаємо роботу старому правилу скорочень: воно
+        // єдине знає відмінювання («одна хвилина», «дві хвилини», «п'ять хвилин»).
+        // Скорочення вимкнені — розгортати нема кому, пишемо слово правильно.
+        let minutesNextToNumber = replacingMatches(
+            in: withSlashes,
+            pattern: #"(?<=[0-9])([[:space:]]+)хвылын[ауиыі]?(?![\p{L}\p{N}])"#,
+            options: [.caseInsensitive]
+        ) { match, source in
+            guard let spaceRange = Range(match.range(at: 1), in: source) else { return nil }
+            return "\(source[spaceRange])\(abbreviationsAsWords ? "хв" : "хвилин")"
+        }
+
+        // Без числа поруч розгортати нема чого — лишається виправити написання.
+        return replacingMatches(
+            in: minutesNextToNumber,
+            pattern: #"(?<![\p{L}\p{N}])хвылын[ауиыі]?(?![\p{L}\p{N}])"#,
+            options: [.caseInsensitive]
+        ) { _, _ in "хвилин" }
     }
 
     private static func normalizeNumbers(in text: String, slashFractionsAsWords: Bool = true) -> String {
