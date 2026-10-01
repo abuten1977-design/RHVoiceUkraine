@@ -1077,7 +1077,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // прилягати до цифри.
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Ціна — 250 грн"),
-            "Ціна — 250 гривні"
+            "Ціна — 250 гривень"
         )
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("10 - 15 хвилин"),
@@ -1448,6 +1448,42 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // the same as any other ordinary text passed through this rule.
         let ordinary = "<speak><prosody rate=\"100%\"><s><lang xml:lang=\"uk-UA\">Привіт</lang></s><s><lang xml:lang=\"uk-UA\">Як справи</lang></s></prosody></speak>"
         XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ordinary))
+    }
+
+    // MARK: - «грн» узгоджується з числом (борг 30.09.2026, зроблено 01.10.2026)
+    //
+    // Було: запис словника плаский («грн» → «гривні»), тому «250 грн» звучало
+    // «двісті пʼятдесят гривні». Стало: форму слова обирає число, самі цифри
+    // лишаються як є.
+
+    func testCurrencyAgreesWithNumber() {
+        let cases: [(String, String)] = [
+            ("1 грн", "1 гривня"),
+            ("2 грн", "2 гривні"),
+            ("4 грн", "4 гривні"),
+            ("5 грн", "5 гривень"),
+            ("11 грн", "11 гривень"),
+            ("21 грн", "21 гривня"),
+            ("114 грн", "114 гривень"),
+            ("250 грн", "250 гривень")
+        ]
+        for (input, expected) in cases {
+            XCTAssertEqual(
+                RHVoiceApostropheNormalizer.normalizeInTextSegments(input),
+                expected,
+                "Форму «гривня/гривні/гривень» мусить обирати число: \(input)"
+            )
+        }
+    }
+
+    func testCurrencyKeepsTrailingDot() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("250 грн."),
+            "250 гривень."
+        )
+        // Суми з розділювачами тисяч тут НЕ перевіряємо: далі по конвеєру
+        // працює грошове правило, і що саме воно робить із «30 118» перед
+        // «гривень» — не заміряно. Перевіримо, коли дійдуть руки до сум.
     }
 
 }

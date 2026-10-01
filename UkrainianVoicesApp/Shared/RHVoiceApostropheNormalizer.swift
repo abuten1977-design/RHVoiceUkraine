@@ -368,7 +368,10 @@ enum RHVoiceApostropheNormalizer {
         // мовчки пропускає (аудит Даші, збірка 206, п.27).
         let withVulgarFractions = normalizeVulgarFractions(in: withTime)
         let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withVulgarFractions) : withVulgarFractions
-        let withPercent = normalizePercentSigns(in: withAbbreviations)
+        // «грн» мусить узгодитись із числом ДО словника замін (нижче), бо там
+        // заміна пласка і завжди дає «гривні» (борг 30.09.2026).
+        let withCurrency = abbreviationsAsWords ? normalizeCurrencyAbbreviations(in: withAbbreviations) : withAbbreviations
+        let withPercent = normalizePercentSigns(in: withCurrency)
         // First replace genuine phones. The phone pass uses the shared
         // classifier, so `+9 000.00` remains available for the money pass.
         let withPhones = phoneProcessing ? normalizePhones(in: withPercent, readingMode: phoneReadingMode) : withPercent
@@ -1290,6 +1293,42 @@ enum RHVoiceApostropheNormalizer {
     /// iOS frequently supplies compact duration labels such as `12 хв` and
     /// `45 сек` (charging state, media controls). Expand only an explicit
     /// number + Ukrainian unit so unrelated short words stay untouched.
+    /// «250 грн» → «250 гривень». Узгоджує ФОРМУ слова з числом, самі цифри
+    /// лишає як є — рушій читає їх правильно сам, а переписувати число словами
+    /// означало б змінити й те, що сьогодні працює.
+    ///
+    /// Борг 30.09.2026: запис словника `AbbreviationDictionary` плаский
+    /// («грн» → «гривні») і відмінка не знає, тому «250 грн» звучало
+    /// «двісті пʼятдесят гривні». Це правило йде ДО словника й забирає випадок
+    /// із числом собі; без числа «грн» і далі обробляє словник.
+    ///
+    /// Відмінок визначають ОСТАННІ дві цифри, тому для «30 118 грн» достатньо
+    /// подивитись на «118». Дробові суми («19,99 грн») правило свідомо НЕ чіпає:
+    /// там потрібна інша форма («гривні»), а число до нас доходить по-різному —
+    /// це окрема робота, не ця.
+    private static func normalizeCurrencyAbbreviations(in text: String) -> String {
+        return replacingMatches(
+            in: text,
+            // Число може мати розділювачі тисяч (звичайний пробіл, нерозривний
+            // U+00A0, вузький нерозривний U+202F). Ліворуч не можна мати літеру,
+            // цифру, кому чи крапку — кома й крапка відсікають дробову частину.
+            pattern: #"(?<![\p{L}\p{N},.])([0-9]{1,3}(?:"# + thousandsSeparatorClass + #"[0-9]{3})*)[[:space:]]+грн(\.)?(?=[^\p{L}\p{N}]|$)"#,
+            options: [.caseInsensitive]
+        ) { match, source in
+            guard
+                let numberRange = Range(match.range(at: 1), in: source)
+            else { return nil }
+
+            let numberText = String(source[numberRange])
+            let digits = numberText.filter { $0.isNumber }
+            guard let value = Int(digits) else { return nil }
+
+            let noun = nounForm(for: value, one: "гривня", few: "гривні", many: "гривень")
+            let punctuation = match.range(at: 2).location == NSNotFound ? "" : "."
+            return "\(numberText) \(noun)\(punctuation)"
+        }
+    }
+
     private static func normalizeTimeUnitAbbreviations(in text: String) -> String {
         // «5 с» розгортаємо в секунди ЛИШЕ поруч із «хв»/«год» у тому ж тексті
         // (рядок тривалості «01 год 15 хв 5 с», аудит Даші п.22–23): окреме

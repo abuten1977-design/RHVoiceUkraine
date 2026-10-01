@@ -19,10 +19,11 @@ struct PersonalDictionaryFileStatus: Equatable {
     var metadataModifiedAt: Date?
 }
 
-enum PersonalUserDictionaryError: LocalizedError {
+enum PersonalUserDictionaryError: LocalizedError, Equatable {
     case emptyDisplayWord
     case emptyStressedWord
     case appGroupUnavailable
+    case unreadableFile
 
     var errorDescription: String? {
         switch self {
@@ -32,6 +33,8 @@ enum PersonalUserDictionaryError: LocalizedError {
             return NSLocalizedString("Поле «Слово з наголосом» не може бути порожнім.", comment: "")
         case .appGroupUnavailable:
             return NSLocalizedString("Не вдалося відкрити спільне сховище App Group.", comment: "")
+        case .unreadableFile:
+            return NSLocalizedString("Словник наголосів не вдалося прочитати. Щоб не втратити наявні наголоси, зміну не збережено.", comment: "")
         }
     }
 }
@@ -41,13 +44,32 @@ enum PersonalUserDictionary {
     static let metadataFileName = "user_dictionary_meta.json"
     static let changeNotificationName = RHVoiceSharedSettings.personalDictionaryChangedNotificationName
 
-    static func loadEntries() -> [PersonalDictionaryEntry] {
-        guard let url = metadataURL(),
-              let data = try? Data(contentsOf: url),
-              let entries = try? jsonDecoder.decode([PersonalDictionaryEntry].self, from: data) else {
-            return []
+    /// Читання, яке ВІДРІЗНЯЄ «файла немає» від «файл не прочитався».
+    ///
+    /// Урок словника замін від 14.09.2026 (збірка 231) і хвороба
+    /// `project-dictionary-cache-poisoning`: поки будь-яка помилка читання
+    /// мовчки давала порожній список, наступна правка перезаписувала файл
+    /// ОДНИМ новим записом — усі попередні наголоси зникали без жодного слова.
+    ///
+    /// «Файла немає» і порожній файл — це чесний порожній успіх: втрачати нічого.
+    /// А ось нечитабельний або зіпсований вміст — помилка, і зберігати поверх
+    /// нього не можна.
+    static func loadEntriesResult() -> Result<[PersonalDictionaryEntry], PersonalUserDictionaryError> {
+        guard let url = metadataURL() else { return .failure(.appGroupUnavailable) }
+        guard FileManager.default.fileExists(atPath: url.path) else { return .success([]) }
+        guard let data = try? Data(contentsOf: url) else { return .failure(.unreadableFile) }
+        guard !data.isEmpty else { return .success([]) }
+        guard let entries = try? jsonDecoder.decode([PersonalDictionaryEntry].self, from: data) else {
+            return .failure(.unreadableFile)
         }
-        return entries.sorted { $0.createdAt < $1.createdAt }
+        return .success(entries.sorted { $0.createdAt < $1.createdAt })
+    }
+
+    /// Для показу списку. При помилці читання віддає порожній список —
+    /// екран буде порожнім, але ЗАПИС від цього не постраждає: усі три правки
+    /// нижче йдуть через `loadEntriesResult()` і при помилці кидають.
+    static func loadEntries() -> [PersonalDictionaryEntry] {
+        (try? loadEntriesResult().get()) ?? []
     }
 
     static func fileStatus() -> PersonalDictionaryFileStatus {
@@ -75,14 +97,14 @@ enum PersonalUserDictionary {
             stressedWord: try normalizedStressedWord(stressedWord),
             createdAt: Date()
         )
-        var entries = loadEntries()
+        var entries = try loadEntriesResult().get()
         entries.append(entry)
         try saveEntries(entries)
         return entry
     }
 
     static func updateEntry(id: UUID, displayWord: String, stressedWord: String) throws {
-        var entries = loadEntries()
+        var entries = try loadEntriesResult().get()
         guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
         entries[index].displayWord = try normalizedDisplayWord(displayWord)
         entries[index].stressedWord = try normalizedStressedWord(stressedWord)
@@ -90,7 +112,7 @@ enum PersonalUserDictionary {
     }
 
     static func removeEntry(id: UUID) throws {
-        let entries = loadEntries().filter { $0.id != id }
+        let entries = try loadEntriesResult().get().filter { $0.id != id }
         try saveEntries(entries)
     }
 
@@ -178,8 +200,14 @@ enum PersonalUserDictionary {
         containerURL()?.appendingPathComponent(metadataFileName)
     }
 
+    /// Тільки для тестів: підміняє теку спільного сховища. Інакше поведінку
+    /// на ЗІПСОВАНОМУ файлі не перевірити — у тестовому процесі App Group
+    /// недоступна, і все впиралось би в `appGroupUnavailable`.
+    static var containerURLOverrideForTesting: URL?
+
     private static func containerURL() -> URL? {
-        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID)
+        if let override = containerURLOverrideForTesting { return override }
+        return FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: RHVoiceSharedSettings.appGroupID)
     }
 
     private static func attributes(for url: URL?) -> [FileAttributeKey: Any]? {

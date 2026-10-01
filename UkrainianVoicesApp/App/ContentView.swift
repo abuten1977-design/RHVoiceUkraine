@@ -2003,7 +2003,12 @@ private struct AbbreviationDictionaryView: View {
         }
         .confirmationDialog(
             pendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.abbreviation) } ?? NSLocalizedString("Видалити запис?", comment: ""),
-            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
+            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } }),
+            // ⭐01.10.2026: у двох сусідніх діалогів цього екрана `titleVisibility`
+            // заданий, а в цього не був — питання «Видалити запис «уа»?» не
+            // показувалось і не озвучувалось, лишались самі кнопки. Дарʼя (бланк
+            // 240, п.5) описала це як «можна лише підтвердити, скасувати немає».
+            titleVisibility: .visible
         ) {
             if let entry = pendingDeletion {
                 Button("Видалити", role: .destructive) { delete(entry); pendingDeletion = nil }
@@ -2206,14 +2211,23 @@ private struct LicensesView: View {
                         Text(item.note)
                             .foregroundColor(.secondary)
                         if let url = item.url {
+                            // ⭐01.10.2026, скарга Дарʼї (бланк 240, п.6): «зачитується
+                            // і роль кнопки, і роль посилання». `Link` уже несе
+                            // семантику посилання сам — наш `.accessibilityAddTraits(.isLink)`
+                            // додавався ДРУГИМ, і VoiceOver називав обидві ролі.
+                            // Прибрано; свій підпис лишаємо, бо він називає компонент.
                             Link("Відкрити ліцензію або проєкт", destination: url)
                                 .accessibilityLabel(String(format: NSLocalizedString("Відкрити ліцензію для %@", comment: ""), item.title))
-                                .accessibilityAddTraits(.isLink)
                         }
                     }
                     .textSelection(.enabled)
+                    // ⭐01.10.2026, та сама скарга: «до кожного заголовку підтягується
+                    // весь текст розділу». Причина — склеєний `.accessibilityLabel`
+                    // на групі з `children: .contain`: спершу читався весь блок
+                    // одним шматком, а потім він же по частинах. Підпис прибрано,
+                    // `.contain` лишаємо — внутрішні елементи читаються окремо,
+                    // а назва компонента вже позначена як заголовок вище.
                     .accessibilityElement(children: .contain)
-                    .accessibilityLabel(String(format: NSLocalizedString("%@. Ліцензія: %@. Атрибуція: %@. %@", comment: ""), item.title, item.license, item.attribution, item.note))
                 }
             }
 
