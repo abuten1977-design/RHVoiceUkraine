@@ -116,3 +116,7 @@
 356	Ukrainian is built in; voices for other languages can be downloaded.
 357	Check the stored, published and system voices.
 358	Carnegie Mellon University, CMU ARCTIC corpus
+359	Read fractions as words
+360	On: 1/2 is read as "one half", 3/4 as "three quarters". Off: the slash is read as the word "fraction".
+361	Applies only to entries with a single slash. The rule does not touch the 2024/2025 school year, time signatures, or addresses with two slashes.
+362	The stress dictionary could not be read. The change was not saved, so your existing stress marks are not lost.

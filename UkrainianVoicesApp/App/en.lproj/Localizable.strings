@@ -297,7 +297,6 @@
 "Створити пробний запис" = "Create sample record";
 "Стирає журнал застосунку. Не впливає на журнал синтезатора VoiceOver." = "Erases the app log. Does not affect the VoiceOver synthesizer log.";
 "Стирає збережені тексти з пристрою." = "Erases saved texts from the device.";
-"Стосується лише запису з однією косою рискою. Навчальний рік 2024/2025, розмір такту і адреси з двома рисками правило не чіпає." = "Applies only to entries with a single slash. The rule does not touch the 2024/2025 school year, time signatures, or addresses with two slashes.";
 "Стосується повних дат із чотиризначним роком. Короткі дати (10.07.26) завжди читаються цифрами." = "Applies to full dates with a four-digit year. Short dates (10.07.26) are always read as digits.";
 "Те саме слово зі знаком плюс перед наголошеною голосною, або інше слово чи фраза, як це читати." = "The same word with a plus sign before the stressed vowel, or another word or phrase describing how to read it.";
 "Тексти всіх ліцензій, що постачаються разом із застосунком." = "Texts of all licenses included with the app.";
@@ -314,7 +313,6 @@
 "У файлі немає коректних записів. Мій словник не змінено." = "The file contains no valid entries. My Dictionary was not changed.";
 "Увага: спільне сховище недоступне, зміни не зберігаються" = "Warning: shared storage unavailable, changes are not saved";
 "Увімкнено" = "On";
-"Увімкнено: 1/2 читається як «одна друга», 3/4 — «три четвертих». Вимкнено: коса риска читається словом «дріб»." = "On: 1/2 is read as \"one half\", 3/4 as \"three quarters\". Off: the slash is read as the word \"fraction\".";
 "Увімкнено: 17:01 читається як час словами. Вимкнено: RHVoice не розгортає запис часу у години та хвилини." = "On: 17:01 is read as time in words. Off: RHVoice does not expand the time into hours and minutes.";
 "Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання." = "On: 5 min, 2 hr, and 30 sec are read as full words. Off: abbreviations are left unexpanded.";
 "Увімкнено: RHVoice розпізнає номери та читає їх обраним способом. Вимкнено: номер читає система без обробки RHVoice." = "On: RHVoice recognizes numbers and reads them the chosen way. Off: the system reads the number without RHVoice processing.";
@@ -331,7 +329,6 @@
 "Чи доходять запити до голосу" = "Do requests reach the voice";
 "Читання" = "Reading";
 "Читати дати словами" = "Read dates in words";
-"Читати дроби словами" = "Read fractions as words";
 "Читати номер" = "Read number";
 "Читати час словами" = "Read time in words";
 "Швидко" = "Fast";
@@ -361,6 +358,10 @@
 "Українська вбудована; голоси інших мов можна завантажити." = "Ukrainian is built in; voices for other languages can be downloaded.";
 "Перевірити збережені, опубліковані та системні голоси." = "Check the stored, published and system voices.";
 "Carnegie Mellon University, корпус CMU ARCTIC" = "Carnegie Mellon University, CMU ARCTIC corpus";
+"Читати дроби словами" = "Read fractions as words";
+"Увімкнено: 1/2 читається як «одна друга», 3/4 — «три четвертих». Вимкнено: коса риска читається словом «дріб»." = "On: 1/2 is read as \"one half\", 3/4 as \"three quarters\". Off: the slash is read as the word \"fraction\".";
+"Стосується лише запису з однією косою рискою. Навчальний рік 2024/2025, розмір такту і адреси з двома рисками правило не чіпає." = "Applies only to entries with a single slash. The rule does not touch the 2024/2025 school year, time signatures, or addresses with two slashes.";
+"Словник наголосів не вдалося прочитати. Щоб не втратити наявні наголоси, зміну не збережено." = "The stress dictionary could not be read. The change was not saved, so your existing stress marks are not lost.";
 "%@: %@." = "%@: %@.";
 "чоловічий" = "male";
 "жіночий" = "female";
