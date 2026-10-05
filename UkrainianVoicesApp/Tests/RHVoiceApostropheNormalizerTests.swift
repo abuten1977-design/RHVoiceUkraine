@@ -1534,4 +1534,41 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertFalse(result.contains("мільйон"), "якщо тут з'явився «мільйон» — дефект полагоджено, тест треба переписати: \(result)")
     }
 
+    // MARK: - Замір на пристрої 05.10.2026: WhatsApp віддає номер БЕЗ «плюс»
+
+    func testSpacedDigitChainFromWhatsAppIsReadAsPhoneNotFractions() {
+        // Рядок узятий ДОСЛІВНО з журналу iPhone (збірка 243):
+        // «Надіслано контакту   3 5 5,6 9,5 4 8,4 9 2 9, Червоний».
+        // Було: «п'ять цілих шість десятих … вісім цілих чотири десятих».
+        let result = RHVoiceApostropheNormalizer.normalizeInTextSegments(
+            "Надіслано контакту   3 5 5,6 9,5 4 8,4 9 2 9, Червоний"
+        )
+        XCTAssertFalse(result.contains("цілих"), "ланцюжок цифр не має ставати дробом: \(result)")
+        XCTAssertFalse(result.contains("десятих"), "ланцюжок цифр не має ставати дробом: \(result)")
+        XCTAssertTrue(result.contains("Надіслано контакту"), "сусідній текст має лишитись: \(result)")
+    }
+
+    func testSpacedDigitChainAloneIsReadAsPhone() {
+        let result = RHVoiceApostropheNormalizer.normalizeInTextSegments("  3 5 5,6 9,5 4 8,4 9 2 9")
+        XCTAssertFalse(result.contains("цілих"), "\(result)")
+        XCTAssertFalse(result.contains("десятих"), "\(result)")
+    }
+
+    func testOrdinaryDecimalsAreNotTakenForSpacedDigitChain() {
+        // Один дріб — не ланцюжок.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 0,9."),
+            "Значення нуль цілих дев'ять десятих."
+        )
+        // Два дробу поруч — теж не ланцюжок: цифр мало.
+        let two = RHVoiceApostropheNormalizer.normalizeInTextSegments("Ціни 1,5 і 2,3 гривні.")
+        XCTAssertTrue(two.contains("цілих") || two.contains("ціла"), "дроби мають лишитись дробами: \(two)")
+    }
+
+    func testLongDigitListWithoutCommasStaysAsIs() {
+        // Ланцюжок без ком (список цифр) правило чіпати НЕ має: сторож вимагає 2 коми.
+        let result = RHVoiceApostropheNormalizer.normalizeInTextSegments("Оцінки 1 2 3 4 5 6 7 8 9 1 2")
+        XCTAssertTrue(result.contains("1 2 3") || result.contains("один"), "\(result)")
+    }
+
 }
