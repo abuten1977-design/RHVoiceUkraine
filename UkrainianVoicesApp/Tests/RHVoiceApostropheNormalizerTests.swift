@@ -1486,4 +1486,46 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // «гривень» — не заміряно. Перевіримо, коли дійдуть руки до сум.
     }
 
+    // MARK: - WhatsApp: номер, розірваний комами (скарга Андрія 31.08.2026)
+
+    func testCommaSplitPhoneFromWhatsAppIsNotReadAsDecimalFraction() {
+        // Саме такий вигляд номера заміряно 23.08.2026 у WhatsApp: кожна цифра
+        // окремо, групи розділені комами. Правило чисел бачило «0,9» і читало
+        // десятковий дріб.
+        let result = RHVoiceApostropheNormalizer.normalizeInTextSegments(
+            "Телефон + 3 8 0,9 7,3 4 4,9 1 6 1",
+            phoneReadingMode: .digits
+        )
+        XCTAssertTrue(result.contains("плюс"), "знак «плюс» має прозвучати словом: \(result)")
+        XCTAssertFalse(result.contains("цілих"), "номер не має ставати дробом: \(result)")
+        XCTAssertFalse(result.contains("десятих"), "номер не має ставати дробом: \(result)")
+        XCTAssertFalse(result.contains(","), "кома не має доїхати до рушія: \(result)")
+    }
+
+    func testCommaSplitPhoneWorksInGroupsModeToo() {
+        let result = RHVoiceApostropheNormalizer.normalizeInTextSegments(
+            "Телефон + 3 8 0,9 7,3 4 4,9 1 6 1"
+        )
+        XCTAssertFalse(result.contains("цілих"), "номер не має ставати дробом: \(result)")
+        XCTAssertFalse(result.contains(","), "кома не має доїхати до рушія: \(result)")
+    }
+
+    func testRealDecimalFractionsSurviveTheCommaSplitPhoneRule() {
+        // Зворотна перевірка: справжній дріб лишається дробом.
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Значення 0,9."),
+            "Значення нуль цілих дев'ять десятих."
+        )
+        // Дріб зі знаком «плюс» і малою кількістю цифр теж не телефон.
+        let small = RHVoiceApostropheNormalizer.normalizeInTextSegments("Різниця +5,5 градуса.")
+        XCTAssertTrue(small.contains("цілих") || small.contains("ціла"), "мало цифр — це не телефон: \(small)")
+    }
+
+    func testAmountWithCentsIsNotTakenForCommaSplitPhone() {
+        // Сума з копійками має лишитись суммою, навіть зі знаком «плюс»
+        // і довгим ланцюжком цифр.
+        let result = RHVoiceApostropheNormalizer.normalizeInTextSegments("Сума +12 345 678,90 гривень")
+        XCTAssertTrue(result.contains("мільйон"), "сума не має ставати телефоном: \(result)")
+    }
+
 }

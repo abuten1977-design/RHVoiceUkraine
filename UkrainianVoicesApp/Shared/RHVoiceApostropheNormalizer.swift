@@ -805,8 +805,29 @@ enum RHVoiceApostropheNormalizer {
         // кілька реальних плюсів до одного, не лишаючи сирий символ рушію.
         // Без цього правила суцільний «+380671232323» потрапляв у правило великих
         // чисел і читався мільйонами (баг Даші, build 187).
-        let withPlusPrefixed = replacingMatches(
+        // ⭐05.10.2026 WhatsApp віддає телефон РОЗІРВАНИМ: кожна цифра окремо,
+        // групи розділені комами — «+ 3 8 0,9 7,3 4 4,9 1 6 1» (замір 23.08.2026,
+        // ~20 входжень, злитим не прийшов ні разу). Правило чисел бачило в такому
+        // ланцюжку «0,9» і читало десятковий дріб — скарга Андрія 31.08.2026.
+        // Телефонне правило працює ДО правила чисел, тому ловимо ланцюжок тут.
+        // Вузько НАВМИСНО: лише зі знаком «+» на початку, лише коли є кома,
+        // лише від 7 цифр і лише коли це не сума з копійками («+12 345 678,90»).
+        let withCommaSplitPhones = replacingMatches(
             in: text,
+            pattern: #"(?<![\p{L}\p{N}])\+[ \u00A0\u202F]*[0-9][0-9 \u00A0\u202F,\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
+            options: []
+        ) { match, source in
+            guard let range = Range(match.range, in: source) else { return nil }
+            let content = String(source[range])
+            guard content.contains(","),
+                  content.filter(\.isNumber).count >= 7,
+                  !hasCents(in: content)
+            else { return nil }
+            return telephoneToWords(content, readingMode: readingMode)
+        }
+
+        let withPlusPrefixed = replacingMatches(
+            in: withCommaSplitPhones,
             pattern: #"(?<![\p{L}\p{N}])\++[0-9][0-9\s\-()]{5,}[0-9](?![\p{L}\p{N}])"#,
             options: []
         ) { match, source in

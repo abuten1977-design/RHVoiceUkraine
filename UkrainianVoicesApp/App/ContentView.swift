@@ -1854,13 +1854,16 @@ private struct PersonalDictionaryView: View {
             )
         }
         .onAppear(perform: reload)
-        .confirmationDialog(
+        // ⭐05.10.2026: було `confirmationDialog` (аркуш знизу). Замір Андрія:
+        // VoiceOver бачить ЛИШЕ кнопку «Видалити», «Скасувати» недосяжна, хоча
+        // жест «зиґзаґ» вікно закриває. В `alert` обидві кнопки лежать в одному
+        // контейнері, тому VoiceOver проходить по них підряд.
+        .alert(
             entryPendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.displayWord) } ?? NSLocalizedString("Видалити запис?", comment: ""),
             isPresented: Binding(
                 get: { entryPendingDeletion != nil },
                 set: { if !$0 { entryPendingDeletion = nil } }
-            ),
-            titleVisibility: .visible
+            )
         ) {
             if let entry = entryPendingDeletion {
                 Button("Видалити", role: .destructive) {
@@ -2001,14 +2004,13 @@ private struct AbbreviationDictionaryView: View {
             }
             readImportFile(url)
         }
-        .confirmationDialog(
+        // ⭐01.10.2026: у цього діалогу не був заданий `titleVisibility` — питання
+        // не озвучувалось. ⭐05.10.2026: правка пішла мимо, справжня скарга Даші
+        // і замір Андрія — «Скасувати» недосяжна для VoiceOver в аркуші знизу.
+        // Тому тип вікна змінено на `alert`: обидві кнопки в одному контейнері.
+        .alert(
             pendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.abbreviation) } ?? NSLocalizedString("Видалити запис?", comment: ""),
-            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } }),
-            // ⭐01.10.2026: у двох сусідніх діалогів цього екрана `titleVisibility`
-            // заданий, а в цього не був — питання «Видалити запис «уа»?» не
-            // показувалось і не озвучувалось, лишались самі кнопки. Дарʼя (бланк
-            // 240, п.5) описала це як «можна лише підтвердити, скасувати немає».
-            titleVisibility: .visible
+            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
         ) {
             if let entry = pendingDeletion {
                 Button("Видалити", role: .destructive) { delete(entry); pendingDeletion = nil }
