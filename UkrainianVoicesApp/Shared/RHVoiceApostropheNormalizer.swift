@@ -1545,9 +1545,6 @@ enum RHVoiceApostropheNormalizer {
         }
 
         if groups.count == 1, let solid = groups.first, solid.count >= 9 {
-            if let foreign = foreignPhoneToWords(digits: solid, hasPlus: hasPlus) {
-                return foreign
-            }
             groups = regroupSolidPhoneDigits(solid)
         }
 
@@ -1654,39 +1651,6 @@ enum RHVoiceApostropheNormalizer {
         return nil
     }
 
-    /// Неукраїнський номер: код країни окремою групою, решта — ПАРАМИ, і пари
-    /// читаються ЦИФРАМИ. Чому саме так (рішення Андрія 06.10.2026): точні розміри
-    /// груп задані лише для українських форм, а обичаї інших країн нам невідомі —
-    /// албанський «+355 69 548 4929» ми б розрізали як «355, 695, 484, 929», тобто
-    /// назвали б межі груп неправильно. Цифри парами не брешуть і розбірливі на слух.
-    /// Повертає nil, якщо номер український або код країни не впізнано — тоді
-    /// працює попередня логіка.
-    private static func foreignPhoneToWords(digits: [Character], hasPlus: Bool) -> String? {
-        guard digits.count >= 9 else { return nil }
-        if digits.starts(with: ["3", "8", "0"]) { return nil }   // український — свої групи
-        if digits.first == "0" { return nil }                     // місцевий формат 067…
-        guard let code = countryCodePrefix(digits) else { return nil }
-
-        var rest = Array(digits.dropFirst(code.count))
-        var groups: [[Character]] = []
-        while rest.count > 3 {
-            groups.append(Array(rest.prefix(2)))
-            rest = Array(rest.dropFirst(2))
-        }
-        if !rest.isEmpty { groups.append(rest) }
-
-        guard let codeValue = Int(code) else { return nil }
-        let spokenRest = groups.map { group in
-            group.compactMap { phoneDigitWords[$0] }.joined(separator: " ")
-        }
-        let body = ([integerToWords(codeValue)] + spokenRest).joined(separator: ", ")
-        return hasPlus ? "плюс " + body : body
-    }
-
-    private static let phoneDigitWords: [Character: String] = [
-        "0": "нуль", "1": "один", "2": "два", "3": "три", "4": "чотири",
-        "5": "п'ять", "6": "шість", "7": "сім", "8": "вісім", "9": "дев'ять"
-    ]
 
     private static func regroupSolidPhoneDigits(_ digits: [Character]) -> [[Character]] {
         var sizes: [Int]
@@ -1694,6 +1658,19 @@ enum RHVoiceApostropheNormalizer {
             sizes = [2, 3, 3, 2, 2]        // 38 067 344 91 61 (формат Андрія)
         } else if digits.count == 10, digits.first == "0" {
             sizes = [3, 3, 2, 2]           // 067 344 91 61
+        } else if let code = countryCodePrefix(digits) {
+            // ⭐06.10.2026, рішення Андрія після проби на 245: «код, потім по три
+            // цифри, потім те, що лишилось у кінці — може бути дві цифри, може одна».
+            // Не «як принято в тій країні» (обичаї нам невідомі), а як ЗРУЧНО СЛУХАТИ.
+            // Межі груп однакові для обох положень перемикача: у «групами» кожна група
+            // звучить числом, у «по цифрах» — цифрами з паузою на тих самих межах.
+            sizes = [code.count]
+            var remaining = digits.count - code.count
+            while remaining >= 3 {
+                sizes.append(3)
+                remaining -= 3
+            }
+            if remaining > 0 { sizes.append(remaining) }
         } else {
             sizes = []
             var remaining = digits.count

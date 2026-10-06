@@ -1564,11 +1564,13 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
-    // Код країни — окремою групою за таблицею E.164, решта парами цифрами.
+    // Код країни — окремою групою за таблицею E.164, решта по три цифри,
+    // остача (одна або дві цифри) — останньою групою. Рішення Андрія 06.10.2026
+    // після проби на 245: «не важно как принято, главное чтобы было удобно слушать».
     func testForeignSolidPhoneSeparatesCountryCode() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +12025550173."),
-            "Телефон плюс один, два нуль, два п'ять, п'ять п'ять, нуль один, сім три."
+            "Телефон плюс один, двісті два, п'ятсот п'ятдесят п'ять, нуль сімнадцять, три."
         )
     }
 
@@ -1577,6 +1579,15 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         let result = RHVoiceApostropheNormalizer.normalizeInTextSegments("  3 5 5,6 9,5 4 8,4 9 2 9")
         XCTAssertTrue(result.contains("триста п'ятдесят п'ять"), "код країни має прозвучати цілим: \(result)")
         XCTAssertFalse(result.contains("цілих"), "\(result)")
+    }
+
+    // Той самий закордонний номер у положенні «по цифрах»: межі груп ті самі,
+    // але всередині груп звучать окремі цифри.
+    func testForeignSolidPhoneInDigitsModeUsesSameGroupBorders() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +12025550173.", phoneReadingMode: .digits),
+            "Телефон плюс один, два нуль два, п'ять п'ять п'ять, нуль один сім, три."
+        )
     }
 
     // Якщо пробіли вже стоять у тексті — межі груп НЕ переставляємо: саме так
