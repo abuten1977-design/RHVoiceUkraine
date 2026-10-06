@@ -1560,7 +1560,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     func testUkrainianDigitChainIsReadInGroupsInGroupsMode() {
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон + 3 8 0,9 7,3 4 4,9 1 6 1"),
-            "Телефон плюс тридцять вісім, нуль шістдесят сім, триста сорок чотири, дев'яносто один, шістдесят один"
+            "Телефон плюс тридцять вісім, нуль дев'яносто сім, триста сорок чотири, дев'яносто один, шістдесят один"
         )
     }
 
