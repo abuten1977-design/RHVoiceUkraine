@@ -1554,6 +1554,48 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertFalse(result.contains("десятих"), "\(result)")
     }
 
+    // ⭐06.10.2026, проба Андрія на складанні 244: номер у WhatsApp заговорив
+    // ЦИФРАМИ, а перемикач «групами» не діяв. Ланцюжок одиночних цифр зводиться
+    // докупи і ріжеться своїми розмірами груп.
+    func testUkrainianDigitChainIsReadInGroupsInGroupsMode() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон + 3 8 0,9 7,3 4 4,9 1 6 1"),
+            "Телефон плюс тридцять вісім, нуль шістдесят сім, триста сорок чотири, дев'яносто один, шістдесят один"
+        )
+    }
+
+    // Код країни — окремою групою за таблицею E.164, решта парами цифрами.
+    func testForeignSolidPhoneSeparatesCountryCode() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +12025550173."),
+            "Телефон плюс один, два нуль, два п'ять, п'ять п'ять, нуль один, сім три."
+        )
+    }
+
+    // Той самий албанський номер із заміру 05.10: код 355 не розрізається навпіл.
+    func testAlbanianChainKeepsCountryCodeWhole() {
+        let result = RHVoiceApostropheNormalizer.normalizeInTextSegments("  3 5 5,6 9,5 4 8,4 9 2 9")
+        XCTAssertTrue(result.contains("триста п'ятдесят п'ять"), "код країни має прозвучати цілим: \(result)")
+        XCTAssertFalse(result.contains("цілих"), "\(result)")
+    }
+
+    // Якщо пробіли вже стоять у тексті — межі груп НЕ переставляємо: саме так
+    // Андрій почув «+1 220 330 555» правильно на складанні 244.
+    func testForeignPhoneWithGivenGroupsIsNotRegrouped() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +1 220 330 555."),
+            "Телефон плюс один, двісті двадцять, триста тридцять, п'ятсот п'ятдесят п'ять."
+        )
+    }
+
+    // Український суцільний номер лишається з довіреними розмірами груп.
+    func testUkrainianSolidPhoneKeepsAndriyFormatInGroupsMode() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Телефон +380673449161."),
+            "Телефон плюс тридцять вісім, нуль шістдесят сім, триста сорок чотири, дев'яносто один, шістдесят один."
+        )
+    }
+
     func testOrdinaryDecimalsAreNotTakenForSpacedDigitChain() {
         // Один дріб — не ланцюжок.
         XCTAssertEqual(
