@@ -61,9 +61,19 @@ enum RHVoiceApostropheNormalizer {
     /// Safe by construction either way: only a run whose ENTIRE normalized
     /// text equals a dictionary key is touched, so it cannot collide with
     /// ordinary text that merely contains these words as a substring.
+    /// 08.10.2026, слово Андрія: «ґ» по літерах має звучати так, щоб її було
+    /// чути відмінною від «г». Голос на одиночній «ґ» каже «ґе», а на слух це
+    /// майже «ге». Офіційна назва літери — «ґе» (правопис), тому до неї
+    /// додано уточнення «тверде». Діє для маленької і великої, iPhone і Mac.
+    static let gheSpokenName = "тверде ґе"
+
     static func normalizeStandaloneLetterNameRequest(_ ssml: String) -> String? {
         let segments = extractTextSegments(from: ssml)
         guard !segments.isEmpty else { return nil }
+
+        if let ghe = spokenStandaloneGheLetter(joined: segments.joined()) {
+            return ghe
+        }
 
         if segments.count == 1 {
             let text = segments[0].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -75,6 +85,20 @@ enum RHVoiceApostropheNormalizer {
             spokenStandaloneLetterName(for: segment)
         }
         return matchedAny ? rewritten : nil
+    }
+
+    /// The real letter «ґ» on its own, or with a capital marker — macOS sends
+    /// « прописная <say-as characters>ґ</say-as> », iOS « Велика <say-as>ґ</say-as> ».
+    private static func spokenStandaloneGheLetter(joined: String) -> String? {
+        let collapsed = joined
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+        if collapsed == "ґ" || collapsed == "Ґ" { return gheSpokenName }
+        for (marker, spokenMarker) in capitalLetterMarkers {
+            let lower = collapsed.lowercased()
+            if lower == marker + " ґ" { return spokenMarker + " " + gheSpokenName }
+        }
+        return nil
     }
 
     /// Walks `ssml` exactly like `extractTextSegments`, but rebuilds the
@@ -229,12 +253,12 @@ enum RHVoiceApostropheNormalizer {
         "ї українська": "є",
         "українська є": "є",
         "є українська": "є",
-        "ghe, піднесення": "ґ",
-        "ghe піднесення": "ґ",
-        "піднесення, ghe": "ґ",
-        "піднесення ghe": "ґ",
-        "ге, піднесення": "ґ",
-        "ге піднесення": "ґ",
+        "ghe, піднесення": gheSpokenName,
+        "ghe піднесення": gheSpokenName,
+        "піднесення, ghe": gheSpokenName,
+        "піднесення ghe": gheSpokenName,
+        "ге, піднесення": gheSpokenName,
+        "ге піднесення": gheSpokenName,
         // Russian VOTOutputPunctuation table — measured 18.09.2026 on
         // iPhone 12 / iOS 26.6.1, where VoiceOver answered from the ru strings
         // (« белорусская и украинская i », « украинская йе », « йи »,
@@ -246,10 +270,10 @@ enum RHVoiceApostropheNormalizer {
         "украинская йе": "є",
         "йе украинская": "є",
         "йи": "ї",
-        "гэ с подъемом": "ґ",
-        "гэ с подъёмом": "ґ",
-        "гэ, с подъемом": "ґ",
-        "гэ, с подъёмом": "ґ",
+        "гэ с подъемом": gheSpokenName,
+        "гэ с подъёмом": gheSpokenName,
+        "гэ, с подъемом": gheSpokenName,
+        "гэ, с подъёмом": gheSpokenName,
         // macOS VoiceOver sends the plain ENGLISH Unicode name — measured
         // 08.10.2026 on MacBook Pro / macOS 26.6.2 (system language ru-UA),
         // build 1.0.2, TextEdit, arrow right by character
@@ -259,8 +283,8 @@ enum RHVoiceApostropheNormalizer {
         // Capital «Ґ», «Є», «Ї» arrive as the real letter in `say-as` and are
         // not touched. «ї» arrived decomposed: «…i» + «combining diaeresis»
         // glued without a space.
-        "cyrillic small letter ghe with upturn": "ґ",
-        "cyrillic capital letter ghe with upturn": "ґ",
+        "cyrillic small letter ghe with upturn": gheSpokenName,
+        "cyrillic capital letter ghe with upturn": gheSpokenName,
         "cyrillic small letter ukrainian ie": "є",
         "cyrillic capital letter ukrainian ie": "є",
         "cyrillic small letter byelorussian-ukrainian i": "і",

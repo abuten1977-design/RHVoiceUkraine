@@ -1263,7 +1263,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // юнікодну назву, перекладену наполовину: латинське «ghe» + «піднесення».
         // Андрій незалежно підтвердив на слух: чув «г піднесення».
         let measured = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> ghe, піднесення </prosody></lang></speak>"
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "ґ")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "тверде ґе")
     }
 
     func testGheNameIsNormalizedRegardlessOfCommaAndWordOrder() {
@@ -1278,18 +1278,19 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         for variant in variants {
             XCTAssertEqual(
                 RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
-                "ґ",
+                "тверде ґе",
                 "не спрацювало на варіанті: \(variant)"
             )
         }
     }
 
-    func testCapitalGheArrivesCorrectlyAndIsLeftAlone() {
-        // ⭐ВЕЛИКА «Ґ» НЕ ЗЛАМАНА: iOS шле «Велика» плюс СПРАВЖНЮ літеру в тезі
-        // посимвольного читання. Андрій підтвердив на слух 14.09, що вона звучить
-        // правильно. Правило не повинно її чіпати — інакше ми зламаємо робоче.
+    func testCapitalGheGetsTheDistinctName() {
+        // 14.09 велику «Ґ» лишали як є. 08.10.2026 Андрій на Маці: «ґ» на слух
+        // не відрізнити від «г» — тепер і велика звучить «тверде ґе».
         let capital = "<speak><lang xml:lang=\"uk\">Велика <say-as interpret-as=\"characters\">ґ</say-as></lang></speak>"
-        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(capital))
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(capital), "Велика тверде ґе")
+        let macCapital = "<speak><prosody rate=\"160.00002%\"><lang xml:lang=\"uk\"><voice name=\"\">прописная  <say-as interpret-as=\"characters\">ґ</say-as><break time=\"60.0ms\"/></voice></lang></prosody></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(macCapital), "Прописная тверде ґе")
     }
 
     // MARK: - ВЕЛИКІ літери і російська таблиця VoiceOver (заміри 18.09.2026)
@@ -1302,7 +1303,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         let cases = [
             ("<speak><lang xml:lang=\"uk-UA\">Велика   білорусько-українська i </lang></speak>", "Велика і"),
             ("<speak><lang xml:lang=\"uk-UA\">Велика   українська ї </lang></speak>", "Велика є"),
-            ("<speak><lang xml:lang=\"uk-UA\">Велика   ghe, піднесення </lang></speak>", "Велика ґ")
+            ("<speak><lang xml:lang=\"uk-UA\">Велика   ghe, піднесення </lang></speak>", "Велика тверде ґе")
         ]
         for (measured, expected) in cases {
             XCTAssertEqual(
@@ -1355,7 +1356,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
 
     func testMacCapitalLetterInSayAsIsLeftAlone() {
         // Великі Ґ, Є, Ї на Маці приходять справжньою літерою в say-as — не чіпати.
-        let capital = "<speak><prosody rate=\"160.00002%\"><lang xml:lang=\"uk\"><voice name=\"\">прописная  <say-as interpret-as=\"characters\">ґ</say-as><break time=\"60.0ms\"/></voice></lang></prosody></speak>"
+        let capital = "<speak><prosody rate=\"160.00002%\"><lang xml:lang=\"uk\"><voice name=\"\">прописная  <say-as interpret-as=\"characters\">є</say-as><break time=\"60.0ms\"/></voice></lang></prosody></speak>"
         XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(capital))
     }
 
@@ -1372,8 +1373,8 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             (" белорусская и украинская i ", "і"),
             ("Прописная украинская йе", "Прописная є"),
             ("Прописная йи", "Прописная ї"),
-            ("Прописная гэ с подъемом", "Прописная ґ"),
-            ("Прописная гэ с подъёмом", "Прописная ґ")
+            ("Прописная гэ с подъемом", "Прописная тверде ґе"),
+            ("Прописная гэ с подъёмом", "Прописная тверде ґе")
         ]
         for (measured, expected) in cases {
             XCTAssertEqual(
