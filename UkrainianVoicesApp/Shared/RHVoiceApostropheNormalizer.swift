@@ -249,7 +249,28 @@ enum RHVoiceApostropheNormalizer {
         "гэ с подъемом": "ґ",
         "гэ с подъёмом": "ґ",
         "гэ, с подъемом": "ґ",
-        "гэ, с подъёмом": "ґ"
+        "гэ, с подъёмом": "ґ",
+        // macOS VoiceOver sends the plain ENGLISH Unicode name — measured
+        // 08.10.2026 on MacBook Pro / macOS 26.6.2 (system language ru-UA),
+        // build 1.0.2, TextEdit, arrow right by character
+        // (`copilot/mac_probe_2026-10-08/chars.txt`). Small letters arrive as
+        // the bare name; capital «І» as « прописная cyrillic capital letter
+        // byelorussian-ukrainian i » (the marker rule above handles the prefix).
+        // Capital «Ґ», «Є», «Ї» arrive as the real letter in `say-as` and are
+        // not touched. «ї» arrived decomposed: «…i» + «combining diaeresis»
+        // glued without a space.
+        "cyrillic small letter ghe with upturn": "ґ",
+        "cyrillic capital letter ghe with upturn": "ґ",
+        "cyrillic small letter ukrainian ie": "є",
+        "cyrillic capital letter ukrainian ie": "є",
+        "cyrillic small letter byelorussian-ukrainian i": "і",
+        "cyrillic capital letter byelorussian-ukrainian i": "і",
+        "cyrillic small letter byelorussian-ukrainian icombining diaeresis": "ї",
+        "cyrillic small letter byelorussian-ukrainian i combining diaeresis": "ї",
+        "cyrillic capital letter byelorussian-ukrainian icombining diaeresis": "ї",
+        "cyrillic capital letter byelorussian-ukrainian i combining diaeresis": "ї",
+        "cyrillic small letter yi": "ї",
+        "cyrillic capital letter yi": "ї"
     ]
 
     static func normalizeInTextSegments(
@@ -634,9 +655,12 @@ enum RHVoiceApostropheNormalizer {
         // збігається взагалі (потрібні ДВІ «крапки» між числами).
         let weekdayPrefix = #"(?:(пн|вт|ср|чт|пт|сб|нд)\.?,?\s*)?"#
 
+        // 08.10.2026: слово «року» / «р.» одразу після року правило ЗАБИРАЄ
+        // разом із роком — воно саме дописує «року», інакше виходило
+        // «… шостого року року» (замір на Маці, `mac_probe_2026-10-08`).
         let withVerbalizedDots = replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+крапка\s+([0-9]{1,2})\s+крапка\s+([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
+            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+крапка\s+([0-9]{1,2})\s+крапка\s+([1-2][0-9]{3})(?:\s+(?:року|р\.))?(?![\p{L}\p{N}]|[.,][0-9])"#,
             options: [.caseInsensitive]
         ) { match, source in
             weekdayDateMatchToWords(match, in: source)
@@ -644,7 +668,7 @@ enum RHVoiceApostropheNormalizer {
 
         let withDottedDates = replacingMatches(
             in: withVerbalizedDots,
-            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?![\p{L}\p{N}]|[.,][0-9])"#,
+            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\.([0-9]{1,2})\.([1-2][0-9]{3})(?:\s+(?:року|р\.))?(?![\p{L}\p{N}]|[.,][0-9])"#,
             options: [.caseInsensitive]
         ) { match, source in
             weekdayDateMatchToWords(match, in: source)
@@ -655,7 +679,7 @@ enum RHVoiceApostropheNormalizer {
         // в родовому відмінку.
         return replacingMatches(
             in: withDottedDates,
-            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+("# + monthTokenAlternation + #")\.?(?![\p{L}])(?:\s+([1-2][0-9]{3}))?(?![\p{L}\p{N}])"#,
+            pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+("# + monthTokenAlternation + #")\.?(?![\p{L}])(?:\s+([1-2][0-9]{3})(?:\s+(?:року|р\.))?)?(?![\p{L}\p{N}])"#,
             options: [.caseInsensitive]
         ) { match, source in
             weekdayMonthAbbrevDateMatchToWords(match, in: source)
@@ -948,7 +972,7 @@ enum RHVoiceApostropheNormalizer {
         // Той самий необов'язковий день тижня, що й у normalizeDates: цей прохід
         // працює ПЕРШИМ по всьому SSML і без нього з'їдав дату, лишаючи «пт, » сирим.
         let weekdayPrefix = #"(?:(пн|вт|ср|чт|пт|сб|нд)\.?,?\s*)?"#
-        let pattern = #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"("# + dateComponent + #")\.("# + dateComponent + #")\.("# + dateComponent + #")(?![\p{L}\p{N}]|[.,][0-9])"#
+        let pattern = #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"("# + dateComponent + #")\.("# + dateComponent + #")\.("# + dateComponent + #")(?:\s+(?:року|р\.))?(?![\p{L}\p{N}]|[.,][0-9])"#
 
         return replacingMatches(
             in: ssml,

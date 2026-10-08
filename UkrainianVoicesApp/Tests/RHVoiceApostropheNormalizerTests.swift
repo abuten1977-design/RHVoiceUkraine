@@ -631,6 +631,19 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
             RHVoiceApostropheNormalizer.normalizeInTextSegments("23 лип. 2026"),
             "двадцять третє липня дві тисячі двадцять шостого року"
         )
+        // 08.10.2026: слово «року» вже стоїть у тексті — не дублювати (замір на Маці).
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("8 жовтня 2026 року"),
+            "восьме жовтня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("07.10.2026 року"),
+            "сьоме жовтня дві тисячі двадцять шостого року"
+        )
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("8 жовтня 2026 р. відбулося"),
+            "восьме жовтня дві тисячі двадцять шостого року відбулося"
+        )
         // Повна назва місяця в родовому відмінку теж приймається.
         XCTAssertEqual(
             RHVoiceApostropheNormalizer.normalizeInTextSegments("23 липня 2026"),
@@ -1305,6 +1318,37 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // правильно). З приставкою «Велика» поведінка має лишитись тією ж.
         let measured = "<speak><lang xml:lang=\"uk-UA\">Велика   yi </lang></speak>"
         XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured))
+    }
+
+    // MARK: - macOS: англійські назви Unicode (замір на Маці 08.10.2026)
+
+    func testMeasuredMacEnglishUnicodeLetterNamesBecomeTheLetter() {
+        // Рядки ЗНЯТІ з MacBook Pro / macOS 26.6.2, збірка 1.0.2, TextEdit,
+        // стрілка вправо по літерах (`copilot/mac_probe_2026-10-08/chars.txt`).
+        let wrap = { (t: String) in "<speak><prosody pitch=\"+0.0%\" rate=\"160.00002%\" volume=\"+0.0dB\"><lang xml:lang=\"uk\"><voice name=\"\">\(t)</voice></lang></prosody></speak>" }
+        let cases = [
+            (wrap("cyrillic small letter ghe with upturn"), "ґ"),
+            (wrap("cyrillic small letter ukrainian ie"), "є"),
+            (wrap("cyrillic small letter byelorussian-ukrainian i"), "і"),
+            (wrap("cyrillic small letter byelorussian-ukrainian icombining diaeresis"), "ї"),
+            (wrap("прописная  cyrillic capital letter byelorussian-ukrainian i<break time=\"60.0ms\"/>"), "Прописная і")
+        ]
+        for (measured, expected) in cases {
+            let result = RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured)
+            XCTAssertNotNil(result, "не спрацювало на заміреному рядку: \(measured)")
+            XCTAssertTrue(result?.contains(expected) == true, "\(measured) → \(String(describing: result))")
+            XCTAssertFalse(result?.lowercased().contains("cyrillic") == true, "англійська назва лишилась: \(String(describing: result))")
+        }
+    }
+
+    func testMacCapitalLetterInSayAsIsLeftAlone() {
+        // Великі Ґ, Є, Ї на Маці приходять справжньою літерою в say-as — не чіпати.
+        let capital = "<speak><prosody rate=\"160.00002%\"><lang xml:lang=\"uk\"><voice name=\"\">прописная  <say-as interpret-as=\"characters\">ґ</say-as><break time=\"60.0ms\"/></voice></lang></prosody></speak>"
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(capital))
+    }
+
+    func testOrdinaryEnglishSentenceIsNotTreatedAsLetterName() {
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("cyrillic small letter ghe with upturn is a letter"))
     }
 
     func testMeasuredRussianVoiceOverTableIsUnderstood() {
