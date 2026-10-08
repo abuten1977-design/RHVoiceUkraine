@@ -455,7 +455,9 @@ enum RHVoiceApostropheNormalizer {
         case "\u{2018}":
             return "лівий апостроф"
         case "\u{02BC}":
-            return "буквений апостроф"
+            // 08.10.2026, слово Андрія: український апостроф — найчастіший
+            // знак, тож просто «апостроф»; решта видів лишаються з уточненням.
+            return "апостроф"
         case "\u{0060}", "&#96;", "&#x60;", "&#X60;", "&grave;":
             return "зворотний апостроф"
         case "\u{2032}":
@@ -465,9 +467,25 @@ enum RHVoiceApostropheNormalizer {
         case "\u{FF07}":
             return "повноширинний апостроф"
         default:
-            return nil
+            return macEnglishApostropheNames[text.lowercased()]
         }
     }
+
+    /// macOS VoiceOver reading by character sends the ENGLISH Unicode name of
+    /// the mark instead of the mark itself — measured 08.10.2026 on
+    /// MacBook Pro / macOS 26.6.2, build 1.0.2: « modifier letter apostrophe »
+    /// for U+02BC (the Ukrainian keyboard apostrophe). The other names are the
+    /// official Unicode names of the marks above, mapped to the same words.
+    private static let macEnglishApostropheNames: [String: String] = [
+        "modifier letter apostrophe": "апостроф",
+        "apostrophe": "прямий апостроф",
+        "right single quotation mark": "правий апостроф",
+        "left single quotation mark": "лівий апостроф",
+        "grave accent": "зворотний апостроф",
+        "prime": "штрих",
+        "acute accent": "акут",
+        "fullwidth apostrophe": "повноширинний апостроф"
+    ]
 
     /// Те, що VoiceOver вимовив за нас (доведено заміром 29.09.2026, журнал
     /// `cap26_2026-09-29_контрольний_текст.txt`, рядки від `vot`):

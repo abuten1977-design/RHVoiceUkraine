@@ -45,7 +45,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("&#x60;"), "зворотний апостроф")
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("&grave;"), "зворотний апостроф")
         XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("<speak><voice name=\"x\">`</voice></speak>"), "зворотний апостроф")
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("<speak><voice name=\"x\">ʼ</voice></speak>"), "буквений апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("<speak><voice name=\"x\">ʼ</voice></speak>"), "апостроф")
     }
 
     func testStandaloneApostropheDoesNotRewriteWords() {
@@ -1321,6 +1321,18 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     }
 
     // MARK: - macOS: англійські назви Unicode (замір на Маці 08.10.2026)
+
+    func testMeasuredMacModifierLetterApostropheNameIsSpokenAsApostrophe() {
+        // Рядки ЗНЯТІ з Мака 08.10.2026 (macOS 26.6.2, 1.0.2): Андрій ішов по
+        // літерах через український апостроф, VoiceOver слав англійську назву.
+        let plain = "<speak><prosody rate=\"160.00002%\"><lang xml:lang=\"uk\"><voice name=\"\">modifier letter apostrophe</voice></lang></prosody></speak>"
+        let lowered = "<speak><prosody rate=\"160.00002%\"><lang xml:lang=\"uk\"><voice name=\"\"><prosody pitch=\"-40.0%\">modifier letter apostrophe</prosody></voice></lang></prosody></speak>"
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest(plain), "апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest(lowered), "апостроф")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("right single quotation mark"), "правий апостроф")
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneApostropheRequest("modifier letter apostrophe is here"))
+    }
+
 
     func testMeasuredMacEnglishUnicodeLetterNamesBecomeTheLetter() {
         // Рядки ЗНЯТІ з MacBook Pro / macOS 26.6.2, збірка 1.0.2, TextEdit,
