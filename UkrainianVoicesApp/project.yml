@@ -290,6 +290,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: App/UkrainianVoicesMac.entitlements
         MARKETING_VERSION: "1.0.2"
         CURRENT_PROJECT_VERSION: "1"
+        # ⭐08.10.2026 журнал NUMBER_DIAG на Маці: замір сирого входу VoiceOver. Перед магазинною збіркою прибрати.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
@@ -348,6 +350,9 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac.Extension
         INFOPLIST_FILE: Extension/Info.plist
         MARKETING_VERSION: "1.0.2"
+        CURRENT_PROJECT_VERSION: "1"
+        # ⭐08.10.2026 журнал NUMBER_DIAG на Маці: замір сирого входу VoiceOver. Перед магазинною збіркою прибрати.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
         CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtensionMac.entitlements
         SWIFT_VERSION: "5.0"
         DEFINES_MODULE: YES
