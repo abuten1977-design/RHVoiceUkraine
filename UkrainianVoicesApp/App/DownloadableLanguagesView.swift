@@ -69,6 +69,14 @@ struct DownloadableLanguagesView: View {
     @State private var isRefreshingSelfCheck = false
 
     var body: some View {
+        #if os(macOS)
+        macBody
+        #else
+        iosBody
+        #endif
+    }
+
+    private var iosBody: some View {
         List {
             Section("Вбудована мова") {
                 HStack {
@@ -145,6 +153,111 @@ struct DownloadableLanguagesView: View {
         }
     }
 
+    #if os(macOS)
+    /// Mac: стопка замість List — VoiceOver на Маці пропускав рядок «Англійська» у List
+    /// (замір 08.10.2026; правило `MACOS_VOICEOVER_SWIFTUI_WORKING_RULES_2026-04-03.md`, рядок 75).
+    /// «Самоперевірку» прибрано — вона про iPhone (рішення Андрія 08.10.2026).
+    private var macBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Вбудована мова")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+
+                HStack {
+                    Text("Українська")
+                    Spacer()
+                    Text("4 голоси")
+                        .foregroundColor(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Українська, 4 голоси, вбудована мова, завжди доступна")
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+
+                if showDownloadableLanguages {
+                    Divider()
+
+                    Text("Додаткові мови")
+                        .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 12)
+                        .padding(.bottom, 6)
+
+                    switch downloadManager.manifestState {
+                    case .idle, .loading:
+                        HStack {
+                            ProgressView()
+                            Text("Завантаження списку мов…")
+                                .foregroundColor(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Завантаження списку мов")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                    case .failed(let message):
+                        Text(message)
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                        Button("Спробувати ще раз") {
+                            Task { await downloadManager.loadManifest(forceNetwork: true) }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                    case .loaded:
+                        if let manifest = downloadManager.manifest {
+                            ForEach(manifest.languages) { language in
+                                NavigationLink {
+                                    DownloadableLanguageVoicesView(
+                                        language: language,
+                                        downloadManager: downloadManager
+                                    )
+                                } label: {
+                                    HStack {
+                                        Text(NSLocalizedString(language.nameUk, comment: ""))
+                                        Spacer()
+                                        Text(installedCountText(language))
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .accessibilityLabel("\(NSLocalizedString(language.nameUk, comment: "")), \(installedCountText(language))")
+                                .accessibilityHint("Відкрити список голосів для завантаження")
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 10)
+                            }
+                        }
+                    }
+                }
+
+                if !downloadManager.statusMessage.isEmpty {
+                    Divider()
+                    Text(downloadManager.statusMessage)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel(String(format: NSLocalizedString("Стан: %@", comment: ""), downloadManager.statusMessage))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle("Мови")
+        .onAppear {
+            if showDownloadableLanguages {
+                downloadManager.refresh()
+            } else {
+                downloadManager.refreshInstalled()
+            }
+        }
+    }
+    #endif
+
     private var selfCheckSection: some View {
         Section("Самоперевірка") {
             if showDownloadableLanguages {
@@ -195,6 +308,27 @@ struct DownloadableLanguageVoicesView: View {
     @State private var voicePendingDelete: ManifestVoice?
 
     var body: some View {
+        #if os(macOS)
+        macBody
+            .alert(item: $voicePendingDelete, content: deleteAlert)
+        #else
+        iosBody
+            .alert(item: $voicePendingDelete, content: deleteAlert)
+        #endif
+    }
+
+    private func deleteAlert(_ voice: ManifestVoice) -> Alert {
+        Alert(
+            title: Text(String(format: NSLocalizedString("Видалити голос %@?", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""))),
+            message: Text("Голос зникне з VoiceOver. Його можна буде завантажити знову."),
+            primaryButton: .destructive(Text("Видалити")) {
+                downloadManager.delete(voice)
+            },
+            secondaryButton: .cancel(Text("Скасувати"))
+        )
+    }
+
+    private var iosBody: some View {
         List {
             Section {
                 Text("Завантажений голос одразу з'являється на головному екрані поруч з українськими (там його можна вмикати, вимикати і слухати зразок) та у списку голосів VoiceOver.")
@@ -219,17 +353,60 @@ struct DownloadableLanguageVoicesView: View {
         }
         .navigationTitle(NSLocalizedString(language.nameUk, comment: ""))
         .onAppear { downloadManager.refreshInstalled() }
-        .alert(item: $voicePendingDelete) { voice in
-            Alert(
-                title: Text(String(format: NSLocalizedString("Видалити голос %@?", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""))),
-                message: Text("Голос зникне з VoiceOver. Його можна буде завантажити знову."),
-                primaryButton: .destructive(Text("Видалити")) {
-                    downloadManager.delete(voice)
-                },
-                secondaryButton: .cancel(Text("Скасувати"))
-            )
-        }
     }
+
+    #if os(macOS)
+    /// Mac: стопка замість List — у List дія на рядку голосу не натискала кнопку,
+    /// і завантажити/видалити голос з VoiceOver було неможливо (замір 08.10.2026).
+    /// Тут рядок — лише текст, кнопка — окремий елемент поруч.
+    private var macBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Завантажений голос одразу з'являється на головному екрані поруч з українськими (там його можна вмикати, вимикати і слухати зразок) та у списку голосів VoiceOver.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+
+                Text("Голоси")
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
+                    .padding(.bottom, 6)
+
+                ForEach(language.voices) { voice in
+                    HStack {
+                        voiceText(voice)
+                        Spacer()
+                        voiceControl(voice)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                    if voice.id != language.voices.last?.id {
+                        Divider()
+                    }
+                }
+
+                if !downloadManager.statusMessage.isEmpty {
+                    Divider()
+                    Text(downloadManager.statusMessage)
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel(String(format: NSLocalizedString("Стан: %@", comment: ""), downloadManager.statusMessage))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle(NSLocalizedString(language.nameUk, comment: ""))
+        .onAppear { downloadManager.refreshInstalled() }
+    }
+    #endif
 
     // Кнопка — ОКРЕМИЙ accessibility-елемент (не .combine на весь рядок):
     // комбінований рядок із кнопкою всередині у SwiftUI може не активувати дію
@@ -237,46 +414,55 @@ struct DownloadableLanguageVoicesView: View {
     @ViewBuilder
     private func voiceRow(_ voice: ManifestVoice) -> some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString(voice.userFacingName, comment: ""))
-                Text("\(NSLocalizedString(voice.genderUk, comment: "")), \(voice.sizeMegabytesText)")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(rowAccessibilityLabel(voice))
-            .accessibilityHint(downloadManager.isInstalled(voice)
-                ? NSLocalizedString("Доступна дія: Видалити голос.", comment: "")
-                : NSLocalizedString("Доступна дія: Завантажити голос.", comment: ""))
-            .accessibilityAction(named: downloadManager.isInstalled(voice) ? NSLocalizedString("Видалити голос", comment: "") : NSLocalizedString("Завантажити голос", comment: "")) {
-                if downloadManager.isInstalled(voice) {
-                    voicePendingDelete = voice
-                } else {
-                    downloadManager.download(voice, language: language)
+            voiceText(voice)
+                .accessibilityHint(downloadManager.isInstalled(voice)
+                    ? NSLocalizedString("Доступна дія: Видалити голос.", comment: "")
+                    : NSLocalizedString("Доступна дія: Завантажити голос.", comment: ""))
+                .accessibilityAction(named: downloadManager.isInstalled(voice) ? NSLocalizedString("Видалити голос", comment: "") : NSLocalizedString("Завантажити голос", comment: "")) {
+                    if downloadManager.isInstalled(voice) {
+                        voicePendingDelete = voice
+                    } else {
+                        downloadManager.download(voice, language: language)
+                    }
                 }
-            }
 
             Spacer()
 
-            if let progress = downloadManager.downloadProgress[voice.id] {
-                ProgressView(value: progress)
-                    .frame(width: 80)
-                    .accessibilityLabel(String(format: NSLocalizedString("Завантаження %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: "")))
-                    .accessibilityValue(String(format: NSLocalizedString("%@ відсотків", comment: ""), String(Int(progress * 100))))
-            } else if downloadManager.isInstalled(voice) {
-                Button("Видалити") {
-                    voicePendingDelete = voice
-                }
-                .foregroundColor(.red)
-                .accessibilityLabel(String(format: NSLocalizedString("Видалити голос %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: "")))
-                .accessibilityHint("Голос зникне з VoiceOver, його можна буде завантажити знову.")
-            } else {
-                Button("Завантажити") {
-                    downloadManager.download(voice, language: language)
-                }
-                .accessibilityLabel(String(format: NSLocalizedString("Завантажити голос %@, %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""), voice.sizeMegabytesText))
-                .accessibilityHint("Після завантаження голос з'явиться у списку голосів і у VoiceOver.")
+            voiceControl(voice)
+        }
+    }
+
+    private func voiceText(_ voice: ManifestVoice) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(NSLocalizedString(voice.userFacingName, comment: ""))
+            Text("\(NSLocalizedString(voice.genderUk, comment: "")), \(voice.sizeMegabytesText)")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(rowAccessibilityLabel(voice))
+    }
+
+    @ViewBuilder
+    private func voiceControl(_ voice: ManifestVoice) -> some View {
+        if let progress = downloadManager.downloadProgress[voice.id] {
+            ProgressView(value: progress)
+                .frame(width: 80)
+                .accessibilityLabel(String(format: NSLocalizedString("Завантаження %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: "")))
+                .accessibilityValue(String(format: NSLocalizedString("%@ відсотків", comment: ""), String(Int(progress * 100))))
+        } else if downloadManager.isInstalled(voice) {
+            Button("Видалити") {
+                voicePendingDelete = voice
             }
+            .foregroundColor(.red)
+            .accessibilityLabel(String(format: NSLocalizedString("Видалити голос %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: "")))
+            .accessibilityHint("Голос зникне з VoiceOver, його можна буде завантажити знову.")
+        } else {
+            Button("Завантажити") {
+                downloadManager.download(voice, language: language)
+            }
+            .accessibilityLabel(String(format: NSLocalizedString("Завантажити голос %@, %@", comment: ""), NSLocalizedString(voice.userFacingName, comment: ""), voice.sizeMegabytesText))
+            .accessibilityHint("Після завантаження голос з'явиться у списку голосів і у VoiceOver.")
         }
     }
 

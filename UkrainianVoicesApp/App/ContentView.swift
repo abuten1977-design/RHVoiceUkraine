@@ -1712,44 +1712,78 @@ private struct PersonalDictionaryView: View {
     @State private var entryPendingDeletion: PersonalDictionaryEntry?
 
     var body: some View {
+        dictionaryContent
+            .navigationTitle("Мій словник")
+#if !os(macOS)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    addButton
+                }
+            }
+#endif
+            .sheet(isPresented: $isAddingEntry) {
+                PersonalDictionaryEditorView(
+                    entry: nil,
+                    isPreviewPlaying: isPreviewPlaying,
+                    save: save,
+                    preview: preview,
+                    stopPreview: stopPreview
+                )
+            }
+            .sheet(item: $editingEntry) { entry in
+                PersonalDictionaryEditorView(
+                    entry: entry,
+                    isPreviewPlaying: isPreviewPlaying,
+                    save: save,
+                    preview: preview,
+                    stopPreview: stopPreview
+                )
+            }
+            .onAppear(perform: reload)
+            // ⭐05.10.2026: було `confirmationDialog` (аркуш знизу). Замір Андрія:
+            // VoiceOver бачить ЛИШЕ кнопку «Видалити», «Скасувати» недосяжна, хоча
+            // жест «зиґзаґ» вікно закриває. В `alert` обидві кнопки лежать в одному
+            // контейнері, тому VoiceOver проходить по них підряд.
+            .alert(
+                entryPendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.displayWord) } ?? NSLocalizedString("Видалити запис?", comment: ""),
+                isPresented: Binding(
+                    get: { entryPendingDeletion != nil },
+                    set: { if !$0 { entryPendingDeletion = nil } }
+                )
+            ) {
+                if let entry = entryPendingDeletion {
+                    Button("Видалити", role: .destructive) {
+                        delete(entry)
+                        entryPendingDeletion = nil
+                    }
+                }
+                Button("Скасувати", role: .cancel) {
+                    entryPendingDeletion = nil
+                }
+            }
+#if os(macOS)
+            .frame(minWidth: 460, minHeight: 520)
+#endif
+    }
+
+    private var addButton: some View {
+        Button {
+            isAddingEntry = true
+        } label: {
+            Label("Додати", systemImage: "plus")
+        }
+        .accessibilityLabel("Додати запис")
+        .accessibilityHint("Відкриває форму нового слова.")
+    }
+
+    @ViewBuilder
+    private var dictionaryContent: some View {
+#if os(macOS)
+        macContent
+#else
         List {
             Section {
-                Button {
-                    showsTechnicalInfo.toggle()
-                    announce(String(format: NSLocalizedString("Технічна інформація: %@.", comment: ""), showsTechnicalInfo ? NSLocalizedString("Розгорнуто", comment: "") : NSLocalizedString("Згорнуто", comment: "")))
-                } label: {
-                    HStack {
-                        Text("Технічна інформація")
-                        Spacer()
-                        Image(systemName: showsTechnicalInfo ? "chevron.up" : "chevron.down")
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .accessibilityLabel("Технічна інформація")
-                .accessibilityValue(showsTechnicalInfo ? NSLocalizedString("Розгорнуто", comment: "") : NSLocalizedString("Згорнуто", comment: ""))
-                .accessibilityHint("Подвійний дотик розгортає або згортає стан файлів особистого словника.")
-
-                if showsTechnicalInfo {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(fileStatus.dictionaryExists ? String(format: NSLocalizedString("user_dictionary.txt: %@ байт", comment: ""), String(fileStatus.dictionarySize)) : NSLocalizedString("user_dictionary.txt: не створено", comment: ""))
-                        Text(fileStatus.metadataExists ? String(format: NSLocalizedString("user_dictionary_meta.json: %@ байт", comment: ""), String(fileStatus.metadataSize)) : NSLocalizedString("user_dictionary_meta.json: не створено", comment: ""))
-                            .foregroundColor(.secondary)
-                        if let modifiedAt = fileStatus.dictionaryModifiedAt {
-                            Text(String(format: NSLocalizedString("Оновлено: %@", comment: ""), modifiedAt.formatted(date: .numeric, time: .standard)))
-                                .foregroundColor(.secondary)
-                        }
-#if os(macOS)
-                        if let path = fileStatus.dictionaryPath {
-                            Text(path)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .textSelection(.enabled)
-                        }
-#endif
-                    }
-                    .font(.footnote)
-                    .accessibilityElement(children: .combine)
-                }
+                technicalInfoRows
             }
 
             if entries.isEmpty {
@@ -1780,31 +1814,7 @@ private struct PersonalDictionaryView: View {
                             }
 
                             HStack {
-                                Button {
-                                    preview(entry.displayWord)
-                                } label: {
-                                    Label("Перевірити слово", systemImage: "speaker.wave.2")
-                                }
-                                .disabled(entry.displayWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                                .accessibilityAddTraits(.startsMediaSession)
-                                .accessibilityHint("Промовляє звичайне слово, щоб перевірити застосування словника.")
-
-                                Button {
-                                    preview(entry.stressedWord)
-                                } label: {
-                                    Label("Вимова", systemImage: "waveform")
-                                }
-                                .disabled(entry.stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                                .accessibilityAddTraits(.startsMediaSession)
-                                .accessibilityHint("Промовляє введений варіант вимови напряму.")
-
-                                Button(role: .destructive) {
-                                    entryPendingDeletion = entry
-                                } label: {
-                                    Label("Видалити", systemImage: "trash")
-                                }
-                                .accessibilityLabel(String(format: NSLocalizedString("Видалити %@", comment: ""), entry.displayWord))
-                                .accessibilityHint("Відкриває підтвердження перед видаленням запису.")
+                                entryActionButtons(entry)
                             }
                             .font(.caption)
                         }
@@ -1823,61 +1833,141 @@ private struct PersonalDictionaryView: View {
                 }
             }
         }
-        .navigationTitle("Мій словник")
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    isAddingEntry = true
-                } label: {
-                    Label("Додати", systemImage: "plus")
-                }
-                .accessibilityLabel("Додати запис")
-                .accessibilityHint("Відкриває форму нового слова.")
-            }
-        }
-        .sheet(isPresented: $isAddingEntry) {
-            PersonalDictionaryEditorView(
-                entry: nil,
-                isPreviewPlaying: isPreviewPlaying,
-                save: save,
-                preview: preview,
-                stopPreview: stopPreview
-            )
-        }
-        .sheet(item: $editingEntry) { entry in
-            PersonalDictionaryEditorView(
-                entry: entry,
-                isPreviewPlaying: isPreviewPlaying,
-                save: save,
-                preview: preview,
-                stopPreview: stopPreview
-            )
-        }
-        .onAppear(perform: reload)
-        // ⭐05.10.2026: було `confirmationDialog` (аркуш знизу). Замір Андрія:
-        // VoiceOver бачить ЛИШЕ кнопку «Видалити», «Скасувати» недосяжна, хоча
-        // жест «зиґзаґ» вікно закриває. В `alert` обидві кнопки лежать в одному
-        // контейнері, тому VoiceOver проходить по них підряд.
-        .alert(
-            entryPendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.displayWord) } ?? NSLocalizedString("Видалити запис?", comment: ""),
-            isPresented: Binding(
-                get: { entryPendingDeletion != nil },
-                set: { if !$0 { entryPendingDeletion = nil } }
-            )
-        ) {
-            if let entry = entryPendingDeletion {
-                Button("Видалити", role: .destructive) {
-                    delete(entry)
-                    entryPendingDeletion = nil
-                }
-            }
-            Button("Скасувати", role: .cancel) {
-                entryPendingDeletion = nil
-            }
-        }
-#if os(macOS)
-        .frame(minWidth: 460, minHeight: 520)
 #endif
+    }
+
+#if os(macOS)
+    /// Mac: стопка замість List. Замір 09.10.2026 курсором VoiceOver: List на Маці
+    /// звучить як «таблиця», у яку треба окремо входити, а кнопка «Додати» з панелі
+    /// вікна зсередини таблиці недосяжна. Тут кожна дія — окрема звичайна кнопка.
+    private var macContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                addButton
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                Divider()
+
+                technicalInfoRows
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                Divider()
+
+                if entries.isEmpty {
+                    Text("Словник порожній.")
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Особистий словник порожній")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                } else {
+                    Text("Записи")
+                        .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 12)
+                        .padding(.bottom, 6)
+
+                    ForEach(entries) { entry in
+                        VStack(alignment: .leading, spacing: 6) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(entry.displayWord)
+                                    .font(.headline)
+                                Text(entry.stressedWord)
+                                    .foregroundColor(.secondary)
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(String(format: NSLocalizedString("%@, вимова %@", comment: ""), entry.displayWord, entry.stressedWord))
+
+                            HStack(spacing: 12) {
+                                Button("Редагувати запис") {
+                                    editingEntry = entry
+                                }
+                                entryActionButtons(entry)
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+
+                        if entry.id != entries.last?.id {
+                            Divider()
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+#endif
+
+    @ViewBuilder
+    private var technicalInfoRows: some View {
+        Button {
+            showsTechnicalInfo.toggle()
+            announce(String(format: NSLocalizedString("Технічна інформація: %@.", comment: ""), showsTechnicalInfo ? NSLocalizedString("Розгорнуто", comment: "") : NSLocalizedString("Згорнуто", comment: "")))
+        } label: {
+            HStack {
+                Text("Технічна інформація")
+                Spacer()
+                Image(systemName: showsTechnicalInfo ? "chevron.up" : "chevron.down")
+                    .foregroundColor(.secondary)
+            }
+        }
+        .accessibilityLabel("Технічна інформація")
+        .accessibilityValue(showsTechnicalInfo ? NSLocalizedString("Розгорнуто", comment: "") : NSLocalizedString("Згорнуто", comment: ""))
+        .accessibilityHint("Подвійний дотик розгортає або згортає стан файлів особистого словника.")
+
+        if showsTechnicalInfo {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(fileStatus.dictionaryExists ? String(format: NSLocalizedString("user_dictionary.txt: %@ байт", comment: ""), String(fileStatus.dictionarySize)) : NSLocalizedString("user_dictionary.txt: не створено", comment: ""))
+                Text(fileStatus.metadataExists ? String(format: NSLocalizedString("user_dictionary_meta.json: %@ байт", comment: ""), String(fileStatus.metadataSize)) : NSLocalizedString("user_dictionary_meta.json: не створено", comment: ""))
+                    .foregroundColor(.secondary)
+                if let modifiedAt = fileStatus.dictionaryModifiedAt {
+                    Text(String(format: NSLocalizedString("Оновлено: %@", comment: ""), modifiedAt.formatted(date: .numeric, time: .standard)))
+                        .foregroundColor(.secondary)
+                }
+#if os(macOS)
+                if let path = fileStatus.dictionaryPath {
+                    Text(path)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .textSelection(.enabled)
+                }
+#endif
+            }
+            .font(.footnote)
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    @ViewBuilder
+    private func entryActionButtons(_ entry: PersonalDictionaryEntry) -> some View {
+        Button {
+            preview(entry.displayWord)
+        } label: {
+            Label("Перевірити слово", systemImage: "speaker.wave.2")
+        }
+        .disabled(entry.displayWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .accessibilityAddTraits(.startsMediaSession)
+        .accessibilityHint("Промовляє звичайне слово, щоб перевірити застосування словника.")
+
+        Button {
+            preview(entry.stressedWord)
+        } label: {
+            Label("Вимова", systemImage: "waveform")
+        }
+        .disabled(entry.stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .accessibilityAddTraits(.startsMediaSession)
+        .accessibilityHint("Промовляє введений варіант вимови напряму.")
+
+        Button(role: .destructive) {
+            entryPendingDeletion = entry
+        } label: {
+            Label("Видалити", systemImage: "trash")
+        }
+        .accessibilityLabel(String(format: NSLocalizedString("Видалити %@", comment: ""), entry.displayWord))
+        .accessibilityHint("Відкриває підтвердження перед видаленням запису.")
     }
 }
 
@@ -1899,12 +1989,67 @@ private struct AbbreviationDictionaryView: View {
     @State private var pendingImport: AbbreviationDictionaryImportPreview?
 
     var body: some View {
+        dictionaryContent
+            .navigationTitle("Словник замін")
+            .sheet(isPresented: $isAddingEntry) {
+                AbbreviationDictionaryEditorView(entry: nil, save: save)
+            }
+            .sheet(item: $editingEntry) { entry in
+                AbbreviationDictionaryEditorView(entry: entry, save: save)
+            }
+            .onAppear {
+                reload()
+                prepareExport()
+            }
+            .fileImporter(isPresented: $isImporting, allowedContentTypes: [.plainText], allowsMultipleSelection: false) { result in
+                guard case let .success(urls) = result, let url = urls.first else {
+                    if case let .failure(error) = result { reportMessage(String(format: NSLocalizedString("Не вдалося відкрити файл словника: %@", comment: ""), error.localizedDescription)) }
+                    return
+                }
+                readImportFile(url)
+            }
+            // ⭐01.10.2026: у цього діалогу не був заданий `titleVisibility` — питання
+            // не озвучувалось. ⭐05.10.2026: правка пішла мимо, справжня скарга Даші
+            // і замір Андрія — «Скасувати» недосяжна для VoiceOver в аркуші знизу.
+            // Тому тип вікна змінено на `alert`: обидві кнопки в одному контейнері.
+            .alert(
+                pendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.abbreviation) } ?? NSLocalizedString("Видалити запис?", comment: ""),
+                isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
+            ) {
+                if let entry = pendingDeletion {
+                    Button("Видалити", role: .destructive) { delete(entry); pendingDeletion = nil }
+                }
+                Button("Скасувати", role: .cancel) { pendingDeletion = nil }
+            }
+            .confirmationDialog(
+                "Як завантажити словник?",
+                isPresented: Binding(get: { pendingImport != nil }, set: { if !$0 { pendingImport = nil } }),
+                titleVisibility: .visible
+            ) {
+                Button("Додати до наявних") {
+                    if let preview = pendingImport { importDictionary(preview, .add) }
+                    pendingImport = nil
+                }
+                Button("Замінити мої записи", role: .destructive) {
+                    if let preview = pendingImport { importDictionary(preview, .replace) }
+                    pendingImport = nil
+                }
+                Button("Скасувати", role: .cancel) { pendingImport = nil }
+            } message: {
+                if let preview = pendingImport {
+                    Text(String(format: NSLocalizedString("Знайдено записів: %@. Некоректних рядків буде пропущено: %@.", comment: ""), String(preview.entries.count), String(preview.skippedLines)))
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var dictionaryContent: some View {
+#if os(macOS)
+        macContent
+#else
         List {
             Section {
-                Toggle("Застосовувати словник замін", isOn: $enabled)
-                    .accessibilityLabel("Застосовувати словник замін")
-                    .accessibilityValue(enabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
-                    .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
+                enabledToggle
             }
 
             Section("Власні записи") {
@@ -1912,11 +2057,7 @@ private struct AbbreviationDictionaryView: View {
                     .font(.footnote)
                     .foregroundColor(.secondary)
 
-                Button { isAddingEntry = true } label: {
-                    Label("Додати", systemImage: "plus")
-                }
-                .accessibilityLabel("Додати запис до словника замін")
-                .accessibilityHint("Відкрити форму нового слова або заміни.")
+                addButton
 
                 if entries.isEmpty {
                     Text("Власних записів ще немає.")
@@ -1952,90 +2093,168 @@ private struct AbbreviationDictionaryView: View {
                 Text("Торкніться правила, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет.")
                     .font(.footnote).foregroundColor(.secondary)
                 ForEach(AbbreviationDictionary.bundledEntries) { entry in
-                    Button { editingEntry = entry } label: {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(entry.abbreviation).font(.headline)
-                            Text(String(format: NSLocalizedString("читати як %@", comment: ""), entry.replacement)).foregroundColor(.secondary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(String(format: NSLocalizedString("Базова заміна: %@, читати як %@", comment: ""), entry.abbreviation, entry.replacement))
-                    .accessibilityHint("Створити власне перевизначення цього правила")
+                    bundledEntryButton(entry)
                 }
             }
 
             Section("Обмін") {
-                if let shareURL {
-                    ShareLink(item: shareURL) {
-                        Label("Поділитися словником", systemImage: "square.and.arrow.up")
-                    }
-                    .accessibilityLabel("Поділитися словником")
-                    .accessibilityHint("Відкриває системне меню, щоб надіслати файл власних скорочень.")
+                exchangeRows
+            }
+
+        }
+#endif
+    }
+
+#if os(macOS)
+    /// Mac: стопка замість List. Замір 09.10.2026 курсором VoiceOver: у List на Маці
+    /// у власних записів не було жодної кнопки «Видалити» — лише свайп і приховану
+    /// дію, а сам список звучав як «таблиця», у яку треба окремо входити.
+    private var macContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                enabledToggle
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                Divider()
+
+                macHeader("Власні записи")
+
+                Text("Тут можна задати, як читати будь-яке слово: скорочення, абревіатуру, ім'я чи назву.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 6)
+
+                addButton
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+
+                if entries.isEmpty {
+                    Text("Власних записів ще немає.")
+                        .foregroundColor(.secondary)
+                        .accessibilityLabel("Власний словник замін порожній")
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
                 } else {
-                    ProgressView("Підготовка файлу словника")
-                        .accessibilityLabel("Підготовка файлу словника")
+                    ForEach(entries) { entry in
+                        Divider()
+                        VStack(alignment: .leading, spacing: 6) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(entry.abbreviation).font(.headline)
+                                Text(entry.replacement).foregroundColor(.secondary)
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel(String(format: NSLocalizedString("%@, читати як %@", comment: ""), entry.abbreviation, entry.replacement))
+
+                            HStack(spacing: 12) {
+                                Button("Редагувати запис") {
+                                    editingEntry = entry
+                                }
+                                Button(role: .destructive) {
+                                    pendingDeletion = entry
+                                } label: {
+                                    Label("Видалити", systemImage: "trash")
+                                }
+                                .accessibilityLabel(String(format: NSLocalizedString("Видалити %@", comment: ""), entry.abbreviation))
+                                .accessibilityHint("Відкриває підтвердження перед видаленням запису.")
+                            }
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+                    }
                 }
 
-                Button {
-                    isImporting = true
-                } label: {
-                    Label("Завантажити словник із файлу", systemImage: "square.and.arrow.down")
-                }
-                .accessibilityLabel("Завантажити словник із файлу")
-                .accessibilityHint("Відкрити системний вибір текстового файлу словника.")
-            }
+                Divider()
 
-        }
-        .navigationTitle("Словник замін")
-        .sheet(isPresented: $isAddingEntry) {
-            AbbreviationDictionaryEditorView(entry: nil, save: save)
-        }
-        .sheet(item: $editingEntry) { entry in
-            AbbreviationDictionaryEditorView(entry: entry, save: save)
-        }
-        .onAppear {
-            reload()
-            prepareExport()
-        }
-        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.plainText], allowsMultipleSelection: false) { result in
-            guard case let .success(urls) = result, let url = urls.first else {
-                if case let .failure(error) = result { reportMessage(String(format: NSLocalizedString("Не вдалося відкрити файл словника: %@", comment: ""), error.localizedDescription)) }
-                return
+                macHeader("Обмін")
+
+                VStack(alignment: .leading, spacing: 10) {
+                    exchangeRows
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+
+                Divider()
+
+                macHeader("Базові заміни")
+
+                Text("Торкніться правила, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 6)
+
+                ForEach(AbbreviationDictionary.bundledEntries) { entry in
+                    bundledEntryButton(entry)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                }
             }
-            readImportFile(url)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // ⭐01.10.2026: у цього діалогу не був заданий `titleVisibility` — питання
-        // не озвучувалось. ⭐05.10.2026: правка пішла мимо, справжня скарга Даші
-        // і замір Андрія — «Скасувати» недосяжна для VoiceOver в аркуші знизу.
-        // Тому тип вікна змінено на `alert`: обидві кнопки в одному контейнері.
-        .alert(
-            pendingDeletion.map { String(format: NSLocalizedString("Видалити запис «%@»?", comment: ""), $0.abbreviation) } ?? NSLocalizedString("Видалити запис?", comment: ""),
-            isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } })
-        ) {
-            if let entry = pendingDeletion {
-                Button("Видалити", role: .destructive) { delete(entry); pendingDeletion = nil }
-            }
-            Button("Скасувати", role: .cancel) { pendingDeletion = nil }
+    }
+
+    private func macHeader(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(.headline)
+            .accessibilityAddTraits(.isHeader)
+            .padding(.horizontal, 12)
+            .padding(.top, 12)
+            .padding(.bottom, 6)
+    }
+#endif
+
+    private var enabledToggle: some View {
+        Toggle("Застосовувати словник замін", isOn: $enabled)
+            .accessibilityLabel("Застосовувати словник замін")
+            .accessibilityValue(enabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
+            .accessibilityHint("Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст.")
+    }
+
+    private var addButton: some View {
+        Button { isAddingEntry = true } label: {
+            Label("Додати", systemImage: "plus")
         }
-        .confirmationDialog(
-            "Як завантажити словник?",
-            isPresented: Binding(get: { pendingImport != nil }, set: { if !$0 { pendingImport = nil } }),
-            titleVisibility: .visible
-        ) {
-            Button("Додати до наявних") {
-                if let preview = pendingImport { importDictionary(preview, .add) }
-                pendingImport = nil
-            }
-            Button("Замінити мої записи", role: .destructive) {
-                if let preview = pendingImport { importDictionary(preview, .replace) }
-                pendingImport = nil
-            }
-            Button("Скасувати", role: .cancel) { pendingImport = nil }
-        } message: {
-            if let preview = pendingImport {
-                Text(String(format: NSLocalizedString("Знайдено записів: %@. Некоректних рядків буде пропущено: %@.", comment: ""), String(preview.entries.count), String(preview.skippedLines)))
+        .accessibilityLabel("Додати запис до словника замін")
+        .accessibilityHint("Відкрити форму нового слова або заміни.")
+    }
+
+    private func bundledEntryButton(_ entry: AbbreviationDictionaryEntry) -> some View {
+        Button { editingEntry = entry } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(entry.abbreviation).font(.headline)
+                Text(String(format: NSLocalizedString("читати як %@", comment: ""), entry.replacement)).foregroundColor(.secondary)
             }
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(String(format: NSLocalizedString("Базова заміна: %@, читати як %@", comment: ""), entry.abbreviation, entry.replacement))
+        .accessibilityHint("Створити власне перевизначення цього правила")
+    }
+
+    @ViewBuilder
+    private var exchangeRows: some View {
+        if let shareURL {
+            ShareLink(item: shareURL) {
+                Label("Поділитися словником", systemImage: "square.and.arrow.up")
+            }
+            .accessibilityLabel("Поділитися словником")
+            .accessibilityHint("Відкриває системне меню, щоб надіслати файл власних скорочень.")
+        } else {
+            ProgressView("Підготовка файлу словника")
+                .accessibilityLabel("Підготовка файлу словника")
+        }
+
+        Button {
+            isImporting = true
+        } label: {
+            Label("Завантажити словник із файлу", systemImage: "square.and.arrow.down")
+        }
+        .accessibilityLabel("Завантажити словник із файлу")
+        .accessibilityHint("Відкрити системний вибір текстового файлу словника.")
     }
 
     private func readImportFile(_ url: URL) {
