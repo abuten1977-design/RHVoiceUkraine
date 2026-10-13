@@ -378,7 +378,7 @@
 "Виберіть категорію Читання вголос, вкладку Голоси." = "Choose the Speech category, then the Voices tab.";
 "Натисніть кнопку додавання і виберіть мову Українська." = "Click the Add button and choose Ukrainian.";
 "Розгорніть RHVoice UA." = "Expand RHVoice UA.";
-"Вимкніть і знову увімкніть VoiceOver: Command+F5. Потім повторіть кроки. Після оновлення застосунку може знадобитися знову вибрати голос в Утиліті VoiceOver." = "Turn VoiceOver off and on again: Command-F5. Then repeat the steps. After an app update you may need to choose the voice again in VoiceOver Utility.";
+"Вимкніть і знову увімкніть VoiceOver: Command+F5. Потім повторіть кроки. Якщо голосів RHVoice UA все одно немає, перезавантажте Mac. Після оновлення застосунку перезавантажте Mac і знову виберіть голос в Утиліті VoiceOver." = "Turn VoiceOver off and on again: Command-F5. Then repeat the steps. If the RHVoice UA voices are still missing, restart your Mac. After an app update, restart your Mac and choose the voice again in VoiceOver Utility.";
 "Розгортає або згортає стан файлів особистого словника." = "Expands or collapses the personal dictionary file status.";
 "Стосується лише запису з однією косою рискою. Запис із нулем попереду, як 03/11, і з двома косими рисками, як 12/3/4, правило не чіпає." = "Applies only to entries with a single slash. Entries with a leading zero, like 03/11, or with two slashes, like 12/3/4, are left as they are.";
 "Натисніть правило, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет." = "Click a rule to create a custom override. A custom entry with the same word takes priority.";
