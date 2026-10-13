@@ -1429,6 +1429,12 @@ struct ContentView: View {
 
                     Divider()
 
+                    macGuideLink
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
+
+                    Divider()
+
                     aboutLink
                         .padding(.horizontal, 12)
                         .padding(.vertical, 10)
@@ -1530,7 +1536,7 @@ struct ContentView: View {
             .accessibilityValue(model.slashFractionsAsWordsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
             .accessibilityHint("Увімкнено: 1/2 читається як «одна друга», 3/4 — «три четвертих». Вимкнено: коса риска читається словом «дріб».")
 
-            Text("Стосується лише запису з однією косою рискою. Навчальний рік 2024/2025, розмір такту і адреси з двома рисками правило не чіпає.")
+            Text("Стосується лише запису з однією косою рискою. Запис із нулем попереду, як 03/11, і з двома косими рисками, як 12/3/4, правило не чіпає.")
                 .font(.footnote)
                 .foregroundColor(.secondary)
 
@@ -1674,6 +1680,18 @@ struct ContentView: View {
         .accessibilityLabel("Як увімкнути голос")
         .accessibilityHint("Відкрити інструкцію для увімкнення українського голосу у VoiceOver.")
     }
+
+    #if os(macOS)
+    private var macGuideLink: some View {
+        NavigationLink {
+            MacGuideView()
+        } label: {
+            Label("Довідка", systemImage: "book")
+        }
+        .accessibilityLabel("Довідка")
+        .accessibilityHint("Відкрити коротку інструкцію для Mac.")
+    }
+    #endif
 
     private var aboutLink: some View {
         NavigationLink {
@@ -1916,7 +1934,7 @@ private struct PersonalDictionaryView: View {
         }
         .accessibilityLabel("Технічна інформація")
         .accessibilityValue(showsTechnicalInfo ? NSLocalizedString("Розгорнуто", comment: "") : NSLocalizedString("Згорнуто", comment: ""))
-        .accessibilityHint("Подвійний дотик розгортає або згортає стан файлів особистого словника.")
+        .accessibilityHint("Розгортає або згортає стан файлів особистого словника.")
 
         if showsTechnicalInfo {
             VStack(alignment: .leading, spacing: 4) {
@@ -2180,7 +2198,7 @@ private struct AbbreviationDictionaryView: View {
 
                 macHeader("Базові заміни")
 
-                Text("Торкніться правила, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет.")
+                Text("Натисніть правило, щоб створити власне перевизначення. Власний запис із таким самим словом має пріоритет.")
                     .font(.footnote)
                     .foregroundColor(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2499,31 +2517,42 @@ private struct VoiceOverHowToView: View {
 #if os(iOS)
             Section("iPhone або iPad") {
                 NumberedInstructionList(items: [
-                    NSLocalizedString("Відкрийте Налаштування.", comment: ""),
-                    NSLocalizedString("Перейдіть до Універсальний доступ.", comment: ""),
+                    NSLocalizedString("Відкрийте Параметри.", comment: ""),
+                    NSLocalizedString("Перейдіть до Доступність.", comment: ""),
                     NSLocalizedString("Відкрийте VoiceOver.", comment: ""),
                     NSLocalizedString("Відкрийте Мовлення.", comment: ""),
-                    NSLocalizedString("Додайте або виберіть українську мову.", comment: ""),
-                    NSLocalizedString("У списку голосів виберіть Anatol, Marianna, Natalia або Volodymyr.", comment: "")
+                    NSLocalizedString("Натисніть Додати голос до ротора.", comment: ""),
+                    NSLocalizedString("Виберіть мову Українська.", comment: ""),
+                    NSLocalizedString("Знайдіть у списку RHVoice UA і розгорніть його подвійним дотиком.", comment: ""),
+                    NSLocalizedString("Виберіть голос: Anatol, Marianna, Natalia або Volodymyr.", comment: "")
                 ])
+                Text("У застосунку ці голоси підписані українськими літерами, наприклад «Анатол», а у VoiceOver — англійськими, «Anatol».")
+                    .textSelection(.enabled)
             }
 #else
 
             Section("Mac") {
                 NumberedInstructionList(items: [
-                    NSLocalizedString("Відкрийте Системні параметри.", comment: ""),
-                    NSLocalizedString("Перейдіть до Універсальний доступ.", comment: ""),
-                    NSLocalizedString("Відкрийте VoiceOver.", comment: ""),
-                    NSLocalizedString("Відкрийте налаштування голосу або мовлення VoiceOver.", comment: ""),
-                    NSLocalizedString("Додайте українську мову або виберіть український голос.", comment: ""),
-                    NSLocalizedString("Виберіть Anatol, Marianna, Natalia або Volodymyr.", comment: "")
+                    NSLocalizedString("Увімкніть VoiceOver: Command+F5.", comment: ""),
+                    NSLocalizedString("Відкрийте Утиліту VoiceOver: VO+F8. Якщо клавіші F1–F12 у вас керують звуком і яскравістю, натисніть VO+Fn+F8.", comment: ""),
+                    NSLocalizedString("Виберіть категорію Читання вголос, вкладку Голоси.", comment: ""),
+                    NSLocalizedString("Натисніть кнопку додавання і виберіть мову Українська.", comment: ""),
+                    NSLocalizedString("Розгорніть RHVoice UA.", comment: ""),
+                    NSLocalizedString("Виберіть голос: Anatol, Marianna, Natalia або Volodymyr.", comment: "")
                 ])
+                Text("У застосунку ці голоси підписані українськими літерами, наприклад «Анатол», а у VoiceOver — англійськими, «Anatol».")
+                    .textSelection(.enabled)
             }
 #endif
 
             Section("Якщо голос не з'явився") {
+#if os(iOS)
                 Text("Поверніться до цього застосунку, увімкніть потрібний голос у списку і знову відкрийте налаштування VoiceOver. Після оновлення застосунку може знадобитися повторно вибрати голос у системних налаштуваннях.")
                     .textSelection(.enabled)
+#else
+                Text("Вимкніть і знову увімкніть VoiceOver: Command+F5. Потім повторіть кроки. Після оновлення застосунку може знадобитися знову вибрати голос в Утиліті VoiceOver.")
+                    .textSelection(.enabled)
+#endif
             }
         }
         .navigationTitle("Як увімкнути голос")
@@ -2532,6 +2561,103 @@ private struct VoiceOverHowToView: View {
 #endif
     }
 }
+
+#if os(macOS)
+/// Mac: коротка інструкція (текст — `~/pravorhvoice/ІНСТРУКЦІЯ_RHVoice_UA_Mac_КОРОТКА_2026-10-09.md`,
+/// шлях VoiceOver — довідка Apple uk-ua macOS 26). Стопкою, як інші екрани Mac:
+/// заголовок розділу — окремий елемент-заголовок, абзац — окремий текст.
+private struct MacGuideView: View {
+    private struct GuideSection: Identifiable {
+        let title: String
+        let paragraphs: [String]
+        var id: String { title }
+    }
+
+    private let sections: [GuideSection] = [
+        GuideSection(title: "1. Як додати голос до VoiceOver", paragraphs: [
+            "Відкрийте Утиліту VoiceOver: коли VoiceOver увімкнено, натисніть VO+F8. Якщо клавіші F1–F12 у вас керують звуком і яскравістю, натисніть VO+Fn+F8. Виберіть категорію Читання вголос, вкладку Голоси. Натисніть кнопку додавання, виберіть мову Українська, розгорніть RHVoice UA і виберіть голос: Anatol, Marianna, Natalia або Volodymyr.",
+            "Примітка. У застосунку голоси підписані українськими літерами: Анатол, Маріанна, Наталія, Володимир.",
+            "Перемикати додані голоси можна ротором голосів: утримуйте VO+Command+Shift, стрілкою вліво дійдіть до Голос, стрілкою вниз виберіть голос і відпустіть клавіші.",
+            "Якщо голосів немає у списку, вимкніть і знову увімкніть VoiceOver (Command+F5) і повторіть."
+        ]),
+        GuideSection(title: "2. Як зробити голос основним", paragraphs: [
+            "Відкрийте Утиліту VoiceOver, Читання вголос, Голоси. Натисніть назву основного голосу, потім Голос, розгорніть RHVoice UA, виберіть голос і натисніть Готово."
+        ]),
+        GuideSection(title: "3. Як змінити швидкість", paragraphs: [
+            "Швидкість голосу змінюється як завжди у VoiceOver: повзунком Темп у параметрах голосу в Утиліті VoiceOver або клавішами: утримуйте VO+Command+Shift, стрілкою вправо дійдіть до швидкості, стрілками вгору і вниз змініть її.",
+            "Якщо найбільшої швидкості VoiceOver замало, скористайтеся Прискорювачем. Він множить швидкість VoiceOver. У застосунку виберіть голос у списку і в пункті Прискорювач виберіть значення:",
+            "Повільно — у 0,8 раза;",
+            "Нормально — без змін;",
+            "Трохи швидше — у 1,15 раза;",
+            "Швидко — у 1,3 раза;",
+            "Дуже швидко — у 1,5 раза.",
+            "Точніше, кроком 0,05 від 0,8 до 1,6, — регулятором Детальний множник. Прискорювач налаштовується для кожного голосу окремо."
+        ]),
+        GuideSection(title: "4. Як додати англійський голос", paragraphs: [
+            "Голоси: Ben, Raj — чоловічі; Clara, Sarah — жіночі. Для завантаження потрібен інтернет.",
+            "У застосунку відкрийте Мови, Англійська і біля голосу натисніть Завантажити. Застосунок повідомить, коли голос завантажиться. Потім додайте голос до VoiceOver, як у розділі 1, тільки мову виберіть англійську.",
+            "Для англійського тексту перемкніть голос ротором голосів, як у розділі 1."
+        ]),
+        GuideSection(title: "5. Після оновлення застосунку", paragraphs: [
+            "Якщо голоси зникли з VoiceOver, вимкніть і знову увімкніть VoiceOver (Command+F5)."
+        ]),
+        GuideSection(title: "6. Числа, дати й номери", paragraphs: [
+            "Налаштування — у головному вікні застосунку, розділ Читання:",
+            "Читати дати словами;",
+            "Читати час словами;",
+            "Розгортати скорочення;",
+            "Читати дроби словами;",
+            "Обробляти телефонні номери;",
+            "Читати номер: групами або по цифрах.",
+            "Усі перемикачі спочатку увімкнені, номер читається групами."
+        ]),
+        GuideSection(title: "7. Як виправити наголос", paragraphs: [
+            "У застосунку відкрийте Мій словник і натисніть Додати запис. У полі Слово як воно пишеться введіть слово, наприклад листопад. У полі Вимова поставте плюс перед наголошеною голосною: листоп+ад. Натисніть Зберегти.",
+            "Щоб перевірити, знайдіть запис у списку і натисніть Перевірити слово."
+        ]),
+        GuideSection(title: "8. Як змінити читання слова або скорочення", paragraphs: [
+            "У застосунку відкрийте Словник замін і натисніть Додати запис до словника замін. У полі Слово або скорочення введіть запис, наприклад ЄДРПОУ. У полі Як читати — як його вимовляти: є де ер пе о у. Натисніть Зберегти.",
+            "Щоб змінити або видалити запис, знайдіть його у списку і натисніть Редагувати запис або Видалити.",
+            "Перевіряйте заміну в іншому застосунку, наприклад у Нотатках. Кнопки прослуховування в RHVoice UA заміни не застосовують."
+        ]),
+        GuideSection(title: "9. Якщо щось не працює", paragraphs: [
+            "Напишіть на rhvoice@pravovyboru.org. Вкажіть модель Mac і версію macOS, голос, застосунок, у якому читали текст, сам текст дослівно, і що мали почути, а що почули."
+        ])
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(sections) { section in
+                    Text(verbatim: section.title)
+                        .font(.headline)
+                        .accessibilityAddTraits(.isHeader)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 14)
+                        .padding(.bottom, 6)
+
+                    ForEach(Array(section.paragraphs.enumerated()), id: \.offset) { _, paragraph in
+                        Text(verbatim: paragraph)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 4)
+                    }
+
+                    if section.id != sections.last?.id {
+                        Divider()
+                            .padding(.top, 8)
+                    }
+                }
+            }
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .navigationTitle("Довідка")
+        .frame(minWidth: 560, minHeight: 560)
+    }
+}
+#endif
 
 private struct NumberedInstructionList: View {
     let items: [String]
@@ -2624,7 +2750,7 @@ private struct PersonalDictionaryEditorView: View {
                     }
                     .disabled(stressedWord.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityAddTraits(.startsMediaSession)
-                    .accessibilityLabel(isPreviewPlaying ? NSLocalizedString("Зупинити прослуховування", comment: "") : NSLocalizedString("Перевірити слово", comment: ""))
+                    .accessibilityLabel(isPreviewPlaying ? NSLocalizedString("Зупинити прослуховування", comment: "") : NSLocalizedString("Прослухати вимову", comment: ""))
                     .accessibilityHint("Промовляє введену вимову. Після збереження так само має звучати слово за словником.")
                 }
 

@@ -46,10 +46,9 @@ targets:
         HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include"
         # USERDICT_DIAG у мості вимкнено: магазинна збірка. Вмикати лише для
         # замірів на пристрої, разом з RHVOICE_DIAG у Swift-цілях.
-        # ⭐28.09.2026 УВІМКНЕНО для збірки 239: без цього не видно, чи доїхав
-        # особистий словник наголосів (USERDICT_DIAG). Перед магазинною збіркою
-        # повернути на "$(inherited)".
-        GCC_PREPROCESSOR_DEFINITIONS: "$(inherited) RHVOICE_DIAG=1"
+        # 12.10.2026 ВИМКНЕНО для магазинної збірки 1.0.2 (iPhone + Mac). Для замірів
+        # на пристрої дописати RHVOICE_DIAG=1 тут і RHVOICE_DIAG у Swift-цілях.
+        GCC_PREPROCESSOR_DEFINITIONS: "$(inherited)"
 
   RHVoiceKitMac:
     type: framework
@@ -112,7 +111,7 @@ targets:
         DEVELOPMENT_TEAM: ""
         MACOSX_DEPLOYMENT_TARGET: "13.0"
         HEADER_SEARCH_PATHS: "$(SRCROOT)/../RHVoiceKit/Sources $(SRCROOT)/../RHVoiceCore/RHVoice/src/include $(SRCROOT)/../RHVoiceCore/RHVoice/src/include/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/hts_engine $(SRCROOT)/../RHVoiceCore/RHVoice/src/core $(SRCROOT)/../RHVoiceCore/RHVoice/src/audio $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/rapidxml $(SRCROOT)/../RHVoiceCore/RHVoice/src/third-party/utf8 $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/sonic $(SRCROOT)/../RHVoiceCore/RHVoice/external/libs/boost/unified_include"
-        GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20 RHVOICE_DIAG=1"
+        GCC_PREPROCESSOR_DEFINITIONS: "ENABLE_SONIC=1 ENABLE_PKG=0 MAX_RATE=20 RHVOICE_MAX_MAX_RATE=20"
         OTHER_CPLUSPLUSFLAGS: "-D_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION -Wno-deprecated-declarations"
         GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS: NO
 
@@ -180,7 +179,7 @@ targets:
         # NUMBER_DIAG вимкнено: магазинна збірка. Для замірів на пристрої
         # ⭐28.09.2026 УВІМКНЕНО для збірки 239 (замір словника наголосів).
         # Перед магазинною збіркою повернути на "$(inherited)".
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
     dependencies:
       - target: UkrainianVoicesExtension
       - package: RHVoiceCore
@@ -236,7 +235,7 @@ targets:
         # NUMBER_DIAG вимкнено: магазинна збірка. Для замірів на пристрої
         # ⭐28.09.2026 УВІМКНЕНО для збірки 239 (замір словника наголосів).
         # Перед магазинною збіркою повернути на "$(inherited)".
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
     dependencies:
       - package: RHVoiceCore
         product: RHVoiceBridge
@@ -284,14 +283,14 @@ targets:
         basedOnDependencyAnalysis: false
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR
         INFOPLIST_FILE: App/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_ENTITLEMENTS: App/UkrainianVoicesMac.entitlements
         MARKETING_VERSION: "1.0.2"
         CURRENT_PROJECT_VERSION: "1"
         # ⭐08.10.2026 журнал NUMBER_DIAG на Маці: замір сирого входу VoiceOver. Перед магазинною збіркою прибрати.
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Manual
         CODE_SIGN_IDENTITY: "-"
@@ -347,12 +346,12 @@ targets:
       - sdk: CoreAudioKit.framework
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.UkrainianVoices.mac.Extension
+        PRODUCT_BUNDLE_IDENTIFIER: com.rhvoice.ukraine.app.5NNZPP8CRR.Extension
         INFOPLIST_FILE: Extension/Info.plist
         MARKETING_VERSION: "1.0.2"
         CURRENT_PROJECT_VERSION: "1"
         # ⭐08.10.2026 журнал NUMBER_DIAG на Маці: замір сирого входу VoiceOver. Перед магазинною збіркою прибрати.
-        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) RHVOICE_DIAG"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
         CODE_SIGN_ENTITLEMENTS: Extension/UkrainianVoicesExtensionMac.entitlements
         SWIFT_VERSION: "5.0"
         DEFINES_MODULE: YES

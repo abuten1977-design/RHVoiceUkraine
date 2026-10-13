@@ -589,7 +589,13 @@ static void RHVoicePersonalDictionaryChangedCallback(CFNotificationCenterRef,
 
 - (nullable AVAudioPCMBuffer*)synthesize:(NSString*)text voice:(NSString*)voice
                                     rate:(double)rate volume:(double)volume pitch:(double)pitch {
+    // Сам текст пишемо в журнал лише в діагностичній збірці (RHVOICE_DIAG):
+    // це те, що людина читає голосом. Для замірів «що прислав VoiceOver».
+#if RHVOICE_DIAG
     NSLog(@"🔍 synthesize called: initialized=%d, text='%@', voice='%@'", self.initialized, text, voice);
+#else
+    NSLog(@"🔍 synthesize called: initialized=%d, textLength=%lu, voice='%@'", self.initialized, (unsigned long)text.length, voice);
+#endif
     [self refreshPersonalDictionaryIfNeeded];
     
     if (!self.initialized || !text.length) {

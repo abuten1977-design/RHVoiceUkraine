@@ -12,7 +12,7 @@ VOICES_SRC="$APP_ROOT/Extension/Resources/Voices"
 VOICES_DST="$EXT/Contents/Resources/Voices"
 APP_ENT="$APP_ROOT/App/App.entitlements"
 EXT_ENT="$APP_ROOT/Extension/Extension.entitlements"
-BUNDLE_ID="com.rhvoice.UkrainianVoices.mac.Extension"
+BUNDLE_ID="com.rhvoice.ukraine.app.5NNZPP8CRR.Extension"
 
 for p in "$KEYCHAIN" "$APP" "$EXT" "$LIB_SRC" "$VOICES_SRC" "$APP_ENT" "$EXT_ENT"; do
   [ -e "$p" ] || { echo "Missing: $p"; exit 1; }

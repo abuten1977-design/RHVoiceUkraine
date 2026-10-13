@@ -34,7 +34,7 @@
 					<key>name</key>
 					<string>RHVoice UA: Голоси</string>
 					<key>resourceBundleID</key>
-					<string>com.rhvoice.UkrainianVoices.mac.Extension</string>
+					<string>com.rhvoice.ukraine.app.5NNZPP8CRR.Extension</string>
 					<key>sandboxSafe</key>
 					<true/>
 					<key>subtype</key>
@@ -46,7 +46,7 @@
 					<key>type</key>
 					<string>ausp</string>
 					<key>version</key>
-					<integer>67073</integer>
+					<integer>67074</integer>
 				</dict>
 			</array>
 		</dict>
