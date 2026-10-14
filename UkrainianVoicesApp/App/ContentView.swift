@@ -2863,6 +2863,9 @@ private struct VoiceSettingsScreen: View {
         }
         .navigationTitle(NSLocalizedString(voice.displayName, comment: ""))
 #if os(macOS)
+        // Типовий стиль Mac ставив форму посередині вікна, а повзунки
+        // впиралися в правий край і обрізали підпис значення.
+        .formStyle(.grouped)
         .frame(minWidth: 460, minHeight: 520)
 #endif
     }
