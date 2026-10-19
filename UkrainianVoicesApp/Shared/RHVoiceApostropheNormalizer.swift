@@ -466,7 +466,9 @@ enum RHVoiceApostropheNormalizer {
             options: []
         ) { match, source in
             guard let letters = Range(match.range(at: 1), in: source),
-                  let digits = Range(match.range(at: 2), in: source) else { return nil }
+                  let digits = Range(match.range(at: 2), in: source),
+                  // «XC90», «LV1» — назви моделей; римські літери далі стали б числом.
+                  !isPureRomanNumeralToken(String(source[letters])) else { return nil }
             return "\(source[letters]) \(source[digits])"
         }
         let withDictionary = abbreviationDictionaryEnabled
@@ -767,7 +769,7 @@ enum RHVoiceApostropheNormalizer {
         // (рік-місяць-день). Читаємо як звичайну дату; невалідна лишається цифрами.
         let withIsoDates = replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}.,\-])([1-2][0-9]{3})-([0-9]{2})-([0-9]{2})(?![\p{L}\p{N}]|-[0-9])"#,
+            pattern: #"(?<![\p{L}\p{N}.,\-_])([1-2][0-9]{3})-([0-9]{2})-([0-9]{2})(?![\p{L}\p{N}_]|-[0-9]|\.[A-Za-z])"#,
             options: []
         ) { match, source in
             guard
@@ -994,7 +996,11 @@ enum RHVoiceApostropheNormalizer {
             options: []
         ) { match, source in
             guard let range = Range(match.range, in: source) else { return nil }
-            return telephoneDigitsToWords(String(source[range]))
+            let content = String(source[range])
+            // «Роки 2019 2020 2021 2022» — перелік років, а не картка (критик 19.10).
+            let groups = digitGroups(in: content)
+            if groups.allSatisfy({ $0.hasPrefix("19") || $0.hasPrefix("20") }) { return nil }
+            return telephoneDigitsToWords(content)
         }
 
         // Суцільний український номер «0673449161» (рівно 10 цифр, нуль попереду)
@@ -1581,7 +1587,7 @@ enum RHVoiceApostropheNormalizer {
     private static func normalizeOrdinalSuffixes(in text: String) -> String {
         replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,4})-([а-яіїєґА-ЯІЇЄҐ]{1,3})(?![\p{L}\p{N}])"#,
+            pattern: #"(?<![\p{L}\p{N}.,\-–—№])([0-9]{1,4})-([а-яіїєґА-ЯІЇЄҐ]{1,3})(?![\p{L}\p{N}])"#,
             options: []
         ) { match, source in
             guard
@@ -1806,7 +1812,7 @@ enum RHVoiceApostropheNormalizer {
         let keys = measurementUnits.map { NSRegularExpression.escapedPattern(for: $0.key) }.joined(separator: "|")
         return replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N},.])([0-9]{1,3}(?:[ \u00A0\u202F][0-9]{3})+|[0-9]+(?:,[0-9]+)?)[ \u00A0\u202F]?("# + keys + #")(\.)?(?![\p{L}\p{N}/])"#,
+            pattern: #"(?<![\p{L}\p{N},.])([0-9]{1,3}(?:[ \u00A0\u202F][0-9]{3})+|[0-9]+(?:,[0-9]+)?)[ \u00A0\u202F]?("# + keys + #")(\.)?(?![\p{L}\p{N}/·*\-])"#,
             options: []
         ) { match, source in
             guard
@@ -1910,7 +1916,7 @@ enum RHVoiceApostropheNormalizer {
         let withCyrillicRomans = normalizeCyrillicRomanNumerals(in: text)
         return replacingMatches(
             in: withCyrillicRomans,
-            pattern: #"\b([A-Z]{2,})\b(?:-(\p{L}{1,3})(?![\p{L}\p{N}]))?"#,
+            pattern: #"\b([A-Z]{2,})\b(?:-([а-яіїєґ]{1,3})(?![\p{L}\p{N}]))?"#,
             options: []
         ) { match, source in
             guard let tokenRange = Range(match.range(at: 1), in: source) else { return nil }
@@ -1940,7 +1946,7 @@ enum RHVoiceApostropheNormalizer {
     private static func normalizeCyrillicRomanNumerals(in text: String) -> String {
         replacingMatches(
             in: text,
-            pattern: #"(?<![\p{L}\p{N}])([ІХIVX]{2,})(?:-(\p{L}{1,3}))?(?![\p{L}\p{N}])"#,
+            pattern: #"(?<![\p{L}\p{N}])([ІХIVX]{2,})(?:-([а-яіїєґ]{1,3}))?(?![\p{L}\p{N}])"#,
             options: []
         ) { match, source in
             guard let tokenRange = Range(match.range(at: 1), in: source) else { return nil }

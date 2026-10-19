@@ -1748,4 +1748,24 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         )
     }
 
+    func testCorpus22CriticGuardsOf2026_10_19() {
+        // Незалежний критик 19.10.2026 знайшов ці поломки нових правил прогоном; тепер — сторожі.
+        let cases: [(String, String)] = [
+            ("XIX-XX ст.", "дев'ятнадцять-двадцять ст."),
+            ("ІІ-ІІІ ступеня", "два-три ступеня"),
+            ("Спожито 150 кВт·год", "Спожито 150 кВт·год"),
+            ("Потужність 2 кВт", "Потужність 2 кіловати"),
+            ("Сайт оф. представництва", "Сайт оф. представництва"),
+            ("обл. центр", "обл. центр"),
+            ("з 1-2-й клас", "з 1-2-й клас"),
+            ("№5-й", "№5-й"),
+            ("Volvo XC90", "Volvo XC90"),
+            ("IMG_2024-05-12.jpg", "IMG_2024-05-12.jpg"),
+            ("Роки 2019 2020 2021 2022", "Роки 2019 2020 2021 2022"),
+        ]
+        for (input, expected) in cases {
+            XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments(input), expected, "вхід: \(input)")
+        }
+    }
+
 }
