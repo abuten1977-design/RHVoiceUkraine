@@ -1205,7 +1205,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // читанні по буквах «є» iOS називає ЧУЖУ кириличну літеру «ї»
         // (U+0457), через що замість «йе» чується «йи».
         let measured = "<speak><lang xml:lang=\"uk\"><prosody rate=\"400.0%\"> українська ї </prosody></lang></speak>"
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured), "є")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured, iosLetterTable: true), "є")
     }
 
     func testLetterENameIsNormalizedRegardlessOfWordingAndWordOrder() {
@@ -1221,7 +1221,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         ]
         for variant in variants {
             XCTAssertEqual(
-                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant),
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(variant, iosLetterTable: true),
                 "є",
                 "не спрацювало на варіанті: \(variant)"
             )
@@ -1248,11 +1248,11 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
 
     func testInvisibleFormattingCharactersDoNotDefeatTheLetterERule() {
         let withLRM = "\u{200E} українська ї\u{200E} "
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(withLRM), "є")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(withLRM, iosLetterTable: true), "є")
     }
 
     func testTrailingPunctuationDoesNotDefeatTheLetterERule() {
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("українська ї."), "є")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("українська ї.", iosLetterTable: true), "є")
     }
 
     // MARK: - Letter «ґ» announced by its Unicode name (measured 2026-09-14)
@@ -1307,7 +1307,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         ]
         for (measured, expected) in cases {
             XCTAssertEqual(
-                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured),
+                RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(measured, iosLetterTable: true),
                 expected,
                 "не спрацювало на заміреному рядку: \(measured)"
             )
@@ -1471,7 +1471,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
     func testIOS26CaptureLetterENameBecomesTheLetterItself() {
         // Verbatim from cap_letters_2026-09-08_ios26.txt (single text run).
         let ios26 = "<speak><lang xml:lang=\"uk\"><prosody pitch=\"-10.000004%\" rate=\"190.00002%\"> українська ї </prosody></lang></speak>"
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios26), "є")
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios26, iosLetterTable: true), "є")
     }
 
     func testIOS27CaptureLetterINameRewritesOnlyTheMatchingSentence() {
@@ -1487,7 +1487,7 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // Verbatim from cap27_letters_2026-09-08.txt, alphabet word "Євген".
         let ios27 = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\"> українська ї </lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Євген</lang></s></prosody></speak>"
         let expected = "<speak><prosody rate=\"219.99995%\"><s><lang xml:lang=\"uk-UA\">є</lang></s><s><break time=\"750.0ms\"/></s><s><lang xml:lang=\"uk-UA\">Євген</lang></s></prosody></speak>"
-        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27), expected)
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest(ios27, iosLetterTable: true), expected)
     }
 
     func testIOS27CaptureRealLetterYiIsNotTouched() {
@@ -1579,16 +1579,12 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         XCTAssertTrue(small.contains("цілих") || small.contains("ціла"), "мало цифр — це не телефон: \(small)")
     }
 
-    func testAmountWithPlusAndNineDigitsIsStillReadAsPhone_knownDefect() {
-        // ⚠️ЦЕЙ ТЕСТ ЗАКРІПЛЮЄ СТАРУ ПОВЕДІНКУ, А НЕ БАЖАНУ.
-        // Знайдено 05.10.2026 при перевірці правки ком. Сума «+12 345 678,90»
-        // потрапляє у СТАРЕ правило телефонів (клас розділювачів там без коми,
-        // тому воно хапає «+12 345 678» — 9 цифр, знак «+» → телефон), а копійки
-        // лишаються сирими. Наш новий етап тут НЕ винен: він таку суму пропускає
-        // (сторож `hasCents`). Дефект дорожній, записаний у `docs/DEBTS.md`.
+    func testAmountWithPlusAndCentsIsReadAsAmount() {
+        // Колишній сторож дефекту 05.10.2026 («+12 345 678,90» читалось телефоном,
+        // копійки — сирими). Полагоджено 19.10.2026 (корпус 2.2, рішення Андрія):
+        // копійки після числа зі знаком «+» — це сума, номер копійок не має.
         let result = RHVoiceApostropheNormalizer.normalizeInTextSegments("Сума +12 345 678,90 гривень")
-        XCTAssertTrue(result.contains("плюс дванадцять"), "очікувалась стара поведінка: \(result)")
-        XCTAssertFalse(result.contains("мільйон"), "якщо тут з'явився «мільйон» — дефект полагоджено, тест треба переписати: \(result)")
+        XCTAssertEqual(result, "Сума плюс дванадцять мільйонів триста сорок п'ять тисяч шістсот сімдесят вісім цілих дев'яносто сотих гривень")
     }
 
     // MARK: - Замір на пристрої 05.10.2026: WhatsApp віддає номер БЕЗ «плюс»
@@ -1679,6 +1675,77 @@ final class RHVoiceApostropheNormalizerTests: XCTestCase {
         // Ланцюжок без ком (список цифр) правило чіпати НЕ має: сторож вимагає 2 коми.
         let result = RHVoiceApostropheNormalizer.normalizeInTextSegments("Оцінки 1 2 3 4 5 6 7 8 9 1 2")
         XCTAssertTrue(result.contains("1 2 3") || result.contains("один"), "\(result)")
+    }
+
+    // MARK: - Корпус 2.2, розбір помилок з Андрієм 19.10.2026 (docs/DEBTS_NORMALIZATION.md)
+    // Кожен рядок — приклад із корпусу або його межа («не чіпати»). Очікування зняті
+    // справжнім нормалізатором на Маці й перевірені очима до запису.
+
+    func testCorpus22DecisionsOf2026_10_19() {
+        let cases: [(String, String)] = [
+            ("Вага 0,9 кг", "Вага нуль цілих дев'ять десятих кілограма"),
+            ("Купив 2 кг яблук", "Купив 2 кілограми яблук"),
+            ("Швидкість 90 км/год", "Швидкість 90 кілометрів на годину"),
+            ("Висота 100 м", "Висота 100 м"),
+            ("просп. Перемоги, 50", "проспект Перемоги, 50"),
+            ("м. Львів", "м. Львів"),
+            ("вул.Шевченка, буд.5", "вулиця Шевченка, будинок 5"),
+            ("Я написав тобі лист.", "Я написав тобі лист."),
+            ("Перші дні лист. морозні", "Перші дні листопада морозні"),
+            ("Відпустка в кінці лип.", "Відпустка в кінці липня"),
+            ("Площа 50 кв. м", "Площа 50 кв. м"),
+            ("Картка 4149 6090 1234 5678", "Картка чотири один чотири дев'ять, шість нуль дев'ять нуль, один два три чотири, п'ять шість сім вісім"),
+            ("Картка 1234-5678-9012-3456", "Картка один два три чотири, п'ять шість сім вісім, дев'ять нуль один два, три чотири п'ять шість"),
+            ("Сума +12 345 678,90", "Сума плюс дванадцять мільйонів триста сорок п'ять тисяч шістсот сімдесят вісім цілих дев'яносто сотих"),
+            ("Зараховано +1 234 567 грн", "Зараховано плюс один мільйон двісті тридцять чотири тисячі п'ятсот шістдесят сім гривень"),
+            ("Зараховано +1 250 000", "Зараховано плюс один, двісті п'ятдесят, нуль нуль нуль"),
+            ("Депозит 123 456 789 грн", "Депозит сто двадцять три мільйони чотириста п'ятдесят шість тисяч сімсот вісімдесят дев'ять гривень"),
+            ("Сума 100 000 000", "Сума 100 000 000"),
+            ("Номер 0673449161", "Номер нуль шістдесят сім, триста сорок чотири, дев'яносто один, шістдесят один"),
+            ("Гаряча лінія 0800 500 500", "Гаряча лінія нуль вісімсот, п'ятсот, п'ятсот"),
+            ("Живу на 5-му поверсі.", "Живу на п'ятому поверсі."),
+            ("1-й, 2-га, 3-є", "перший, друга, третє"),
+            ("У 2026-му році.", "У дві тисячі двадцять шостому році."),
+            ("буд. 12-а", "будинок 12-а"),
+            ("для 2-х осіб", "для 2-х осіб"),
+            ("Дата: 2026-10-08", "Дата: восьме жовтня дві тисячі двадцять шостого року"),
+            ("Петро I", "Петро I"),
+            ("Розділ ІІІ", "Розділ три"),
+            ("XXI-го століття", "двадцять першого століття"),
+            ("Сума 1 234 567,5 грн.", "Сума один мільйон двісті тридцять чотири тисячі п'ятсот шістдесят сім цілих п'ять десятих гривні."),
+            ("Сайт відвідав 1 001 користувач.", "Сайт відвідав одна тисяча один користувач."),
+            ("Ціна 1 001 грн", "Ціна одна тисяча одна гривня"),
+            ("Оренда 1235 грн", "Оренда 1235 гривень"),
+            ("Порт USB3", "Порт ю ес бе 3"),
+            ("Порт Usb", "Порт ю ес бе"),
+            ("Індекс 01001", "Індекс 01001"),
+            ("вул. 8 Березня", "вулиця восьмого березня"),
+            ("Масштаб 1:50 000.", "Масштаб один до п'ятдесяти тисяч."),
+            ("Співвідношення 21:09 у тексті.", "Співвідношення двадцять один до дев'яти у тексті."),
+            ("Зустріч о 21:09", "Зустріч о двадцять перша година дев'ять хвилин"),
+            ("Ключ API недійсний", "Ключ ей пі ай недійсний"),
+            ("пере\u{00AD}вірка", "перевірка"),
+            ("Телефон 97 148 98 92", "Телефон 97 148 98 92"),
+            ("Мережа Wi Fi активна", "Мережа вай-фай активна"),
+            ("т. зв. і т. д.", "так званий і так далі"),
+        ]
+        for (input, expected) in cases {
+            XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeInTextSegments(input), expected, "вхід: \(input)")
+        }
+    }
+
+    func testMacReadsUkrainianYeLineAsOrdinaryText() {
+        // На Маці «Українська ї» — звичайний рядок (букви Мак описує англійськими
+        // назвами Unicode); iOS-таблиця вмикається лише параметром.
+        XCTAssertNil(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("Українська ї", iosLetterTable: false))
+        XCTAssertEqual(RHVoiceApostropheNormalizer.normalizeStandaloneLetterNameRequest("Українська ї", iosLetterTable: true), "є")
+    }
+
+    func testAbbreviationsToggleOffKeepsMeasurementUnits() {
+        XCTAssertEqual(
+            RHVoiceApostropheNormalizer.normalizeInTextSegments("Купив 2 кг яблук", abbreviationsAsWords: false),
+            "Купив 2 кг яблук"
+        )
     }
 
 }

@@ -314,7 +314,7 @@
 "Увага: спільне сховище недоступне, зміни не зберігаються" = "Warning: shared storage unavailable, changes are not saved";
 "Увімкнено" = "On";
 "Увімкнено: 17:01 читається як час словами. Вимкнено: RHVoice не розгортає запис часу у години та хвилини." = "On: 17:01 is read as time in words. Off: RHVoice does not expand the time into hours and minutes.";
-"Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання." = "On: 5 min, 2 hr, and 30 sec are read as full words. Off: abbreviations are left unexpanded.";
+"Увімкнено: 5 хв, 2 год, 30 сек, 3 кг і 10 км читаються повними словами. Вимкнено: скорочення лишаються без розгортання." = "On: 5 min, 2 hr, 30 sec, 3 kg, and 10 km are read as full words. Off: abbreviations are left unexpanded.";
 "Увімкнено: RHVoice розпізнає номери та читає їх обраним способом. Вимкнено: номер читає система без обробки RHVoice." = "On: RHVoice recognizes numbers and reads them the chosen way. Off: the system reads the number without RHVoice processing.";
 "Увімкнено: базові та власні заміни застосовуються під час читання. Вимкнено: словник не змінює текст." = "On: built-in and custom replacements are applied during reading. Off: the dictionary does not change the text.";
 "Увімкнено: повні дати, як-от 10.07.2026, читаються словами — «десяте липня дві тисячі двадцять шостого року». Вимкнено: дати читаються цифрами." = "On: full dates, such as 10.07.2026, are read in words — \"the tenth of July, two thousand twenty-six.\" Off: dates are read as digits.";

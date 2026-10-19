@@ -1528,7 +1528,7 @@ struct ContentView: View {
                 Label("Розгортати скорочення", systemImage: "textformat.abc")
             }
             .accessibilityValue(model.abbreviationsAsWordsEnabled ? NSLocalizedString("Увімкнено", comment: "") : NSLocalizedString("Вимкнено", comment: ""))
-            .accessibilityHint("Увімкнено: 5 хв, 2 год і 30 сек читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
+            .accessibilityHint("Увімкнено: 5 хв, 2 год, 30 сек, 3 кг і 10 км читаються повними словами. Вимкнено: скорочення лишаються без розгортання.")
 
             Toggle(isOn: Binding(get: { model.slashFractionsAsWordsEnabled }, set: { model.setSlashFractionsAsWords($0) })) {
                 Label("Читати дроби словами", systemImage: "divide")

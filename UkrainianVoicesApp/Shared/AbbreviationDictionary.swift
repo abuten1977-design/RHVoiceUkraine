@@ -82,7 +82,13 @@ enum AbbreviationDictionary {
         entry("LTE", "ел те е"), entry("VPN", "ве пе ен"), entry("USB", "ю ес бе"),
         entry("Wi-Fi", "вай-фай"), entry("GPS", "джі пі ес"), entry("SMS", "ес ем ес"),
         entry("PDF", "пе де еф"), entry("USB-C", "ю ес бе сі"),
-        entry("грн", "гривні"), entry("вул.", "вулиця"), entry("буд.", "будинок"), entry("кв.", "квартира")
+        entry("грн", "гривні"), entry("вул.", "вулиця"), entry("буд.", "будинок"), entry("кв.", "квартира"),
+        // 19.10.2026, рішення Андрія за корпусом 2.2: лише однозначні скорочення.
+        // «м.» (місто / метр) і «тис.» (форма залежить від числа) навмисно НЕ тут.
+        entry("просп.", "проспект"), entry("пл.", "площа"), entry("обл.", "область"),
+        entry("пров.", "провулок"), entry("тел.", "телефон"), entry("оф.", "офіс"),
+        entry("т. зв.", "так званий"), entry("т. ін.", "таке інше"), entry("т. д.", "так далі"),
+        entry("напр.", "наприклад"), entry("див.", "дивись")
     ]
 
     /// Варіанти написання тих самих скорочень. Для латинських ключів звірка
@@ -99,6 +105,14 @@ enum AbbreviationDictionary {
         // системних написах, візуально не відрізняються від звичайного дефіса
         entry("Wi\u{2011}Fi", "вай-фай"), entry("Wi\u{2013}Fi", "вай-фай"),
         entry("USB-А", "ю ес бе а"), entry("usb", "ю ес бе"),
+        // 19.10.2026 (корпус 2.2): «Wi Fi» з пробілом і змішаний регістр «Usb», «Lte».
+        entry("Wi Fi", "вай-фай"), entry("WI FI", "вай-фай"), entry("wi fi", "вай-фай"),
+        entry("Usb", "ю ес бе"), entry("Lte", "ел те е"), entry("lte", "ел те е"),
+        // Великі абревіатури, які рушій сам читає словом («API» → «апі», «ID» → «ід»):
+        // тег «по літерах» до нього не доходить. Назви літер — англійські, як рушій
+        // читає решту абревіатур («HTML» → «ейч ті ем ел»). GIF навмисно немає —
+        // його часто кажуть словом; це рішення 7 Андрія (корпус 2.2, 19.10.2026).
+        entry("API", "ей пі ай"), entry("ID", "ай ді"), entry("EU", "і ю"), entry("IT", "ай ті"),
         entry("VPN-", "ве пе ен "), entry("vpn", "ве пе ен")
     ]
 
@@ -328,14 +342,25 @@ struct AbbreviationDictionaryMatcher {
             guard let range = Range(match.range, in: source) else { return }
             let key = String(source[range])
             guard let replacement = replacements[normalizeKey(key)], shouldReplace(key, range, source) else { return }
-            source.replaceSubrange(range, with: replacement)
+            // «вул.Шевченка» → «вулиця Шевченка», а не «вулицяШевченка»: рушій
+            // ділить слова лише за пробілами (ОПЫТ_И_ПОЛЕЗНОЕ, 3.4).
+            let gluedToNext = key.hasSuffix(".") && range.upperBound < source.endIndex
+                && (source[range.upperBound].isLetter || source[range.upperBound].isNumber)
+            source.replaceSubrange(range, with: gluedToNext ? replacement + " " : replacement)
         }
     }
 
     private static func makeRegex(keys: [String], options: NSRegularExpression.Options) -> NSRegularExpression? {
         guard !keys.isEmpty else { return nil }
-        let alternatives = keys.map(NSRegularExpression.escapedPattern).joined(separator: "|")
-        return try? NSRegularExpression(pattern: "(?<![\\p{L}\\p{N}])(?:\(alternatives))(?![\\p{L}\\p{N}])", options: options)
+        // 19.10.2026 (корпус 2.2): «вул.Шевченка», «буд.5», «кв.12» пишуть без
+        // пробілу. У ключа з крапкою в кінці межу слова вже показує сама крапка,
+        // тож праворуч дозволено літеру чи цифру. Решта ключів — як і раніше.
+        // Порядок альтернатив (довші спершу) зберігається, бо кожна несе свою межу.
+        let alternatives = keys.map { key -> String in
+            let escaped = NSRegularExpression.escapedPattern(for: key)
+            return key.hasSuffix(".") ? escaped : escaped + "(?![\\p{L}\\p{N}])"
+        }.joined(separator: "|")
+        return try? NSRegularExpression(pattern: "(?<![\\p{L}\\p{N}])(?:\(alternatives))", options: options)
     }
 
     private static func containsLatin(_ value: String) -> Bool {

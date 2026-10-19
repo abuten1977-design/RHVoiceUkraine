@@ -67,7 +67,7 @@ enum RHVoiceApostropheNormalizer {
     /// додано уточнення «тверде». Діє для маленької і великої, iPhone і Mac.
     static let gheSpokenName = "тверде ґе"
 
-    static func normalizeStandaloneLetterNameRequest(_ ssml: String) -> String? {
+    static func normalizeStandaloneLetterNameRequest(_ ssml: String, iosLetterTable: Bool = usesIOSLetterTable) -> String? {
         let segments = extractTextSegments(from: ssml)
         guard !segments.isEmpty else { return nil }
 
@@ -78,11 +78,11 @@ enum RHVoiceApostropheNormalizer {
         if segments.count == 1 {
             let text = segments[0].trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { return nil }
-            return spokenStandaloneLetterName(for: text)
+            return spokenStandaloneLetterName(for: text, iosLetterTable: iosLetterTable)
         }
 
         let (rewritten, matchedAny) = replacingEachTextSegment(in: ssml) { segment in
-            spokenStandaloneLetterName(for: segment)
+            spokenStandaloneLetterName(for: segment, iosLetterTable: iosLetterTable)
         }
         return matchedAny ? rewritten : nil
     }
@@ -146,7 +146,7 @@ enum RHVoiceApostropheNormalizer {
         return (output, matchedAny)
     }
 
-    private static func spokenStandaloneLetterName(for text: String) -> String? {
+    private static func spokenStandaloneLetterName(for text: String, iosLetterTable: Bool) -> String? {
         // Invisible formatting scalars are category Cf, so neither
         // `.whitespacesAndNewlines` nor the regex `\s` removes them — and a live
         // iOS 27 capture did contain U+200E inside a VoiceOver string (see
@@ -163,10 +163,10 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: trimSet)
             .lowercased()
-        if let direct = standaloneLetterNameReplacements[collapsed] {
+        if let direct = letterNameReplacement(for: collapsed, iosLetterTable: iosLetterTable) {
             return direct
         }
-        return capitalLetterNameReplacement(for: collapsed)
+        return capitalLetterNameReplacement(for: collapsed, iosLetterTable: iosLetterTable)
     }
 
     /// iOS 27 prefixes the letter description with the word «Велика» when caps
@@ -177,13 +177,13 @@ enum RHVoiceApostropheNormalizer {
     /// whole-run equality test missed and the letter was read verbatim.
     /// The marker word is kept — the user must still hear that the letter is
     /// capital — and only the description part is replaced.
-    private static func capitalLetterNameReplacement(for collapsed: String) -> String? {
+    private static func capitalLetterNameReplacement(for collapsed: String, iosLetterTable: Bool) -> String? {
         for (marker, spokenMarker) in capitalLetterMarkers {
             let prefix = marker + " "
             guard collapsed.hasPrefix(prefix) else { continue }
             let rest = String(collapsed.dropFirst(prefix.count))
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let letter = standaloneLetterNameReplacements[rest] else { continue }
+            guard let letter = letterNameReplacement(for: rest, iosLetterTable: iosLetterTable) else { continue }
             return spokenMarker + " " + letter
         }
         return nil
@@ -244,13 +244,11 @@ enum RHVoiceApostropheNormalizer {
     /// «Велика» plus the real letter inside a `say-as` tag, and Andriy
     /// confirmed by ear that it already sounds right. A key for it would
     /// change something that is not broken.
-    private static let standaloneLetterNameReplacements: [String: String] = [
+    private static let commonLetterNameReplacements: [String: String] = [
         "білорусько-українська i": "і",
         "білорусько-українська і": "і",
         "українсько-білоруська i": "і",
         "українсько-білоруська і": "і",
-        "українська ї": "є",
-        "ї українська": "є",
         "українська є": "є",
         "є українська": "є",
         "ghe, піднесення": gheSpokenName,
@@ -296,6 +294,29 @@ enum RHVoiceApostropheNormalizer {
         "cyrillic small letter yi": "ї",
         "cyrillic capital letter yi": "ї"
     ]
+
+    /// « українська ї » — це iOS-форма букви «є» (помилка таблиці Apple, див. вище).
+    /// На Маці VoiceOver описує букви англійськими назвами Unicode, тож там рядок
+    /// «Українська ї» — звичайний текст, і правило заміняло його буквою «є»
+    /// (корпус 2.2, LET-mac-0200, 19.10.2026). Тому ці два ключі — лише для iOS.
+    /// Тести ганяються на Маці (симулятор iOS зламаний), тому iOS-таблицю вмикає
+    /// параметр, а не лише `#if`: так перевірка iOS-поведінки лишається живою.
+    private static let iosOnlyLetterNameReplacements: [String: String] = [
+        "українська ї": "є",
+        "ї українська": "є"
+    ]
+
+    static let usesIOSLetterTable: Bool = {
+        #if os(iOS)
+        return true
+        #else
+        return false
+        #endif
+    }()
+
+    private static func letterNameReplacement(for key: String, iosLetterTable: Bool) -> String? {
+        commonLetterNameReplacements[key] ?? (iosLetterTable ? iosOnlyLetterNameReplacements[key] : nil)
+    }
 
     static func normalizeInTextSegments(
         _ ssml: String,
@@ -384,6 +405,9 @@ enum RHVoiceApostropheNormalizer {
             .replacingOccurrences(of: "\u{00B4}", with: engineApostrophe)
             .replacingOccurrences(of: "\u{FF07}", with: engineApostrophe)
             .replacingOccurrences(of: "\u{0060}", with: engineApostrophe)
+            // М'який перенос U+00AD — невидима позначка «тут можна перенести».
+            // Рушій бачив у ньому межу слова: «пере­вірка» → «пере вірка» (корпус 2.2).
+            .replacingOccurrences(of: "\u{00AD}", with: "")
     }
 
     private static func normalizeTextSegment(
@@ -408,11 +432,15 @@ enum RHVoiceApostropheNormalizer {
         // Час має бути розібраний ДО normalizeNumbers, інакше «17» і «01»
         // з «17:01» будуть з'їдені як окремі числа ще до того, як ми
         // побачимо двокрапку між ними.
-        let withTime = timeAsWords ? normalizeTime(in: withDates) : withDates
+        // «Масштаб 1:20», «Співвідношення 16:9» — двокрапка тут не час (корпус 2.2).
+        // Іде ДО правила часу, інакше «1:20» стало б «перша година двадцять хвилин».
+        let withScales = normalizeOrdinalSuffixes(in: normalizeScaleRatios(in: withDates))
+        let withTime = timeAsWords ? normalizeTime(in: withScales) : withScales
         // «Нотатки» автозаміною перетворюють «1/2» на символ «½» — рушій його
         // мовчки пропускає (аудит Даші, збірка 206, п.27).
         let withVulgarFractions = normalizeVulgarFractions(in: withTime)
-        let withAbbreviations = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withVulgarFractions) : withVulgarFractions
+        let withTimeUnits = abbreviationsAsWords ? normalizeTimeUnitAbbreviations(in: withVulgarFractions) : withVulgarFractions
+        let withAbbreviations = abbreviationsAsWords ? normalizeMeasurementUnits(in: withTimeUnits) : withTimeUnits
         // «грн» мусить узгодитись із числом ДО словника замін (нижче), бо там
         // заміна пласка і завжди дає «гривні» (борг 30.09.2026).
         let withCurrency = abbreviationsAsWords ? normalizeCurrencyAbbreviations(in: withAbbreviations) : withAbbreviations
@@ -430,9 +458,20 @@ enum RHVoiceApostropheNormalizer {
         // a telephone say-as block.
         let withGroupedAmounts = normalizeGroupedAmounts(in: withVerbalizedDecimals)
         let withNumbers = normalizeNumbers(in: withGroupedAmounts, slashFractionsAsWords: slashFractionsAsWords)
+        // «USB3», «LTE2» → «USB 3»: між великими літерами і цифрою немає межі слова,
+        // і ні словник, ні правило абревіатур такий запис не бачили (корпус 2.2).
+        let withSplitLetterDigits = replacingMatches(
+            in: withNumbers,
+            pattern: #"(?<![\p{L}\p{N}])([A-Z]{2,4})([0-9]{1,3})(?![\p{L}\p{N}])"#,
+            options: []
+        ) { match, source in
+            guard let letters = Range(match.range(at: 1), in: source),
+                  let digits = Range(match.range(at: 2), in: source) else { return nil }
+            return "\(source[letters]) \(source[digits])"
+        }
         let withDictionary = abbreviationDictionaryEnabled
-            ? normalizeAbbreviationDictionary(in: withNumbers, entries: abbreviationDictionaryEntries)
-            : withNumbers
+            ? normalizeAbbreviationDictionary(in: withSplitLetterDigits, entries: abbreviationDictionaryEntries)
+            : withSplitLetterDigits
         return normalizeLatinAbbreviations(in: withDictionary)
     }
 
@@ -464,8 +503,28 @@ enum RHVoiceApostropheNormalizer {
             return after.range(of: #"^\.?,?\s*[0-9]{1,2}(?:[.\s]|$)"#, options: .regularExpression) != nil
         }
         if months.contains(normalized) {
-            return before.range(of: #"[0-9]{1,2}\s*$"#, options: .regularExpression) != nil
-                || after.range(of: #"^\s*[0-9]{4}\b"#, options: .regularExpression) != nil
+            if before.range(of: #"[0-9]{1,2}\s*$"#, options: .regularExpression) != nil
+                || after.range(of: #"^\s*[0-9]{4}\b"#, options: .regularExpression) != nil {
+                return true
+            }
+            // 19.10.2026 (корпус 2.2): шість скорочень самі є словами — «лист», «трав»,
+            // «лип», «серп», «груд», «січ». У КІНЦІ речення («написав тобі лист.»,
+            // «багато трав.») це слово, а не місяць. Посеред речення («Перші дні лист.
+            // морозні») і після «кінець / початок / середина» («в кінці лип.») — місяць.
+            // Решта скорочень («бер.», «жовт.») словами не бувають і розгортаються завжди.
+            let wordLike: Set<String> = ["лист", "трав", "лип", "серп", "груд", "січ"]
+            guard wordLike.contains(normalized), key.hasSuffix(".") else { return false }
+            let atSentenceEnd = after.range(of: #"^\s*($|[\p{Lu}!?…])"#, options: .regularExpression) != nil
+            guard atSentenceEnd else { return false }
+            let monthContext = before.range(
+                of: #"(?i)(?<![\p{L}])(кінець|кінця|кінці|початок|початку|середина|середини|середині|половина|половини)\s+$"#,
+                options: .regularExpression
+            ) != nil
+            return !monthContext
+        }
+        // «50 кв. м» — квадратні метри, а не «квартира м». Неоднозначне — не чіпаємо.
+        if normalized == "кв" {
+            return after.range(of: #"^\s*м(?:²|2)?(?![\p{L}\p{N}])"#, options: .regularExpression) != nil
         }
         return false
     }
@@ -645,6 +704,10 @@ enum RHVoiceApostropheNormalizer {
                 let range = Range(match.range(at: 1), in: withDecimals),
                 let value = Int(String(withDecimals[range]))
             else { return nil }
+            // «Індекс 01001», «Код 00123»: нуль попереду — це код, а не кількість.
+            // Ціле число з'їдало нулі («одна тисяча один»); лишаємо цифри рушію,
+            // він читає такий запис по цифрах (корпус 2.2, 19.10.2026).
+            if hasLeadingZero(String(withDecimals[range])) { return nil }
 
             return integerToWords(value)
         }
@@ -700,8 +763,26 @@ enum RHVoiceApostropheNormalizer {
         // 08.10.2026: слово «року» / «р.» одразу після року правило ЗАБИРАЄ
         // разом із роком — воно саме дописує «року», інакше виходило
         // «… шостого року року» (замір на Маці, `mac_probe_2026-10-08`).
-        let withVerbalizedDots = replacingMatches(
+        // 19.10.2026 (корпус 2.2): «2026-10-08» — так дату пишуть програми на Маці
+        // (рік-місяць-день). Читаємо як звичайну дату; невалідна лишається цифрами.
+        let withIsoDates = replacingMatches(
             in: text,
+            pattern: #"(?<![\p{L}\p{N}.,\-])([1-2][0-9]{3})-([0-9]{2})-([0-9]{2})(?![\p{L}\p{N}]|-[0-9])"#,
+            options: []
+        ) { match, source in
+            guard
+                let yearRange = Range(match.range(at: 1), in: source),
+                let monthRange = Range(match.range(at: 2), in: source),
+                let dayRange = Range(match.range(at: 3), in: source),
+                let year = Int(String(source[yearRange])),
+                let month = Int(String(source[monthRange])),
+                let day = Int(String(source[dayRange]))
+            else { return nil }
+            return dateToWords(day: day, month: month, year: year)
+        }
+
+        let withVerbalizedDots = replacingMatches(
+            in: withIsoDates,
             pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+крапка\s+([0-9]{1,2})\s+крапка\s+([1-2][0-9]{3})(?:\s+(?:року|р\.))?(?![\p{L}\p{N}]|[.,][0-9])"#,
             options: [.caseInsensitive]
         ) { match, source in
@@ -724,7 +805,24 @@ enum RHVoiceApostropheNormalizer {
             pattern: #"(?<![\p{L}\p{N}.,])"# + weekdayPrefix + #"([0-9]{1,2})\s+("# + monthTokenAlternation + #")\.?(?![\p{L}])(?:\s+([1-2][0-9]{3})(?:\s+(?:року|р\.))?)?(?![\p{L}\p{N}])"#,
             options: [.caseInsensitive]
         ) { match, source in
-            weekdayMonthAbbrevDateMatchToWords(match, in: source)
+            // «вул. 8 Березня» — назва вулиці на честь дати: «вулиця Восьмого
+            // Березня», а не «восьме березня» (корпус 2.2, 19.10.2026).
+            if match.range(at: 1).location == NSNotFound,
+               match.range(at: 4).location == NSNotFound,
+               let whole = Range(match.range, in: source),
+               source[..<whole.lowerBound].range(
+                   of: #"(?i)(?<![\p{L}])(вул\.|вулиц\p{L}*|просп\.|проспект\p{L}*|пров\.|провул\p{L}*)\s*$"#,
+                   options: .regularExpression
+               ) != nil,
+               let dayRange = Range(match.range(at: 2), in: source),
+               let monthRange = Range(match.range(at: 3), in: source),
+               let day = Int(String(source[dayRange])),
+               (1...31).contains(day),
+               let dayWords = underThousandOrdinalGenitive(day),
+               let monthGenitive = monthGenitiveName(String(source[monthRange])) {
+                return "\(dayWords) \(monthGenitive)"
+            }
+            return weekdayMonthAbbrevDateMatchToWords(match, in: source)
         }
     }
 
@@ -886,8 +984,44 @@ enum RHVoiceApostropheNormalizer {
         // цифри ПІСЛЯ плюса і лишало сирий «+» рушію (правило з «плюсом» уже не мало
         // що ловити). Тому знак забираємо разом із ланцюжком: telephoneToWords
         // промовляє його словом «плюс». Обидві заміряні форми — з «+» і без — тут.
-        let withSpacedDigitChains = replacingMatches(
+        // 19.10.2026, корпус 2.2 (рішення Андрія): номер картки «4149 6090 1234 5678»
+        // у ЗВИЧАЙНОМУ тексті читався тисячами — гілка «картка по цифрах» жила лише
+        // в say-as telephone. Чотири групи по чотири цифри через пробіл або дефіс
+        // сумою не бувають. Роздільник один і той самий у всьому записі.
+        let withCards = replacingMatches(
             in: text,
+            pattern: #"(?<![\p{L}\p{N}])[0-9]{4}([  \-])[0-9]{4}\1[0-9]{4}\1[0-9]{4}(?![\p{L}\p{N}])"#,
+            options: []
+        ) { match, source in
+            guard let range = Range(match.range, in: source) else { return nil }
+            return telephoneDigitsToWords(String(source[range]))
+        }
+
+        // Суцільний український номер «0673449161» (рівно 10 цифр, нуль попереду)
+        // правило великих чисел читало мільйонами і губило нуль. Звичайне число
+        // з нуля не починається — читаємо як номер, тими ж групами 3-3-2-2.
+        let withSolidZeroPhones = replacingMatches(
+            in: withCards,
+            pattern: #"(?<![\p{L}\p{N}.,])0[0-9]{9}(?![\p{L}\p{N}]|[.,][0-9])"#,
+            options: []
+        ) { match, source in
+            guard let range = Range(match.range, in: source) else { return nil }
+            return telephoneToWords(String(source[range]), readingMode: readingMode)
+        }
+
+        // Гаряча лінія «0800 500 500»: перша група з чотирьох цифр, тож правило
+        // нижче («0» і до двох цифр) її не брало, і рушій читав «нуль вісім нуль нуль».
+        let withHotlines = replacingMatches(
+            in: withSolidZeroPhones,
+            pattern: #"(?<![\p{L}\p{N}])0800(?:[  \-][0-9]{2,3}){2,3}(?![\p{L}\p{N}])"#,
+            options: []
+        ) { match, source in
+            guard let range = Range(match.range, in: source) else { return nil }
+            return telephoneToWords(String(source[range]), readingMode: readingMode)
+        }
+
+        let withSpacedDigitChains = replacingMatches(
+            in: withHotlines,
             pattern: #"(?<![\p{L}\p{N}])(?:\+[ \u00A0\u202F]*)?[0-9](?:[ \u00A0\u202F,][0-9]){8,}(?![\p{L}\p{N}])"#,
             options: []
         ) { match, source in
@@ -925,6 +1059,13 @@ enum RHVoiceApostropheNormalizer {
         ) { match, source in
             guard let range = Range(match.range, in: source) else { return nil }
             let content = String(source[range])
+            // 19.10.2026 (корпус 2.2): «+12 345 678,90», «+1 234 567 грн» — далі
+            // копійки або валюта, тобто це сума; її забере правило сум нижче.
+            let rest = source[range.upperBound...]
+            if rest.range(of: #"^([.,][0-9]{2}(?![0-9])|[ \u00A0\u202F]*(грн|гривн|гривен|₴|UAH))"#,
+                          options: [.regularExpression, .caseInsensitive]) != nil {
+                return nil
+            }
             guard content.filter(\.isNumber).count >= 7,
                   classifyTelephoneSayAsContent(content) == .phone
             else { return nil }
@@ -967,11 +1108,22 @@ enum RHVoiceApostropheNormalizer {
     private static func normalizeGroupedAmounts(in text: String) -> String {
         let separator = "[   ]"
         let groupedInteger = "[0-9]{1,3}(?:\(separator)[0-9]{3})+"
-        let pattern = "(?<![\\p{L}\\p{N}])[+-]?\(groupedInteger)(?:[,.][0-9]{2})?(?![\\p{L}\\p{N}])"
+        // 19.10.2026 (корпус 2.2): після коми буває 1–3 цифри («1 234 567,5 грн»,
+        // «1 234,567») — кома в українському записі означає дріб. Після крапки —
+        // лише копійки з двох цифр, як і раніше (крапка між цифрами — окреме рішення).
+        let pattern = "(?<![\\p{L}\\p{N}])[+-]?\(groupedInteger)(?:,[0-9]{1,3}|[.][0-9]{2})?(?![\\p{L}\\p{N}])"
         return replacingMatches(in: text, pattern: pattern) { match in
             guard let range = Range(match.range, in: text) else { return nil }
             let candidate = String(text[range])
             guard !isEmbeddedInNumberToken(text, range: range) else { return nil }
+            // «Телефон 97 148 98 92»: кандидат «97 148» — лише початок ряду груп.
+            // Якщо одразу далі йде ще група цифр, це не окрема сума — не чіпаємо.
+            let rest = text[range.upperBound...]
+            if rest.range(of: "^\(separator)[0-9]", options: .regularExpression) != nil { return nil }
+            let followedByCurrency = rest.range(
+                of: #"^[ \u00A0\u202F]*(грн|гривн|гривен|₴|UAH)"#,
+                options: [.regularExpression, .caseInsensitive]
+            ) != nil
 
             let sign: String
             let value: String
@@ -986,8 +1138,27 @@ enum RHVoiceApostropheNormalizer {
                 value = candidate
             }
 
-            guard classifyTelephoneSayAsContent(value) == .money,
-                  let words = groupedMoneyToWords(value)
+            // Дробова частина з 1 або 3 цифр: класифікуємо лише цілу частину,
+            // бо «,5» класифікатор вважав би ще однією групою номера.
+            if let comma = value.firstIndex(of: ","),
+               value[value.index(after: comma)...].count != 2 {
+                let integerPart = String(value[..<comma])
+                let fractionPart = String(value[value.index(after: comma)...])
+                guard classifyTelephoneSayAsContent(integerPart) == .money
+                        || (followedByCurrency && classifyTelephoneSayAsContent(integerPart) == .phone)
+                else { return nil }
+                let integerDigits = integerPart.filter(\.isNumber)
+                guard let words = decimalNumberToWords(integerPart: integerDigits, fractionPart: fractionPart)
+                        ?? Int(integerDigits).map({ integerToWords($0, feminineLastGroup: followedByCurrency) })
+                else { return nil }
+                return sign + words
+            }
+
+            // «123 456 789 грн»: понад 8 цифр класифікатор вважає номером (захист від
+            // «380 971 489 892»). Слово валюти одразу після числа — це сума.
+            let kind = classifyTelephoneSayAsContent(value)
+            guard kind == .money || (kind == .phone && followedByCurrency),
+                  let words = groupedMoneyToWords(value, feminine: followedByCurrency)
             else { return nil }
             return sign + words
         }
@@ -1083,7 +1254,9 @@ enum RHVoiceApostropheNormalizer {
             case .phone:
                 return telephoneToWords(content, readingMode: phoneReadingMode)
             case .money:
-                return groupedMoneyToWords(content)
+                // «+9 000.00» у say-as: сума зі знаком — знак не губимо.
+                let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+                return groupedMoneyToWords(content).map { trimmedContent.hasPrefix("+") ? "плюс " + $0 : $0 }
             case .ordinary:
                 // Keep an arithmetic plus literal; otherwise retain the old
                 // behavior for a short standalone number in a telephone tag.
@@ -1108,15 +1281,21 @@ enum RHVoiceApostropheNormalizer {
         let groups = digitGroups(in: trimmed)
         guard !groups.isEmpty else { return .ordinary }
 
-        if hasPlusImmediatelyBeforeDigit(in: trimmed) { return .phone }
+        let hasFinalCents = hasCents(in: trimmed)
+        let groupsWithoutCents = hasFinalCents ? Array(groups.dropLast()) : groups
+        if hasPlusImmediatelyBeforeDigit(in: trimmed) {
+            // 19.10.2026 (корпус 2.2, рішення Андрія): «+12 345 678,90», «+9 000.00» —
+            // копійки в номера не бувають, тож це сума. Без копійок «+1 250 000» від
+            // номера не відрізнити — лишається телефоном, як і раніше.
+            if hasFinalCents, isGroupedAmountShape(groupsWithoutCents) { return .money }
+            return .phone
+        }
         // An arithmetic plus (for example `10+ 453449161`) is not a phone sign.
         if trimmed.contains("+") { return .ordinary }
         if groups.first?.first == "0" { return .phone }
         // A two-digit first group is common in a grouped amount (`30 018`).
         // Telephone evidence is a two-digit group after the first one; the
         // final `,00` cents group is not telephone evidence.
-        let hasFinalCents = hasCents(in: trimmed)
-        let groupsWithoutCents = hasFinalCents ? Array(groups.dropLast()) : groups
         if groupsWithoutCents.dropFirst().contains(where: { $0.count == 2 }) { return .phone }
         if hasFinalCents { return .money }
 
@@ -1134,6 +1313,12 @@ enum RHVoiceApostropheNormalizer {
         // Cards and non-money digit groups must stay separated, never become
         // one huge number.
         return .phone
+    }
+
+    /// «9 000», «12 345 678»: перша група 1–3 цифри, решта рівно по три.
+    private static func isGroupedAmountShape(_ groups: [String]) -> Bool {
+        guard let first = groups.first, (1...3).contains(first.count) else { return false }
+        return groups.dropFirst().allSatisfy { $0.count == 3 }
     }
 
     private static func digitGroups(in text: String) -> [String] {
@@ -1156,7 +1341,11 @@ enum RHVoiceApostropheNormalizer {
         return regex.firstMatch(in: text, range: range) != nil
     }
 
-    private static func groupedMoneyToWords(_ text: String) -> String? {
+    /// `feminine` — рід останньої групи. 19.10.2026 (корпус 2.2, рішення Андрія):
+    /// жіночий лише коли поруч гривня («одна тисяча одна гривня»), інакше чоловічий
+    /// («1 001 користувач» → «одна тисяча один»). Блок say-as telephone контексту не
+    /// бачить і лишає жіночий, як було (банківські суми).
+    private static func groupedMoneyToWords(_ text: String, feminine: Bool = true) -> String? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let centsPattern = #"^(.+?)[,.]([0-9]{2})$"#
         if let regex = try? NSRegularExpression(pattern: centsPattern),
@@ -1175,7 +1364,7 @@ enum RHVoiceApostropheNormalizer {
 
         let digits = trimmed.filter(\.isNumber)
         guard let value = Int(digits) else { return nil }
-        return integerToWords(value, feminineLastGroup: true)
+        return integerToWords(value, feminineLastGroup: feminine)
     }
 
     private static func dateMatchToWords(_ match: NSTextCheckingResult, in text: String) -> String? {
@@ -1347,6 +1536,159 @@ enum RHVoiceApostropheNormalizer {
         return "\(integerWords) \(wholePartName) \(fractionWords) \(denominator)"
     }
 
+    /// «Масштаб 1:50 000» → «масштаб один до п'ятдесяти тисяч». Лише після слова-
+    /// підказки (масштаб, співвідношення, пропорція): без нього «1:20» — це час,
+    /// а час важливіший (рішення Андрія 19.10.2026, корпус 2.2).
+    private static func normalizeScaleRatios(in text: String) -> String {
+        let number = #"(?:[0-9]{1,3}(?:[ \u00A0\u202F][0-9]{3})+|[0-9]{1,6})"#
+        return replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}])(масштаб\p{L}*|співвідношенн\p{L}*|пропорці\p{L}*)([\s:—–-]+)("# + number + #")\s*:\s*("# + number + #")(?![\p{L}\p{N}:])"#,
+            options: [.caseInsensitive]
+        ) { match, source in
+            guard
+                let wordRange = Range(match.range(at: 1), in: source),
+                let gapRange = Range(match.range(at: 2), in: source),
+                let leftRange = Range(match.range(at: 3), in: source),
+                let rightRange = Range(match.range(at: 4), in: source),
+                let left = Int(String(source[leftRange]).filter(\.isNumber)),
+                let right = Int(String(source[rightRange]).filter(\.isNumber)),
+                let rightWords = cardinalGenitive(right)
+            else { return nil }
+            return "\(source[wordRange])\(source[gapRange])\(integerToWords(left)) до \(rightWords)"
+        }
+    }
+
+    /// Порядкове число з нарощенням: «5-му поверсі» → «п'ятому», «10-та» → «десята»,
+    /// «2026-му» → «дві тисячі двадцять шостому» (корпус 2.2, 19.10.2026). Форму
+    /// задає саме закінчення. Лише однозначні: «-х» («2-х» = «двох») і «-ма»
+    /// («2-ма» = «двома») — кількісні, а «-а» («буд. 12-а») — літера адреси, їх не чіпаємо.
+    enum OrdinalForm { case masculine, genitive, dative, feminine, feminineGenitive, feminineAccusative, neuter }
+
+    static func ordinalForm(forSuffix suffix: String) -> OrdinalForm? {
+        switch suffix.lowercased() {
+        case "й", "ий": return .masculine
+        case "го", "ого": return .genitive
+        case "му", "ому": return .dative
+        case "га", "ша", "та", "ва", "я": return .feminine
+        case "ї", "ої": return .feminineGenitive
+        case "у", "ту", "гу", "шу", "ву", "ю": return .feminineAccusative
+        case "е", "є", "те", "ге", "ше", "ве": return .neuter
+        default: return nil
+        }
+    }
+
+    private static func normalizeOrdinalSuffixes(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}.,])([0-9]{1,4})-([а-яіїєґА-ЯІЇЄҐ]{1,3})(?![\p{L}\p{N}])"#,
+            options: []
+        ) { match, source in
+            guard
+                let numberRange = Range(match.range(at: 1), in: source),
+                let suffixRange = Range(match.range(at: 2), in: source),
+                let value = Int(String(source[numberRange])),
+                let form = ordinalForm(forSuffix: String(source[suffixRange]))
+            else { return nil }
+            return ordinalWords(value, form: form)
+        }
+    }
+
+    /// «двадцять п'ята», «дві тисячі двадцять шостому». Порядковим стає лише
+    /// останнє слово. Круглі тисячі («1000-й») — інша будова слова, не беремо.
+    static func ordinalWords(_ value: Int, form: OrdinalForm) -> String? {
+        guard value > 0, value % 1000 != 0 else { return nil }
+        let unitStems = [1: "перш", 2: "друг", 3: "трет", 4: "четверт", 5: "п'ят",
+                         6: "шост", 7: "сьом", 8: "восьм", 9: "дев'ят"]
+        let teenStems = [10: "десят", 11: "одинадцят", 12: "дванадцят", 13: "тринадцят", 14: "чотирнадцят",
+                         15: "п'ятнадцят", 16: "шістнадцят", 17: "сімнадцят", 18: "вісімнадцят", 19: "дев'ятнадцят"]
+        let tenStems = [2: "двадцят", 3: "тридцят", 4: "сороков", 5: "п'ятдесят",
+                        6: "шістдесят", 7: "сімдесят", 8: "вісімдесят", 9: "дев'яност"]
+        let hundredStems = [1: "сот", 2: "двохсот", 3: "трьохсот", 4: "чотирьохсот", 5: "п'ятисот",
+                            6: "шестисот", 7: "семисот", 8: "восьмисот", 9: "дев'ятисот"]
+
+        let lastTwo = value % 100
+        let prefixValue: Int
+        let stem: String
+        var middle = ""
+        if lastTwo != 0 {
+            prefixValue = value - lastTwo
+            if lastTwo < 10, let unit = unitStems[lastTwo] {
+                stem = unit
+            } else if let teen = teenStems[lastTwo] {
+                stem = teen
+            } else if lastTwo % 10 == 0, let ten = tenStems[lastTwo / 10] {
+                stem = ten
+            } else if let unit = unitStems[lastTwo % 10] {
+                middle = underThousandToWords((lastTwo / 10) * 10, feminine: false)
+                stem = unit
+            } else { return nil }
+        } else {
+            prefixValue = value - (value % 1000)
+            guard let hundred = hundredStems[(value % 1000) / 100] else { return nil }
+            stem = hundred
+        }
+
+        let soft = stem == "трет"
+        let ending: String
+        switch form {
+        case .masculine: ending = soft ? "ій" : "ий"
+        case .genitive: ending = soft ? "ього" : "ого"
+        case .dative: ending = soft ? "ьому" : "ому"
+        case .feminine: ending = soft ? "я" : "а"
+        case .feminineGenitive: ending = soft ? "ьої" : "ої"
+        case .feminineAccusative: ending = soft ? "ю" : "у"
+        case .neuter: ending = soft ? "є" : "е"
+        }
+        // «тисяча двадцять четвертий», а не «одна тисяча …» — як у роках (yearOrdinalGenitive).
+        var prefix = prefixValue > 0 ? integerToWords(prefixValue) : ""
+        if (1000...1999).contains(prefixValue), prefix.hasPrefix("одна ") { prefix.removeFirst("одна ".count) }
+        let parts = [prefix, middle, stem + ending]
+        return parts.filter { !$0.isEmpty }.joined(separator: " ")
+    }
+
+    /// Родовий відмінок кількісного числа 0…999 999: «до двадцяти», «до п'ятдесяти тисяч».
+    private static func cardinalGenitive(_ value: Int) -> String? {
+        guard (0...999_999).contains(value) else { return nil }
+        if value == 0 { return "нуля" }
+        let thousands = value / 1000
+        let rest = value % 1000
+        var parts: [String] = []
+        if thousands == 1 {
+            parts.append("тисячі")
+        } else if thousands > 1 {
+            guard let words = underThousandGenitive(thousands) else { return nil }
+            parts.append(words)
+            parts.append("тисяч")
+        }
+        if rest > 0 {
+            guard let words = underThousandGenitive(rest) else { return nil }
+            parts.append(words)
+        }
+        return parts.joined(separator: " ")
+    }
+
+    private static func underThousandGenitive(_ value: Int) -> String? {
+        guard (1...999).contains(value) else { return nil }
+        let units = ["", "одного", "двох", "трьох", "чотирьох", "п'яти", "шести", "семи", "восьми", "дев'яти"]
+        let teens = ["десяти", "одинадцяти", "дванадцяти", "тринадцяти", "чотирнадцяти",
+                     "п'ятнадцяти", "шістнадцяти", "сімнадцяти", "вісімнадцяти", "дев'ятнадцяти"]
+        let tens = ["", "", "двадцяти", "тридцяти", "сорока", "п'ятдесяти",
+                    "шістдесяти", "сімдесяти", "вісімдесяти", "дев'яноста"]
+        let hundreds = ["", "ста", "двохсот", "трьохсот", "чотирьохсот", "п'ятисот",
+                        "шестисот", "семисот", "восьмисот", "дев'ятисот"]
+        var parts: [String] = []
+        if value / 100 > 0 { parts.append(hundreds[value / 100]) }
+        let rest = value % 100
+        if (10...19).contains(rest) {
+            parts.append(teens[rest - 10])
+        } else {
+            if rest / 10 > 0 { parts.append(tens[rest / 10]) }
+            if rest % 10 > 0 { parts.append(units[rest % 10]) }
+        }
+        return parts.joined(separator: " ")
+    }
+
     private static func normalizeTime(in text: String) -> String {
         // ЗАМІР 08.09.2026 (SPEECH_CORPUS): VoiceOver віддає час злиплим із
         // прийменником — «6вересня р.о21:23». Перед цифрами стоїть буква, і
@@ -1425,7 +1767,9 @@ enum RHVoiceApostropheNormalizer {
             // Число може мати розділювачі тисяч (звичайний пробіл, нерозривний
             // U+00A0, вузький нерозривний U+202F). Ліворуч не можна мати літеру,
             // цифру, кому чи крапку — кома й крапка відсікають дробову частину.
-            pattern: #"(?<![\p{L}\p{N},.])([0-9]{1,3}(?:"# + thousandsSeparatorClass + #"[0-9]{3})*)[[:space:]]+грн(\.)?(?=[^\p{L}\p{N}]|$)"#,
+            // 19.10.2026 (корпус 2.2): і суцільне число з 4+ цифр — «1500 грн»,
+            // «12345 грн» — раніше не підходило, і словник давав пласке «гривні».
+            pattern: #"(?<![\p{L}\p{N},.])([0-9]{1,3}(?:"# + thousandsSeparatorClass + #"[0-9]{3})+|[1-9][0-9]{0,11}|0)[[:space:]]+грн(\.)?(?=[^\p{L}\p{N}]|$)"#,
             options: [.caseInsensitive]
         ) { match, source in
             guard
@@ -1439,6 +1783,47 @@ enum RHVoiceApostropheNormalizer {
             let noun = nounForm(for: value, one: "гривня", few: "гривні", many: "гривень")
             let punctuation = match.range(at: 2).location == NSNotFound ? "" : "."
             return "\(numberText) \(noun)\(punctuation)"
+        }
+    }
+
+    /// Одиниці вимірювання (корпус 2.2, рішення Андрія 19.10.2026): лише ОДНОЗНАЧНІ —
+    /// кг, км, км/год, см, мм, мл, л, кВт — і лише одразу після числа. «м» (метр /
+    /// місто), «г» (грам / рік), «т» (тонна / літера) навмисно НЕ тут. Цифри лишаємо —
+    /// їх далі прочитає правило чисел; ставимо слово у формі за числом. Після дробу —
+    /// родовий однини: «0,9 кг» → «0,9 кілограма».
+    private static let measurementUnits: [(key: String, one: String, few: String, many: String, fraction: String, suffix: String)] = [
+        ("км/год", "кілометр", "кілометри", "кілометрів", "кілометра", " на годину"),
+        ("кг", "кілограм", "кілограми", "кілограмів", "кілограма", ""),
+        ("км", "кілометр", "кілометри", "кілометрів", "кілометра", ""),
+        ("см", "сантиметр", "сантиметри", "сантиметрів", "сантиметра", ""),
+        ("мм", "міліметр", "міліметри", "міліметрів", "міліметра", ""),
+        ("мл", "мілілітр", "мілілітри", "мілілітрів", "мілілітра", ""),
+        ("кВт", "кіловат", "кіловати", "кіловатів", "кіловата", ""),
+        ("л", "літр", "літри", "літрів", "літра", "")
+    ]
+
+    private static func normalizeMeasurementUnits(in text: String) -> String {
+        let keys = measurementUnits.map { NSRegularExpression.escapedPattern(for: $0.key) }.joined(separator: "|")
+        return replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N},.])([0-9]{1,3}(?:[ \u00A0\u202F][0-9]{3})+|[0-9]+(?:,[0-9]+)?)[ \u00A0\u202F]?("# + keys + #")(\.)?(?![\p{L}\p{N}/])"#,
+            options: []
+        ) { match, source in
+            guard
+                let numberRange = Range(match.range(at: 1), in: source),
+                let unitRange = Range(match.range(at: 2), in: source),
+                let unit = measurementUnits.first(where: { $0.key == String(source[unitRange]) })
+            else { return nil }
+            let number = String(source[numberRange])
+            let noun: String
+            if number.contains(",") {
+                noun = unit.fraction
+            } else {
+                guard let value = Int(number.filter(\.isNumber)) else { return nil }
+                noun = nounForm(for: value, one: unit.one, few: unit.few, many: unit.many)
+            }
+            let punctuation = match.range(at: 3).location == NSNotFound ? "" : "."
+            return "\(number) \(noun)\(unit.suffix)\(punctuation)"
         }
     }
 
@@ -1516,18 +1901,55 @@ enum RHVoiceApostropheNormalizer {
 
     // Латинські ВЕЛИКІ абревіатури (VPN, LTE) — по буквах через наявний
     // EnglishLetter у spell.foma, а не спробою прочитати як слово (build 190).
+    /// 19.10.2026 (корпус 2.2): римське число з нарощенням («XXI-го») — порядкове.
+    /// Решта великих латинських слів — як і раніше: тег `<say-as characters>`
+    /// розділювач викидає, і рушій читає сам (зазвичай англійськими назвами літер:
+    /// «HTML» → «ейч ті ем ел»). Ті, що рушій читає словом («API» → «апі»), —
+    /// у прихованих варіантах словника замін (`AbbreviationDictionary.variantEntries`).
     private static func normalizeLatinAbbreviations(in text: String) -> String {
-        replacingMatches(
-            in: text,
-            pattern: #"\b[A-Z]{2,}\b"#,
+        let withCyrillicRomans = normalizeCyrillicRomanNumerals(in: text)
+        return replacingMatches(
+            in: withCyrillicRomans,
+            pattern: #"\b([A-Z]{2,})\b(?:-(\p{L}{1,3})(?![\p{L}\p{N}]))?"#,
             options: []
         ) { match, source in
-            guard let range = Range(match.range, in: source) else { return nil }
-            let token = String(source[range])
+            guard let tokenRange = Range(match.range(at: 1), in: source) else { return nil }
+            let token = String(source[tokenRange])
+            let suffix = Range(match.range(at: 2), in: source).map { String(source[$0]) }
             // Римське число рушій намагався читати як слово («III» → «айіі»,
             // аудит Даші, збірка 206, п.29) — тепер читаємо числом.
-            guard !isPureRomanNumeralToken(token) else { return romanNumeralToWords(token) }
-            return #"<say-as interpret-as="characters">"# + token + "</say-as>"
+            if isPureRomanNumeralToken(token) {
+                guard let value = romanNumeralValue(token) else { return nil }
+                return romanWithSuffix(value, suffix: suffix)
+            }
+            return #"<say-as interpret-as="characters">"# + token + "</say-as>" + (suffix.map { "-" + $0 } ?? "")
+        }
+    }
+
+    /// «XXI-го століття» → «двадцять першого»; без нарощення — кількісне, як і раніше.
+    private static func romanWithSuffix(_ value: Int, suffix: String?) -> String {
+        if let suffix, let form = ordinalForm(forSuffix: suffix), let words = ordinalWords(value, form: form) {
+            return words
+        }
+        return integerToWords(value) + (suffix.map { "-" + $0 } ?? "")
+    }
+
+    /// «Розділ ІІІ», «ХХІ століття»: римські числа, набрані кириличними «І» і «Х»
+    /// (візуальні двійники латинських). Лише від двох літер і лише з І/Х/V:
+    /// одиночне «І» — це сполучник «і», його не чіпаємо (рішення Андрія 19.10.2026).
+    private static func normalizeCyrillicRomanNumerals(in text: String) -> String {
+        replacingMatches(
+            in: text,
+            pattern: #"(?<![\p{L}\p{N}])([ІХIVX]{2,})(?:-(\p{L}{1,3}))?(?![\p{L}\p{N}])"#,
+            options: []
+        ) { match, source in
+            guard let tokenRange = Range(match.range(at: 1), in: source) else { return nil }
+            let token = String(source[tokenRange])
+            guard token.contains(where: { $0 == "І" || $0 == "Х" }) else { return nil }
+            let latin = String(token.map { $0 == "І" ? "I" : ($0 == "Х" ? "X" : $0) })
+            guard isPureRomanNumeralToken(latin), let value = romanNumeralValue(latin) else { return nil }
+            let suffix = Range(match.range(at: 2), in: source).map { String(source[$0]) }
+            return romanWithSuffix(value, suffix: suffix)
         }
     }
 
@@ -1547,7 +1969,7 @@ enum RHVoiceApostropheNormalizer {
 
     /// «III» → «три». Лише канонічні римські числа; некоректний набір
     /// римських літер («VVX») лишаємо як був.
-    private static func romanNumeralToWords(_ token: String) -> String? {
+    private static func romanNumeralValue(_ token: String) -> Int? {
         guard !romanLookalikeAbbreviations.contains(token) else { return nil }
         guard token.range(
             of: #"^(?=.)M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$"#,
@@ -1563,7 +1985,7 @@ enum RHVoiceApostropheNormalizer {
             previous = max(previous, value)
         }
         guard total > 0 else { return nil }
-        return integerToWords(total)
+        return total
     }
 
     private static func hasDigitSeparator(in text: String) -> Bool {
@@ -1722,6 +2144,8 @@ enum RHVoiceApostropheNormalizer {
         var sizes: [Int]
         if digits.count == 12, digits.starts(with: ["3", "8", "0"]) {
             sizes = [2, 3, 3, 2, 2]        // 38 067 344 91 61 (формат Андрія)
+        } else if digits.count == 10, digits.starts(with: ["0", "8", "0", "0"]) {
+            sizes = [4, 3, 3]              // 0800 500 500 — гаряча лінія
         } else if digits.count == 10, digits.first == "0" {
             sizes = [3, 3, 2, 2]           // 067 344 91 61
         } else if let code = countryCodePrefix(digits) {
